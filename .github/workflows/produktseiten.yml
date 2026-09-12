@@ -48,17 +48,28 @@ jobs:
           set -o pipefail
           node _werkzeuge/produktseiten-generieren.mjs 2>&1 | tee /tmp/gen.log
 
-      # Die Logs sind nur fuer Angemeldete lesbar, die Zusammenfassung nicht.
-      # Ohne das hier raet man beim naechsten Fehlschlag wieder.
-      - name: Ausgabe in die Zusammenfassung
+      # Die Actions-Logs sieht nur, wer bei GitHub angemeldet ist, und die
+      # Job-Zusammenfassung ebenso. Damit ein Fehlschlag von aussen ueberhaupt
+      # lesbar ist, landet die Ausgabe als Datei im Repo. Sie wird bei jedem
+      # Lauf ueberschrieben und loest selbst keinen neuen Lauf aus.
+      - name: Ausgabe sichtbar machen
         if: always()
         run: |
           {
+            echo "Lauf: $GITHUB_RUN_NUMBER · Commit: $GITHUB_SHA · $(date -u '+%Y-%m-%d %H:%M UTC')"
+            echo "---"
+            tail -n 60 /tmp/gen.log 2>/dev/null || echo "(keine Ausgabe)"
+          } > _werkzeuge/letzter-lauf.log
+          {
             echo '### Generator-Ausgabe'
             echo '```'
-            tail -n 40 /tmp/gen.log 2>/dev/null || echo '(keine Ausgabe)'
+            cat _werkzeuge/letzter-lauf.log
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          git config user.name "root-index-bot"
+          git config user.email "bot@root-index.de"
+          git add _werkzeuge/letzter-lauf.log
+          git diff --cached --quiet || { git commit -m "Lauf-Protokoll [skip ci]"; git push; }
 
       - name: Gegenmessen (nichts Leeres veroeffentlichen)
         run: |
