@@ -1,17 +1,24 @@
-Lauf: 6 · Commit: c83e00575d5bb43de6a6b6536502f09dbd73f6ea · 2026-09-12 18:40 UTC
+Lauf: 7 · Commit: d6ca08da87426eeca8457283c815b61f13887bb4 · 2026-09-12 18:49 UTC
 ---
-Lade in 200er-Schritten am Schluessel entlang ...
-  ... 2000 Produkte (zuletzt P16307)
-  ... 4000 Produkte (zuletzt P19532)
-  ... 6000 Produkte (zuletzt P23134)
-  ... 8000 Produkte (zuletzt P27011)
-  ... 10000 Produkte (zuletzt P30845)
-  ... 12000 Produkte (zuletzt P34605)
-  ... 14000 Produkte (zuletzt P40903)
-  ... 16000 Produkte (zuletzt P44270)
-  ... 18000 Produkte (zuletzt P47861)
-  ... 20000 Produkte (zuletzt P51538)
-  ... 22000 Produkte (zuletzt P54706)
-  ... 24000 Produkte (zuletzt P57764)
-  ... 26000 Produkte (zuletzt P60549)
-❌ Produktseiten-Generator: REST 500 nach id P63715: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3 ...
+  ... 2000 Produkte (zuletzt P16234)
+  ... 4000 Produkte (zuletzt P19468)
+  ! nach id P21591: 200 Zeilen gingen nicht, versuche kleiner
+  ... 6080 Produkte (zuletzt P23237)
+  ... 8080 Produkte (zuletzt P27100)
+  ... 10080 Produkte (zuletzt P30917)
+  ! nach id P31328: 200 Zeilen gingen nicht, versuche kleiner
+  ... 12160 Produkte (zuletzt P34818)
+  ... 14160 Produkte (zuletzt P41086)
+  ... 16160 Produkte (zuletzt P44429)
+  ... 18160 Produkte (zuletzt P48100)
+  ... 20160 Produkte (zuletzt P51746)
+  ! nach id P53453: 200 Zeilen gingen nicht, versuche kleiner
+  ... 22040 Produkte (zuletzt P54719)
+  ... 24040 Produkte (zuletzt P57772)
+  ... 26040 Produkte (zuletzt P60555)
+  ... 28040 Produkte (zuletzt P64407)
+  ... 30040 Produkte (zuletzt P68407)
+  ... 32040 Produkte (zuletzt P72532)
+Fertig geladen: 32632 Produkte
+✅ Produktseiten: 32632 · Kategorien: 25 · Sitemap-URLs: 32659
