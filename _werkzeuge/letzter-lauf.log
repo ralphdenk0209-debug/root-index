@@ -1,4 +1,17 @@
-Lauf: 5 · Commit: 50ff7b028f89f6feb65558d7ec8a3b3856f2b844 · 2026-09-12 18:28 UTC
+Lauf: 6 · Commit: c83e00575d5bb43de6a6b6536502f09dbd73f6ea · 2026-09-12 18:40 UTC
 ---
-Lade in 50er-Seiten, 3 gleichzeitig ...
-❌ Produktseiten-Generator: REST 500 bei Zeile 550: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+Lade in 200er-Schritten am Schluessel entlang ...
+  ... 2000 Produkte (zuletzt P16307)
+  ... 4000 Produkte (zuletzt P19532)
+  ... 6000 Produkte (zuletzt P23134)
+  ... 8000 Produkte (zuletzt P27011)
+  ... 10000 Produkte (zuletzt P30845)
+  ... 12000 Produkte (zuletzt P34605)
+  ... 14000 Produkte (zuletzt P40903)
+  ... 16000 Produkte (zuletzt P44270)
+  ... 18000 Produkte (zuletzt P47861)
+  ... 20000 Produkte (zuletzt P51538)
+  ... 22000 Produkte (zuletzt P54706)
+  ... 24000 Produkte (zuletzt P57764)
+  ... 26000 Produkte (zuletzt P60549)
+❌ Produktseiten-Generator: REST 500 nach id P63715: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
