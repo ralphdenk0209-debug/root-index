@@ -51,61 +51,54 @@ function ausAppJs() {
   return { url: url[1], key: key[1] };
 }
 
-/* ---------- Daten holen (parallel, Gast-Leseweg) ----------
-   Die Sicht rechnet die Zutatenliste je Zeile nach: rund 20 ms pro Produkt.
-   500 Zeilen am Stueck laufen deshalb in den Statement-Timeout der anon-Rolle
-   (Lauf #1 am 12.09. gescheitert). Kleine Seiten a 100 bleiben weit darunter;
-   damit der Lauf trotzdem Minuten statt einer Stunde braucht, laufen mehrere
-   Seiten gleichzeitig. Die Reihenfolge kommt aus dem Seitenindex, nicht aus
-   der Antwortzeit - sonst waere die Sitemap bei jedem Lauf anders sortiert. */
-const SEITE = 100;
-const GLEICHZEITIG = 6;
+/* ---------- Daten holen (blockweise parallel, Gast-Leseweg) ----------
+   Die Sicht rechnet die Zutatenliste je Zeile nach - rund 20 ms pro Produkt.
+   Daraus folgen zwei Dinge, beide am 12.09. an gescheiterten Laeufen gemessen:
+
+   1. Grosse Seiten reissen den Statement-Timeout der anon-Rolle (Lauf #1 und #2
+      mit 500 bzw. 100 Zeilen bei sechs gleichzeitigen Abrufen).
+   2. Eine Gesamtzahl per "count=exact" ist noch teurer als jede Seite, denn sie
+      rechnet die Sicht einmal komplett durch - Lauf #4 starb genau daran
+      (REST 500, 57014 statement timeout).
+
+   Also: kleine Seiten, wenige gleichzeitig, und das Ende erkennt man an der
+   ersten unvollstaendigen Seite statt an einer vorab geholten Anzahl. Die
+   Reihenfolge bleibt die des Servers, damit die Sitemap stabil ist. */
+const SEITE = 50;
+const GLEICHZEITIG = 3;
 const VERSUCHE = 4;
 
 async function holeSeite(url, key, von) {
   for (let versuch = 1; ; versuch++) {
-    let r;
+    let r = null;
     try {
       r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id`, {
         headers: { apikey: key, Range: `${von}-${von + SEITE - 1}` },
       });
       if (r.ok) return await r.json();
     } catch (e) {
-      if (versuch >= VERSUCHE) throw e;
+      if (versuch >= VERSUCHE) throw new Error(`Netzfehler bei Zeile ${von}: ${e.message}`);
     }
-    if (r && versuch >= VERSUCHE) throw new Error(`REST ${r.status} bei Zeile ${von}: ${(await r.text()).slice(0, 200)}`);
+    if (r && versuch >= VERSUCHE) {
+      throw new Error(`REST ${r.status} bei Zeile ${von}: ${(await r.text()).slice(0, 200)}`);
+    }
     await new Promise((f) => setTimeout(f, 1500 * versuch));
   }
 }
 
-async function anzahl(url, key) {
-  const r = await fetch(`${url}/rest/v1/v_web_produkte?select=id&order=id`, {
-    headers: { apikey: key, Range: "0-0", Prefer: "count=exact" },
-  });
-  if (!r.ok) throw new Error(`REST ${r.status} beim Zaehlen: ${(await r.text()).slice(0, 200)}`);
-  const cr = r.headers.get("content-range") || "";      // z. B. "0-0/29551"
-  const n = Number(cr.split("/")[1]);
-  if (!Number.isFinite(n) || n <= 0) throw new Error(`Anzahl nicht lesbar: "${cr}"`);
-  return n;
-}
-
 async function alleProdukte() {
   const { url, key } = ausAppJs();
-  const gesamt = await anzahl(url, key);
-  console.log(`Produkte laut Server: ${gesamt} – lade in ${SEITE}er-Seiten, ${GLEICHZEITIG} gleichzeitig ...`);
-  const offsets = [];
-  for (let von = 0; von < gesamt; von += SEITE) offsets.push(von);
-  const teile = new Array(offsets.length);
-  let naechste = 0;
-  await Promise.all(Array.from({ length: GLEICHZEITIG }, async () => {
-    while (true) {
-      const i = naechste++;
-      if (i >= offsets.length) return;
-      teile[i] = await holeSeite(url, key, offsets[i]);
-      if (i % 50 === 0) console.log(`  ... ${Math.min((i + 1) * SEITE, gesamt)} von ${gesamt}`);
-    }
-  }));
-  return teile.flat();
+  console.log(`Lade in ${SEITE}er-Seiten, ${GLEICHZEITIG} gleichzeitig ...`);
+  const alle = [];
+  for (let von = 0; ; von += SEITE * GLEICHZEITIG) {
+    const block = Array.from({ length: GLEICHZEITIG }, (_, k) => von + k * SEITE);
+    const teile = await Promise.all(block.map((o) => holeSeite(url, key, o)));
+    for (const t of teile) alle.push(...t);
+    if (teile.some((t) => t.length < SEITE)) break;
+    if (alle.length % 3000 === 0) console.log(`  ... ${alle.length} Produkte geladen`);
+  }
+  console.log(`Fertig geladen: ${alle.length} Produkte`);
+  return alle;
 }
 
 /* ---------- Helfer ---------- */
