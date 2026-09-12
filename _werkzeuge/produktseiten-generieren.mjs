@@ -67,31 +67,37 @@ function ausAppJs() {
    dann nur diese 200 aus, gleich am Anfang wie am Ende der Liste. Das ist
    zwangslaeufig der Reihe nach - rund zehn Minuten fuer den ganzen Bestand,
    einmal am Tag. */
-const SEITE = 200;
-const VERSUCHE = 4;
+const STUFEN = [200, 80, 30, 10, 3];   // faellt eine Anfrage aus, wird sie kleiner
 
 async function holeAb(url, key, letzteId) {
   const nach = letzteId ? `&id=gt.${encodeURIComponent(letzteId)}` : "";
-  for (let versuch = 1; ; versuch++) {
-    let r = null;
-    try {
-      r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id&limit=${SEITE}${nach}`, {
-        headers: { apikey: key },
-      });
-      if (r.ok) return await r.json();
-    } catch (e) {
-      if (versuch >= VERSUCHE) throw new Error(`Netzfehler nach id ${letzteId}: ${e.message}`);
+  let fehler = "";
+  // Ein paar Produkte tragen so viele Zutaten, dass selbst 200 Zeilen zu lange
+  // rechnen (Lauf #6 blieb bei P63715 stehen). Statt aufzugeben wird die
+  // Anfrage kleiner - notfalls bis auf drei Zeilen, dann kommt jedes Produkt
+  // durch, und der Lauf verliert nur an dieser einen Stelle Zeit.
+  for (const groesse of STUFEN) {
+    for (let versuch = 1; versuch <= 2; versuch++) {
+      let r = null;
+      try {
+        r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id&limit=${groesse}${nach}`, {
+          headers: { apikey: key },
+        });
+        if (r.ok) return await r.json();
+        fehler = `REST ${r.status}: ${(await r.text()).slice(0, 160)}`;
+      } catch (e) {
+        fehler = `Netzfehler: ${e.message}`;
+      }
+      await new Promise((f) => setTimeout(f, 1500 * versuch));
     }
-    if (r && versuch >= VERSUCHE) {
-      throw new Error(`REST ${r.status} nach id ${letzteId}: ${(await r.text()).slice(0, 200)}`);
-    }
-    await new Promise((f) => setTimeout(f, 1500 * versuch));
+    console.log(`  ! nach id ${letzteId}: ${groesse} Zeilen gingen nicht, versuche kleiner`);
   }
+  throw new Error(`nach id ${letzteId} auch mit ${STUFEN[STUFEN.length - 1]} Zeilen nicht zu holen - ${fehler}`);
 }
 
 async function alleProdukte() {
   const { url, key } = ausAppJs();
-  console.log(`Lade in ${SEITE}er-Schritten am Schluessel entlang ...`);
+  console.log("Lade am Schluessel entlang, Seitengroesse " + STUFEN.join("/") + " ...");
   const alle = [];
   let letzteId = null;
   while (true) {
@@ -99,8 +105,7 @@ async function alleProdukte() {
     if (teil.length === 0) break;
     alle.push(...teil);
     letzteId = teil[teil.length - 1].id;
-    if (alle.length % 2000 < SEITE) console.log(`  ... ${alle.length} Produkte (zuletzt ${letzteId})`);
-    if (teil.length < SEITE) break;
+    if (alle.length % 2000 < STUFEN[0]) console.log(`  ... ${alle.length} Produkte (zuletzt ${letzteId})`);
   }
   console.log(`Fertig geladen: ${alle.length} Produkte`);
   return alle;
