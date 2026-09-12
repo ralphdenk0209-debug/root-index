@@ -1,3 +1,4 @@
-Lauf: 4 · Commit: 8f23d417e9a3941be5c1081c63dd6349079c1286 · 2026-09-12 18:20 UTC
+Lauf: 5 · Commit: 50ff7b028f89f6feb65558d7ec8a3b3856f2b844 · 2026-09-12 18:28 UTC
 ---
-❌ Produktseiten-Generator: REST 500 beim Zaehlen: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+Lade in 50er-Seiten, 3 gleichzeitig ...
+❌ Produktseiten-Generator: REST 500 bei Zeile 550: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
