@@ -16,6 +16,14 @@ on:
   schedule:
     - cron: "40 2 * * *"      # taeglich 04:40 deutscher Sommerzeit
   workflow_dispatch:
+  push:
+    # Aendert sich der Generator oder dieser Workflow, wird sofort neu gebaut -
+    # sonst faellt ein Fehler erst am naechsten Morgen auf. Die eigenen Commits
+    # des Bots fassen nur produkt/, sitemap.xml und robots.txt an und loesen
+    # hier nichts aus.
+    paths:
+      - "_werkzeuge/produktseiten-generieren.mjs"
+      - ".github/workflows/produktseiten.yml"
 
 permissions:
   contents: write

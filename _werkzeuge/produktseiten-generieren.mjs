@@ -51,30 +51,61 @@ function ausAppJs() {
   return { url: url[1], key: key[1] };
 }
 
-/* ---------- Daten holen (paginiert, Gast-Leseweg) ---------- */
-async function alleProdukte() {
-  const { url, key } = ausAppJs();
-  const alle = [];
-  const SEITE = 500;
-  for (let von = 0; ; von += SEITE) {
-    // Die Sicht rechnet Zutaten je Zeile nach; grosse Seiten laufen in den
-    // Server-Timeout. 500er-Schritte mit drei Versuchen - ein Abbruch nach
-    // 20.000 Produkten wuerde sonst den ganzen Lauf verwerfen.
-    let r, versuch = 0;
-    while (true) {
-      versuch++;
+/* ---------- Daten holen (parallel, Gast-Leseweg) ----------
+   Die Sicht rechnet die Zutatenliste je Zeile nach: rund 20 ms pro Produkt.
+   500 Zeilen am Stueck laufen deshalb in den Statement-Timeout der anon-Rolle
+   (Lauf #1 am 12.09. gescheitert). Kleine Seiten a 100 bleiben weit darunter;
+   damit der Lauf trotzdem Minuten statt einer Stunde braucht, laufen mehrere
+   Seiten gleichzeitig. Die Reihenfolge kommt aus dem Seitenindex, nicht aus
+   der Antwortzeit - sonst waere die Sitemap bei jedem Lauf anders sortiert. */
+const SEITE = 100;
+const GLEICHZEITIG = 6;
+const VERSUCHE = 4;
+
+async function holeSeite(url, key, von) {
+  for (let versuch = 1; ; versuch++) {
+    let r;
+    try {
       r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id`, {
         headers: { apikey: key, Range: `${von}-${von + SEITE - 1}` },
       });
-      if (r.ok) break;
-      if (versuch >= 3) throw new Error(`REST ${r.status}: ${(await r.text()).slice(0, 200)}`);
-      await new Promise((f) => setTimeout(f, 2000 * versuch));
+      if (r.ok) return await r.json();
+    } catch (e) {
+      if (versuch >= VERSUCHE) throw e;
     }
-    const teil = await r.json();
-    alle.push(...teil);
-    if (teil.length < SEITE) break;
+    if (r && versuch >= VERSUCHE) throw new Error(`REST ${r.status} bei Zeile ${von}: ${(await r.text()).slice(0, 200)}`);
+    await new Promise((f) => setTimeout(f, 1500 * versuch));
   }
-  return alle;
+}
+
+async function anzahl(url, key) {
+  const r = await fetch(`${url}/rest/v1/v_web_produkte?select=id&order=id`, {
+    headers: { apikey: key, Range: "0-0", Prefer: "count=exact" },
+  });
+  if (!r.ok) throw new Error(`REST ${r.status} beim Zaehlen: ${(await r.text()).slice(0, 200)}`);
+  const cr = r.headers.get("content-range") || "";      // z. B. "0-0/29551"
+  const n = Number(cr.split("/")[1]);
+  if (!Number.isFinite(n) || n <= 0) throw new Error(`Anzahl nicht lesbar: "${cr}"`);
+  return n;
+}
+
+async function alleProdukte() {
+  const { url, key } = ausAppJs();
+  const gesamt = await anzahl(url, key);
+  console.log(`Produkte laut Server: ${gesamt} – lade in ${SEITE}er-Seiten, ${GLEICHZEITIG} gleichzeitig ...`);
+  const offsets = [];
+  for (let von = 0; von < gesamt; von += SEITE) offsets.push(von);
+  const teile = new Array(offsets.length);
+  let naechste = 0;
+  await Promise.all(Array.from({ length: GLEICHZEITIG }, async () => {
+    while (true) {
+      const i = naechste++;
+      if (i >= offsets.length) return;
+      teile[i] = await holeSeite(url, key, offsets[i]);
+      if (i % 50 === 0) console.log(`  ... ${Math.min((i + 1) * SEITE, gesamt)} von ${gesamt}`);
+    }
+  }));
+  return teile.flat();
 }
 
 /* ---------- Helfer ---------- */
