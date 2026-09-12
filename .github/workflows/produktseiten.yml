@@ -44,7 +44,21 @@ jobs:
           node-version: "22"
 
       - name: Seiten erzeugen
-        run: node _werkzeuge/produktseiten-generieren.mjs
+        run: |
+          set -o pipefail
+          node _werkzeuge/produktseiten-generieren.mjs 2>&1 | tee /tmp/gen.log
+
+      # Die Logs sind nur fuer Angemeldete lesbar, die Zusammenfassung nicht.
+      # Ohne das hier raet man beim naechsten Fehlschlag wieder.
+      - name: Ausgabe in die Zusammenfassung
+        if: always()
+        run: |
+          {
+            echo '### Generator-Ausgabe'
+            echo '```'
+            tail -n 40 /tmp/gen.log 2>/dev/null || echo '(keine Ausgabe)'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Gegenmessen (nichts Leeres veroeffentlichen)
         run: |
