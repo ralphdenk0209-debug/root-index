@@ -51,36 +51,39 @@ function ausAppJs() {
   return { url: url[1], key: key[1] };
 }
 
-/* ---------- Daten holen (blockweise parallel, Gast-Leseweg) ----------
+/* ---------- Daten holen (Schluesselfenster, Gast-Leseweg) ----------
    Die Sicht rechnet die Zutatenliste je Zeile nach - rund 20 ms pro Produkt.
-   Daraus folgen zwei Dinge, beide am 12.09. an gescheiterten Laeufen gemessen:
+   Alles Weitere folgt daraus, gemessen an den Laeufen vom 12.09.:
 
-   1. Grosse Seiten reissen den Statement-Timeout der anon-Rolle (Lauf #1 und #2
-      mit 500 bzw. 100 Zeilen bei sechs gleichzeitigen Abrufen).
-   2. Eine Gesamtzahl per "count=exact" ist noch teurer als jede Seite, denn sie
-      rechnet die Sicht einmal komplett durch - Lauf #4 starb genau daran
-      (REST 500, 57014 statement timeout).
+   - count=exact rechnet die ganze Sicht einmal durch und reisst den
+     Statement-Timeout sofort (Lauf #4).
+   - Range/OFFSET hilft nicht: der Server muss auch die uebersprungenen Zeilen
+     ausrechnen. Bei Zeile 550 waren das schon 600 Zeilen und damit ueber acht
+     Sekunden - Lauf #5 starb genau dort, obwohl die Seite nur 50 Zeilen gross
+     war. Tiefer in der Liste waere es immer schlimmer geworden.
 
-   Also: kleine Seiten, wenige gleichzeitig, und das Ende erkennt man an der
-   ersten unvollstaendigen Seite statt an einer vorab geholten Anzahl. Die
-   Reihenfolge bleibt die des Servers, damit die Sitemap stabil ist. */
-const SEITE = 50;
-const GLEICHZEITIG = 3;
+   Deshalb blaettert der Lauf am Schluessel entlang: jede Anfrage holt die
+   naechsten 200 Produkte NACH der zuletzt gesehenen id. Der Server rechnet
+   dann nur diese 200 aus, gleich am Anfang wie am Ende der Liste. Das ist
+   zwangslaeufig der Reihe nach - rund zehn Minuten fuer den ganzen Bestand,
+   einmal am Tag. */
+const SEITE = 200;
 const VERSUCHE = 4;
 
-async function holeSeite(url, key, von) {
+async function holeAb(url, key, letzteId) {
+  const nach = letzteId ? `&id=gt.${encodeURIComponent(letzteId)}` : "";
   for (let versuch = 1; ; versuch++) {
     let r = null;
     try {
-      r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id`, {
-        headers: { apikey: key, Range: `${von}-${von + SEITE - 1}` },
+      r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id&limit=${SEITE}${nach}`, {
+        headers: { apikey: key },
       });
       if (r.ok) return await r.json();
     } catch (e) {
-      if (versuch >= VERSUCHE) throw new Error(`Netzfehler bei Zeile ${von}: ${e.message}`);
+      if (versuch >= VERSUCHE) throw new Error(`Netzfehler nach id ${letzteId}: ${e.message}`);
     }
     if (r && versuch >= VERSUCHE) {
-      throw new Error(`REST ${r.status} bei Zeile ${von}: ${(await r.text()).slice(0, 200)}`);
+      throw new Error(`REST ${r.status} nach id ${letzteId}: ${(await r.text()).slice(0, 200)}`);
     }
     await new Promise((f) => setTimeout(f, 1500 * versuch));
   }
@@ -88,14 +91,16 @@ async function holeSeite(url, key, von) {
 
 async function alleProdukte() {
   const { url, key } = ausAppJs();
-  console.log(`Lade in ${SEITE}er-Seiten, ${GLEICHZEITIG} gleichzeitig ...`);
+  console.log(`Lade in ${SEITE}er-Schritten am Schluessel entlang ...`);
   const alle = [];
-  for (let von = 0; ; von += SEITE * GLEICHZEITIG) {
-    const block = Array.from({ length: GLEICHZEITIG }, (_, k) => von + k * SEITE);
-    const teile = await Promise.all(block.map((o) => holeSeite(url, key, o)));
-    for (const t of teile) alle.push(...t);
-    if (teile.some((t) => t.length < SEITE)) break;
-    if (alle.length % 3000 === 0) console.log(`  ... ${alle.length} Produkte geladen`);
+  let letzteId = null;
+  while (true) {
+    const teil = await holeAb(url, key, letzteId);
+    if (teil.length === 0) break;
+    alle.push(...teil);
+    letzteId = teil[teil.length - 1].id;
+    if (alle.length % 2000 < SEITE) console.log(`  ... ${alle.length} Produkte (zuletzt ${letzteId})`);
+    if (teil.length < SEITE) break;
   }
   console.log(`Fertig geladen: ${alle.length} Produkte`);
   return alle;
