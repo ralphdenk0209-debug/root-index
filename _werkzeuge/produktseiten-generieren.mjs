@@ -241,7 +241,14 @@ async function main() {
   for (const p of produkte) {
     if (!p || !p.id || !p.name) continue;
     const markeDoppelt = p.marke && String(p.name).toLowerCase().startsWith(String(p.marke).toLowerCase());
-    let datei = `${slug([markeDoppelt ? null : p.marke, p.name].filter(Boolean).join(" "))}-${slug(p.id)}.html`;
+    // Traegt der Name keine lateinischen Buchstaben (z. B. nur Ziffern oder
+    // Sonderzeichen), bleibt der Slug leer und die Adresse faengt mit einem
+    // Bindestrich an - fuer Google ein Name, den niemand sucht. Dann tritt die
+    // Kategorie an die Stelle des Namens.
+    const namensteil = slug([markeDoppelt ? null : p.marke, p.name].filter(Boolean).join(" "))
+      || slug([p.marke, p.kategorie].filter(Boolean).join(" "))
+      || "produkt";
+    let datei = `${namensteil}-${slug(p.id)}.html`;
     if (vergeben.has(datei)) datei = `${slug(p.id)}-${datei}`;
     vergeben.add(datei);
     const kat = p.kategorie || "Weitere Produkte";
