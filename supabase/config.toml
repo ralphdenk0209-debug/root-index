@@ -1,0 +1,19 @@
+# Root Index - Minimalkonfiguration nur fuer Edge-Function-Deploys.
+# Automatisch angelegt von Deploy-Riki.command.
+# Sie regelt genau EINES: dass die Anmeldepruefung (verify_jwt)
+# beim Ausliefern eingeschaltet bleibt. Ohne Eintrag entscheidet
+# die CLI selbst - und darauf soll sich niemand verlassen muessen.
+
+project_id = "haurbpfkfaaehorirzee"
+
+[functions.riki-analyse]
+verify_jwt = true
+
+[functions.riki-herstellerseite]
+verify_jwt = true
+
+[functions.riki-quelle-lesen]
+verify_jwt = true
+
+[functions.riki-orchestrator]
+verify_jwt = true
