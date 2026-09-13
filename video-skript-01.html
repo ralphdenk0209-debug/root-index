@@ -394,9 +394,34 @@ var SKRIPT={
     {wer:"Sandra", text:"Welche zwei sollen wir als Nächstes vergleichen? Schreibt es drunter."},
     {wer:"Sandra", text:"Transparenz? Root Index."}
    ]}
+ ],
+ c11:[
+  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–5 Sek.",
+   kamera:"Sandra allein, Küche oder Supermarkt-Eingang. Echte Kamera — dieser Clip lebt davon, dass er nicht produziert wirkt.",
+   zeilen:[
+    {wer:"Sandra", text:"Wir suchen fünf Leute. Und wir bezahlen nichts dafür."}
+   ]},
+  {abschnitt:"Abschnitt 2 · Was wir wollen", zeit:"5–16 Sek.",
+   kamera:"Gleiche Einstellung. Beim Scannen kurz aufs Handy schneiden.",
+   zeilen:[
+    {wer:"Sandra", text:"Fünf Menschen, die mit uns einkaufen gehen. Ihr scannt, was bei euch im Wagen landet.", regie:"Kurzer Schnitt: Scan im Laden"},
+    {wer:"Sandra", text:"Und ihr sagt uns, wo Root Index Unsinn erzählt oder ein Produkt gar nicht kennt."},
+    {wer:"Sandra", text:"Fünf Rückmeldungen, die uns etwas beibringen. Mehr wollen wir nicht."}
+   ]},
+  {abschnitt:"Abschnitt 3 · Was ihr bekommt", zeit:"16–22 Sek.",
+   kamera:"Zurück auf Sandra.",
+   zeilen:[
+    {wer:"Sandra", text:"Dafür bekommt ihr drei Monate Premium."},
+    {wer:"Sandra", text:"Und ihr seht, wie eine Bewertung entsteht, bevor sie irgendwer sonst sieht."}
+   ]},
+  {abschnitt:"Abschnitt 4 · Abbinder", zeit:"22–26 Sek.",
+   kamera:"Ins Gesicht. Danach Einblendung mit dem Satz Ich bin dabei und dem Logo.",
+   zeilen:[
+    {wer:"Sandra", text:"Schreibt uns einfach: Ich bin dabei."},
+    {wer:"Sandra", text:"Transparenz? Root Index."}
+   ]}
  ]
 };
-
 var VARIANTE='c1';
 /* Staffel 1 — zehn Clips. Reihenfolge = Veröffentlichungsreihenfolge.
    art: 'kamera' = echt drehen, 'heygen' = Avatar-Clip. */
@@ -411,13 +436,14 @@ var VIDEOS=[
  {id:'7',  art:'heygen', titel:'07 · Zusatzstoffe',   unter:'22 s · Sandra', fass:[{k:'c7', l:'Nuance'}]},
  {id:'8',  art:'heygen', titel:'08 · Verarbeitung',   unter:'22 s · Sandra', fass:[{k:'c8', l:'Wissen'}]},
  {id:'9',  art:'heygen', titel:'09 · Unabhängig',     unter:'18 s · Ralph',  fass:[{k:'c9', l:'Vertrauen'}]},
- {id:'10', art:'kamera', titel:'10 · Duell',          unter:'28 s · beide',  fass:[{k:'c10', l:'Serienformat'}]}
+ {id:'10', art:'kamera', titel:'10 · Duell',          unter:'28 s · beide',  fass:[{k:'c10', l:'Serienformat'}]},
+ {id:'11', art:'kamera', titel:'11 · Testnutzer',      unter:'26 s · Sandra', fass:[{k:'c11', l:'Aufruf'}]}
 ];
 
 function videoVon(k){ return VIDEOS.find(function(v){ return v.fass.some(function(f){ return f.k===k; }); }); }
 /* Vorgabedauer je Fassung — Reel-Format 30–60 s. */
 /* Zieldauer je Fassung in Sekunden — Vorgabe aus dem Clipplan Staffel 1. */
-var DAUER_VORGABE={c1:30,c1b:25,c2:12,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:28};
+var DAUER_VORGABE={c1:30,c1b:25,c2:12,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:28,c11:26};
 /* Hinweiskasten je Video: 1 = Skript-Ausnahme, 2–5 = Stichwort-Karten. */
 var HINWEIS_HEYGEN='\u{1F3AC} <b>HeyGen-Clip \u2014 Wortskript.</b> '
  +'Der Text wird 1:1 in das Skriptfeld der jeweiligen Szene kopiert. Ein Abschnitt = eine Szene. '
