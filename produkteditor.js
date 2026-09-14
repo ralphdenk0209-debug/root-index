@@ -2556,6 +2556,25 @@ if(typeof window!=="undefined"){ window.fgBestVerarbEdit=fgBestVerarbEdit;
   window.fgBestVerarbSave=fgBestVerarbSave; window.fgBestVerarbAbbruch=fgBestVerarbAbbruch; }
 
 /* Bestandteilzahlen aus demselben Serververtrag ableiten; keine lokale zweite Zählregel. */
+/* 14.09.2026, RALPH an P73725: "oben steht 6/6 gruen, in der uebersicht ist
+   E414 offen ... bei 6/6 muss die wahrheit stehen."
+   Er hat recht. Die Bilanz zaehlte nur Zutatenzeilen. Ein Zusatzstoff, den der
+   Server erkennt, der aber KEINE Zeile in Produkt_Zutaten hat (E414 Gummi
+   arabicum), war im Nenner unsichtbar - die Station stand auf 6/6 und gruen,
+   obwohl ein Bestandteil fehlte. Dieselbe Sorte Fehler wie am 23.08. und am
+   10.09.: die Information stand da, die Farbe sagte das Gegenteil.
+   Die Liste wird NICHT neu erfunden: sie ist dieselbe, aus der auch der Kasten
+   "Zusatzstoff ohne Bestandteilzeile" gebaut wird (frueher stand die Regel
+   zweimal da, jetzt einmal hier). */
+function _fgZusOhneZeile(){
+  var d=window._fgZusV2, out=[];
+  var items=(d&&Array.isArray(d.items))?d.items:[];
+  items.forEach(function(it){
+    var hat=(Array.isArray(it.produkt_zutat_ids)&&it.produkt_zutat_ids.length)||it.produkt_zutat_id;
+    if(!hat) out.push(it);
+  });
+  return out;
+}
 function _fgBestandteilBilanz(){
   var rows=window._fgCanon;
   if(!Array.isArray(rows)||!rows.length) return null;   /* kein Vertrag ⇒ alte Anzeige */
@@ -2596,6 +2615,12 @@ function _fgBestandteilBilanz(){
     }
   }catch(e){ b.offen_unbekannt = true; console.error("Bestandteil-Bilanz, offene Zutaten:", e); }
   b.gesamt_alle = b.gebunden + b.offen;
+  /* 14.09.2026: Zusatzstoffe ohne eigene Bestandteilzeile gehoeren in den
+     Nenner - sonst meldet die Station "vollstaendig", waehrend ein Stoff
+     nur im Warnkasten steht. */
+  try{ b.zus_ohne_zeile = _fgZusOhneZeile().length; }
+  catch(e){ b.zus_ohne_zeile = 0; console.error("Bestandteil-Bilanz, Zusatzstoffe:", e); }
+  b.gesamt_wahr = b.gesamt + b.zus_ohne_zeile;
   return b;
 }
 if(typeof window!=="undefined"){ window._fgBestandteilBilanz=_fgBestandteilBilanz; }
@@ -2703,11 +2728,7 @@ function fgBestandteileRender(){
   });
   var rest=[];
   Object.keys(zusMap).forEach(function(k){ if(!gesehen[k]) rest=rest.concat(zusMap[k]); });
-  var d=window._fgZusV2;
-  (((d&&Array.isArray(d.items))?d.items:[])).forEach(function(it){
-    var hat=(Array.isArray(it.produkt_zutat_ids)&&it.produkt_zutat_ids.length)||it.produkt_zutat_id;
-    if(!hat) rest.push(it);
-  });
+  try{ rest = rest.concat(_fgZusOhneZeile()); }catch(e){ console.error("Zusatzstoffe ohne Zeile:", e); }
   if(rest.length){
     H.push('<div style="padding:7px 9px;border-bottom:1px solid var(--line);background:var(--k-fffbeb,#fffbeb)">'
       +'<div style="font-size:11px;font-weight:700;color:var(--k-92400e,#92400e)">Zusatzstoff ohne Bestandteilzeile</div>'
@@ -7062,6 +7083,13 @@ function feFokusStand(s){
                      if(b.ohne_note>0) return {z:"entscheid",
                         codes:["bestandteil_ohne_verarbeitungsnote"],
                         txt:(b.gesamt+"/"+b.gesamt+" · "+b.ohne_note+" ohne Verarbeitungsnote")};
+                     /* 14.09.2026 Ralph: ein Zusatzstoff ohne Bestandteilzeile darf die
+                        Station nicht gruen werden lassen - er ist ein Bestandteil, der
+                        nicht zusammengefuehrt ist. Die Zahl nennt jetzt beide Seiten. */
+                     if(b.zus_ohne_zeile>0) return {z:"entscheid",
+                        codes:["zusatzstoff_ohne_bestandteilzeile"],
+                        txt:(b.gesamt+"/"+b.gesamt_wahr+" · "+b.zus_ohne_zeile
+                             +" Zusatzstoff"+(b.zus_ohne_zeile===1?"":"e")+" ohne Bestandteilzeile")};
                      return {z:"fertig", codes:[], txt:(b.gesamt+"/"+b.gesamt)};
     case 'eigen':    return {z:"neutral", txt:""};
     case 'etikett':  return (S.referenz_blocker>0 && (S.referenz_gueltige_zeilen||0)>0)
