@@ -175,7 +175,20 @@ function zusRenderPick(){
       +'</label>'; };
   var _freie=(window._fgZus||[]).map(function(z,i){ return {z:z,i:i}; }).filter(function(o){ return !o.z.e; });
   var _freiRows=_freie.map(function(o){ var z=o.z; var f=zusFarbe(z.einst||z.einstufung);
+    /* 14.09.2026: Auch dieses Schild darf die Seite nicht selbst vergeben. Wenn der
+       Server den Wortlaut aufgeloest hat (er steht nicht in unresolved_candidates),
+       ist "nicht im Stamm" falsch - so entstand die Anzeige bei P73725 fuer
+       "Emulgator Sonnenblumenlecithin". Ohne Serverantwort bleibt es beim Alten. */
     var _lbl=z.nf?'nicht im Stamm \u00b7 kein Index':(((z.einst||z.einstufung))?f.label:'nicht eingestuft \u00b7 kein Index');
+    try{
+      var _d=window._fgZusV2;
+      if(_d && Array.isArray(_d.items)){
+        var _offenTexte={};
+        (Array.isArray(_d.unresolved_candidates)?_d.unresolved_candidates:[]).forEach(function(c){
+          _offenTexte[String(c.text||'').trim().toLowerCase()]=1; });
+        if(!_offenTexte[String(z.name||'').trim().toLowerCase()]) _lbl='vom Server erkannt';
+      }
+    }catch(e){}
     return '<div style="display:grid;grid-template-columns:12px 1fr auto 22px;gap:8px;align-items:center;padding:5px 8px;border-bottom:1px solid var(--line);font-size:13px;background:#f1f4f8">'
       +'<span style="width:9px;height:9px;border-radius:50%;background:'+f.dot+';flex:0 0 auto"></span>'
       +'<span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(z.name||'?')+'</span>'
@@ -2566,6 +2579,46 @@ if(typeof window!=="undefined"){ window.fgBestVerarbEdit=fgBestVerarbEdit;
    Die Liste wird NICHT neu erfunden: sie ist dieselbe, aus der auch der Kasten
    "Zusatzstoff ohne Bestandteilzeile" gebaut wird (frueher stand die Regel
    zweimal da, jetzt einmal hier). */
+/* 🔴 14.09.2026, Ralph: "die produkt erfassen seite muss die infos aus der
+   datenbank ziehen, nicht selber rechnen wie du gesagt hast, da kommen nur
+   fehler raus."
+   Er hat recht, und der Beleg ist P73725. Der Etikettentext lautet
+   "Sucralose (E955), Emulgator Sonnenblumenlecithin, Emulgator
+   Sonnenblumenecithin in Schokostreusel, Gummi arabicum (E414)".
+   zusSeed() zerlegt ihn HIER im Browser mit einer eigenen kleinen Auflösung
+   (ZUSATZSTOFFE_MAP, ZUS_SYN, _zusFindStamm) und schreibt bei jedem Fehlschlag
+   einst:"ungeprüft". Die beiden Emulgator-Zeilen - eine davon mit Tippfehler
+   und Ortszusatz - traf sie nicht und meldete "2 Zusatzstoffe nicht
+   eingestuft". GEMESSEN am selben Produkt: cb_app_produkt_zusatzstoffe liefert
+   resolution_status "identified", drei Stoffe (E322 neutral, E414 neutral,
+   E955 abgewertet) und eine LEERE Liste offener Kandidaten. Der Server hatte
+   recht, die Seite hat sich das Gegenteil ausgerechnet.
+
+   Deshalb urteilt ab jetzt nur noch die Datenbank darüber, was uneingestuft
+   ist. window._fgZus bleibt unberührt - daraus entsteht fe_ztext, also der
+   gespeicherte Wortlaut des Etiketts; der darf nicht zu Stammnamen umgeschrieben
+   werden. Solange die Serverantwort fehlt (neues, noch nicht gespeichertes
+   Produkt), gilt weiter die alte Regel - dann gibt es nichts Besseres. */
+function _fgZusUneingestuft(){
+  var d=window._fgZusV2;
+  if(d && Array.isArray(d.items)){
+    var out=[];
+    d.items.forEach(function(it){
+      var e=String(it.evaluation||"").trim().toLowerCase();
+      if(!e || e==="ungepr\u00fcft" || e==="ungeprueft")
+        out.push({name:(it.name||it.e_number||""), e:it.e_number||null});
+    });
+    (Array.isArray(d.unresolved_candidates)?d.unresolved_candidates:[]).forEach(function(c){
+      if(!_zusIstLeer(c.text)) out.push({name:String(c.text||""), e:null});
+    });
+    return out;
+  }
+  /* Rueckfall ohne Serverantwort - unveraendert die alte Regel */
+  return (window._fgZus||[]).filter(function(z){
+    return !/^(neutral|keine|unbedenklich|abgewertet|kritisch)$/i.test(String(z.einst||"")) && !_zusIstLeer(z.name);
+  }).map(function(z){ return {name:z.name, e:z.e||null}; });
+}
+if(typeof window!=="undefined"){ window._fgZusUneingestuft=_fgZusUneingestuft; }
 function _fgZusOhneZeile(){
   var d=window._fgZusV2, out=[];
   var items=(d&&Array.isArray(d.items))?d.items:[];
@@ -8614,7 +8667,7 @@ function fePlaus(){
         if(_abwR.length) h += no(_abwR.length+" Zutat(en) laut Etikett noch nicht übernommen – Freigabe nur mit Bestätigung");
       }catch(e){}
       try{
-        var _zUngR=(window._fgZus||[]).filter(function(z){ return !/^(neutral|keine|unbedenklich|abgewertet|kritisch)$/i.test(String(z.einst||"")) && !_zusIstLeer(z.name); });
+        var _zUngR=_fgZusUneingestuft();   /* 14.09.2026: Urteil aus der Datenbank, nicht selbst gerechnet */
         if(_zUngR.length) h += no(_zUngR.length+" Zusatzstoff(e) noch nicht eingestuft → kein Index ("+esc(_zUngR.map(function(z){return z.name+(z.e?(" "+z.e):"");}).slice(0,3).join(", "))+(_zUngR.length>3?" …":"")+")");
       }catch(e){}
       try{
@@ -8662,7 +8715,7 @@ function fePlaus(){
       if(_istSupp){ if(_dosisLeer) _pi('y','Verzehrempfehlung fehlt','Bezug des Dosis-Checks – blockiert nicht'); else _pi('g','Verzehrempfehlung da'); }
       if(_istSupp){ if(_wCount>0) _pi('g',_wCount+' Wirkstoff-Menge(n) für Dosis-Check'); else if(_wNone) _pi('x','Wirkstoff-Mengen','bewusst ohne'); else _pi('r','Wirkstoff-Mengen fehlen','für den Dosis-Check'); }
       try{ var _abw2=_fgAbweichungRef(); if(_abw2 && _abw2.length) _pi('y',_abw2.length+' Zutat(en) laut Etikett offen','Freigabe nur mit Bestätigung'); }catch(e){}
-      try{ var _zu2=(window._fgZus||[]).filter(function(z){ return !/^(neutral|keine|unbedenklich|abgewertet|kritisch)$/i.test(String(z.einst||"")) && !_zusIstLeer(z.name); }); if(_zu2.length) _pi('y',_zu2.length+' Zusatzstoff(e) nicht eingestuft','→ kein Index: '+_zu2.map(function(z){return z.name;}).slice(0,3).join(", ")); }catch(e){}
+      try{ var _zu2=_fgZusUneingestuft();   /* 14.09.2026: Urteil aus der Datenbank */ if(_zu2.length) _pi('y',_zu2.length+' Zusatzstoff(e) nicht eingestuft','→ kein Index: '+_zu2.map(function(z){return z.name;}).slice(0,3).join(", ")); }catch(e){}
       window._fgStatusRoh={
         kat:_kat, istSupp:_istSupp, istSalz:_istSalz, istKeinScore:_istKeinScore,
         nwPflicht:_nwPflicht,
@@ -10235,7 +10288,7 @@ async function fgEditSave(alsoFreigeben){
     var _katSave=((g("fe_kat")||{}).value||"").trim().toLowerCase();
     if(_katSave!=="supplement"){
       msg.style.color="var(--k-b45309)"; msg.style.fontWeight="700";
-      var _zUng=(window._fgZus||[]).filter(function(z){ return !/^(neutral|keine|unbedenklich|abgewertet|kritisch)$/i.test(String(z.einst||"")) && !_zusIstLeer(z.name); });
+      var _zUng=_fgZusUneingestuft();   /* 14.09.2026: Urteil aus der Datenbank */
       if(_zUng.length){
         var _zTxt=_zUng.map(function(z){ return z.name+(z.e?(" "+z.e):""); }).join(", ");
         msg.innerHTML="💾 Gespeichert – aber noch KEIN Index. Grund: <b>"+_zUng.length+" Zusatzstoff(e) noch nicht wissenschaftlich eingestuft</b> ("+esc(_zTxt)+"). Bis eine EFSA-/EU-Quelle vorliegt, zeigen wir bewusst keine Zahl – nichts erfinden. (Nicht die Nährwerte sind schuld.)";
