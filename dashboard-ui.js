@@ -5538,15 +5538,32 @@ function _abSchnell(){
       +'<span class="ic">'+w.ic+'</span>'+esc(a.label||a.key)+'<span class="pf">›</span></button>';
   }).join('');
 
-  var takte=((ck&&ck.takte)||[]).map(function(t){
+  /* 🔴 14.09.2026, Work #633: die Liste kommt aus cb_netzplan und damit aus
+     cb_takt_status - und die zeigt seit heute ALLE 41 aktiven Takte statt der
+     fuenf, die sich selbst gemeldet hatten. 41 Zeilen sprengen die Kachel und
+     sagen nichts. Gezeigt wird, was auffaellt: Fehlerserie, gescheiterter
+     letzter Lauf, oder ueber einen Tag nichts gelaufen. Der Rest als eine
+     Zeile. Wer alles sehen will, nimmt die Maschinenseite (cb_admin_takte_stand). */
+  var _alleTakte=(ck&&ck.takte)||[];
+  var _auffaellig=_alleTakte.filter(function(t){
+    var min=Number(t.minuten_her);
+    return (Number(t.fehler_serie)||0)>0 || Number(t.status)===500
+        || (!isNaN(min) && min>1440);
+  });
+  var takte=_auffaellig.map(function(t){
     var min=Number(t.minuten_her);
     var alt=isNaN(min)?'–':(min<90? (Math.round(min)+' min her')
                                   : (Math.round(min/60)+' h her'));
     var serie=Number(t.fehler_serie)||0;
-    var f=(serie>0)?_AB.krit:((!isNaN(min)&&min>1440)?_AB.warn:null);
+    var f=(serie>0||Number(t.status)===500)?_AB.krit:_AB.warn;
     return '<div class="bzeile"><span>'+esc(t.takt||'')+'</span><b'
-      +(f?' style="color:'+f+'"':'')+'>'+esc(alt)+(serie>0?(' · '+serie+'× Fehler'):'')+'</b></div>';
+      +' style="color:'+f+'">'+esc(alt)+(serie>0?(' · '+serie+'× Fehler'):'')+'</b></div>';
   }).join('');
+  if(_alleTakte.length){
+    var _still=_alleTakte.length-_auffaellig.length;
+    takte+='<div class="bzeile"><span>'+(_auffaellig.length?'übrige Takte':'Takte')+'</span><b style="color:'
+      +(_still?_AB.gut:_AB.grau)+'">'+_still+' von '+_alleTakte.length+' ohne Auffälligkeit</b></div>';
+  }
 
   var auto=ck ? (ck.autopilot_an===true
       ? '<div class="bzeile"><span>Etikett-Autopilot</span><b style="color:'+_AB.gut+'">läuft</b></div>'
@@ -6383,13 +6400,31 @@ function _abGraphStart(np,A){
       _abG.L.push({a:'pp'+i,b:'kern',len:200});
     });
     _abG.L.push({a:'pp0',b:'pp1',len:150}); _abG.L.push({a:'pp1',b:'pp2',len:150});
-    ((np&&np.takte)||[]).forEach(function(t,i){
+    /* 🔴 14.09.2026, Work #633: cb_takt_status liefert jetzt ALLE aktiven Takte aus
+       cron.job statt der fuenf, die sich selbst gemeldet hatten (einer davon lief
+       zuletzt am 08.08.). Mit 41 Knoten bei y=90+i*70 liefe die Zeichnung bis
+       y=2890 aus dem Bild. Gezeichnet wird deshalb, was etwas zu sagen hat:
+       jeder Takt mit Fehlerserie oder Fehlerstatus - und EIN Sammelknoten fuer
+       die, die einfach laufen. Eine Wand aus 41 gruenen Punkten sagt nichts. */
+    var _tk=(np&&np.takte)||[];
+    var _tkStumm=_tk.filter(function(t){ return !(Number(t.fehler_serie)||0) && Number(t.status)!==500; });
+    var _tkLaut=_tk.filter(function(t){ return (Number(t.fehler_serie)||0) || Number(t.status)===500; })
+                   .slice(0,8);
+    _tkLaut.forEach(function(t,i){
       var ser=Number(t.fehler_serie)||0;
-      add({id:'tk'+i,t:t.takt,art:'takt',farbe:ser>0?_AB.krit:_AB.gut,r:11,x:W*0.8,y:90+i*70,
-        puls:ser===0,unter:(ser>0?'scheitert '+ser+'×':'läuft')
+      add({id:'tk'+i,t:t.takt,art:'takt',farbe:_AB.krit,r:11,x:W*0.8,y:90+i*70,
+        puls:false,unter:(ser>0?'scheitert '+ser+'×':'letzter Lauf gescheitert')
           +(t.minuten_her==null?'':' · vor '+t.minuten_her+' Min')});
       _abG.L.push({a:'tk'+i,b:i===0?'kern':'pp0',len:210});
     });
+    if(_tkStumm.length){
+      var _i=_tkLaut.length;
+      var _lauf=_tkStumm.filter(function(t){ return Number(t.status)===202; }).length;
+      add({id:'tk'+_i,t:_tkStumm.length+' Takte laufen',art:'takt',farbe:_AB.gut,r:13,
+        x:W*0.8,y:90+_i*70,puls:true,
+        unter:'ohne Fehler'+(_lauf?' · '+_lauf+' gerade im Lauf':'')});
+      _abG.L.push({a:'tk'+_i,b:_i===0?'kern':'pp0',len:210});
+    }
     if(_abG.offen){
       var ws=((np&&np.waechter)||[]).filter(function(w){return w.moment===_abG.offen;});
       var p=_abG.N.filter(function(n){return n.moment===_abG.offen;})[0];
