@@ -204,13 +204,22 @@ function produktSeite(p, datei, katDatei, kat, alternativen) {
   const zutaten = Array.isArray(p.zutaten) ? p.zutaten.filter((z) => z && z.name) : [];
   const nz = NAEHRWERTE.map(([f, l, e]) => (num(p[f]) !== null ? `<tr><th>${l}</th><td>${zahl(p[f])} ${e}</td></tr>` : "")).join("");
 
+  // KEIN Product-Markup (Aenderung 15.09.2026, Google-Meldung vom selben Tag):
+  // Fuer die Produkt-Auszeichnung verlangt Google eines von drei Feldern -
+  // offers, review oder aggregateRating. Preise haben wir fuer 3 von 38.123
+  // Produkten, Rezensionen gar keine, und den eigenen Score als
+  // aggregateRating auszugeben waere eine vorgetaeuschte Nutzerbewertung.
+  // Also die Auszeichnung weglassen, statt sie falsch zu fuellen.
+  //
+  // Stattdessen die Brotkrume - die stimmt, ist vollstaendig, und Google zeigt
+  // damit im Treffer den Pfad statt der nackten Adresse.
   const jsonld = {
-    "@context": "https://schema.org", "@type": "Product",
-    name, url: kanonisch,
-    ...(marke ? { brand: { "@type": "Brand", name: marke } } : {}),
-    ...(p.kategorie ? { category: p.kategorie } : {}),
-    ...(/^\d{13}$/.test(p.ean || "") ? { gtin13: p.ean } : {}),
-    description: beschreibung,
+    "@context": "https://schema.org", "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Produkte", item: `${DOMAIN}/produkt/` },
+      ...(p.kategorie ? [{ "@type": "ListItem", position: 2, name: p.kategorie, item: `${DOMAIN}/produkt/${katDatei}` }] : []),
+      { "@type": "ListItem", position: p.kategorie ? 3 : 2, name },
+    ],
   };
 
   // Ein paar Saetze aus dem, was der Server ohnehin liefert. Nichts erfunden,
