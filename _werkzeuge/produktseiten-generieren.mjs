@@ -153,6 +153,7 @@ th{color:var(--muted);font-weight:600}
 ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line);padding:6px 2px}
 .krit{color:#a33}
 h2{font-size:1.05rem;margin-top:22px}
+p.einordnung{margin:.2em 0 1em;max-width:62ch}
 .fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
 .liste a b{color:var(--green)}
@@ -178,11 +179,18 @@ const NAEHRWERTE = [
   ["m_ballast", "Ballaststoffe", "g"], ["m_salz", "Salz", "g"],
 ];
 
-function produktSeite(p, datei, katDatei) {
+function produktSeite(p, datei, katDatei, kat, alternativen) {
   const name = p.name;
   // Traegt der Name die Marke schon ("dmBio Haferflocken"), waere "von dmBio"
   // im Titel eine Dopplung - Google zeigt den Titel genau so an, wie er hier steht.
-  const marke = p.marke && !String(p.name).toLowerCase().startsWith(String(p.marke).toLowerCase()) ? p.marke : "";
+  // Im Stamm stehen Handelsmarken oft als Kommaliste in einem Feld
+  // ("Best Moments,Guschlbauer,Penny"). So gehoert das nicht in einen
+  // Seitentitel, den Google eins zu eins anzeigt - im Titel steht die erste,
+  // die vollstaendige Liste steht lesbar unter der Ueberschrift.
+  const marken = String(p.marke || "").split(",").map((t) => t.trim()).filter(Boolean);
+  const markeVoll = marken.join(" · ");
+  const erste = marken[0] || "";
+  const marke = erste && !String(p.name).toLowerCase().startsWith(erste.toLowerCase()) ? erste : "";
   const kanonisch = `${DOMAIN}/produkt/${datei}`;
   const basis = (p.mengen_einheit || "g").toLowerCase() === "ml" ? "100 ml" : "100 g";
   const titel = `${name}${marke ? " von " + marke : ""} – Bewertung, Zutaten & Nährwerte | Root Index`;
@@ -205,17 +213,47 @@ function produktSeite(p, datei, katDatei) {
     description: beschreibung,
   };
 
+  // Ein paar Saetze aus dem, was der Server ohnehin liefert. Nichts erfunden,
+  // nichts nachgerechnet - ohne sie steht auf 37.000 Seiten kein einziger Satz,
+  // und Google behandelt gleichfoermige Datenblaetter zurueckhaltend.
+  const noten = zutaten.map((z) => num(z.rating)).filter((n) => n !== null);
+  const schwach = zutaten.filter((z) => num(z.rating) !== null && num(z.rating) <= 3);
+  const stark = noten.filter((n) => n >= 8).length;
+  const kritische = zutaten.filter((z) => z.kritisch).length;
+  const naehr = [
+    num(p.m_kcal) !== null ? `${zahl(p.m_kcal)} kcal` : null,
+    num(p.m_zucker) !== null ? `${zahl(p.m_zucker)} g Zucker` : null,
+    num(p.m_ballast) !== null ? `${zahl(p.m_ballast)} g Ballaststoffe` : null,
+    num(p.m_salz) !== null ? `${zahl(p.m_salz)} g Salz` : null,
+  ].filter(Boolean);
+  const einordnung = [
+    score !== null
+      ? `${esc(name)}${marke ? " von " + esc(marke) : ""} erreicht im Root Index ${score} von 100 Punkten${p.bewertung ? ` – ${esc(p.bewertung)}` : ""}.`
+      : null,
+    zutaten.length === 0 ? null
+      : zutaten.length === 1
+        ? `Das Produkt hat eine einzige Zutat: ${esc(zutaten[0].name)}${num(zutaten[0].rating) !== null ? ` mit Note ${zutaten[0].rating} von 10` : ""}.`
+        : `Von ${zutaten.length} Zutaten sind ${stark} mit Note 8 oder besser und ${schwach.length} mit Note 3 oder schlechter bewertet${
+            schwach.length ? `, darunter ${schwach.slice(0, 3).map((z) => esc(z.name)).join(", ")}` : ""}.`,
+    kritische ? `${kritische === 1 ? "Eine Zutat ist" : kritische + " Zutaten sind"} als kritisch gekennzeichnet.` : null,
+    naehr.length ? `Je ${basis}: ${naehr.join(", ")}.` : null,
+  ].filter(Boolean).join(" ");
+
   const inhalt = `
 <nav class="krumen"><a href="/produkt/">Produkte</a>${p.kategorie ? ` › <a href="/produkt/${katDatei}">${esc(p.kategorie)}</a>` : ""}</nav>
 <h1>${esc(name)}</h1>
-${p.marke ? `<p class="marke">${esc(p.marke)}${p.unterkategorie ? " · " + esc(p.unterkategorie) : ""}${p.bio === true ? " · Bio" : ""}</p>` : ""}
+${markeVoll ? `<p class="marke">${esc(markeVoll)}${p.unterkategorie ? " · " + esc(p.unterkategorie) : ""}${p.bio === true ? " · Bio" : ""}</p>` : ""}
 ${score !== null ? `<div class="score">Root-Index-Bewertung: ${score}/100${p.bewertung ? " · " + esc(p.bewertung) : ""}</div>` : ""}
+${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
 ${zutaten.length ? `<h2>Zutaten (${zutaten.length})</h2><ul class="zt">${zutaten.map((z) =>
     `<li>${esc(z.name)}${num(z.rating) !== null ? ` – Note ${z.rating}/10` : ""}${z.kritisch ? ` <span class="krit">· kritisch</span>` : ""}</li>`).join("")}</ul>` : ""}
 ${nz ? `<h2>Nährwerte je ${basis}</h2><table>${nz}</table>` : ""}
 ${p.ean ? `<p>EAN: ${esc(p.ean)}</p>` : ""}
 ${p.inhalt_menge ? `<p>Inhalt: ${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}</p>` : ""}
-<p><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>`;
+<p><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
+${alternativen && alternativen.length ? `<h2>Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</h2><div class="liste">${
+  alternativen.map((a) => `<a href="/produkt/${a.datei}">${esc(a.name)}${a.marke ? " · " + esc(a.marke) : ""} <b>${a.score}/100</b></a>`).join("")
+}</div>` : ""}`;
 
   return seite({ titel, beschreibung, kanonisch, inhalt, jsonld });
 }
@@ -236,17 +274,20 @@ async function main() {
   const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`];
   const proKat = new Map();
   const vergeben = new Set();
-  let geschrieben = 0;
 
+  // ERST zuordnen, DANN schreiben. Eine Produktseite soll auf besser bewertete
+  // Produkte derselben Kategorie verweisen - dafuer muss die Kategorie schon
+  // vollstaendig sein, wenn die erste Seite entsteht.
   for (const p of produkte) {
     if (!p || !p.id || !p.name) continue;
-    const markeDoppelt = p.marke && String(p.name).toLowerCase().startsWith(String(p.marke).toLowerCase());
+    const ersteMarke = String(p.marke || "").split(",")[0].trim();
+    const markeDoppelt = ersteMarke && String(p.name).toLowerCase().startsWith(ersteMarke.toLowerCase());
     // Traegt der Name keine lateinischen Buchstaben (z. B. nur Ziffern oder
     // Sonderzeichen), bleibt der Slug leer und die Adresse faengt mit einem
     // Bindestrich an - fuer Google ein Name, den niemand sucht. Dann tritt die
     // Kategorie an die Stelle des Namens.
-    const namensteil = slug([markeDoppelt ? null : p.marke, p.name].filter(Boolean).join(" "))
-      || slug([p.marke, p.kategorie].filter(Boolean).join(" "))
+    const namensteil = slug([markeDoppelt ? null : ersteMarke, p.name].filter(Boolean).join(" "))
+      || slug([ersteMarke, p.kategorie].filter(Boolean).join(" "))
       || "produkt";
     let datei = `${namensteil}-${slug(p.id)}.html`;
     if (vergeben.has(datei)) datei = `${slug(p.id)}-${datei}`;
@@ -255,9 +296,41 @@ async function main() {
     const katDatei = `kategorie-${slug(kat)}.html`;
     if (!proKat.has(kat)) proKat.set(kat, { datei: katDatei, eintraege: [] });
     proKat.get(kat).eintraege.push({ p, datei });
-    writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei));
-    urls.push(`${DOMAIN}/produkt/${datei}`);
-    geschrieben++;
+  }
+
+  // Je Kategorie die bestbewerteten Produkte als Vorrat fuer die Querverweise.
+  const vorrat = new Map();
+  for (const [kat, { eintraege }] of proKat) {
+    vorrat.set(kat, eintraege
+      .filter((e) => num(e.p.clean_score) !== null)
+      .sort((a, b) => num(b.p.clean_score) - num(a.p.clean_score))
+      .slice(0, 40));
+  }
+  // Aus dem Vorrat drei Stueck, ausgewaehlt anhand der eigenen id: so bekommt
+  // nicht jede Seite derselben Kategorie dieselben drei Links, und die Auswahl
+  // bleibt zwischen zwei Laeufen trotzdem dieselbe.
+  function querverweise(p, kat) {
+    const liste = (vorrat.get(kat) || []).filter((e) => e.p.id !== p.id && num(e.p.clean_score) > (num(p.clean_score) ?? -1));
+    if (liste.length === 0) return [];
+    let h = 0;
+    for (const z of String(p.id)) h = (h * 31 + z.charCodeAt(0)) % 100000;
+    const raus = [];
+    for (let k = 0; k < 3 && k < liste.length; k++) {
+      const e = liste[(h + k * 7) % liste.length];
+      if (!raus.some((r) => r.datei === e.datei)) {
+        raus.push({ datei: e.datei, name: e.p.name, marke: String(e.p.marke || "").split(",")[0].trim(), score: num(e.p.clean_score) });
+      }
+    }
+    return raus;
+  }
+
+  let geschrieben = 0;
+  for (const [kat, { datei: katDatei, eintraege }] of proKat) {
+    for (const { p, datei } of eintraege) {
+      writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei, kat, querverweise(p, kat)));
+      urls.push(`${DOMAIN}/produkt/${datei}`);
+      geschrieben++;
+    }
   }
 
   // Kategorieseiten
@@ -269,7 +342,7 @@ async function main() {
 <h1>${esc(kat)}</h1>
 <p class="marke">${eintraege.length} Produkte mit Root-Index-Bewertung, Zutaten und Nährwerten.</p>
 <div class="liste">${eintraege.map(({ p, datei }) =>
-      `<a href="/produkt/${datei}">${esc(p.name)}${p.marke ? " · " + esc(p.marke) : ""}${num(p.clean_score) !== null ? ` <b>${p.clean_score}/100</b>` : ""}</a>`).join("")}</div>`;
+      `<a href="/produkt/${datei}">${esc(p.name)}${p.marke ? " · " + esc(String(p.marke).split(",")[0].trim()) : ""}${num(p.clean_score) !== null ? ` <b>${p.clean_score}/100</b>` : ""}</a>`).join("")}</div>`;
     writeFileSync(join(ZIEL, datei), seite({
       titel: `${kat} – Produkte mit Bewertung | Root Index`,
       beschreibung: `${eintraege.length} Produkte der Kategorie ${kat} mit Root-Index-Bewertung, Zutatenliste und Nährwerten je 100 g.`,
