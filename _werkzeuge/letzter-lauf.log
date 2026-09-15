@@ -1,9 +1,24 @@
-Lauf: 12 · Commit: c0344b8d7009b48437bb9fce034be11c411b4306 · 2026-09-15 08:01 UTC
+Lauf: 13 · Commit: 11b68e03b596a9eda699c4f13e03b029b793ee3a · 2026-09-15 18:49 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3 ...
-  ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id null: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id null: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id null: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id null: 3 Zeilen gingen nicht, versuche kleiner
-❌ Produktseiten-Generator: nach id null auch mit 3 Zeilen nicht zu holen - REST 500: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+  ... 2000 Produkte (zuletzt P12800)
+  ... 4000 Produkte (zuletzt P15794)
+  ... 6000 Produkte (zuletzt P18662)
+  ... 8000 Produkte (zuletzt P21964)
+  ... 10000 Produkte (zuletzt P25299)
+  ... 12000 Produkte (zuletzt P28552)
+  ... 14000 Produkte (zuletzt P32074)
+  ... 16000 Produkte (zuletzt P35336)
+  ... 18000 Produkte (zuletzt P41272)
+  ... 20000 Produkte (zuletzt P44349)
+  ... 22000 Produkte (zuletzt P47526)
+  ... 24000 Produkte (zuletzt P50883)
+  ... 26000 Produkte (zuletzt P53845)
+  ... 28000 Produkte (zuletzt P56699)
+  ... 30000 Produkte (zuletzt P59374)
+  ... 32000 Produkte (zuletzt P62507)
+  ... 34000 Produkte (zuletzt P66080)
+  ... 36000 Produkte (zuletzt P69546)
+  ... 38000 Produkte (zuletzt P73594)
+Fertig geladen: 38321 Produkte
+✅ Produktseiten: 38321 · Kategorien: 22 · Sitemap-URLs: 38345
