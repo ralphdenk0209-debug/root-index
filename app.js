@@ -11893,6 +11893,15 @@ async function loadZutatenStamm(){
      Blaettern fehlte alles ab "S" (Stevia, Salz, Sonnenblumenoel ...) und wurde faelsch-
      lich als "nicht im Stamm" behandelt. Deshalb seitenweise, bis eine Seite < 1000 hat. */
   var all=[];
+  /* 16.09.2026 (Ralph: "Produktkarte oeffnen dauert 30 Sekunden"). Gemessen: jede der
+     10 Seiten rechnete die ganze Liste neu (2,6 s) -> 33 s bis der Editor weiterlief.
+     cb_zutaten_liste_json liefert DIESELBE Liste in einem Aufruf (ruft cb_zutaten_liste
+     selbst, keine zweite Logik). Faellt sie aus, laeuft das alte Blaettern als Rueckfall. */
+  try{
+    var rj=await client.rpc("cb_zutaten_liste_json");
+    if(!rj.error && Array.isArray(rj.data)) all=rj.data;
+  }catch(e){}
+  if(!all.length){
   try{
     for(var from=0; from<20000; from+=1000){
       var res=await client.rpc("cb_zutaten_liste").range(from, from+999);
@@ -11901,6 +11910,7 @@ async function loadZutatenStamm(){
       if(res.data.length<1000) break;
     }
   }catch(e){}
+  }
   ZUTATEN_STAMM=all;
   /* 🔴 12.08.2026 (Ralphs Fund an P1025: "Reismehl - nicht im Stamm", obwohl es dort steht):
      Hier stand fgPickRender() - VOR dem Aufbau von ZUTATEN_MAP und vor dem await auf die
@@ -15182,7 +15192,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-16-4";
+const APP_BUILD = "2026-09-16-5";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
