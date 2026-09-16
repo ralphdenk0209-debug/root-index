@@ -4350,7 +4350,7 @@ function _abkAufgaben(c){
   if(!ck) return {tag:'', inhalt:_abCkLadeHtml(), fuss:''};
   /* Nach dem Einsetzen der Kachel Leiste und Zeilen nachfuellen. setTimeout(0),
      weil das Markup in diesem Augenblick noch eine Zeichenkette ist. */
-  try{ setTimeout(function(){ _abWorkFuellen(false); },0); }catch(e){}
+  try{ setTimeout(function(){ _abWorkFuellen(false); _abWorkNeuHorcher(); },0); }catch(e){}
   return {
     tag:'<span class="abtag" style="background:'+((Number(ck.bei_ralph)||0)>0?'#fdf1f1':'#eef0f4')
       +';color:'+((Number(ck.bei_ralph)||0)>0?_AB.krit:_AB.mut)+'">'
@@ -4359,6 +4359,8 @@ function _abkAufgaben(c){
        Gruppierung nach Zustaendigkeit und die Ampel-Farbe je Zeile ersetzen
        sie — wer alles sehen will, sieht ohnehin alle offenen Aufgaben. */
     inhalt:'<div class="awk" id="awKachel">'
+      +'<div class="awkopf"><button type="button" class="awneubtn" id="awNeuBtn">+ Aufgabe anlegen</button></div>'
+      +'<div class="awpanel" id="awNeuPanel"></div>'
       +'<div class="awliste bscroll" id="awBody"><div class="blade">lädt…</div></div>'
     +'</div>',
     fuss:'<span id="awStand">lädt…</span> · Zeile antippen zum Ändern · lädt alle 60 s nach'
@@ -4679,6 +4681,125 @@ function _abWorkPanel(id){
   +'</div>';
 }
 
+/* ---- NEUE AUFGABE ANLEGEN --------------------------------------------------
+   16.09.2026, Ralph: "+ anlegen neuer aufgaben" aus dem allerersten Auftrag.
+   cb_admin_agent_work_setzen verlangt zwingend eine Projektaufgabe (sonst wäre
+   das Work Item in der Steuerung unsichtbar) - deshalb lädt das Formular die
+   offenen Projektaufgaben nach (cb_admin_projekt_aufgabe_liste, reine
+   Leseliste, B3 gewahrt) und Projektaufgabe ist Pflichtfeld, kein Freitext. */
+var _AB_WORK_PA_LISTE=null;
+
+async function _abWorkPaListeLaden(){
+  if(_AB_WORK_PA_LISTE) return _AB_WORK_PA_LISTE;
+  var r=await client.rpc('cb_admin_projekt_aufgabe_liste');
+  if(r&&r.error) throw r.error;
+  _AB_WORK_PA_LISTE=r.data||[];
+  return _AB_WORK_PA_LISTE;
+}
+
+function _abWorkNeuFormular(paListe){
+  var opt=function(v,t){ return '<option value="'+esc(v)+'">'+esc(t)+'</option>'; };
+  var paOpts='<option value="">– Projektaufgabe wählen –</option>'
+    +(paListe||[]).map(function(p){
+      return opt(p.aufgabe_id, p.projekt_id+' · '+p.nummer+' · '+p.titel);
+    }).join('');
+  return '<div class="awform">'
+    +'<label class="awbreit">Titel'
+      +'<input class="awsel" data-f="titel" placeholder="kurz, worum es geht"></label>'
+    +'<label class="awbreit">Projektaufgabe (Pflicht — sonst unsichtbar in der Steuerung)'
+      +'<select class="awsel" data-f="pa">'+paOpts+'</select></label>'
+    +'<label>Zuständig'
+      +'<select class="awsel" data-f="owner">'
+        +_AB_WORK_OWNER.map(function(o){ return opt(o,o); }).join('')
+      +'</select></label>'
+    +'<label>Bereich'
+      +'<select class="awsel" data-f="bereich">'
+        +'<option value="">– automatisch aus Titel –</option>'
+        +opt('benutzersicht','benutzersicht')+opt('dashboard','dashboard')+opt('erfassung','erfassung')
+      +'</select></label>'
+    +'<label>Priorität'
+      +'<input class="awsel awnum" type="number" min="1" max="100" step="1" data-f="prio" value="50"></label>'
+    +'<label class="awbreit">Genauer Bereich/Stichwort (area)'
+      +'<input class="awsel" data-f="area" placeholder="z.B. dashboard-steuerung, produkt-erfassen …" list="awAreaVorschlaege"></label>'
+    +'<datalist id="awAreaVorschlaege">'
+      +['benutzer-app','zutaten-bewertung','produkt-erfassen','projektsteuerung','riki-lesen',
+        'dashboard-steuerung','frontend','data','betrieb-werkzeug'].map(function(a){ return '<option value="'+esc(a)+'">'; }).join('')
+    +'</datalist>'
+    +'<label class="awbreit">Beschreibung'
+      +'<textarea class="awsel" style="min-height:54px;font-family:inherit" data-f="beschreibung" '
+        +'placeholder="was genau soll passieren"></textarea></label>'
+    +'<label class="awbreit">Abnahmekriterium'
+      +'<textarea class="awsel" style="min-height:44px;font-family:inherit" data-f="abnahme" '
+        +'placeholder="woran erkennt man, dass es fertig ist"></textarea></label>'
+    +'<label style="flex-direction:row;align-items:center;gap:6px;text-transform:none;font-weight:400">'
+      +'<input type="checkbox" data-f="entscheidung" style="width:auto"> Braucht meine Entscheidung'
+    +'</label>'
+    +'<div class="awknoepfe">'
+      +'<button type="button" class="awok" id="awNeuSpeichern">Anlegen</button>'
+      +'<button type="button" class="awsel" style="cursor:pointer" id="awNeuAbbrechen">Abbrechen</button>'
+      +'<span class="awmsg" id="awNeuMsg"></span>'
+    +'</div>'
+  +'</div>';
+}
+
+function _abWorkNeuHorcher(){
+  var btn=document.getElementById('awNeuBtn'), panel=document.getElementById('awNeuPanel');
+  if(!btn||!panel||btn.dataset.an) return;   /* nur einmal anhängen, Kachel wird alle 60s nachgefuellt */
+  btn.dataset.an='1';
+  btn.addEventListener('click',async function(){
+    var offen=panel.classList.contains('awoffen');
+    panel.classList.remove('awoffen'); panel.innerHTML='';
+    if(offen) return;
+    panel.innerHTML='<div class="blade">Projektaufgaben werden geladen…</div>';
+    panel.classList.add('awoffen');
+    try{
+      var liste=await _abWorkPaListeLaden();
+      if(!panel.classList.contains('awoffen')) return;
+      panel.innerHTML=_abWorkNeuFormular(liste);
+      var ab=panel.querySelector('#awNeuAbbrechen');
+      if(ab) ab.addEventListener('click',function(){ panel.classList.remove('awoffen'); panel.innerHTML=''; });
+      var sp=panel.querySelector('#awNeuSpeichern');
+      if(sp) sp.addEventListener('click',function(){ _abWorkNeuSpeichern(panel); });
+    }catch(e){
+      panel.innerHTML='<div class="bfehl">Projektaufgaben nicht ladbar: '+esc((e&&e.message)||String(e))+'</div>';
+      try{ console.error('[Aufgabe anlegen] Liste',e); }catch(_){}
+    }
+  });
+}
+
+async function _abWorkNeuSpeichern(panel){
+  var g=function(f){ var el=panel.querySelector('[data-f="'+f+'"]'); return el?el.value:''; };
+  var msg=panel.querySelector('#awNeuMsg');
+  var sagen=function(t,farbe){ if(msg){ msg.textContent=t; msg.style.color=farbe||_AB.mut; } };
+  var titel=(g('titel')||'').trim(), pa=g('pa'), beschreibung=(g('beschreibung')||'').trim(),
+      abnahme=(g('abnahme')||'').trim(), owner=g('owner')||'shared', area=(g('area')||'').trim(),
+      bereich=g('bereich')||'', prio=g('prio'), entscheidung=!!(panel.querySelector('[data-f="entscheidung"]')||{}).checked;
+  if(!titel||!pa||!beschreibung||!abnahme||!area){
+    sagen('Titel, Projektaufgabe, Bereich(area), Beschreibung und Abnahmekriterium sind Pflicht.',_AB.krit);
+    return;
+  }
+  panel.querySelectorAll('button').forEach(function(b){ b.disabled=true; });
+  sagen('Speichert…',_AB.mut);
+  try{
+    var ev=bereich?{bereich:bereich}:null;
+    var r=await client.rpc('cb_admin_agent_work_setzen',{
+      p_actor:'ralph', p_owner:owner, p_area:area, p_title:titel,
+      p_description:beschreibung, p_acceptance_criteria:abnahme,
+      p_priority:prio===''?50:Number(prio), p_decision_needed:entscheidung,
+      p_evidence:ev, p_projekt_aufgabe_id:pa
+    });
+    if(r&&r.error) throw r.error;
+    sagen('Angelegt (#'+r.data+').',_AB.gut);
+    setTimeout(function(){ panel.classList.remove('awoffen'); panel.innerHTML=''; },900);
+    await _abWorkFuellen(true);
+    try{ _abCockpitHolen(true); }catch(e){}
+  }catch(e){
+    sagen(_abWorkFehlerKlartext(e), _AB.krit);
+    try{ console.error('[Aufgabe anlegen] Speichern',e); }catch(_){}
+    panel.querySelectorAll('button').forEach(function(b){ b.disabled=false; });
+  }
+}
+
 /* ============================================================================
    SERVERFEHLER IN RALPHS SPRACHE  ·  26.08.2026, Stufe 3 zu ZIEL.md
    ----------------------------------------------------------------------------
@@ -4892,6 +5013,9 @@ function _abWorkCss(){
    +A+' .awok{border:0;border-radius:7px;background:#17505c;color:#fff;font-weight:700;padding:5px 12px;font-size:11.5px;cursor:pointer}'
    +A+' .awabn{border:1px solid #0ca30c;border-radius:7px;background:#effaef;color:#0a7c0a;font-weight:700;padding:5px 10px;font-size:11.5px;cursor:pointer}'
    +A+' .awmsg{font-size:11px}'
+   +A+' .awkopf{display:flex;justify-content:flex-end;margin-bottom:7px}'
+   +A+' .awneubtn{border:0;border-radius:7px;background:#17505c;color:#fff;font-weight:700;padding:5px 12px;font-size:11.5px;cursor:pointer}'
+   +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
       Status und der Titel muessen bleiben, sonst weiss man nicht, worum es geht. */
