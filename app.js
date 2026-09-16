@@ -4538,7 +4538,9 @@ async function feNaehrKachelnSync(){
         kacheln.push(_feKachel(String(b.wirkstoff||""), (b.menge_original!=null?b.menge_original:b.menge)+" "+(b.einheit_original||b.einheit||""),
           pct!=null?(pct+" % Tagesbedarf"):"kein Bezugswert", pct));
       });
-      fuss="je Tagesdosis";
+      /* 16.09.2026 (Ralph, P73700): gelten die Mengen je Portion, steht das auch so da -
+         "je Tagesdosis" waere eine falsche Behauptung. Der Bezug kommt vom Server. */
+      fuss=bef.some(function(b){ return b&&b.bezug==="pro_portion"; })?"je Portion":"je Tagesdosis";
     } else {
       /* MIKRONAEHRSTOFFE (normale Lebensmittel), 10.08.2026.
          BEZUGSGROESSE IST 100 g, NICHT eine Tagesdosis: ohne Verzehrempfehlung gibt es
@@ -15180,7 +15182,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-16-3";
+const APP_BUILD = "2026-09-16-4";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
