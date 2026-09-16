@@ -1061,7 +1061,7 @@ function fetchAlleProdukte(){
 /* Work #187, Ralph 22.08.2026: zutaten und enthaelt_alkohol kosten Faktor 7
    (1000 Zeilen 2263 ms mit, 300 ms ohne). Die Liste braucht sie nicht - beide
    Felder kommen beim Oeffnen eines Produkts ueber cb_web_produkt_detail. */
-const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand";
+const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand,salmiak_stufe,salmiak_beleg";
 const PROD_LISTE_NICHT = ["zutaten","enthaelt_alkohol"];
 let _fapWaechterLief = false;
 /* Eine Liste, die von Hand gepflegt wird, veraltet still (§10). Der Waechter
@@ -3038,6 +3038,17 @@ function detail2(d){
 
      Gemessen 16.08.: 0 Produkte auf 'geeignet'. Der gruene Chip erscheint zunaechst
      nirgends — ehrliche Folge der Schwelle, kein Anzeigefehler. */
+  /* 16.09.2026 (Ralph A): Salmiak (E510) ab 2 % -> gesetzlicher Warnhinweis
+     "Erwachsenenlakritz - kein Kinderlakritz" (AromenDV/BfR). Die Entscheidung
+     steht am Server (Eigenschaften_EAV, Salmiak_Stufe, mit Etikettbeleg);
+     die Seite zeigt sie nur. Keine Pille ohne Beleg. */
+  function salmiakPill(p){
+    if(String((p&&p.salmiak_stufe)||"")!=="erwachsenenlakritz") return "";
+    var beleg=String((p&&p.salmiak_beleg)||"").trim();
+    var tip="Enthält mindestens 2 % Salmiak (Ammoniumchlorid, E510). Nicht für Kinder geeignet – gesetzlicher Hinweis."
+      +(beleg?("\n\nBeleg: "+beleg):"");
+    return '<span title="'+esc(tip)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:var(--k-fdeceb,#fdeceb);color:var(--k-b91c1c);cursor:help"><span aria-hidden="true">⚠️</span>Erwachsenenlakritz – kein Kinderlakritz</span>';
+  }
   function bratenPill(p){
     var e=String((p&&p.braten_eignung)||"").trim();
     if(!e) return "";
@@ -3158,7 +3169,7 @@ function detail2(d){
        der Titel umfliesst den Knopf, die Pille steht unter der Marken-Zeile. */
     + '<div style="min-width:0"><h2 style="margin:0 0 2px">'+esc(d.name)+'</h2>'
       + '<div class="marke" style="margin:0">'+((mkLabel(d.marke)?esc(mkLabel(d.marke))+' · ':'')+esc(d.kategorie||''))+(d.unterkategorie?(' · '+esc(d.unterkategorie)):'')+'</div>'
-      + ((efPill(d.ernaehrungsform)||bioPill(d)||bratenPill(d))?('<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+efPill(d.ernaehrungsform)+bioPill(d)+bratenPill(d)+'</div>'):'')
+      + ((efPill(d.ernaehrungsform)||bioPill(d)||bratenPill(d)||salmiakPill(d))?('<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+efPill(d.ernaehrungsform)+bioPill(d)+bratenPill(d)+salmiakPill(d)+'</div>'):'')
     + '</div>'
     + warn
     + (d.ohne_index?'<div style="margin:12px 0 6px;padding:12px 14px;border:1px solid var(--k-e4a343,#e4a343);border-radius:12px;background:var(--k-fff7ea,#fff7ea);font-size:12.5px;line-height:1.55;color:var(--k-7a5c1e,#7a5c1e)"><b>🌱 Bewusst ohne Index.</b> Für dieses Produkt gibt es keine belegbaren Nährwerte (typisch bei frischen Sprossen/Keimlingen – weder Hersteller noch BLS/USDA führen Werte). Wir zeigen lieber keine Zahl als eine erfundene.</div>':'')
@@ -15169,7 +15180,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-16-2";
+const APP_BUILD = "2026-09-16-3";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
