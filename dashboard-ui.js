@@ -2266,6 +2266,14 @@ var _AB_KACHELN=[
      scrollen." Die Kachel ist zurück — und in Reihe 1 neben Katalog und RIKI,
      damit sie ohne Scrollen sichtbar ist. */
   {id:'region',    reihe:1, titel:'Nutzer &amp; Regionen',    breit:false, bau:_abkRegion,   foto:'regionen',  leds:'gr'},
+  /* 16.09.2026, Ralph: Kombination aus Vorschlag A (nach "wer ist dran"
+     gruppiert) und B (Ampel-Farbe, nach Dringlichkeit sortiert), als Kachel
+     mit maximal halber Flaechenbreite. breit:true = 590px = die Haelfte von
+     _AB_LW=1200 (siehe Rechnung weiter oben bei 'bestand'/'riki'/'region').
+     Bauer und Daten sind die alte Arbeit-Kachel von Work #199 (_abkAufgaben,
+     cb_admin_agent_work_kurzliste) — nur der Zeilen- und Filterteil ist neu
+     gebaut (_abWorkGruppen/_abWorkZeile), keine zweite Ladung (A4.2). */
+  {id:'aufgaben',  reihe:2, titel:'Aufgaben',                  breit:true,  bau:_abkAufgaben, foto:'flusslauf', leds:'r ge', text:true},
   /* 🔴 26.08.2026, Ralph-Auftrag „gearbeitet wird im dashbord" — Stufe 2 zu
      ZIEL.md.
      ⚠ `reihe` steuert die Standardlage NICHT — _abStandardLagen liest das Feld
@@ -4346,11 +4354,13 @@ function _abkAufgaben(c){
     tag:'<span class="abtag" style="background:'+((Number(ck.bei_ralph)||0)>0?'#fdf1f1':'#eef0f4')
       +';color:'+((Number(ck.bei_ralph)||0)>0?_AB.krit:_AB.mut)+'">'
       +(Number(ck.bei_ralph)||0)+' bei dir</span>',
+    /* 16.09.2026: keine Filterleiste mehr (Ralph: "einfach und smart"). Die
+       Gruppierung nach Zustaendigkeit und die Ampel-Farbe je Zeile ersetzen
+       sie — wer alles sehen will, sieht ohnehin alle offenen Aufgaben. */
     inhalt:'<div class="awk" id="awKachel">'
-      +'<div id="awFilter">'+_abWorkFilterleiste()+'</div>'
       +'<div class="awliste bscroll" id="awBody"><div class="blade">lädt…</div></div>'
     +'</div>',
-    fuss:'<span id="awStand">lädt…</span> · jede Zeile lässt sich hier ändern · lädt alle 60 s nach'
+    fuss:'<span id="awStand">lädt…</span> · Zeile antippen zum Ändern · lädt alle 60 s nach'
   };
 }
 
@@ -4495,8 +4505,8 @@ async function _abWorkFuellen(neuLaden){
   }
   var zeilen=_abWorkGefiltert();
   body.innerHTML = zeilen.length
-    ? zeilen.map(_abWorkZeile).join('')
-    : '<div class="bleer">Kein Eintrag passt zu diesem Filter.</div>';
+    ? _abWorkGruppen(zeilen)
+    : '<div class="bleer">Keine offenen Aufgaben.</div>';
   /* Die Leiste wird MIT erneuert — sonst bleiben die Zaehler auf dem leeren
      Erststand stehen (Ralphs Screenshot vom 22.08.). Wer gerade im Suchfeld
      tippt, bekommt seinen Platz zurueck: ohne das springt der Cursor weg. */
@@ -4539,20 +4549,34 @@ function _abWorkTakt(){
   },60000);
 }
 
+/* Kombination A+B (Ralph 16.09.2026): A gruppiert nach Zustaendigkeit, B ist
+   die Ampel-Farbe nach Dringlichkeit. Beides liest dieselbe _abWorkGefiltert-
+   Sortierung (Rang nach Status, dann Prioritaet) — keine zweite Reihenfolge. */
+var _AB_WORK_OWNER_ORDNUNG=['ralph','claude','chatgpt','shared','riki'];
+var _AB_WORK_OWNER_WORT={ralph:'Bei dir',claude:'Claude',chatgpt:'ChatGPT',shared:'Gemeinsam',riki:'Riki'};
+
+function _abWorkGruppen(zeilen){
+  var gr={};
+  zeilen.forEach(function(w){
+    var o=w.owner_agent||'—';
+    (gr[o]=gr[o]||[]).push(w);
+  });
+  var rest=Object.keys(gr).filter(function(o){ return _AB_WORK_OWNER_ORDNUNG.indexOf(o)<0; });
+  return _AB_WORK_OWNER_ORDNUNG.concat(rest).filter(function(o){ return gr[o] && gr[o].length; })
+    .map(function(o){
+      return '<div class="awkgrp"><h4>'+esc(_AB_WORK_OWNER_WORT[o]||o)+'<span class="awkcnt">'+gr[o].length+'</span></h4>'
+        + gr[o].map(_abWorkZeile).join('')
+      +'</div>';
+    }).join('');
+}
+
 function _abWorkZeile(w){
   var s=_abWorkStatus(w.status);
-  var prio=(w.priority==null?'–':w.priority);
-  /* Die Prioritaetsfarbe ist eine ANZEIGE, keine Regel: sie rechnet nichts,
-     sie faerbt nur drei Baender, damit 95 anders aussieht als 24. */
-  var pf = prio==='–' ? _AB.grau : (prio>=90?_AB.krit : prio>=60?_AB.warn : _AB.mut);
-  return '<div class="awz" data-id="'+esc(String(w.work_id))+'">'
-    +'<div class="awz1">'
-      +'<span class="awnr">#'+esc(String(w.work_id))+'</span>'
-      +'<span class="awpille" style="background:'+s.farbe+'1a;color:'+s.farbe+'">'+esc(s.wort)+'</span>'
-      +'<span class="awtitel" title="'+esc(w.title||'')+'">'+esc(w.title||'')+'</span>'
-      +'<span class="awmeta">'+esc(w.owner_agent||'—')+'</span>'
-      +'<span class="awprio" style="color:'+pf+'">P'+esc(String(prio))+'</span>'
-      +'<span class="awmeta awalt">'+esc(_abWorkAlter(w.updated_at))+'</span>'
+  return '<div class="awkz" data-id="'+esc(String(w.work_id))+'">'
+    +'<div class="awkz1">'
+      +'<span class="awkdot" style="background:'+s.farbe+'" title="'+esc(s.wort)+'"></span>'
+      +'<span class="awktxt"><span class="awkt">#'+esc(String(w.work_id))+' '+esc(w.title||'')+'</span>'
+        +'<span class="awkm">'+esc(s.wort)+'</span></span>'
       +'<button type="button" class="awgo" data-id="'+esc(String(w.work_id))+'">Ändern</button>'
     +'</div>'
     +'<div class="awpanel" data-panel="'+esc(String(w.work_id))+'"></div>'
@@ -4870,7 +4894,21 @@ function _abWorkCss(){
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
       Status und der Titel muessen bleiben, sonst weiss man nicht, worum es geht. */
-   +'@media (max-width:620px){'+A+' .awalt{display:none}}';
+   +'@media (max-width:620px){'+A+' .awalt{display:none}}'
+   /* 16.09.2026: Kombination A+B — Gruppen nach Zustaendigkeit, Ampel-Punkt
+      statt Status-Pille. Ergaenzt dieselbe Kachel-CSS, keine zweite Datei. */
+   +A+' .awkgrp{margin:0}'
+   +A+' .awkgrp h4{display:flex;align-items:center;gap:6px;font-size:10.5px;text-transform:uppercase;'
+      +'letter-spacing:.05em;color:var(--abmut,#6b7480);font-weight:700;margin:10px 0 2px}'
+   +A+' .awkgrp:first-child h4{margin-top:0}'
+   +A+' .awkcnt{font-variant-numeric:tabular-nums;background:var(--abline,#e6e9ee);border-radius:20px;padding:0 6px;font-weight:700}'
+   +A+' .awkz{border-top:1px solid var(--abline,#eef2f6)}'
+   +A+' .awkgrp .awkz:first-child{border-top:0}'
+   +A+' .awkz1{display:flex;align-items:center;gap:8px;padding:6px 0}'
+   +A+' .awkdot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}'
+   +A+' .awktxt{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;gap:1px}'
+   +A+' .awkt{font-size:12.5px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+   +A+' .awkm{font-size:10.5px;color:var(--abmut,#6b7480)}';
   var st=document.createElement('style'); st.id='abWorkCss'; st.textContent=css;
   document.head.appendChild(st);
 }
