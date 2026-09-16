@@ -146,8 +146,9 @@ function applyAdminMode(){
     var kopfleisteBauen=function(){
       if(document.getElementById('riKopf')) return;
       var k=document.createElement('div'); k.id='riKopf';
-      var b=''; try{ if(typeof APP_BUILD!=='undefined'&&APP_BUILD){
-        var t=String(APP_BUILD).split('-'); b=t[t.length-1]; } }catch(e){}
+      /* 16.09.2026, Ralph: "versionsnummer mal richtig anzeigen" - die ganze
+         Build-Nummer, nicht nur die letzte Ziffer (eine "2" sagt nichts). */
+      var b=''; try{ if(typeof APP_BUILD!=='undefined'&&APP_BUILD){ b=String(APP_BUILD); } }catch(e){}
       k.innerHTML='<span class="riGi">▦</span>'
         +'<span class="riWm">ROOT<b>COCKPIT</b></span>'
         +'<span class="riR"><span>[ri!] root<b>index</b></span>'
