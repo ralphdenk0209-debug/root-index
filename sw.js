@@ -15,7 +15,7 @@ const CACHE = 'rootindex-2026-09-07-8';
    deploy.command leitet den Inhalt aus den <script src>/<link href> der beiden
    HTML-Dateien ab. Wer hier von Hand etwas einträgt, das dort nicht eingebunden
    ist, verliert es beim nächsten Deploy — das ist Absicht (§4.2). */
-const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ui.css', './training-ui.js', './intro-ui.js', './wasser-ui.js', './supplementplan-ui.js', './riki-ui.js', './app.js', './tagebuch-mikro-ui.js', './riegel-kern.js', './adminnav.js', './admin-benutzer-ui.js', './fotostudio-ui.js', './dashboard-ui.js', './notiz-dock-ui.js', './mikro-zuordnung-ui.js', './riki-import-ui.js', './benchmark-ui.js', './staffel-ui.js', './bewertung-ui.js', './produktliste.js', './produkteditor.js', './kern-fluss.js'];
+const SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './ui.css', './ladestelle.js', './training-ui.js', './intro-ui.js', './wasser-ui.js', './supplementplan-ui.js', './riki-ui.js', './app.js', './tagebuch-mikro-ui.js', './riegel-kern.js', './adminnav.js', './admin-benutzer-ui.js', './fotostudio-ui.js', './dashboard-ui.js', './notiz-dock-ui.js', './mikro-zuordnung-ui.js', './riki-import-ui.js', './benchmark-ui.js', './staffel-ui.js', './bewertung-ui.js', './produktliste.js', './produkteditor.js', './kern-fluss.js'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

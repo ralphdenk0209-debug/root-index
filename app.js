@@ -1117,6 +1117,13 @@ function stkDosisOf(pid){ const d=pid?num(STKD[pid]):null; return (d&&d>0)?d:nul
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
 });
+/* EINE LADESTELLE (16.09.2026, Ralph: "Cockpit auf eine Ladestelle").
+   Hier und nirgends sonst wird sie angeschlossen - direkt hinter dem Client,
+   also VOR dem ersten rpc-Aufruf der Seite. Was sie tut und was ausdruecklich
+   nicht, steht im Kopf von ladestelle.js. Fehlt die Datei, laeuft alles
+   unveraendert weiter; sie ist eine Sparmassnahme, keine Voraussetzung. */
+try{ if(window.riLadestelle) window.riLadestelle.anschliessen(client); }
+catch(e){ try{ console.warn('[Ladestelle] nicht angeschlossen:',e); }catch(_){} }
 
 /* ---- Auth (Magic-Link) + Premium ---- */
 let ME = null; // {benutzer_id, name, is_premium, is_admin, tier}
@@ -1409,7 +1416,27 @@ function updateGate(){
   if(ME&&hasFeat('erfassung')){ form.style.display=""; gate.style.display="none"; }
   else { form.style.display="none"; gate.style.display=""; gate.innerHTML=gateHtml('erfassung'); }
 }
+/* 🔴 16.09.2026, GEMESSEN an einem Seitenaufruf von admin.html (Supabase
+   edge_logs, 04:41): applyAuthState lief DREIMAL. Supabase meldet beim Start
+   mehrere Auth-Ereignisse (INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED), und
+   daneben fragt die Seite die Sitzung noch selbst ab. Jeder dieser Laeufe holte
+   die Verknuepfung, den Benutzersatz, die Stufenrechte und alles, was an den
+   sichtbaren Ansichten haengt - dreimal dieselbe Antwort.
+   Der Riegel vergleicht die BENUTZER-KENNUNG der Sitzung. Ist sie dieselbe wie
+   beim letzten Lauf, gibt es nichts Neues zu holen und der Lauf entfaellt.
+   Aendert sich etwas - Anmeldung, Abmeldung, anderer Benutzer -, laeuft er wie
+   bisher.
+   🔴 Die Unterschrift bleibt applyAuthState(session), einteilig. Ein zweiter
+   Parameter "erzwingen" war gebaut und ist wieder RAUS: niemand rief ihn, und
+   der Riegel in bereiche/test-wasser-ladeweg.js prueft diese Unterschrift
+   wortgenau. Ein ungenutzter Schalter waere hier beides gewesen - toter Code
+   und ein roter Test. Wer nach einer Profil-Aenderung neu laden will, ruft
+   refreshMe(); das tut der Profilweg auch heute schon. */
+var _authStand = null;   /* null = noch nie gelaufen; '' = abgemeldet */
 async function applyAuthState(session){
+  var kennung = (session && session.user && session.user.id) ? String(session.user.id) : '';
+  if(_authStand !== null && _authStand === kennung) return;
+  _authStand = kennung;
   if(session){ await refreshMe(); } else { ME=null; TB_USER="U001"; await refreshMyFeatures(); }
   updateAuthUI(); updateGate();
   const vis=id=>{ const e=document.getElementById(id); return e && e.style.display!=="none"; };
@@ -15245,7 +15272,18 @@ const RIKI_LESE_MODELL = "claude-sonnet-4-6";
 
 /* Feature-Flags laden: beim Start und immer, wenn sich die Anmeldung ändert. */
 ladeFeatures();
-try{ client.auth.onAuthStateChange(function(){ ladeFeatures(); }); }catch(e){}
+/* 🔴 16.09.2026: ohne Riegel lief ladeFeatures dreimal, weil Supabase beim
+   Start mehrere Auth-Ereignisse meldet. Die Flags haengen am BENUTZER, nicht
+   am Ereignis - also wird nur bei einem Benutzerwechsel neu geholt. */
+try{
+  var _featStand = null;
+  client.auth.onAuthStateChange(function(_e, session){
+    var kennung = (session && session.user && session.user.id) ? String(session.user.id) : '';
+    if(_featStand !== null && _featStand === kennung) return;
+    _featStand = kennung;
+    ladeFeatures();
+  });
+}catch(e){ try{ console.warn('[Features] Auth-Haken:',e); }catch(_){} }
 
 /* ---------------------------------------------------------------------------
    BUILD MELDEN  (08.08.2026, Ralph-Entscheid "A": anschliessen)
