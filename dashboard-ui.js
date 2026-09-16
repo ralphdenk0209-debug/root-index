@@ -5254,7 +5254,10 @@ function _abkRiki(c){
   var jetzt=new Date(), tagNr=jetzt.getDate();
   var tageMon=new Date(jetzt.getFullYear(),jetzt.getMonth()+1,0).getDate();
   var prog=(tagNr>0?verbr/tagNr*tageMon:0), progOk=(lim? prog<=lim : true);
-  var rv=(d.riki_verlauf||[]).slice(-14);
+  /* 16.09.2026, Ralph-Kombi-Dashboard: verlauf_14t kommt jetzt direkt aus
+     derselben Karte (ck), die auch heute_usd/fehler_24h liefert - eine
+     Quelle statt der nie befuellten d.riki_verlauf (A4.2). */
+  var rv=(ck.verlauf_14t||d.riki_verlauf||[]).slice(-14);
   var rvMax=Math.max.apply(null,[0.0001].concat(rv.map(function(x){ return Number(x.usd)||0; })));
   var spark=rv.length
     ? '<div class="bspark">'+rv.map(function(x){ var v=Number(x.usd)||0;
