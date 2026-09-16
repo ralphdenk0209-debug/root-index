@@ -4348,6 +4348,10 @@ function fgBindungStreifen(){
     +'<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;background:'+s.b+';color:'+s.f+'">'
     +s.i+' '+esc(s.t)+'</span>'
     +'<span style="font-size:11.5px;color:var(--muted)">'+esc(String(b.erklaerung||""))+'</span></div>';
+  /* #746: die drei Serverzahlen ausdruecklich, nicht nur im Satz. */
+  H+='<div id="fe_bindZahlen" style="margin-top:5px;font-size:11.5px;color:var(--ink)">'
+    +'<b>'+Number(b.gebunden||0)+'</b> gebunden · <b>'+Number(b.offen||0)+'</b> offen · <b>'+Number(b.ignoriert||0)+'</b> gestrichen'
+    +' <span style="color:var(--muted)">(von '+Number(b.erkannt||0)+' erkannt, Stand aus cb_produkt_bindung_stand)</span></div>';
   var lk=Array.isArray(b.luecken)?b.luecken:[];
   if(lk.length){
     H+='<div style="margin-top:6px;font-size:11.5px;line-height:1.6">'
@@ -4413,7 +4417,10 @@ function fgRefV2Render(d, st){
        3. die technischen Details.
      Die gespiegelte Liste (fgEtikettZeile) und der Bindungsstreifen bleiben im
      Code stehen - abgeschaltet, nicht geloescht, eine Zeile zurueck. */
-  if(FE_REF_KURZ){ fgRefV2RenderKurz(d, st, box); return; }
+  /* #746 (16.09.2026, Abnahme-Befund): der Bindungsstreifen wurde aufgebaut und in der
+     Kurzkarte verworfen. Die drei Zahlen des Servers (gebunden / offen / gestrichen)
+     muessen sichtbar sein - sonst zeigt die Seite weniger, als der Server weiss. */
+  if(FE_REF_KURZ){ fgRefV2RenderKurz(d, st, box); if(BIND) box.insertAdjacentHTML("afterbegin", BIND); return; }
   var pzMap={}; (d.pruefzeilen||[]).forEach(function(p){ if(p&&p.Parser_Element_ID!=null) pzMap[p.Parser_Element_ID]=p; });
   var zaehl={uebernommen:0,offen:0,pruefen:0,ignoriert:0};
   el.forEach(function(e){ zaehl[_etiStatus(e,pzMap[e.id])]++; });
