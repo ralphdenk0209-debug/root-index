@@ -58,10 +58,9 @@ function applyAdminMode(){
       +_an('maschine','🚇','Maschine',"window.open('maschine.html?cb='+Date.now(),'_blank')")
       /* 09.09.2026 (#217, Ralph): Riki-Kosten je Aufruf und Produkt - eigene Seite. */
       +_an('rikikosten','💸','Kosten',"window.open('riki-kosten.html?cb='+Date.now(),'_blank')")
-      /* Ralph-Auftrag 25.08.2026: Benchmark Control direkt hinter dem Dashboard.
-         Eigene Arbeitsflaeche als Overlay (wie katKonfigOpen), kein fgTab-Panel —
-         damit weder app.js noch admin.html Fachlogik dafuer bekommen. */
-      +_an('benchmark','🎯','Benchmark',"benchmarkBoardOpen()")
+      /* 16.09.2026, Ralph: "Benchmark im Menü löschen." Wie schon bei bewerten/
+         nährwerte/dubletten/kategorien am 07.09.: nur der Knopf ist weg, der
+         Weg bleibt - benchmarkBoardOpen() ist unveraendert aufrufbar. */
       +_an('produkterfassung','🗂️','Erfassen',"adminGo('produkterfassung')",' id="amProdErf"')
       /* 🔴 26.08.2026, Ralph: „auf dem dashboard fehlt mir noch die zutatenstamm
          anzeige oder link." GEMESSEN: adminGo('stamm') gibt es seit Langem und
