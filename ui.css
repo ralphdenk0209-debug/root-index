@@ -4046,3 +4046,12 @@ body.riFokus #feKopfZone .feKzChip.warn{ background:#7a5a16 !important; color:#f
 .feMaschineVersuche{ font-size:12.5px; line-height:1.5; margin-bottom:10px; color:var(--ink,#222) }
 .feMaschineKorr{ margin-top:6px; padding:8px 10px; background:#fef3c7; border-radius:8px; color:#78350f }
 .feMaschineKorr button{ margin-left:6px; padding:5px 9px; border:1px solid #b45309; border-radius:8px; background:#fff; color:#78350f; font-size:12.5px; font-weight:600; cursor:pointer }
+
+/* 16.09.2026 (Ralph): Die Referenzkarte rechts klebt unter dem Kopf und scrollt,
+   wenn sie hoeher ist als der freie Platz, in sich - statt unten abgeschnitten
+   oder oben unter den Kopf geschoben zu werden. Die Kopfhoehe kommt gemessen
+   aus --fe-sticky-kopf (feStickyKopfBinden). */
+body.riFokus #feKontext{
+  max-height:calc(100vh - var(--fe-sticky-kopf, 0px) - 16px);
+  overflow-y:auto;
+}

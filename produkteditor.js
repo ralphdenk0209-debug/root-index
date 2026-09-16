@@ -9032,8 +9032,15 @@ function feStickyKopfBinden(){
   var box=document.getElementById('fe_gesamtstatus');
   var panel=document.getElementById('panel');
   if(!box || !panel) return;
+  /* 16.09.2026 (Ralph: "der rechte Container wird beim Scrollen zu weit nach oben
+     geschoben"). Gemessen: im Fokusmodus liegt der Status IN #feKopfFix, und der
+     ganze Kopf (240 px) klebt oben. Gemessen wurde aber nur der Status -> 0 px,
+     die Referenzkarte (#feKontext, top:var(--fe-sticky-kopf)) rutschte unter den
+     Kopf. Im Fokusmodus zaehlt deshalb die Hoehe von #feKopfFix. */
+  var fix=document.getElementById('feKopfFix');
   var sync=function(){
-    var h=Math.ceil(box.getBoundingClientRect().height);
+    var quelle=(fix && document.body.classList.contains('riFokus') && fix.getClientRects().length)?fix:box;
+    var h=Math.ceil(quelle.getBoundingClientRect().height)+(quelle===fix?8:0);
     var wert=h+'px';
     if(panel.style.getPropertyValue('--fe-sticky-kopf')!==wert)
       panel.style.setProperty('--fe-sticky-kopf',wert);
@@ -9042,6 +9049,7 @@ function feStickyKopfBinden(){
   if(!box._feStickyKopfObserver && typeof ResizeObserver==='function'){
     box._feStickyKopfObserver=new ResizeObserver(sync);
     box._feStickyKopfObserver.observe(box);
+    if(fix) box._feStickyKopfObserver.observe(fix);
   }
   /* 🔴 23.08. Die Kopfmasse haengen am selben Beobachter-Prinzip: einmal jetzt,
      und danach bei jeder Groessenaenderung von Rahmen oder Kopfband. Ein Wert,
