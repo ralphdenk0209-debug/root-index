@@ -6391,51 +6391,10 @@ async function loadDashboard(){
      dashArbeitCss() MUSS mit — der Kopf von kbHtml() benutzt .ab, .abkopf,
      .abum und .abbtn, die von dort kommen. Genau dieser Fehler ist der
      Architektur-Ansicht am 15.08. passiert; er wird nicht wiederholt. */
-  if((ME&&ME.is_admin) && dashArbeitAnsichtGet()==='aufgaben'){
-    try{ if(typeof _abGraphStop==='function') _abGraphStop(); }catch(e){
-      try{ console.warn('Graph-Schleife liess sich nicht stoppen:',e); }catch(_){} }
-    box.innerHTML='<div style="color:var(--muted);font-size:12.5px">Lade Aufgaben…</div>';
-    try{ await kbLaden(true); }
-    catch(e){
-      try{ console.error('Aufgaben-Ansicht konnte nicht gebaut werden:',e); }catch(_){}
-      box.innerHTML='<div style="font-size:12.5px;color:var(--k-dc2626)">'
-        +'<b>Aufgaben-Ansicht konnte nicht gebaut werden.</b> Grund: '
-        +esc((e&&e.message)||String(e))
-        +'</div><div style="margin-top:8px">'+_abUmschalter('aufgaben')+'</div>';
-      try{ _abUmschalterNach(); }catch(_){}
-    }
-    return;
-  }
-
-  if((ME&&ME.is_admin) && dashArbeitAnsichtGet()==='architektur'){
-    try{ if(typeof _abGraphStop==='function') _abGraphStop(); }catch(e){
-      try{ console.warn('Graph-Schleife liess sich nicht stoppen:',e); }catch(_){} }
-    /* 🔴 dashArbeitCss() MUSS hier stehen, nicht nur arCss(). Der Kopf von arHtml()
-       benutzt .ab, .abkopf, .abum, .abbtn und .st — die kommen aus dashArbeitCss(),
-       nicht aus arCss(). Gefunden am 15.08. beim Reload-Test in Build 3260: wer direkt
-       in die Architektur-Ansicht laedt, bekam einen unformatierten Kopf mit gestapelten
-       Knoepfen. Im Vorschautest fiel es nicht auf, weil dort die Arbeitsflaeche vorher
-       gelaufen war und ihr CSS schon hing — ein Test, der den Zustand des Vorgaengers
-       erbt, misst den Ablauf nicht (§ build_vs_verified). */
-    dashArbeitCss();
-    arCss();
-    box.innerHTML='<div style="color:var(--muted);font-size:12.5px">Lade Architektur…</div>';
-    await arLaden();
-    /* Ein Baufehler in dieser Ansicht darf den Admin nicht bei „Lade Architektur…"
-       stehen lassen — genau so sieht ein Absturz sonst aus wie ein langsamer Abruf.
-       Gleiche Bauart wie der Rückfall der Arbeitsfläche weiter unten. */
-    try{ arRender(); }
-    catch(e){
-      try{ console.error('Architektur-Ansicht konnte nicht gebaut werden:',e); }catch(_){}
-      box.innerHTML='<div style="font-size:12.5px;color:var(--k-dc2626)">'
-        +'<b>Architektur-Ansicht konnte nicht gebaut werden.</b> Grund: '
-        +esc((e&&e.message)||String(e))
-        +'</div><div style="margin-top:8px">'+_abUmschalter('architektur')+'</div>';
-      try{ _abUmschalterNach(); }catch(_){}
-    }
-    return;
-  }
-
+  /* 16.09.2026 (Ralph): Aufgaben-Ansicht (Kanban) und Architektur-Ansicht
+     (Wirkdiagramm) geloescht — nur noch die Arbeitsflaeche. Die Dispatch-
+     Zweige nach dashArbeitAnsichtGet()==='aufgaben'/'architektur' sind raus;
+     dashArbeitAnsichtGet() liefert jetzt ohnehin immer 'flaeche'. */
   var _ansicht = dashAnsichtGet();
   var _sw = dashSwitchHtml(_ansicht);
   box.innerHTML=_sw+'<div style="color:var(--muted);font-size:12.5px">Lade Kennzahlen…</div>';

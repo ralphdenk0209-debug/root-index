@@ -584,21 +584,13 @@ function _abUmschalterNach(){
   });
 }
 
+/* 16.09.2026 (Ralph): Aufgaben- und Architektur-Ansicht geloescht — es gibt nur
+   noch die Arbeitsflaeche. Alte gespeicherte Werte ('architektur'/'aufgaben')
+   werden ignoriert statt gelesen. */
 function dashArbeitAnsichtGet(){
-  try{
-    var v=localStorage.getItem('ri_dash_ansicht');
-    if(v==='architektur'||v==='aufgaben') return v;
-    if(v!=='flaeche') localStorage.setItem('ri_dash_ansicht','flaeche');
-    return 'flaeche';
-  }
-  catch(e){ return 'flaeche'; }
+  return 'flaeche';
 }
 function dashArbeitAnsichtSet(v){
-  v=(v==='architektur'||v==='aufgaben')?v:'flaeche';
-  try{ localStorage.setItem('ri_dash_ansicht',v); }
-  catch(e){ /* §1.13i: kein leerer Fangblock. Merkt sich die Wahl dann nicht - kein Beinbruch,
-     aber man soll es sehen koennen, statt es zu suchen. */
-    try{ console.warn('Ansicht-Wahl konnte nicht gespeichert werden:',e); }catch(_){} }
   if(typeof loadDashboard==='function') loadDashboard();
 }
 
@@ -1361,7 +1353,6 @@ function _abHero(d,np,A,ans){
         +'title="Kacheln anordnen, ein-/ausblenden, Breite umschalten">🧩 Anordnen</button>'
       +'<button class="hbtn" id="abDunkel" type="button" '
         +'title="Helle oder dunkle Darstellung">🌙 Dunkel</button>'
-      +_abUmschalter(ans)
       +'<button class="hbtn" id="abNeu">↻ Aktualisieren</button></div>'
   +'</div>';
 }
@@ -5524,7 +5515,6 @@ var _AB_SCHNELL_WEG={
   scan:        {ic:'📷', fn:function(){ if(typeof scanEingangOeffnen==='function') scanEingangOeffnen(); }},
   stamm:       {ic:'🧬', go:'stamm'},
   waechter:    {ic:'🛡️', fn:function(){ _abSprung('waechter'); }},
-  wirkdiagramm:{ic:'🕸️', fn:function(){ if(typeof dashArbeitAnsichtSet==='function') dashArbeitAnsichtSet('architektur'); }},
   work_queue:  {ic:'📋', drill:'arbeit_attention', drillTitel:'Work Queue — was offen ist'}
 };
 
