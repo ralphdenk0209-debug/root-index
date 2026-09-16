@@ -2260,6 +2260,10 @@ var _AB_KACHELN=[
      Haertefaelle darin liefen ins Leere. Der Bauplan _abkEntscheid bleibt stehen,
      falls sie zurueckkommen soll; nur die Zeile hier ist auskommentiert. */
   /* {id:'entscheid', reihe:1, titel:'Deine Entscheidungen',   breit:true,  bau:_abkEntscheid, hoch:true}, */
+  /* 16.09.2026, Ralph: "vieles nicht wie in den mockups" — Go-Live-Leitstand
+     (Mockup A) vorn, ueber allem, 14 Tage vor dem 01.10. zaehlt zuerst diese
+     Frage. breit:true wie die anderen Reihe-1-Vollbreite-Kacheln. */
+  {id:'golive',    reihe:1, titel:'Go-Live',                  breit:true,  bau:_abkGolive,   foto:'flusslauf', leds:'r ge'},
   {id:'bestand',   reihe:1, titel:'Katalog',                  breit:false, bau:_abkBestand,  foto:'kiesel',    leds:'gr gr', hoch:true},
   {id:'riki',      reihe:1, titel:'RIKI',                     breit:false, bau:_abkRiki,     foto:'kaskade',   leds:'gr'},
   /* 🔴 26.08.2026, Ralph: „nutzer & region höher darstellen, da muss ich aktuell
@@ -5015,6 +5019,17 @@ function _abWorkCss(){
    +A+' .awmsg{font-size:11px}'
    +A+' .awkopf{display:flex;justify-content:flex-end;margin-bottom:7px}'
    +A+' .awneubtn{border:0;border-radius:7px;background:#17505c;color:#fff;font-weight:700;padding:5px 12px;font-size:11.5px;cursor:pointer}'
+   +A+' .glrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}'
+   +A+' .gltile{flex:1 1 130px;min-width:130px;background:#f7f9fa;border-radius:9px;padding:9px 11px}'
+   +A+' .gllbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700}'
+   +A+' .glbig{font-family:ui-monospace,monospace;font-size:19px;font-weight:700;margin-top:2px}'
+   +A+' .glsub{font-size:10.5px;color:#5b6d73;margin-top:2px;line-height:1.35}'
+   +A+' .glkette{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}'
+   +A+' .glstep{flex:1 1 0;min-width:96px;background:#f7f9fa;border-top:3px solid #cfd8db;padding:7px 9px}'
+   +A+' .glstep+.glstep{margin-left:1px}'
+   +A+' .gln{font-size:9px;color:#5b6d73;text-transform:uppercase;letter-spacing:.03em}'
+   +A+' .glv{font-family:ui-monospace,monospace;font-weight:700;font-size:14px;margin-top:2px}'
+   +A+' .glt{font-size:9px;color:#5b6d73;margin-top:1px;line-height:1.25}'
    +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
@@ -5461,6 +5476,93 @@ function _abkSeo(c){
     +'</div>',
     fuss:'⚠ Keine Vollzählung: Google liefert die Gesamtzahl indexierter Seiten über keine API. '
       +'Klicks/Impressionen sind echte Suchdaten, die Indexierung ist eine tägliche Stichprobe.'
+  };
+}
+
+/* ---- GO-LIVE-LEITSTAND ---------------------------------------------------
+   16.09.2026, Ralph: Mockup A ("Go-Live-Leitstand") aus dashboard-vorschlaege.html
+   als echte Kachel. Eine Quelle (A4.2): ck.stationen kommt unveraendert aus
+   cb_kette_stand() (via cockpit_v2, Karte "kette"), freigegeben_heute/7t
+   nutzen dieselbe Freigabe_Status-Regel wie cb_admin_maschine_fluss. Tempo
+   und Prognose sind eine Rechnung aus genau diesen Zahlen, klar als Schaetzung
+   benannt (A2: nichts erfinden, keine Server-Prognose vortaeuschen). Go-Live-
+   Ziel 01.10.2026 00:00 ist fest, keine Datenquelle noetig. */
+var _AB_GOLIVE_ZIEL = new Date(2026,9,1,0,0,0); /* Monat 9 = Oktober, 0-basiert */
+
+function _abGoliveCountdown(){
+  var ms=_AB_GOLIVE_ZIEL.getTime()-Date.now();
+  if(ms<=0) return 'Go-Live-Termin erreicht';
+  var std=Math.floor(ms/3600000), tage=Math.floor(std/24), restStd=std-tage*24;
+  return tage+' Tag'+(tage===1?'':'e')+' '+restStd+' Std bis Go-Live · 01.10., 00:00';
+}
+
+function _abkGolive(c){
+  var ck=_abCkKarte('kette');
+  var wk=_abCkKarte('waechter');
+  if(!ck) return {tag:'', inhalt:_abCkLadeHtml(), fuss:''};
+  var stationen=ck.stationen||[];
+  /* groesster Stau: die Station mit den meisten haengenden Produkten - "frei"
+     (Station 8) zaehlt nicht, das ist der fertige Stapel, kein Stau. */
+  var stau=null;
+  stationen.forEach(function(s){
+    if(s.kasten_id==='frei') return;
+    if(!stau || Number(s.haengt)>Number(stau.haengt)) stau=s;
+  });
+  var frei7=Number(ck.freigegeben_7t)||0, freiHeute=Number(ck.freigegeben_heute)||0;
+  var tempo=Math.round((frei7/7)*10)/10;
+  var prognose;
+  if(!stau || Number(stau.haengt)<=0){
+    prognose='kein Stau gemessen';
+  }else if(tempo<=0){
+    prognose='bei 0/Tag der letzten 7 Tage: kein Tempo gemessen';
+  }else{
+    var tageBis=Math.ceil(Number(stau.haengt)/tempo);
+    var ziel=new Date(Date.now()+tageBis*86400000);
+    prognose='bei '+tempo+'/Tag (Ø 7 Tage): nicht vor dem '
+      +ziel.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'})+' abgearbeitet';
+  }
+  var gateFaelle=wk?Number(wk.gate_faelle):null, gateGruen=wk?!!wk.gate_offen:null;
+  var farbeGate=gateGruen===true?_AB.gut:(gateGruen===false?_AB.krit:_AB.mut);
+
+  var kette=stationen.map(function(s){
+    var istStau=stau && s.kasten_id===stau.kasten_id && Number(s.haengt)>0;
+    var farbe=istStau?_AB.krit:(Number(s.haengt)>0?_AB.warn:_AB.gut);
+    return '<div class="glstep" style="border-top-color:'+farbe+'">'
+      +'<div class="gln">'+esc(s.rang)+' '+esc(s.titel||'')+'</div>'
+      +'<div class="glv" style="color:'+(Number(s.haengt)>0?farbe:_AB.mut)+'">'+esc(String(s.haengt))+'</div>'
+      +'<div class="glt">'+esc(s.kurz||'')+(s.haeufigster_grund?' · '+esc(s.haeufigster_grund):'')+'</div>'
+    +'</div>';
+  }).join('');
+
+  return {
+    tag:'<span class="abtag" style="background:#eef0f4;color:'+_AB.mut+'">'+esc(_abGoliveCountdown())+'</span>',
+    inhalt:'<div class="bleib">'
+      +'<div class="glrow">'
+        +'<div class="gltile" style="border-left:3px solid '+(stau&&Number(stau.haengt)>0?_AB.krit:_AB.gut)+'">'
+          +'<div class="gllbl">Größter Stau</div>'
+          +'<div class="glbig">'+(stau?esc(String(stau.haengt)):'–')+'</div>'
+          +'<div class="glsub">'+(stau?esc(stau.titel||''):'—')+(stau&&stau.haeufigster_grund?' · '+esc(stau.haeufigster_grund):'')+'</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Tempo · Prognose</div>'
+          +'<div class="glbig">'+tempo+'<span style="font-size:11px;color:'+_AB.mut+'">&nbsp;/Tag, Ø 7 T</span></div>'
+          +'<div class="glsub">'+esc(prognose)+'</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Go-Live-Gate</div>'
+          +'<div class="glbig" style="color:'+farbeGate+'">'+(gateFaelle==null?'–':gateFaelle+' offen')+'</div>'
+          +'<div class="glsub">muss 0 bleiben bis 01.10.</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Freigegeben</div>'
+          +'<div class="glbig">'+freiHeute+'</div>'
+          +'<div class="glsub">heute · '+frei7+' in 7 Tagen</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="glkette">'+kette+'</div>'
+    +'</div>',
+    fuss:'Kette gemessen '+(ck.gemessen_am?new Date(ck.gemessen_am).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—')
+      +' · '+(ck.gemessen||0)+' Läufe erfasst · Prognose ist eine Rechnung aus den 7-Tage-Zahlen, keine Server-Vorhersage.'
   };
 }
 
