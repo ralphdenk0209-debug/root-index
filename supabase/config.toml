@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.riki-orchestrator]
 verify_jwt = true
+
+[functions.seo-search-console-sync]
+verify_jwt = true

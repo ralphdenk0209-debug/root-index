@@ -2266,6 +2266,7 @@ var _AB_KACHELN=[
      scrollen." Die Kachel ist zurück — und in Reihe 1 neben Katalog und RIKI,
      damit sie ohne Scrollen sichtbar ist. */
   {id:'region',    reihe:1, titel:'Nutzer &amp; Regionen',    breit:false, bau:_abkRegion,   foto:'regionen',  leds:'gr'},
+  {id:'seo',       reihe:2, titel:'SEO / Google',            breit:true,  bau:_abkSeo,      foto:'regionen',  leds:'gr'},
   /* 16.09.2026, Ralph: Kombination aus Vorschlag A (nach "wer ist dran"
      gruppiert) und B (Ampel-Farbe, nach Dringlichkeit sortiert), als Kachel
      mit maximal halber Flaechenbreite. breit:true = 590px = die Haelfte von
@@ -5296,6 +5297,46 @@ function _abkRiki(c){
       +(progOk?'im Rahmen':'<b style="color:'+_AB.krit+'">über Budget</b>')
       +'. ⚠ Die Monatszahl ist die eigene Zählung und weicht von der echten '
       +'Abrechnung ab (#254, #265) — verlass dich auf den Tageswert.') : ''
+  };
+}
+
+/* ---- 3b) SEO / GOOGLE --------------------------------------------------
+   16.09.2026, Ralph: echte Google-Search-Console-Zahlen. Klicks/Impressionen
+   kommen aus searchanalytics.query (seo_suchdaten_taeglich, taeglich per
+   Edge Function befuellt). "Indexierte Seiten insgesamt" liefert KEINE
+   Google-API als Summe — nur die Search-Console-Oberflaeche zeigt das. Was
+   hier steht, ist eine ehrliche Stichprobe (urlInspection je URL) und wird
+   auch so genannt, nie als Vollzaehlung ausgegeben (A2). */
+function _abkSeo(c){
+  var ck=_abCkKarte('seo');
+  if(!ck) return {tag:'', inhalt:_abCkLadeHtml(), fuss:''};
+  var fmt=function(n){ return n==null?'–':String(n).replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
+  var klicks=ck.klicks_28t, impr=ck.impressionen_28t, pos=ck.position_28t;
+  var geprueft=Number(ck.stichprobe_geprueft)||0, indexiert=Number(ck.stichprobe_indexiert)||0;
+  var anteil=ck.stichprobe_anteil;
+  var af=(anteil==null)?_AB.mut:(anteil>=80?_AB.gut:(anteil>=50?_AB.warn:_AB.krit));
+  var keineDaten=(klicks==null && impr==null);
+  return {
+    tag:'',
+    inhalt:'<div class="bleib">'
+      +(keineDaten
+        ? '<div class="bunter">Noch keine Suchdaten — Google-Anbindung läuft erst seit Kurzem.</div>'
+        : '<div style="display:flex;gap:18px;flex-wrap:wrap">'
+          +'<div><div class="bzahl" style="color:'+_AB.kern+'">'+(klicks==null?'–':fmt(klicks))+'</div>'
+          +'<div class="bunter">Klicks · 28 Tage</div></div>'
+          +'<div><div class="bzahl" style="color:'+_AB.kern+'">'+(impr==null?'–':fmt(impr))+'</div>'
+          +'<div class="bunter">Impressionen · 28 Tage</div></div>'
+          +'</div>'
+          +(pos!=null?'<div class="bunter" style="margin-top:4px">Ø Position '+String(pos).replace('.',',')+'</div>':''))
+    +'<div style="margin-top:9px;padding-top:9px;border-top:1px solid var(--line,#eef2f6)">'
+      +(geprueft>0
+        ? '<span style="color:'+af+';font-weight:800">'+indexiert+' von '+geprueft+'</span>'
+          +' <span style="opacity:.7">geprüften Produktseiten sind bei Google indexiert (Stichprobe'+(anteil!=null?', '+anteil+' %':'')+')</span>'
+        : '<span class="bunter">Stichproben-Prüfung läuft an — erste Ergebnisse folgen.</span>')
+    +'</div>'
+    +'</div>',
+    fuss:'⚠ Keine Vollzählung: Google liefert die Gesamtzahl indexierter Seiten über keine API. '
+      +'Klicks/Impressionen sind echte Suchdaten, die Indexierung ist eine tägliche Stichprobe.'
   };
 }
 

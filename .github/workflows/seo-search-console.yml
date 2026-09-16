@@ -1,0 +1,39 @@
+# =============================================================================
+#  SEO / Google Search Console taeglich abrufen  (Ralph 16.09.2026)
+# -----------------------------------------------------------------------------
+#  Ruft die Edge Function seo-search-console-sync auf. Die Funktion selbst
+#  prueft den Service-Role-Key (wie riki-scan-worker), deshalb reicht hier ein
+#  einfacher, authentifizierter POST - kein separates Cron-Secret noetig.
+#  Laeuft taeglich, spaeter als der Produktseiten-Bau, damit die Sitemap schon
+#  aktuell ist, und auf Knopfdruck.
+# =============================================================================
+name: SEO Search Console
+
+on:
+  schedule:
+    - cron: "15 5 * * *"      # taeglich ~07:15 deutscher Sommerzeit
+  workflow_dispatch:
+
+jobs:
+  abrufen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Sync anstossen
+        run: |
+          set -e
+          ANTWORT=$(curl -sS -w '\n%{http_code}' \
+            -X POST "https://haurbpfkfaaehorirzee.supabase.co/functions/v1/seo-search-console-sync" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+          CODE=$(echo "$ANTWORT" | tail -n1)
+          BODY=$(echo "$ANTWORT" | sed '$d')
+          echo "$BODY"
+          echo "### SEO-Sync-Ergebnis" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CODE" -ge 300 ]; then
+            echo "HTTP $CODE - Lauf fehlgeschlagen."
+            exit 1
+          fi
