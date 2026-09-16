@@ -2948,9 +2948,12 @@ function fgPickRender(){
   var all=(ZUTATEN_STAMM||[]).filter(function(it){ if(supp && it.kategorie && FG_FOOD_KATS[it.kategorie]) return false; return true; });
   var isSel=function(it){ return !!sel[(it.name||"").trim().toLowerCase()]; };
   var checked=all.filter(isSel), rest=all.filter(function(it){return !isSel(it);});
-  var _stammSet={}; all.forEach(function(it){ _stammSet[(it.name||"").trim().toLowerCase()]=true; });
+  /* #746 (16.09.2026): "nicht im Stamm" sagt der SERVER, nicht der Namensvergleich im
+     Browser. Gemessen an P73675: Mangopueree und Ananassaftkonzentrat standen rot, obwohl
+     die Referenzpruefung beide gebunden hatte. _fgServerKennt() fragt Stammliste,
+     Produktstand, Zuordnungsstand und Pruefzeilen - kennt keiner den Namen, ist er frei. */
   var _frei=[]; var _ri=_fgRowsInfo();
-  Object.keys(_ri).forEach(function(k){ if(!_stammSet[k]) _frei.push({name:_ri[k].name, rating:_ri[k].rating, kritisch:_ri[k].krit, _frei:true}); });
+  Object.keys(_ri).forEach(function(k){ if(!_fgServerKennt(k)) _frei.push({name:_ri[k].name, rating:_ri[k].rating, kritisch:_ri[k].krit, _frei:true}); });
   if(q){ var mm=function(it){return (it.name||"").toLowerCase().indexOf(q)>=0;}; checked=checked.filter(mm); rest=rest.filter(mm); _frei=_frei.filter(mm); }
   var shown = _frei.concat(q ? checked.concat(rest) : checked);
   var hintRow = q ? "" : '<div style="padding:8px;color:var(--muted);font-size:11.5px;text-align:center;border-top:1px dashed var(--line)">\ud83d\udd0e Tippen durchsucht alle '+all.length+' Stamm-Zutaten</div>';
@@ -3030,20 +3033,41 @@ function fgPickRender(){
    bräuchte es überhaupt keinen Namensabgleich. Gemessen bauen 12 Stellen eine Zeile,
    alle über die eine Funktion fgZutRow(). Das ist ein eigener Durchgang.
    ──────────────────────────────────────────────────────────────────────────── */
+/* #746 (16.09.2026): EINE Frage, EIN Ort - "kennt der Server diesen Namen?"
+   Quellen, alle vom Server: Stammliste (cb_zutaten_liste), Produktstand (cb_produkt_edit_get,
+   zutaten[].name), Zuordnungsstand (cb_admin_zutat_zuordnungsstatus, ausser kein_treffer)
+   und die Pruefzeilen der Referenzpruefung (Ziel_ID gesetzt, Status OK oder entschieden).
+   Kein Raten: ist der Name nirgends bekannt, ist er frei. */
+function _fgServerKennt(k){
+  k=String(k||"").trim().toLowerCase(); if(!k) return true;
+  try{ if(typeof ZUTATEN_MAP!=="undefined" && ZUTATEN_MAP && ZUTATEN_MAP[k]!=null) return true; }catch(e){}
+  try{
+    var zt=(window._fgEdit&&Array.isArray(window._fgEdit.zutaten))?window._fgEdit.zutaten:[];
+    if(zt.some(function(z){ return z && String(z.name||"").trim().toLowerCase()===k && (z.canonical_entity_id||z.zutat_id); })) return true;
+  }catch(e){}
+  try{
+    var zu=window._fgZuordnung, pid=(window._fgEdit&&window._fgEdit.id)||"";
+    if(zu && zu.produkt_id===pid && Array.isArray(zu.zeilen)){
+      if(zu.zeilen.some(function(z){ return z && z.status!=="kein_treffer"
+        && (String(z.zutat_text||"").trim().toLowerCase()===k || String(z.stammname||"").trim().toLowerCase()===k); })) return true;
+    }
+  }catch(e){}
+  try{
+    var pz=(((window._fgRefV2||{}).d)||{}).pruefzeilen||[];
+    if(pz.some(function(p){ return p
+      && (String(p.Erkannter_Name||"").trim().toLowerCase()===k || String(p.Original_Text||"").trim().toLowerCase()===k)
+      && (p.Ziel_ID || String(p.Automatischer_Status||"")==="OK" || String(p.Manueller_Status||"OFFEN")!=="OFFEN"); })) return true;
+  }catch(e){}
+  return false;
+}
+if(typeof window!=="undefined"){ window._fgServerKennt=_fgServerKennt; }
 function _fgFreieZutaten(){
   var zu=window._fgZuordnung;
   var pid=(window._fgEdit&&window._fgEdit.id)||"";
   if(!zu || zu.produkt_id!==pid || !Array.isArray(zu.zeilen)) return null;   /* unbekannt, nicht leer */
-  /* Alles, wozu der Server bereits etwas sagt, kommt NICHT in den Sammellauf. */
-  var bekannt={};
-  zu.zeilen.forEach(function(z){
-    if(!z || z.status==="kein_treffer") return;
-    [z.zutat_text, z.stammname].forEach(function(n){
-      n=String(n||"").trim().toLowerCase(); if(n) bekannt[n]=true;
-    });
-  });
+  /* Alles, wozu der Server bereits etwas sagt, kommt NICHT in den Sammellauf (#746: eine Frage, ein Ort). */
   var ri=_fgRowsInfo(), out=[];
-  Object.keys(ri).forEach(function(k){ if(!bekannt[k]) out.push(ri[k].name); });
+  Object.keys(ri).forEach(function(k){ if(!_fgServerKennt(k)) out.push(ri[k].name); });
   return out;
 }
 function fgZutSammelLeiste(){
