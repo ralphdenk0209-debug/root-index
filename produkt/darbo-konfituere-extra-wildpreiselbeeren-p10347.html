@@ -14,9 +14,13 @@
 <meta property="og:site_name" content="Root Index">
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Produkte","item":"https://root-index.de/produkt/"},{"@type":"ListItem","position":2,"name":"Brotaufstrich","item":"https://root-index.de/produkt/kategorie-brotaufstrich.html"},{"@type":"ListItem","position":3,"name":"Konfitüre Extra Wildpreiselbeeren"}]}</script>
 <style>
-:root{--green:#2e7d46;--line:#e3e8e3;--muted:#667066;--bg:#fbfdfb}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:#1c241c;line-height:1.55}
-.kopf{background:var(--green);color:#fff;padding:14px 18px}.kopf a{color:#fff;text-decoration:none;font-weight:700}
+:root{--green:#34D399;--greendk:#047857;--greenlt:#ECFDF5;--line:#e4e8e2;--muted:#6b6256;--bg:#eef1ec;--card:#fff;--ink:#1d3c24}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+/* Kopf wie in der App: Logo und Wortmarke, heller Grund - nicht der gruene
+   Balken von vorher. Wer aus der Suche kommt, soll dieselbe Seite sehen. */
+.kopf{background:var(--card);border-bottom:1px solid var(--line);padding:10px 18px}
+.kopf a{display:inline-flex;align-items:center;gap:.55em;color:var(--greendk);text-decoration:none;font-weight:700;font-size:1.05rem}
+.kopf img{height:34px;width:auto}
 main{max-width:760px;margin:0 auto;padding:18px}
 h1{font-size:1.45rem;margin:.3em 0 .1em}
 .marke{color:var(--muted);margin:0 0 12px}
@@ -28,13 +32,14 @@ ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line
 .krit{color:#a33}
 h2{font-size:1.05rem;margin-top:22px}
 p.einordnung{margin:.2em 0 1em;max-width:62ch}
-.karte{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px 6px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
+.karte{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 4px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
 .flux{width:250px;max-width:82%;margin:6px auto 0}
 .wort{text-align:center;font-size:1.3rem;font-weight:800;margin:2px 0 0}
 .rang{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.55}
 .kacheln{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
 @media(max-width:520px){.kacheln{grid-template-columns:repeat(2,1fr)}}
 .kachel{background:var(--bg);border-radius:10px;padding:8px 9px;min-width:0}
+.appbtn{display:block;margin:12px 0 2px;padding:11px 14px;border-radius:10px;background:var(--greenlt);border:1px solid #a7e3c6;color:var(--greendk);font-weight:700;text-align:center;text-decoration:none;font-size:.92rem}
 .kachel .l{font-size:.72rem;color:var(--muted)}
 .kachel .v{font-size:.94rem;font-weight:600;white-space:nowrap}
 .pille{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600;margin:4px 0 2px}
@@ -45,6 +50,8 @@ summary .pf{color:var(--muted);font-size:.75rem}
 details>div{padding:2px 2px 12px}
 .zeile{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
 .zeile span:first-child{color:var(--muted)}
+h1{font-size:1.3rem}
+main{max-width:720px}
 .fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
 .liste a b{color:var(--green)}
@@ -52,7 +59,7 @@ nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
 </style>
 </head>
 <body>
-<div class="kopf"><a href="/">🌱 Root Index</a></div>
+<div class="kopf"><a href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a></div>
 <main>
 
 <nav class="krumen"><a href="/produkt/">Produkte</a> › <a href="/produkt/kategorie-brotaufstrich.html">Brotaufstrich</a></nav>
@@ -65,12 +72,13 @@ nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
 <div class="rang" style="background:#fff7ea;border:1px solid #e4a343"><b style="color:#b45309">🏆 Platz 1096 von 1818 in „Brotaufstrich"</b><div style="color:var(--muted);margin-top:3px">Der Index vergleicht <b>innerhalb der Kategorie</b>. Ein Öl mit einem Brot zu vergleichen ergibt keinen Sinn – ein Öl mit einem anderen Öl schon.</div></div>
 <div class="kacheln"><div class="kachel"><div class="l">Energie</div><div class="v">223 kcal</div></div><div class="kachel"><div class="l">Fett</div><div class="v">0 g</div></div><div class="kachel"><div class="l">Eiweiß</div><div class="v">0 g</div></div><div class="kachel"><div class="l">Ballaststoffe</div><div class="v">0 g</div></div></div>
 <p class="einordnung">Konfitüre Extra Wildpreiselbeeren von Darbo erreicht im Root Index 56 von 100 Punkten – Schwach. Von 4 Zutaten sind 1 mit Note 8 oder besser und 1 mit Note 3 oder schlechter bewertet, darunter Zucker. Je 100 g: 223 kcal, 54 g Zucker, 0 g Ballaststoffe, 0,01 g Salz.</p>
+<a class="appbtn" href="/?p=P10347">In der App öffnen – mit Tagebuch, Einkaufsliste und Alternativen</a>
 <details><summary><span>📊 Alle Nährwerte je 100 g</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Energie</span><span style="font-weight:600">223 kcal</span></div><div class="zeile"><span>Eiweiß</span><span style="font-weight:600">0 g</span></div><div class="zeile"><span>Fett</span><span style="font-weight:600">0 g</span></div><div class="zeile"><span>davon gesättigt</span><span style="font-weight:600">0 g</span></div><div class="zeile"><span>Kohlenhydrate</span><span style="font-weight:600">54 g</span></div><div class="zeile"><span>davon Zucker</span><span style="font-weight:600">54 g</span></div><div class="zeile"><span>Ballaststoffe</span><span style="font-weight:600">0 g</span></div><div class="zeile"><span>Salz</span><span style="font-weight:600">0,01 g</span></div></div></details>
 <details><summary><span>🧾 Zutaten (4)</span><span class="pf">▾</span></summary><div><ul class="zt"><li>Preiselbeeren – Note 10/10</li><li>Zucker – Note 2/10</li><li>Zitronensaftkonzentrat – Note 5/10</li><li>Pektin – Note 4/10</li></ul></div></details>
 <details><summary><span>🔬 Im Root Index</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Zutaten</span><span style="font-weight:600">19,7 von 30</span></div><div class="zeile"><span>Zusatzstoffe</span><span style="font-weight:600">15 von 15</span></div><div class="zeile"><span>Verarbeitung (NOVA)</span><span style="font-weight:600">3 von 15</span></div><div class="zeile"><span>Nährwert</span><span style="font-weight:600">18 von 40</span></div><div style="color:var(--muted);font-size:.78rem;margin-top:6px">Die vier Achsen ergeben die Punktzahl. Bewertet wird die Zusammensetzung, nicht die Werbung.</div></div></details>
 <details><summary><span>🛡️ Quelle & Beleg</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Quelle</span><span style="font-weight:600">OpenFoodFacts, Abruf 2026-07-31, EAN 10014329</span></div><div class="zeile"><span>EAN</span><span style="font-weight:600">10014329</span></div></div></details>
 </div>
-<p style="margin:16px 0"><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
+
 <h2>Besser bewertet in Brotaufstrich</h2><div class="liste"><a href="/produkt/bio-company-erdnussmus-crunchy-p49352.html">Erdnussmus crunchy · Bio Company <b>83/100</b></a><a href="/produkt/dmbio-mandelmus-gebrannte-mandel-p70607.html">Mandelmus-gebrannte Mandel · DmBio <b>82/100</b></a><a href="/produkt/tarpa-zwetschgenmus-p73728.html">Zwetschgenmus · TARPA <b>81/100</b></a></div>
 <p class="fuss">Root Index liefert Informationen zur Zusammensetzung von Lebensmitteln.
 Keine medizinische oder ernährungstherapeutische Beratung.
