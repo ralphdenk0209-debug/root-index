@@ -1263,10 +1263,15 @@ function premiumInfo(){
   var versuche = 0;
   var t = setInterval(function(){
     versuche++;
-    if (typeof prodOeffnen === "function" && Array.isArray(window.ALL)) {
+    /* 17.09., live gemessen: window.ALL gibt es nicht - der Katalog steht in
+       einer let-Variablen, und die haengt sich nicht an window. Die Bedingung
+       war damit nie erfuellt und der Link tat nichts. Es reicht auch:
+       prodOeffnen holt ein fehlendes Produkt selbst nach. Die halbe Sekunde
+       Abstand laesst den Startweg der App zuerst fertig werden. */
+    if (typeof prodOeffnen === "function") {
       clearInterval(t);
       try { history.replaceState(null, "", location.pathname); } catch(_) {}
-      prodOeffnen(id);
+      setTimeout(function(){ prodOeffnen(id); }, 600);
     } else if (versuche > 100) {
       clearInterval(t);
     }
