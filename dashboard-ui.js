@@ -2260,21 +2260,19 @@ var _AB_KACHELN=[
      Haertefaelle darin liefen ins Leere. Der Bauplan _abkEntscheid bleibt stehen,
      falls sie zurueckkommen soll; nur die Zeile hier ist auskommentiert. */
   /* {id:'entscheid', reihe:1, titel:'Deine Entscheidungen',   breit:true,  bau:_abkEntscheid, hoch:true}, */
-  /* 16.09.2026, Ralph: "vieles nicht wie in den mockups" — Go-Live-Leitstand
-     (Mockup A) vorn, ueber allem, 14 Tage vor dem 01.10. zaehlt zuerst diese
-     Frage. breit:true wie die anderen Reihe-1-Vollbreite-Kacheln. */
-  {id:'golive',    reihe:1, titel:'Go-Live',                  breit:true,  bau:_abkGolive,   foto:'flusslauf', leds:'r ge'},
-  /* 17.09.2026, Ralph: "Mockup B/C bauen". Beide ohne feste Layout-Koordinate -
-     sie haengen sich unten an (Standard-Verhalten fuer neue Kacheln), Ralph
-     ordnet sie im Anordnen-Modus dahin, wo er sie will. */
-  {id:'betrieb',   reihe:3, titel:'Betriebs-Cockpit',         breit:true,  bau:_abkBetrieb,  foto:'kaskade',   leds:'gr'},
-  {id:'wachstum',  reihe:3, titel:'Wachstums-Radar',          breit:true,  bau:_abkWachstum, foto:'regionen',  leds:'gr'},
+  /* 17.09.2026, Ralph-Korrektur: die drei Mockups (A/B/C) waren als EIN
+     umschaltbarer Leitstand entworfen (dashboard-vorschlaege.html), nicht als
+     drei einzelne Dauer-Kacheln im Standardraster - das war mein Fehler beim
+     Bauen. Jetzt EINE Kachel 'golive' mit internem A/B/C-Umschalter
+     (_abkLeitstand), _abkGolive/_abkBetrieb/_abkWachstum liefern weiterhin
+     nur den Karteninhalt je Reiter, keine zweite Kachel-Registrierung mehr. */
+  {id:'golive',    reihe:1, titel:'Leitstand',                breit:true,  bau:_abkLeitstand, foto:'flusslauf'},
   {id:'bestand',   reihe:1, titel:'Katalog',                  breit:false, bau:_abkBestand,  foto:'kiesel',    leds:'gr gr', hoch:true},
   {id:'riki',      reihe:1, titel:'RIKI',                     breit:false, bau:_abkRiki,     foto:'kaskade',   leds:'gr'},
   /* 🔴 26.08.2026, Ralph: „nutzer & region höher darstellen, da muss ich aktuell
      scrollen." Die Kachel ist zurück — und in Reihe 1 neben Katalog und RIKI,
      damit sie ohne Scrollen sichtbar ist. */
-  {id:'region',    reihe:1, titel:'Nutzer &amp; Regionen',    breit:false, bau:_abkRegion,   foto:'regionen',  leds:'gr'},
+  {id:'region',    reihe:1, titel:'Nutzer &amp; Regionen',    breit:false, bau:_abkRegion,   foto:'regionen',  leds:'gr', hoch:true},
   {id:'seo',       reihe:2, titel:'SEO / Google',            breit:true,  bau:_abkSeo,      foto:'regionen',  leds:'gr'},
   /* 16.09.2026, Ralph: Kombination aus Vorschlag A (nach "wer ist dran"
      gruppiert) und B (Ampel-Farbe, nach Dringlichkeit sortiert), als Kachel
@@ -5048,6 +5046,41 @@ function _abWorkCss(){
    +A+' .glbartrk{flex:1;height:8px;border-radius:5px;background:#e6e9ee;overflow:hidden}'
    +A+' .glbarfill{height:100%;border-radius:5px}'
    +A+' .glbarv{width:36px;flex:0 0 auto;text-align:right;font-family:ui-monospace,monospace;font-weight:600}'
+   +A+' .lstWrap{--lstbg:#f7f9fa;--lstcard:#fff;--lstink:#131a24;--lstmut:#5b6d73;--lstline:#e6e9ee;'
+     +'display:flex;flex-direction:column;gap:9px}'
+   +A+' .lstWrap[data-lstheme="dark"]{--lstbg:#12181a;--lstcard:#1b2427;--lstink:#e8eef0;--lstmut:#8fa1a6;--lstline:#2c383c}'
+   +A+' .lstSwitch{display:flex;gap:4px;background:var(--lstbg);border:1px solid var(--lstline);'
+     +'border-radius:9px;padding:3px}'
+   +A+' .lstBtn{flex:1;border:0;background:transparent;color:var(--lstmut);font:inherit;font-weight:700;'
+     +'font-size:11.5px;padding:6px 8px;border-radius:6px;cursor:pointer;display:flex;align-items:center;'
+     +'justify-content:center;gap:4px;white-space:nowrap}'
+   +A+' .lstBtn .k{font-family:ui-monospace,monospace;font-size:9.5px;opacity:.75}'
+   +A+' .lstBtn.on{background:#17505c;color:#eaf4f6}'
+   +A+' .lstTheme{flex:0 0 auto;border:1px solid var(--lstline);background:var(--lstcard);border-radius:6px;'
+     +'padding:5px 9px;cursor:pointer;font-size:12.5px;line-height:1}'
+   +A+' .lstPanel{display:none;flex-direction:column;gap:8px}'
+   +A+' .lstPanel.on{display:flex}'
+   +A+' .lstIntro{display:flex;gap:9px;align-items:flex-start}'
+   +A+' .lstWho{flex:0 0 auto;font-size:15px}'
+   +A+' .lstIntro h4{margin:0 0 2px;font-size:12.5px;color:var(--lstink)}'
+   +A+' .lstDesc{margin:0;font-size:11px;color:var(--lstmut);line-height:1.5}'
+   +A+' .lstBand{font-size:11px;font-weight:700;color:var(--lstink)}'
+   /* Dunkler Rahmen wirkt nur auf Struktur (Karte, Reiter, Text). Die
+      farbigen Ampel-Chips (glamp/gltile) behalten ihre hellen Hintergruende -
+      sie bleiben damit in beiden Modi lesbar, sehen im Dunkelmodus aber wie
+      bewusste Farbflaechen aus, nicht wie ein halb angewendetes Theme.
+      Ausdruecklich als Kompromiss, nicht als Versehen: vollstaendige
+      Dunkel-Varianten jeder Ampelfarbe waeren ein zweiter Farbsatz (§4.2). */
+   +A+' .lstWrap[data-lstheme="dark"] .gltile{background:#20292c!important}'
+   +A+' .lstWrap[data-lstheme="dark"] .glstep{background:#20292c!important}'
+   +A+' .lstWrap[data-lstheme="dark"] .glbartrk{background:#2c383c!important}'
+   +A+' .lstWrap[data-lstheme="dark"] .gllbl,'
+     +'.lstWrap[data-lstheme="dark"] .glsub,'
+     +'.lstWrap[data-lstheme="dark"] .gln,'
+     +'.lstWrap[data-lstheme="dark"] .glt,'
+     +'.lstWrap[data-lstheme="dark"] .glblklbl,'
+     +'.lstWrap[data-lstheme="dark"] .glbarl{color:var(--lstmut)!important}'
+   +A+' .lstWrap[data-lstheme="dark"] .glbig{color:var(--lstink)}'
    +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
@@ -5751,6 +5784,80 @@ function _abkWachstum(c){
     +'</div>',
     fuss:'⚠ Umsatz und Nutzer-Fehlermeldungen werden aktuell nirgends gezählt — steht hier ehrlich als „fehlt", nicht als 0.'
   };
+}
+
+/* ---- LEITSTAND: A/B/C in einer Kachel -------------------------------------
+   17.09.2026, Ralph-Korrektur zum Bau vom Vortag: das Mockup
+   (dashboard-vorschlaege.html) zeigt die drei Entwuerfe als EINEN Leitstand
+   mit Umschalter oben, nicht als drei Dauer-Kacheln. _abkGolive/_abkBetrieb/
+   _abkWachstum liefern weiterhin je einen Reiterinhalt (dieselben Funktionen,
+   keine zweite Fassung, A4.2) - _abkLeitstand baut nur noch den Rahmen:
+   Umschalter, Kurzbeschreibung je Reiter, und einen Hell/Dunkel-Umschalter
+   NUR fuer diesen Bereich (Ausnahme von Ralphs Regel "Admin immer hell" vom
+   24.07.2026 - der Rest vom Admin bleibt unberuehrt, siehe riThemeAnwenden
+   in admin.html: dunkelJetzt() gibt dort weiterhin fest false zurueck). Der
+   Reiter merkt sich seine Auswahl ueber Neuzeichnen hinweg (_AB_LST_TAB),
+   das Theme steht in localStorage 'ri_leitstand_theme', unabhaengig von
+   admin.html's 'ri_theme'. */
+var _AB_LST_TAB = 'a';
+
+function _abLstTab(el, p){
+  _AB_LST_TAB = p;
+  var wrap = el.closest('.lstWrap'); if(!wrap) return;
+  var btns = wrap.querySelectorAll('.lstBtn');
+  for(var i=0;i<btns.length;i++) btns[i].classList.toggle('on', btns[i]===el);
+  var pans = wrap.querySelectorAll('.lstPanel');
+  for(var j=0;j<pans.length;j++) pans[j].classList.toggle('on', pans[j].dataset.lp===p);
+}
+function _abLstTheme(el){
+  var wrap = el.closest('.lstWrap'); if(!wrap) return;
+  var neu = wrap.getAttribute('data-lstheme')==='dark' ? 'light' : 'dark';
+  wrap.setAttribute('data-lstheme', neu);
+  el.textContent = neu==='dark' ? '☀' : '🌙';
+  try{ localStorage.setItem('ri_leitstand_theme', neu); }catch(e){}
+}
+if(typeof window!=='undefined'){ window._abLstTab=_abLstTab; window._abLstTheme=_abLstTheme; }
+
+function _abkLeitstand(c){
+  var theme='light';
+  try{ theme=localStorage.getItem('ri_leitstand_theme')||'light'; }catch(e){}
+  var tab=_AB_LST_TAB||'a';
+  var pa=_abkGolive(c), pb=_abkBetrieb(c), pc=_abkWachstum(c);
+
+  function btn(p,k,txt){
+    return '<button type="button" class="lstBtn'+(tab===p?' on':'')+'" onclick="_abLstTab(this,\''+p+'\')">'
+      +'<span class="k">'+k+'</span>'+txt+'</button>';
+  }
+  function panel(p, emoji, titel, desc, band, inner){
+    return '<div class="lstPanel'+(tab===p?' on':'')+'" data-lp="'+p+'">'
+      +'<div class="lstIntro"><span class="lstWho">'+emoji+'</span><div>'
+        +'<h4>'+esc(titel)+'</h4><p class="lstDesc">'+desc+'</p></div></div>'
+      +(band?'<div class="lstBand">'+band+'</div>':'')
+      +(inner||'')
+    +'</div>';
+  }
+
+  var inhalt='<div class="lstWrap" data-lstheme="'+(theme==='dark'?'dark':'light')+'">'
+    +'<div class="lstSwitch" role="tablist" aria-label="Leitstand waehlen">'
+      +btn('a','A','Go-Live')
+      +btn('b','B','Betrieb')
+      +btn('c','C','Wachstum')
+      +'<button type="button" class="lstTheme" onclick="_abLstTheme(this)" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">'
+        +(theme==='dark'?'☀':'🌙')+'</button>'
+    +'</div>'
+    +panel('a','🚀','A · Go-Live-Leitstand',
+       'Schafft ihr den 1. Oktober? Größter Stau, Tempo und Prognose auf einen Blick.',
+       pa.tag, pa.inhalt)
+    +panel('b','🩺','B · Betriebs-Cockpit',
+       'Läuft alles noch von selbst? Trends statt Momentaufnahmen für den laufenden Betrieb.',
+       '', pb.inhalt)
+    +panel('c','📈','C · Wachstums-Radar',
+       'Wächst das auch? Reichweite, Content-Wachstum und Vertrauen nach außen.',
+       '', pc.inhalt)
+  +'</div>';
+
+  var fuss = tab==='a'?pa.fuss:(tab==='b'?pb.fuss:pc.fuss);
+  return {tag:'', inhalt:inhalt, fuss:fuss};
 }
 
 /* ---- 4) WÄCHTER-STATUS ----------------------------------------------------
