@@ -511,6 +511,49 @@ function dashArbeitCss(){
    +A+' .abbento .bbz .werte b.ge{background:'+_AB.warn+'}'
    +A+' .abbento .bbz .werte b.r{background:'+_AB.krit+'}'
 
+   /* 17.09.2026, aus _abWorkCss() hierher verschoben (falscher Selektor
+      '.awk' traf die Leitstand-Kachel nie) - Reiterinhalt Go-Live/Betrieb/
+      Wachstum (_abkGolive/_abkBetrieb/_abkWachstum) und der A/B/C-Umschalter
+      (_abkLeitstand). Dunkles Gegenstueck unten bei DUNKLE DARSTELLUNG. */
+   +A+' .glrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}'
+   +A+' .gltile{flex:1 1 130px;min-width:130px;background:#f7f9fa;border-radius:9px;padding:9px 11px}'
+   +A+' .gllbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700}'
+   +A+' .glbig{font-family:ui-monospace,monospace;font-size:19px;font-weight:700;margin-top:2px}'
+   +A+' .glsub{font-size:10.5px;color:#5b6d73;margin-top:2px;line-height:1.35}'
+   +A+' .glkette{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}'
+   +A+' .glstep{flex:1 1 0;min-width:96px;background:#f7f9fa;border-top:3px solid #cfd8db;padding:7px 9px}'
+   +A+' .glstep+.glstep{margin-left:1px}'
+   +A+' .gln{font-size:9px;color:#5b6d73;text-transform:uppercase;letter-spacing:.03em}'
+   +A+' .glv{font-family:ui-monospace,monospace;font-weight:700;font-size:14px;margin-top:2px}'
+   +A+' .glt{font-size:9px;color:#5b6d73;margin-top:1px;line-height:1.25}'
+   +A+' .glblklbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700;margin:10px 0 5px}'
+   +A+' .glblk{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}'
+   +A+' .glamp{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;font-size:12px}'
+   +A+' .gld{width:8px;height:8px;border-radius:50%;flex:0 0 auto}'
+   +A+' .glamptxt{flex:1;min-width:0}'
+   +A+' .glampm{font-size:10.5px;color:#5b6d73;font-family:ui-monospace,monospace;flex:0 0 auto}'
+   +A+' .glalert{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:10px}'
+   +A+' .glbars{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}'
+   +A+' .glbar{display:flex;align-items:center;gap:8px;font-size:11.5px}'
+   +A+' .glbarl{width:110px;flex:0 0 auto;color:#5b6d73;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+   +A+' .glbartrk{flex:1;height:8px;border-radius:5px;background:#e6e9ee;overflow:hidden}'
+   +A+' .glbarfill{height:100%;border-radius:5px}'
+   +A+' .glbarv{width:36px;flex:0 0 auto;text-align:right;font-family:ui-monospace,monospace;font-weight:600}'
+   +A+' .lstWrap{display:flex;flex-direction:column;gap:9px}'
+   +A+' .lstSwitch{display:flex;gap:4px;background:#f7f9fa;border:1px solid #e6e9ee;border-radius:9px;padding:3px}'
+   +A+' .lstBtn{flex:1;border:0;background:transparent;color:#5b6d73;font:inherit;font-weight:700;'
+     +'font-size:11.5px;padding:6px 8px;border-radius:6px;cursor:pointer;display:flex;align-items:center;'
+     +'justify-content:center;gap:4px;white-space:nowrap}'
+   +A+' .lstBtn .k{font-family:ui-monospace,monospace;font-size:9.5px;opacity:.75}'
+   +A+' .lstBtn.on{background:#17505c;color:#eaf4f6}'
+   +A+' .lstPanel{display:none;flex-direction:column;gap:8px}'
+   +A+' .lstPanel.on{display:flex}'
+   +A+' .lstIntro{display:flex;gap:9px;align-items:flex-start}'
+   +A+' .lstWho{flex:0 0 auto;font-size:15px}'
+   +A+' .lstIntro h4{margin:0 0 2px;font-size:12.5px;color:#131a24}'
+   +A+' .lstDesc{margin:0;font-size:11px;color:#5b6d73;line-height:1.5}'
+   +A+' .lstBand{font-size:11px;font-weight:700;color:#131a24}'
+
    /* ----- DUNKLE DARSTELLUNG (Luecke 1) -----
       🔴 NUR Farbwerte. Kein zweiter Aufbau, keine zweite Kachelliste. */
    +'body.dashDunkel '+A+'{--abbg:#0b0d0e;--abcard:#17191b;--abink:#eef1f2;'
@@ -530,7 +573,27 @@ function dashArbeitCss(){
    +'body.dashDunkel '+A+' .abzp span{background:rgba(23,25,27,.86);color:#eef1f2}'
    +'body.dashDunkel '+A+' .abbento .bleds i{background:#3a4045}'
    +'body.dashDunkel '+A+' .abbento .bkopf h3{color:#eef1f2}'
-   +'body.dashDunkel '+A+' .abzk b{color:#eef1f2}';
+   +'body.dashDunkel '+A+' .abzk b{color:#eef1f2}'
+
+   /* Leitstand: haengt sich an dasselbe body.dashDunkel wie der Rest -
+      kein zweites Dunkel-System (§4.2). Ampel-Chips (glamp) behalten ihre
+      hellen Hintergruende bewusst, wie die uebrigen Ampelfarben oben auch -
+      sie bleiben damit in beiden Modi lesbar. */
+   +'body.dashDunkel '+A+' .lstSwitch{background:#101214;border-color:#292d30}'
+   +'body.dashDunkel '+A+' .lstBtn{color:#9299a0}'
+   +'body.dashDunkel '+A+' .lstIntro h4,'
+    +'body.dashDunkel '+A+' .lstBand,'
+    +'body.dashDunkel '+A+' .glbig{color:#eef1f2}'
+   +'body.dashDunkel '+A+' .lstDesc{color:#9299a0}'
+   +'body.dashDunkel '+A+' .gltile,'
+    +'body.dashDunkel '+A+' .glstep{background:#202325}'
+   +'body.dashDunkel '+A+' .glbartrk{background:#292d30}'
+   +'body.dashDunkel '+A+' .gllbl,'
+    +'body.dashDunkel '+A+' .glsub,'
+    +'body.dashDunkel '+A+' .gln,'
+    +'body.dashDunkel '+A+' .glt,'
+    +'body.dashDunkel '+A+' .glblklbl,'
+    +'body.dashDunkel '+A+' .glbarl{color:#9299a0}';
   var st=document.createElement('style'); st.id='dashAbCss'; st.textContent=css; document.head.appendChild(st);
 }
 
@@ -3893,26 +3956,7 @@ function _abBentoNach(box){
       else if(was==='vor1')      _abVor();
       else if(was==='speichern'){ _abLayoutSpeichern(); }
       else if(was==='fertig'){ _AB_EDIT=false;
-        /* 🔴 15.08., Ralph: Luecke 1 — Hell/Dunkel gab es im Entwurf, in der App
-       nicht. Der Schalter aendert NUR die Farbwerte des Dashboards, nichts an
-       Aufbau oder Inhalt: eine zweite Bauart waere eine zweite Wahrheit. Die
-       Wahl wird gemerkt, sonst muesste man sie bei jedem Aufruf neu treffen. */
-    var du=document.getElementById('abDunkel');
-    if(du) du.addEventListener('click',function(){
-      var an2=!document.body.classList.contains('dashDunkel');
-      document.body.classList.toggle('dashDunkel', an2);
-      du.classList.toggle('on', an2);
-      du.textContent=an2?'☀ Hell':'🌙 Dunkel';
-      try{ localStorage.setItem('ri_dashDunkel', an2?'1':'0'); }catch(e){}
-    });
-    try{
-      if(localStorage.getItem('ri_dashDunkel')==='1'){
-        document.body.classList.add('dashDunkel');
-        if(du){ du.classList.add('on'); du.textContent='☀ Hell'; }
-      }
-    }catch(e){}
-
-    var an=document.getElementById('abAnordnen'); if(an) an.classList.remove('on');
+        var an=document.getElementById('abAnordnen'); if(an) an.classList.remove('on');
         _abNeuZeichnen(); }
     });
   });
@@ -5022,65 +5066,6 @@ function _abWorkCss(){
    +A+' .awmsg{font-size:11px}'
    +A+' .awkopf{display:flex;justify-content:flex-end;margin-bottom:7px}'
    +A+' .awneubtn{border:0;border-radius:7px;background:#17505c;color:#fff;font-weight:700;padding:5px 12px;font-size:11.5px;cursor:pointer}'
-   +A+' .glrow{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px}'
-   +A+' .gltile{flex:1 1 130px;min-width:130px;background:#f7f9fa;border-radius:9px;padding:9px 11px}'
-   +A+' .gllbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700}'
-   +A+' .glbig{font-family:ui-monospace,monospace;font-size:19px;font-weight:700;margin-top:2px}'
-   +A+' .glsub{font-size:10.5px;color:#5b6d73;margin-top:2px;line-height:1.35}'
-   +A+' .glkette{display:flex;gap:0;overflow-x:auto;padding-bottom:2px}'
-   +A+' .glstep{flex:1 1 0;min-width:96px;background:#f7f9fa;border-top:3px solid #cfd8db;padding:7px 9px}'
-   +A+' .glstep+.glstep{margin-left:1px}'
-   +A+' .gln{font-size:9px;color:#5b6d73;text-transform:uppercase;letter-spacing:.03em}'
-   +A+' .glv{font-family:ui-monospace,monospace;font-weight:700;font-size:14px;margin-top:2px}'
-   +A+' .glt{font-size:9px;color:#5b6d73;margin-top:1px;line-height:1.25}'
-   +A+' .glblklbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700;margin:10px 0 5px}'
-   +A+' .glblk{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}'
-   +A+' .glamp{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;font-size:12px}'
-   +A+' .gld{width:8px;height:8px;border-radius:50%;flex:0 0 auto}'
-   +A+' .glamptxt{flex:1;min-width:0}'
-   +A+' .glampm{font-size:10.5px;color:#5b6d73;font-family:ui-monospace,monospace;flex:0 0 auto}'
-   +A+' .glalert{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:10px}'
-   +A+' .glbars{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}'
-   +A+' .glbar{display:flex;align-items:center;gap:8px;font-size:11.5px}'
-   +A+' .glbarl{width:110px;flex:0 0 auto;color:#5b6d73;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
-   +A+' .glbartrk{flex:1;height:8px;border-radius:5px;background:#e6e9ee;overflow:hidden}'
-   +A+' .glbarfill{height:100%;border-radius:5px}'
-   +A+' .glbarv{width:36px;flex:0 0 auto;text-align:right;font-family:ui-monospace,monospace;font-weight:600}'
-   +A+' .lstWrap{--lstbg:#f7f9fa;--lstcard:#fff;--lstink:#131a24;--lstmut:#5b6d73;--lstline:#e6e9ee;'
-     +'display:flex;flex-direction:column;gap:9px}'
-   +A+' .lstWrap[data-lstheme="dark"]{--lstbg:#12181a;--lstcard:#1b2427;--lstink:#e8eef0;--lstmut:#8fa1a6;--lstline:#2c383c}'
-   +A+' .lstSwitch{display:flex;gap:4px;background:var(--lstbg);border:1px solid var(--lstline);'
-     +'border-radius:9px;padding:3px}'
-   +A+' .lstBtn{flex:1;border:0;background:transparent;color:var(--lstmut);font:inherit;font-weight:700;'
-     +'font-size:11.5px;padding:6px 8px;border-radius:6px;cursor:pointer;display:flex;align-items:center;'
-     +'justify-content:center;gap:4px;white-space:nowrap}'
-   +A+' .lstBtn .k{font-family:ui-monospace,monospace;font-size:9.5px;opacity:.75}'
-   +A+' .lstBtn.on{background:#17505c;color:#eaf4f6}'
-   +A+' .lstTheme{flex:0 0 auto;border:1px solid var(--lstline);background:var(--lstcard);border-radius:6px;'
-     +'padding:5px 9px;cursor:pointer;font-size:12.5px;line-height:1}'
-   +A+' .lstPanel{display:none;flex-direction:column;gap:8px}'
-   +A+' .lstPanel.on{display:flex}'
-   +A+' .lstIntro{display:flex;gap:9px;align-items:flex-start}'
-   +A+' .lstWho{flex:0 0 auto;font-size:15px}'
-   +A+' .lstIntro h4{margin:0 0 2px;font-size:12.5px;color:var(--lstink)}'
-   +A+' .lstDesc{margin:0;font-size:11px;color:var(--lstmut);line-height:1.5}'
-   +A+' .lstBand{font-size:11px;font-weight:700;color:var(--lstink)}'
-   /* Dunkler Rahmen wirkt nur auf Struktur (Karte, Reiter, Text). Die
-      farbigen Ampel-Chips (glamp/gltile) behalten ihre hellen Hintergruende -
-      sie bleiben damit in beiden Modi lesbar, sehen im Dunkelmodus aber wie
-      bewusste Farbflaechen aus, nicht wie ein halb angewendetes Theme.
-      Ausdruecklich als Kompromiss, nicht als Versehen: vollstaendige
-      Dunkel-Varianten jeder Ampelfarbe waeren ein zweiter Farbsatz (§4.2). */
-   +A+' .lstWrap[data-lstheme="dark"] .gltile{background:#20292c!important}'
-   +A+' .lstWrap[data-lstheme="dark"] .glstep{background:#20292c!important}'
-   +A+' .lstWrap[data-lstheme="dark"] .glbartrk{background:#2c383c!important}'
-   +A+' .lstWrap[data-lstheme="dark"] .gllbl,'
-     +'.lstWrap[data-lstheme="dark"] .glsub,'
-     +'.lstWrap[data-lstheme="dark"] .gln,'
-     +'.lstWrap[data-lstheme="dark"] .glt,'
-     +'.lstWrap[data-lstheme="dark"] .glblklbl,'
-     +'.lstWrap[data-lstheme="dark"] .glbarl{color:var(--lstmut)!important}'
-   +A+' .lstWrap[data-lstheme="dark"] .glbig{color:var(--lstink)}'
    +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
@@ -5792,13 +5777,16 @@ function _abkWachstum(c){
    mit Umschalter oben, nicht als drei Dauer-Kacheln. _abkGolive/_abkBetrieb/
    _abkWachstum liefern weiterhin je einen Reiterinhalt (dieselben Funktionen,
    keine zweite Fassung, A4.2) - _abkLeitstand baut nur noch den Rahmen:
-   Umschalter, Kurzbeschreibung je Reiter, und einen Hell/Dunkel-Umschalter
-   NUR fuer diesen Bereich (Ausnahme von Ralphs Regel "Admin immer hell" vom
-   24.07.2026 - der Rest vom Admin bleibt unberuehrt, siehe riThemeAnwenden
-   in admin.html: dunkelJetzt() gibt dort weiterhin fest false zurueck). Der
-   Reiter merkt sich seine Auswahl ueber Neuzeichnen hinweg (_AB_LST_TAB),
-   das Theme steht in localStorage 'ri_leitstand_theme', unabhaengig von
-   admin.html's 'ri_theme'. */
+   Umschalter und Kurzbeschreibung je Reiter.
+   URSPRUENGLICH war hier ein zweiter, eigener Hell/Dunkel-Umschalter geplant -
+   dabei gibt es fuer genau diesen Bereich (die Arbeitsflaeche, nicht die
+   Admin-Chrome) laengst body.dashDunkel samt Knopf #abDunkel im Hero
+   (Work #121, 20.08.2026; Ralphs Regel "Admin immer hell" vom 24.07.2026
+   betrifft admin.html's riThemeAnwenden/dunkelJetzt und bleibt davon
+   unberuehrt). Der Knopf hatte nur einen Verdrahtungsfehler (Luecke 1,
+   15.08. - Fix heute in _abNachRest). Der Leitstand haengt sich jetzt an
+   dasselbe body.dashDunkel statt ein zweites System zu bauen (§4.2).
+   Der Reiter merkt sich seine Auswahl ueber Neuzeichnen hinweg (_AB_LST_TAB). */
 var _AB_LST_TAB = 'a';
 
 function _abLstTab(el, p){
@@ -5809,18 +5797,12 @@ function _abLstTab(el, p){
   var pans = wrap.querySelectorAll('.lstPanel');
   for(var j=0;j<pans.length;j++) pans[j].classList.toggle('on', pans[j].dataset.lp===p);
 }
-function _abLstTheme(el){
-  var wrap = el.closest('.lstWrap'); if(!wrap) return;
-  var neu = wrap.getAttribute('data-lstheme')==='dark' ? 'light' : 'dark';
-  wrap.setAttribute('data-lstheme', neu);
-  el.textContent = neu==='dark' ? '☀' : '🌙';
-  try{ localStorage.setItem('ri_leitstand_theme', neu); }catch(e){}
-}
-if(typeof window!=='undefined'){ window._abLstTab=_abLstTab; window._abLstTheme=_abLstTheme; }
+if(typeof window!=='undefined'){ window._abLstTab=_abLstTab; }
 
 function _abkLeitstand(c){
-  var theme='light';
-  try{ theme=localStorage.getItem('ri_leitstand_theme')||'light'; }catch(e){}
+  /* 17.09.2026, Korrektur: kein eigenes Theme mehr hier - das Leitstand-
+     Styling haengt jetzt an body.dashDunkel (Fix zu Luecke 1, derselbe
+     Knopf "🌙 Dunkel" im Hero wie fuer den Rest vom Dashboard, §4.2). */
   var tab=_AB_LST_TAB||'a';
   var pa=_abkGolive(c), pb=_abkBetrieb(c), pc=_abkWachstum(c);
 
@@ -5837,13 +5819,11 @@ function _abkLeitstand(c){
     +'</div>';
   }
 
-  var inhalt='<div class="lstWrap" data-lstheme="'+(theme==='dark'?'dark':'light')+'">'
+  var inhalt='<div class="lstWrap">'
     +'<div class="lstSwitch" role="tablist" aria-label="Leitstand waehlen">'
       +btn('a','A','Go-Live')
       +btn('b','B','Betrieb')
       +btn('c','C','Wachstum')
-      +'<button type="button" class="lstTheme" onclick="_abLstTheme(this)" title="Hell/Dunkel umschalten" aria-label="Hell/Dunkel umschalten">'
-        +(theme==='dark'?'☀':'🌙')+'</button>'
     +'</div>'
     +panel('a','🚀','A · Go-Live-Leitstand',
        'Schafft ihr den 1. Oktober? Größter Stau, Tempo und Prognose auf einen Blick.',
@@ -6772,6 +6752,27 @@ function _abNachRest(box,d,np,A){
     an.classList.toggle('on', _abEditModus(!_AB_EDIT));
     _abNeuZeichnen();
   });
+  /* 17.09.2026, Fix zu Luecke 1 (15.08.2026): der Klick-Handler stand bisher
+     nur im 'fertig'-Zweig vom Anordnen-Modus - auf frischer Seite ohne je
+     Anordnen betreten zu haben, tat der Knopf nichts (Ralphs Meldung
+     "hell/dunkel geht immer noch nicht"). Jetzt hier, unconditional, genau
+     einmal pro vollem Hero-Aufbau - derselbe Rhythmus wie #abAnordnen direkt
+     darueber. Faerbt NUR (kein zweiter Aufbau, §4.2: body.dashDunkel in
+     dashArbeitCss traegt die eigentlichen Farbwerte). */
+  var du=document.getElementById('abDunkel');
+  if(du) du.addEventListener('click',function(){
+    var an2=!document.body.classList.contains('dashDunkel');
+    document.body.classList.toggle('dashDunkel', an2);
+    du.classList.toggle('on', an2);
+    du.textContent=an2?'☀ Hell':'🌙 Dunkel';
+    try{ localStorage.setItem('ri_dashDunkel', an2?'1':'0'); }catch(e){}
+  });
+  try{
+    if(localStorage.getItem('ri_dashDunkel')==='1'){
+      document.body.classList.add('dashDunkel');
+      if(du){ du.classList.add('on'); du.textContent='☀ Hell'; }
+    }
+  }catch(e){}
   _abWaechterNach(np,A);
   try{ _abWaechterWache(np,A); }catch(e){}
 }
