@@ -140,9 +140,13 @@ function seite({ titel, beschreibung, kanonisch, inhalt, jsonld }) {
 <meta property="og:site_name" content="Root Index">
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
 <style>
-:root{--green:#2e7d46;--line:#e3e8e3;--muted:#667066;--bg:#fbfdfb}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:#1c241c;line-height:1.55}
-.kopf{background:var(--green);color:#fff;padding:14px 18px}.kopf a{color:#fff;text-decoration:none;font-weight:700}
+:root{--green:#34D399;--greendk:#047857;--greenlt:#ECFDF5;--line:#e4e8e2;--muted:#6b6256;--bg:#eef1ec;--card:#fff;--ink:#1d3c24}
+*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+/* Kopf wie in der App: Logo und Wortmarke, heller Grund - nicht der gruene
+   Balken von vorher. Wer aus der Suche kommt, soll dieselbe Seite sehen. */
+.kopf{background:var(--card);border-bottom:1px solid var(--line);padding:10px 18px}
+.kopf a{display:inline-flex;align-items:center;gap:.55em;color:var(--greendk);text-decoration:none;font-weight:700;font-size:1.05rem}
+.kopf img{height:34px;width:auto}
 main{max-width:760px;margin:0 auto;padding:18px}
 h1{font-size:1.45rem;margin:.3em 0 .1em}
 .marke{color:var(--muted);margin:0 0 12px}
@@ -154,13 +158,14 @@ ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line
 .krit{color:#a33}
 h2{font-size:1.05rem;margin-top:22px}
 p.einordnung{margin:.2em 0 1em;max-width:62ch}
-.karte{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px 6px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
+.karte{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 4px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
 .flux{width:250px;max-width:82%;margin:6px auto 0}
 .wort{text-align:center;font-size:1.3rem;font-weight:800;margin:2px 0 0}
 .rang{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.55}
 .kacheln{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
 @media(max-width:520px){.kacheln{grid-template-columns:repeat(2,1fr)}}
 .kachel{background:var(--bg);border-radius:10px;padding:8px 9px;min-width:0}
+.appbtn{display:block;margin:12px 0 2px;padding:11px 14px;border-radius:10px;background:var(--greenlt);border:1px solid #a7e3c6;color:var(--greendk);font-weight:700;text-align:center;text-decoration:none;font-size:.92rem}
 .kachel .l{font-size:.72rem;color:var(--muted)}
 .kachel .v{font-size:.94rem;font-weight:600;white-space:nowrap}
 .pille{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600;margin:4px 0 2px}
@@ -171,6 +176,8 @@ summary .pf{color:var(--muted);font-size:.75rem}
 details>div{padding:2px 2px 12px}
 .zeile{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
 .zeile span:first-child{color:var(--muted)}
+h1{font-size:1.3rem}
+main{max-width:720px}
 .fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
 .liste a b{color:var(--green)}
@@ -178,7 +185,7 @@ nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
 </style>
 </head>
 <body>
-<div class="kopf"><a href="/">🌱 Root Index</a></div>
+<div class="kopf"><a href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a></div>
 <main>
 ${inhalt}
 <p class="fuss">Root Index liefert Informationen zur Zusammensetzung von Lebensmitteln.
@@ -349,12 +356,13 @@ ${wort ? `<p class="wort" style="color:${schrift}">${esc(wort)}</p>` : ""}
 ${rangHtml(rang, kat)}
 <div class="kacheln">${kachel(p, "m_kcal", "Energie", "kcal")}${kachel(p, "m_fett", "Fett", "g")}${kachel(p, "m_protein", "Eiweiß", "g")}${kachel(p, "m_ballast", "Ballaststoffe", "g")}</div>
 ${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
+<a class="appbtn" href="/?p=${encodeURIComponent(p.id)}">In der App öffnen – mit Tagebuch, Einkaufsliste und Alternativen</a>
 ${alleZeilen ? acc("📊", `Alle Nährwerte je ${basis}`, alleZeilen) : ""}
 ${zutatenListe ? acc("🧾", `Zutaten (${zutaten.length})`, zutatenListe) : ""}
 ${achsen ? acc("🔬", "Im Root Index", achsen + `<div style="color:var(--muted);font-size:.78rem;margin-top:6px">Die vier Achsen ergeben die Punktzahl. ${p.warum ? esc(p.warum) : "Bewertet wird die Zusammensetzung, nicht die Werbung."}</div>`) : ""}
 ${acc("🛡️", "Quelle & Beleg", `<div class="zeile"><span>Quelle</span><span style="font-weight:600">${esc(p.quelle || "nicht angegeben")}</span></div>${p.ean ? `<div class="zeile"><span>EAN</span><span style="font-weight:600">${esc(p.ean)}</span></div>` : ""}${p.inhalt_menge ? `<div class="zeile"><span>Inhalt</span><span style="font-weight:600">${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}</span></div>` : ""}${p.verifiziert_am ? `<div class="zeile"><span>Geprüft am</span><span style="font-weight:600">${esc(String(p.verifiziert_am).slice(0, 10))}</span></div>` : ""}`)}
 </div>
-<p style="margin:16px 0"><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
+
 ${alternativen && alternativen.length ? `<h2>Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</h2><div class="liste">${
   alternativen.map((a) => `<a href="/produkt/${a.datei}">${esc(a.name)}${a.marke ? " · " + esc(a.marke) : ""} <b>${a.score}/100</b></a>`).join("")
 }</div>` : ""}`;
