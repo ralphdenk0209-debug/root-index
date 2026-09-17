@@ -1247,6 +1247,31 @@ function premiumInfo(){
   document.body.appendChild(ov);
 }
 (function(){ try{ const p=new URLSearchParams(location.search); if(p.get('checkout')==='success'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ alert('Willkommen bei Premium! Deine 7 Tage gratis starten jetzt. 🌱'); },400); } }catch(_){} })();
+/* Tiefer Link aus den statischen Produktseiten (Ralph 17.09.2026):
+   /?p=P001 oeffnet genau dieses Produkt. Vorher landete der Knopf auf den
+   38.000 Suchmaschinen-Seiten stumpf auf der Startseite - wer aus Google kam,
+   musste das Produkt selbst noch einmal suchen.
+   Weitergeleitet wird NICHT: die statische Seite bleibt die Adresse, die Google
+   kennt und bewertet. Sie verlinkt hierher, das ist alles.
+   Warum pollen statt an start() haengen: prodOeffnen braucht den Katalog, und
+   der Startweg unterscheidet sich je nach Anmeldung. Der Riegel sind 20 s -
+   danach bleibt die Startseite stehen, statt dass etwas haengt. */
+(function(){
+  var id = null;
+  try { id = new URLSearchParams(location.search).get("p"); } catch(_) {}
+  if (!id || !/^P\d{1,8}$/i.test(id)) return;
+  var versuche = 0;
+  var t = setInterval(function(){
+    versuche++;
+    if (typeof prodOeffnen === "function" && Array.isArray(window.ALL)) {
+      clearInterval(t);
+      try { history.replaceState(null, "", location.pathname); } catch(_) {}
+      prodOeffnen(id);
+    } else if (versuche > 100) {
+      clearInterval(t);
+    }
+  }, 200);
+})();
 async function startPortal(){
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativeManage(); }
   try{
