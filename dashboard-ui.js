@@ -2264,6 +2264,11 @@ var _AB_KACHELN=[
      (Mockup A) vorn, ueber allem, 14 Tage vor dem 01.10. zaehlt zuerst diese
      Frage. breit:true wie die anderen Reihe-1-Vollbreite-Kacheln. */
   {id:'golive',    reihe:1, titel:'Go-Live',                  breit:true,  bau:_abkGolive,   foto:'flusslauf', leds:'r ge'},
+  /* 17.09.2026, Ralph: "Mockup B/C bauen". Beide ohne feste Layout-Koordinate -
+     sie haengen sich unten an (Standard-Verhalten fuer neue Kacheln), Ralph
+     ordnet sie im Anordnen-Modus dahin, wo er sie will. */
+  {id:'betrieb',   reihe:3, titel:'Betriebs-Cockpit',         breit:true,  bau:_abkBetrieb,  foto:'kaskade',   leds:'gr'},
+  {id:'wachstum',  reihe:3, titel:'Wachstums-Radar',          breit:true,  bau:_abkWachstum, foto:'regionen',  leds:'gr'},
   {id:'bestand',   reihe:1, titel:'Katalog',                  breit:false, bau:_abkBestand,  foto:'kiesel',    leds:'gr gr', hoch:true},
   {id:'riki',      reihe:1, titel:'RIKI',                     breit:false, bau:_abkRiki,     foto:'kaskade',   leds:'gr'},
   /* 🔴 26.08.2026, Ralph: „nutzer & region höher darstellen, da muss ich aktuell
@@ -5036,6 +5041,13 @@ function _abWorkCss(){
    +A+' .gld{width:8px;height:8px;border-radius:50%;flex:0 0 auto}'
    +A+' .glamptxt{flex:1;min-width:0}'
    +A+' .glampm{font-size:10.5px;color:#5b6d73;font-family:ui-monospace,monospace;flex:0 0 auto}'
+   +A+' .glalert{border-radius:9px;padding:9px 12px;font-size:12px;line-height:1.5;margin-bottom:10px}'
+   +A+' .glbars{display:flex;flex-direction:column;gap:6px;margin-bottom:10px}'
+   +A+' .glbar{display:flex;align-items:center;gap:8px;font-size:11.5px}'
+   +A+' .glbarl{width:110px;flex:0 0 auto;color:#5b6d73;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+   +A+' .glbartrk{flex:1;height:8px;border-radius:5px;background:#e6e9ee;overflow:hidden}'
+   +A+' .glbarfill{height:100%;border-radius:5px}'
+   +A+' .glbarv{width:36px;flex:0 0 auto;text-align:right;font-family:ui-monospace,monospace;font-weight:600}'
    +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
@@ -5590,6 +5602,154 @@ function _abkGolive(c){
     +'</div>',
     fuss:'Kette gemessen '+(ck.gemessen_am?new Date(ck.gemessen_am).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—')
       +' · '+(ck.gemessen||0)+' Läufe erfasst · Prognose ist eine Rechnung aus den 7-Tage-Zahlen, keine Server-Vorhersage.'
+  };
+}
+
+/* ---- BETRIEBS-COCKPIT (Mockup B) -----------------------------------------
+   17.09.2026, Ralph: "Mockup B/C bauen". Eine Quelle je Zahl (A4.2) - alles
+   kommt aus schon vorhandenen Karten (riki, waechter, aktivitaet, bestand,
+   schnell, hero). Keine Verlaeufe erfunden, wo keine gespeichert sind: Gate-
+   Faelle und Katalog-Qualitaet zeigen nur den AKTUELLEN Stand, mit einem Satz,
+   der das offen sagt (A2) - ein 30-Tage-Verlauf wuerde eine taegliche
+   Momentaufnahme brauchen, die es serverseitig noch nicht gibt. */
+function _abSpark(reihe, feld, farbe){
+  var werte=(reihe||[]).map(function(t){ return Number(t[feld])||0; });
+  if(!werte.length) return '';
+  var max=Math.max.apply(null,werte.concat([1]));
+  var n=werte.length, w=120, h=28;
+  var pkt=werte.map(function(v,i){ return (i/(n-1||1)*w).toFixed(1)+','+(h-(v/max*h)).toFixed(1); }).join(' ');
+  var letzter=pkt.split(' ').pop();
+  return '<svg width="100%" height="'+h+'" viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="display:block;overflow:visible;margin-top:3px">'
+    +'<polyline points="'+pkt+'" fill="none" stroke="'+farbe+'" stroke-width="2"/>'
+    +'<circle cx="'+letzter.split(',')[0]+'" cy="'+letzter.split(',')[1]+'" r="2.5" fill="'+farbe+'"/>'
+  +'</svg>';
+}
+
+function _abkBetrieb(c){
+  var riki=_abCkKarte('riki'), wk=_abCkKarte('waechter'), akt=_abCkKarte('aktivitaet'),
+      bestand=_abCkKarte('bestand'), schnell=_abCkKarte('schnell');
+  if(!riki||!wk||!akt||!bestand) return {tag:'', inhalt:_abCkLadeHtml(), fuss:''};
+  var verlauf=riki.verlauf_14t||[];
+  var takte=(schnell&&schnell.takte)||[];
+  var takteFehler=takte.filter(function(t){ return Number(t.fehler_serie)>0; });
+  var alert=(_AB_CK&&_AB_CK.hero&&_AB_CK.hero.attention&&_AB_CK.hero.attention[0])||null;
+  var eingang=(akt.queues||[]).slice(0,5);
+  var maxWart=Math.max.apply(null,eingang.map(function(e){ return Number(e.wartend)||0; }).concat([1]));
+
+  return {
+    tag:'',
+    inhalt:'<div class="bleib">'
+      +(alert
+        ? '<div class="glalert" style="background:'+(alert.severity==='kritisch'?'#fdecea':'#fdf1e4')
+          +';color:'+(alert.severity==='kritisch'?_AB.krit:_AB.warn)+'"><b>'+esc(alert.titel)+'</b><br>'+esc(alert.text)+'</div>'
+        : '<div class="glalert" style="background:#e7f5ec;color:'+_AB.gut+'"><b>Kein Warnhinweis.</b></div>')
+      +'<div class="glrow">'
+        +'<div class="gltile">'
+          +'<div class="gllbl">RIKI-Budget</div>'
+          +'<div class="glbig">'+(riki.heute_usd==null?'–':riki.heute_usd)+'<span style="font-size:11px;color:'+_AB.mut+'">&nbsp;$ heute</span></div>'
+          +_abSpark(verlauf,'usd',_AB.pr||'#0a6ed1')
+          +'<div class="glsub">'+(riki.monat_usd==null?'—':riki.monat_usd+' $ diesen Monat'+(riki.monatslimit_usd?' von '+riki.monatslimit_usd+' $':''))+'</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Fehlerserie, 24h</div>'
+          +'<div class="glbig" style="color:'+(Number(riki.fehler_24h)>0?_AB.krit:_AB.gut)+'">'+(riki.fehler_24h==null?'–':riki.fehler_24h)+'</div>'
+          +_abSpark(verlauf,'fehler',Number(riki.fehler_24h)>0?_AB.krit:_AB.gut)
+          +'<div class="glsub">RIKI-Aufrufe, 14-Tage-Verlauf</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Takte ohne Erfolg</div>'
+          +'<div class="glbig" style="color:'+(takteFehler.length>0?_AB.warn:_AB.gut)+'">'+takteFehler.length+'<span style="font-size:12px;color:'+_AB.mut+'">&nbsp;/'+takte.length+'</span></div>'
+          +'<div class="glsub">'+(takteFehler.length?esc(takteFehler.slice(0,2).map(function(t){return t.takt;}).join(' · ')):'alle Takte laufen')+'</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Gate-Fälle, Stand jetzt</div>'
+          +'<div class="glbig" style="color:'+(Number(wk.gate_faelle)>0?_AB.warn:_AB.gut)+'">'+(wk.gate_faelle==null?'–':wk.gate_faelle)+'</div>'
+          +'<div class="glsub">kein Verlauf gespeichert — nur der aktuelle Stand</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="glblklbl">Eingänge, die warten</div>'
+      +'<div class="glbars">'+(eingang.length?eingang.map(function(e){
+          var pr=Math.round((Number(e.wartend)||0)/maxWart*100);
+          var farbe=Number(e.wartend)>15?_AB.warn:_AB.gut;
+          return '<div class="glbar"><span class="glbarl">'+esc(e.name||e.id)+'</span>'
+            +'<div class="glbartrk"><div class="glbarfill" style="width:'+pr+'%;background:'+farbe+'"></div></div>'
+            +'<span class="glbarv">'+(e.wartend==null?'–':e.wartend)+'</span></div>';
+        }).join(''):'<div class="bunter">Keine Eingänge gemessen.</div>')+'</div>'
+      +'<div class="glblklbl">Katalog-Qualität, Stand jetzt</div>'
+      +'<div class="glblk">'
+        +'<div class="glamp" style="background:'+(Number(bestand.ohne_score)>0?'#fdf1e4':'#e7f5ec')+'">'
+          +'<span class="gld" style="background:'+(Number(bestand.ohne_score)>0?_AB.warn:_AB.gut)+'"></span>'
+          +'<span class="glamptxt">ohne Index-Zahl</span><span class="glampm">'+(bestand.ohne_score==null?'–':bestand.ohne_score)+'</span></div>'
+        +'<div class="glamp" style="background:'+(Number(bestand.ohne_quelle)>0?'#fdf1e4':'#e7f5ec')+'">'
+          +'<span class="gld" style="background:'+(Number(bestand.ohne_quelle)>0?_AB.warn:_AB.gut)+'"></span>'
+          +'<span class="glamptxt">ohne Quelle</span><span class="glampm">'+(bestand.ohne_quelle==null?'–':bestand.ohne_quelle)+'</span></div>'
+        +'<div class="glamp" style="background:#eef0f4">'
+          +'<span class="gld" style="background:'+_AB.mut+'"></span>'
+          +'<span class="glamptxt">unverifiziert</span><span class="glampm">'+(bestand.unverifiziert==null?'–':bestand.unverifiziert)+'</span></div>'
+      +'</div>'
+    +'</div>',
+    fuss:'Momentaufnahme, kein Verlauf über Zeit — Trends (Woche/Monat) brauchen eine tägliche Zählung, die es noch nicht gibt.'
+  };
+}
+
+/* ---- WACHSTUMS-RADAR (Mockup C) -------------------------------------------
+   17.09.2026: nach aussen geschaut statt in die Maschine. "Seiten" = aktive
+   Produkte (1 Seite je Produkt, echte Regel der Seitengenerierung, keine
+   Schaetzung). Google-Zahlen jetzt ECHT (seo-Karte, diese Woche angebunden).
+   Umsatz: Amazon ist vorerst raus (Ralph-Entscheid); es gibt aktuell keine
+   andere gezaehlte Erloesquelle - das steht auch so da, nicht als "0 €". */
+function _abkWachstum(c){
+  var bestand=_abCkKarte('bestand'), seo=_abCkKarte('seo'), region=_abCkKarte('region');
+  if(!bestand||!seo||!region) return {tag:'', inhalt:_abCkLadeHtml(), fuss:''};
+  var aktiv=Number(bestand.aktiv)||0;
+  var mitQuelleProz=aktiv>0?Math.round((aktiv-(Number(bestand.ohne_quelle)||0))/aktiv*100):null;
+  var seoAnteil=seo.stichprobe_anteil;
+
+  return {
+    tag:'',
+    inhalt:'<div class="bleib">'
+      +'<div class="glrow">'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Seiten im Katalog</div>'
+          +'<div class="glbig">'+aktiv+'</div>'
+          +'<div class="glsub">1 Seite je aktivem Produkt</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Google, 28 Tage</div>'
+          +'<div class="glbig">'+(seo.klicks_28t==null?'–':seo.klicks_28t)+'<span style="font-size:11px;color:'+_AB.mut+'">&nbsp;Klicks</span></div>'
+          +'<div class="glsub">'+(seo.impressionen_28t==null?'—':seo.impressionen_28t+' Impressionen')
+            +(seoAnteil!=null?' · '+seoAnteil+' % Stichprobe indexiert':'')+'</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Aktive Nutzer, 30T</div>'
+          +'<div class="glbig">'+(region.aktiv_30t==null?'–':region.aktiv_30t)+'</div>'
+          +'<div class="glsub">von '+(region.nutzer_gesamt==null?'—':region.nutzer_gesamt)+' Nutzern gesamt</div>'
+        +'</div>'
+        +'<div class="gltile">'
+          +'<div class="gllbl">Umsatz, Monat</div>'
+          +'<div class="glbig" style="color:'+_AB.mut+'">– <span class="demo-tag" style="font-size:9px;border:1px solid #cfd8db;border-radius:5px;padding:1px 5px">fehlt</span></div>'
+          +'<div class="glsub">Amazon vorerst raus, keine andere Erlösquelle gezählt · '+(region.premium==null?'—':region.premium+' Premium-Nutzer')+'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="glblklbl">Content-Wachstum</div>'
+      +'<div class="glblk">'
+        +'<div class="glamp" style="background:#e7f5ec"><span class="gld" style="background:'+_AB.gut+'"></span>'
+          +'<span class="glamptxt">Neue Produkte, 7 Tage</span><span class="glampm">'+(bestand.neu_7t==null?'–':bestand.neu_7t)+'</span></div>'
+        +'<div class="glamp" style="background:#eef0f4"><span class="gld" style="background:'+_AB.mut+'"></span>'
+          +'<span class="glamptxt">Neue Produkte, heute</span><span class="glampm">'+(bestand.heute_neu==null?'–':bestand.heute_neu)+'</span></div>'
+        +'<div class="glamp" style="background:#e7f5ec"><span class="gld" style="background:'+_AB.gut+'"></span>'
+          +'<span class="glamptxt">Kategorien abgedeckt</span><span class="glampm">'+(bestand.kategorien==null?'–':bestand.kategorien)+'</span></div>'
+      +'</div>'
+      +'<div class="glblklbl">Vertrauen</div>'
+      +'<div class="glblk">'
+        +'<div class="glamp" style="background:'+(mitQuelleProz!=null&&mitQuelleProz>=95?'#e7f5ec':'#fdf1e4')+'">'
+          +'<span class="gld" style="background:'+(mitQuelleProz!=null&&mitQuelleProz>=95?_AB.gut:_AB.warn)+'"></span>'
+          +'<span class="glamptxt">Produkte mit belegter Quelle</span><span class="glampm">'+(mitQuelleProz==null?'–':mitQuelleProz+' %')+'</span></div>'
+        +'<div class="glamp" style="background:#eef0f4"><span class="gld" style="background:'+_AB.mut+'"></span>'
+          +'<span class="glamptxt">Von Nutzern gemeldete Fehler</span><span class="glampm">noch nicht gezählt</span></div>'
+      +'</div>'
+    +'</div>',
+    fuss:'⚠ Umsatz und Nutzer-Fehlermeldungen werden aktuell nirgends gezählt — steht hier ehrlich als „fehlt", nicht als 0.'
   };
 }
 
