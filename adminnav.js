@@ -148,7 +148,7 @@ function applyAdminMode(){
        produkteditorLaden() in app.js (A4.2: kein zweiter Weg erfunden). */
     if(!document.querySelector('script[data-postfach-ui]')){
       var _pfs=document.createElement('script');
-      _pfs.src='postfach-ui.js?v=2026-09-17-12';
+      _pfs.src='postfach-ui.js?v=2026-09-17-13';
       _pfs.dataset.postfachUi='lazy';
       document.head.appendChild(_pfs);
     }

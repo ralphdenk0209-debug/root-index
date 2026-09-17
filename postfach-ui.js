@@ -238,7 +238,14 @@ async function postfachSeiteOeffnen(uid){
   }
 }
 function postfachHtmlZuText(html){
-  var tmp=document.createElement('div'); tmp.innerHTML=html;
+  /* 17.09.2026: textContent allein schluckt die Zeilenumbrueche zwischen den
+     <div>-Bloecken des contenteditable-Felds - ohne diesen Schritt kommt
+     "ZeileZeileZeile" statt "Zeile\nZeile\nZeile" beim Empfaenger an. Erst
+     <br>/</div>/</p> in \n uebersetzen, dann erst die Tags entfernen. */
+  var mitUmbruechen = String(html||'')
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(div|p|li|h[1-6]|tr)>/gi, '\n');
+  var tmp=document.createElement('div'); tmp.innerHTML=mitUmbruechen;
   return (tmp.textContent||tmp.innerText||'').replace(/\n{3,}/g,'\n\n').trim();
 }
 async function postfachSeiteSenden(){
