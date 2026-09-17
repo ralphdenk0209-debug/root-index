@@ -142,6 +142,16 @@ function applyAdminMode(){
     var mq=(window.matchMedia?window.matchMedia('(min-width:1100px)'):null);
     /* Kopfcluster zwischen Body und Seitennavigation umhängen, niemals kopieren. */
     /* Schwarze Kopfleiste einmal anlegen; Sichtbarkeit steuert ausschließlich CSS. */
+    /* 17.09.2026, Postfach-Dock: postfach-ui.js hier dynamisch nachladen statt
+       admin.html anzufassen - dort liegen gerade andere, unabhaengige Aenderungen
+       von Ralph, die nicht angeruehrt werden sollen. Gleiches Lade-Muster wie
+       produkteditorLaden() in app.js (A4.2: kein zweiter Weg erfunden). */
+    if(!document.querySelector('script[data-postfach-ui]')){
+      var _pfs=document.createElement('script');
+      _pfs.src='postfach-ui.js?v=2026-09-17-7';
+      _pfs.dataset.postfachUi='lazy';
+      document.head.appendChild(_pfs);
+    }
     var kopfleisteBauen=function(){
       if(document.getElementById('riKopf')) return;
       var k=document.createElement('div'); k.id='riKopf';
@@ -150,12 +160,23 @@ function applyAdminMode(){
       var b=''; try{ if(typeof APP_BUILD!=='undefined'&&APP_BUILD){ b=String(APP_BUILD); } }catch(e){}
       k.innerHTML='<span class="riGi">▦</span>'
         +'<span class="riWm">ROOT<b>COCKPIT</b></span>'
-        +'<span class="riR"><span>[ri!] root<b>index</b></span>'
-        +(b?'<span id="riBuild" role="button" tabindex="0" '
-            +'style="cursor:pointer;padding:1px 7px;border-radius:6px;font-weight:700" '
-            +'title="Version '+esc(String(APP_BUILD))+' — wird gerade geprüft">'
-            +esc(b)+'</span>':'')+'</span>';
+        +'<span class="riR">'
+          +'<button id="riMail" onclick="try{postfachDockToggle();}catch(e){}" title="Postfach kontakt@root-index.de" '
+            +'style="position:relative;border:0;background:transparent;color:inherit;font-size:15px;cursor:pointer;padding:1px 6px;line-height:1">'
+            +'✉️<span id="riMailN" style="display:none;position:absolute;top:-3px;right:-1px;background:#c0392b;color:#fff;'
+              +'font-size:9px;font-weight:800;line-height:1;padding:2px 4px;border-radius:8px"></span></button>'
+          +'<span>[ri!] root<b>index</b></span>'
+          +(b?'<span id="riBuild" role="button" tabindex="0" '
+              +'style="cursor:pointer;padding:1px 7px;border-radius:6px;font-weight:700" '
+              +'title="Version '+esc(String(APP_BUILD))+' — wird gerade geprüft">'
+              +esc(b)+'</span>':'')
+        +'</span>';
       document.body.appendChild(k);
+      /* 17.09.2026, Postfach-Dock: ungelesene Mails einmal beim Laden und dann
+         im gleichen 60s-Takt wie die Versions-Ampel pruefen (A4.2: kein zweiter
+         Timer). postfachLoad() setzt selbst das Abzeichen (riMailN). */
+      try{ if(typeof postfachLoad==='function') postfachLoad(); }catch(e){}
+      try{ setInterval(function(){ try{ if(typeof postfachLoad==='function') postfachLoad(); }catch(e){} }, 60000); }catch(e){}
 
       /* ======================================================================
          AMPEL AN DER VERSIONSNUMMER  ·  Ralph-Auftrag 26.08.2026
