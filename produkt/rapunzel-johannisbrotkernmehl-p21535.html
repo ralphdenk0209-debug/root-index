@@ -28,6 +28,23 @@ ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line
 .krit{color:#a33}
 h2{font-size:1.05rem;margin-top:22px}
 p.einordnung{margin:.2em 0 1em;max-width:62ch}
+.karte{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px 6px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
+.flux{width:250px;max-width:82%;margin:6px auto 0}
+.wort{text-align:center;font-size:1.3rem;font-weight:800;margin:2px 0 0}
+.rang{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.55}
+.kacheln{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
+@media(max-width:520px){.kacheln{grid-template-columns:repeat(2,1fr)}}
+.kachel{background:var(--bg);border-radius:10px;padding:8px 9px;min-width:0}
+.kachel .l{font-size:.72rem;color:var(--muted)}
+.kachel .v{font-size:.94rem;font-weight:600;white-space:nowrap}
+.pille{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600;margin:4px 0 2px}
+details{border-top:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:.88rem}
+summary::-webkit-details-marker{display:none}
+summary .pf{color:var(--muted);font-size:.75rem}
+details>div{padding:2px 2px 12px}
+.zeile{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
+.zeile span:first-child{color:var(--muted)}
 .fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
 .liste a b{color:var(--green)}
@@ -39,15 +56,21 @@ nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
 <main>
 
 <nav class="krumen"><a href="/produkt/">Produkte</a> › <a href="/produkt/kategorie-backen.html">Backen</a></nav>
+<div class="karte">
 <h1>Johannisbrotkernmehl</h1>
-<p class="marke">Rapunzel · Bio</p>
-<div class="score">Root-Index-Bewertung: 86/100 · Gut</div>
+<p class="marke">Rapunzel · Backen · Bio</p>
+<span class="pille" style="background:#e7f4ec;color:#1f5e34">🌱 vegan</span>
+<div class="flux"><svg viewBox="0 0 300 176" style="width:100%;display:block" role="img" aria-label="Root Index 86 von 100, vier Achsen"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9"><path d="M26 34 H74 L106 64" stroke="rgba(120,120,120,.16)"/><path d="M274 34 H226 L194 64" stroke="rgba(120,120,120,.16)"/><path d="M26 142 H74 L106 112" stroke="rgba(120,120,120,.16)"/><path d="M274 142 H226 L194 112" stroke="rgba(120,120,120,.16)"/><path d="M26 34 H74 L106 64" stroke="#16a34a" stroke-dasharray="92" stroke-dashoffset="36.8"/><path d="M274 34 H226 L194 64" stroke="#3987e5" stroke-dasharray="92" stroke-dashoffset="0.0"/><path d="M26 142 H74 L106 112" stroke="#7c6fe0" stroke-dasharray="92" stroke-dashoffset="0.0"/><path d="M274 142 H226 L194 112" stroke="#d97706" stroke-dasharray="92" stroke-dashoffset="4.6"/></g><circle cx="26" cy="34" r="7" fill="#16a34a"/><circle cx="274" cy="34" r="7" fill="#3987e5"/><circle cx="26" cy="142" r="7" fill="#7c6fe0"/><circle cx="274" cy="142" r="7" fill="#d97706"/><circle cx="150" cy="88" r="42" fill="none" stroke="#65a30d" stroke-width="5"/><text x="150" y="103" text-anchor="middle" style="font-size:44px;font-weight:800" fill="#1c241c">86</text></svg></div>
+<p class="wort" style="color:#4d7c0f">Gut</p>
+<div class="rang" style="background:#eaf5ee;border:1px solid #e3e8e3"><b style="color:#166534">🏆 Platz 60 von 492 in „Backen"</b><div style="color:var(--muted);margin-top:3px">Der Index vergleicht <b>innerhalb der Kategorie</b>. Ein Öl mit einem Brot zu vergleichen ergibt keinen Sinn – ein Öl mit einem anderen Öl schon.</div></div>
+<div class="kacheln"><div class="kachel"><div class="l">Energie</div><div class="v">208 kcal</div></div><div class="kachel"><div class="l">Fett</div><div class="v">1,4 g</div></div><div class="kachel"><div class="l">Eiweiß</div><div class="v">4,5 g</div></div><div class="kachel"><div class="l">Ballaststoffe</div><div class="v">74 g</div></div></div>
 <p class="einordnung">Johannisbrotkernmehl von Rapunzel erreicht im Root Index 86 von 100 Punkten – Gut. Das Produkt hat eine einzige Zutat: Johannisbrotkernmehl mit Note 6 von 10. Je 100 g: 208 kcal, 0 g Zucker, 74 g Ballaststoffe, 0 g Salz.</p>
-<h2>Zutaten (1)</h2><ul class="zt"><li>Johannisbrotkernmehl – Note 6/10</li></ul>
-<h2>Nährwerte je 100 g</h2><table><tr><th>Energie</th><td>208 kcal</td></tr><tr><th>Eiweiß</th><td>4,5 g</td></tr><tr><th>Fett</th><td>1,4 g</td></tr><tr><th>davon gesättigt</th><td>0,2 g</td></tr><tr><th>Kohlenhydrate</th><td>7,3 g</td></tr><tr><th>davon Zucker</th><td>0 g</td></tr><tr><th>Ballaststoffe</th><td>74 g</td></tr><tr><th>Salz</th><td>0 g</td></tr></table>
-<p>EAN: 4006040104681</p>
-
-<p><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
+<details><summary><span>📊 Alle Nährwerte je 100 g</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Energie</span><span style="font-weight:600">208 kcal</span></div><div class="zeile"><span>Eiweiß</span><span style="font-weight:600">4,5 g</span></div><div class="zeile"><span>Fett</span><span style="font-weight:600">1,4 g</span></div><div class="zeile"><span>davon gesättigt</span><span style="font-weight:600">0,2 g</span></div><div class="zeile"><span>Kohlenhydrate</span><span style="font-weight:600">7,3 g</span></div><div class="zeile"><span>davon Zucker</span><span style="font-weight:600">0 g</span></div><div class="zeile"><span>Ballaststoffe</span><span style="font-weight:600">74 g</span></div><div class="zeile"><span>Salz</span><span style="font-weight:600">0 g</span></div></div></details>
+<details><summary><span>🧾 Zutaten (1)</span><span class="pf">▾</span></summary><div><ul class="zt"><li>Johannisbrotkernmehl – Note 6/10</li></ul></div></details>
+<details><summary><span>🔬 Im Root Index</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Zutaten</span><span style="font-weight:600">18 von 30</span></div><div class="zeile"><span>Zusatzstoffe</span><span style="font-weight:600">15 von 15</span></div><div class="zeile"><span>Verarbeitung (NOVA)</span><span style="font-weight:600">15 von 15</span></div><div class="zeile"><span>Nährwert</span><span style="font-weight:600">38 von 40</span></div><div style="color:var(--muted);font-size:.78rem;margin-top:6px">Die vier Achsen ergeben die Punktzahl. Bewertet wird die Zusammensetzung, nicht die Werbung.</div></div></details>
+<details><summary><span>🛡️ Quelle & Beleg</span><span class="pf">▾</span></summary><div><div class="zeile"><span>Quelle</span><span style="font-weight:600">OpenFoodFacts, Abruf 2026-07-31, EAN 4006040104681</span></div><div class="zeile"><span>EAN</span><span style="font-weight:600">4006040104681</span></div></div></details>
+</div>
+<p style="margin:16px 0"><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
 <h2>Besser bewertet in Backen</h2><div class="liste"><a href="/produkt/dmbio-vollkorn-roggenmehl-p33893.html">Vollkorn Roggenmehl · DmBio <b>92/100</b></a><a href="/produkt/goldaehren-dinkel-vollkornmehl-dunkel-rustikal-p35886.html">Dinkel-Vollkornmehl, dunkel &amp; rustikal · Goldähren <b>92/100</b></a><a href="/produkt/share-weizenmehl-vollkorn-p48962.html">Weizenmehl Vollkorn · share <b>92/100</b></a></div>
 <p class="fuss">Root Index liefert Informationen zur Zusammensetzung von Lebensmitteln.
 Keine medizinische oder ernährungstherapeutische Beratung.
