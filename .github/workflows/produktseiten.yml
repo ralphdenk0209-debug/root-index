@@ -68,8 +68,24 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
           git config user.name "root-index-bot"
           git config user.email "bot@root-index.de"
+          # Ein Lauf dauert Minuten. Wird in dieser Zeit von Hand gepusht,
+          # weist GitHub den Push des Bots ab - daran ist Lauf #16 gescheitert,
+          # nachdem waehrend des Laufs am Postfach gearbeitet wurde. Also vor
+          # jedem Versuch die fremden Commits darunter schieben (rebase) und
+          # bis zu fuenfmal probieren.
+          sicher_pushen() {
+            for versuch in 1 2 3 4 5; do
+              git pull --rebase --autostash -q origin main || true
+              if git push; then return 0; fi
+              echo "Push abgewiesen (Versuch $versuch) - erneut nach fremden Commits"
+              sleep 5
+            done
+            echo "Push nach fuenf Versuchen nicht durchgekommen."
+            return 1
+          }
+
           git add _werkzeuge/letzter-lauf.log
-          git diff --cached --quiet || { git commit -m "Lauf-Protokoll [skip ci]"; git push; }
+          git diff --cached --quiet || { git commit -m "Lauf-Protokoll [skip ci]"; sicher_pushen; }
 
       - name: Gegenmessen (nichts Leeres veroeffentlichen)
         run: |
@@ -86,10 +102,26 @@ jobs:
           set -e
           git config user.name "root-index-bot"
           git config user.email "bot@root-index.de"
+          # Ein Lauf dauert Minuten. Wird in dieser Zeit von Hand gepusht,
+          # weist GitHub den Push des Bots ab - daran ist Lauf #16 gescheitert,
+          # nachdem waehrend des Laufs am Postfach gearbeitet wurde. Also vor
+          # jedem Versuch die fremden Commits darunter schieben (rebase) und
+          # bis zu fuenfmal probieren.
+          sicher_pushen() {
+            for versuch in 1 2 3 4 5; do
+              git pull --rebase --autostash -q origin main || true
+              if git push; then return 0; fi
+              echo "Push abgewiesen (Versuch $versuch) - erneut nach fremden Commits"
+              sleep 5
+            done
+            echo "Push nach fuenf Versuchen nicht durchgekommen."
+            return 1
+          }
+
           git add -A produkt sitemap.xml robots.txt
           if git diff --cached --quiet; then
             echo "Nichts geaendert - kein Commit."
           else
             git commit -m "Produktseiten und Sitemap neu gebaut (automatisch)"
-            git push
+            sicher_pushen
           fi
