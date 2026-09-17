@@ -70,9 +70,9 @@ function pfOrdnerReiter(){
   var akt=window._pfFolder||'inbox';
   return PF_ORDNER.map(function(o){
     var an=o.kind===akt;
-    return '<button onclick="postfachOrdnerWechseln(\''+o.kind+'\')" style="border:0;border-bottom:2px solid '+(an?'var(--acc,#17505c)':'transparent')
-      +';background:transparent;color:'+(an?'var(--ink)':'var(--muted)')+';font-weight:'+(an?'800':'600')
-      +';font-size:12.5px;padding:7px 10px;cursor:pointer">'+o.label+'</button>';
+    return '<button onclick="postfachOrdnerWechseln(\''+o.kind+'\')" style="flex:0 0 calc(50% - 2px);box-sizing:border-box;border:0;border-radius:7px;'
+      +'background:'+(an?'rgba(23,80,92,.10)':'transparent')+';color:'+(an?'var(--ink)':'var(--muted)')+';font-weight:'+(an?'800':'600')
+      +';font-size:12px;padding:7px 4px;cursor:pointer;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+o.label+'</button>';
   }).join('');
 }
 function postfachSeiteRender(){
@@ -83,7 +83,7 @@ function postfachSeiteRender(){
     +'<div style="font-weight:800;font-size:20px;margin:0 2px 12px">✉️ Postfach · kontakt@root-index.de</div>'
     +'<div style="display:flex;gap:14px;align-items:flex-start;min-height:60vh">'
       +'<div style="width:320px;flex:0 0 auto;background:var(--card,#fff);border:1px solid var(--line);border-radius:12px;overflow:hidden">'
-        +'<div style="display:flex;align-items:center;gap:2px;padding:0 6px;border-bottom:1px solid var(--line);overflow-x:auto" id="pfReiter">'+pfOrdnerReiter()+'</div>'
+        +'<div style="display:flex;flex-wrap:wrap;gap:2px;padding:4px 6px;border-bottom:1px solid var(--line)" id="pfReiter">'+pfOrdnerReiter()+'</div>'
         +'<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:1px solid var(--line)">'
           +'<span id="pfOrdnerName" style="font-weight:700;font-size:12.5px;flex:1"></span>'
           +'<button onclick="postfachSeiteListeLaden()" title="aktualisieren" style="border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer">⟳</button>'
