@@ -139,9 +139,10 @@
 <script>
 /* Skriptdaten: eine Quelle für Lese- und Prompter-Ansicht (keine zwei Wahrheiten). */
 var SKRIPT={
- /* ================= STAFFEL 1 · zehn Clips · Stand 13.09.2026 =================
-    c1  Auftakt (Kamera) · c1b Auftakt solo · c2–c9 HeyGen · c10 Duell (Kamera)
-    Alle Zahlen aus bereiche/bewertung.md — nichts fürs Video erfunden.
+ /* ================= STAFFEL 1 · elf Clips · Stand 17.09.2026 =================
+    Sprachregel: Frage oder Zahl zuerst, Frage zum Schluss. Keine Fachwoerter —
+    keine "Achsen", kein "Verarbeitungsgrad". Vier Fragen statt vier Achsen.
+    Zahlen aus bereiche/bewertung.md, Produktdaten aus P891 und P894.
     ========================================================================== */
  c1:[
   {abschnitt:"Abschnitt 1 · Hook", zeit:"0–6 Sek.",
@@ -162,15 +163,15 @@ var SKRIPT={
    kamera:"Schnitt auf Draufsicht: Hände, Packung, Handy. Stimmen aus dem Off — hier darf abgelesen werden.",
    zeilen:[
     {wer:"Ralph",  text:"Also haben wir Root Index gebaut. Du scannst ein Produkt —", regie:"Scan zeigen, Index einblenden"},
-    {wer:"Ralph",  text:"— und siehst, was wirklich drin ist. Als klaren Index."},
+    {wer:"Ralph",  text:"— und siehst, was wirklich drin ist. Als eine Zahl."},
     {wer:"Sandra", text:"Und was wir nicht sicher wissen, behaupten wir auch nicht."}
    ]},
   {abschnitt:"Abschnitt 4 · Abbinder", zeit:"26–30 Sek.",
-   kamera:"Zurück auf beide Gesichter. Danach Einblendung: Logo und @root_index.de. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   kamera:"Zurück auf beide Gesichter. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
     {wer:"Sandra", text:"Die Vorderseite verkauft."},
     {wer:"Ralph",  text:"Wir lesen die Rückseite."},
-    {wer:"Beide",  text:"Welches Produkt sollen wir als Erstes für dich durchleuchten?"}
+    {wer:"Sandra", text:"Welches Produkt sollen wir uns mal vornehmen?"}
    ]}
  ],
  c1b:[
@@ -193,61 +194,63 @@ var SKRIPT={
     {wer:"Sandra", text:"Und was wir nicht sicher wissen, behaupten wir auch nicht."}
    ]},
   {abschnitt:"Abschnitt 4 · Abbinder", zeit:"22–25 Sek.",
-   kamera:"Ins Gesicht. Danach Logo. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   kamera:"Ins Gesicht. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
     {wer:"Sandra", text:"Die Vorderseite verkauft. Wir lesen die Rückseite."},
-    {wer:"Sandra", text:"Welches Produkt sollen wir als Erstes für dich durchleuchten?"}
+    {wer:"Sandra", text:"Welches Produkt sollen wir uns mal vornehmen?"}
    ]}
  ],
  c2:[
   {abschnitt:"Abschnitt 1 · Hook", zeit:"0–4 Sek.",
    kamera:"Sandra frontal, Avatar im Original-Layout. Direkt anfangen, keine Begrüßung.",
    zeilen:[
-    {wer:"Sandra", text:"Siebzehn Zutaten. Für einen Joghurt."}
+    {wer:"Sandra", text:"Fünfzehn Zutaten. Für eine Packung Gemüse."}
    ]},
-  {abschnitt:"Abschnitt 2 · Die Liste", zeit:"4–9 Sek.",
-   kamera:"Zutaten einzeln als Text einblenden, eine pro Sekunde. Sandra als Kreis unten rechts.",
+  {abschnitt:"Abschnitt 2 · Die Liste", zeit:"4–12 Sek.",
+   kamera:"Zutaten als Text einblenden, ab Zutat 7 in anderer Farbe. Sandra als Kreis unten rechts. Produkt: Frosta Gemüse Pfanne all Italiana, P894.",
    zeilen:[
-    {wer:"Sandra", text:"Ich lese sie dir vor — und du sagst mir, was du davon schon mal bewusst gegessen hast.", regie:"Zutaten nacheinander einblenden"}
+    {wer:"Sandra", text:"Zucchini, Bohnen, Karotten, Romanesco, Paprika. So weit, so gut.", regie:"Erste sechs einblenden"},
+    {wer:"Sandra", text:"Und dann: Wasser, Öl, Salz, Basilikum, Thymian, Honig, Knoblauch, Kartoffelstärke, Pfeffer.", regie:"Die restlichen neun einblenden"}
    ]},
-  {abschnitt:"Abschnitt 3 · Abbinder", zeit:"9–12 Sek.",
-   kamera:"Zurück auf Sandra. Logo, sonst nichts. Keine Erklärung — Neugier stehen lassen. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+  {abschnitt:"Abschnitt 3 · Pointe", zeit:"12–16 Sek.",
+   kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Wie viele davon hättest du erkannt?"}
+    {wer:"Sandra", text:"Ab hier ist es nicht mehr Gemüse. Es ist Gemüse in Soße."},
+    {wer:"Sandra", text:"Wie viele davon hättest du erwartet?"}
    ]}
  ],
  c3:[
-  {abschnitt:"Abschnitt 1 · Aufschlag", zeit:"0–12 Sek.",
+  {abschnitt:"Abschnitt 1 · Aufschlag", zeit:"0–10 Sek.",
    kamera:"Ralph frontal, Küche, Original-Layout. Noch keine Grafik.",
    zeilen:[
-    {wer:"Ralph", text:"Hundert Punkte. Vier Achsen. Und keine davon ist geheim."},
-    {wer:"Ralph", text:"Vier Achsen. Mehr ist es nicht. Ich zeig sie dir einzeln."}
+    {wer:"Ralph", text:"Wie bewertet Root Index überhaupt?"},
+    {wer:"Ralph", text:"Hundert Punkte, verteilt auf vier Fragen. Keine davon ist geheim."}
    ]},
-  {abschnitt:"Abschnitt 2 · Nährwerte", zeit:"12–20 Sek.",
+  {abschnitt:"Abschnitt 2 · Erste Frage", zeit:"10–18 Sek.",
    kamera:"Balkenbild 01 als Hintergrund, Ralph als Kreis unten rechts.",
    zeilen:[
-    {wer:"Ralph", text:"Vierzig Punkte Nährwerte. Der größte Brocken. Zucker, Fett, Salz, Eiweiß, Ballaststoffe."}
+    {wer:"Ralph", text:"Wie gut sind die Nährwerte? Vierzig Punkte. Der größte Brocken."}
    ]},
-  {abschnitt:"Abschnitt 3 · Zutatenqualität", zeit:"20–28 Sek.",
+  {abschnitt:"Abschnitt 3 · Zweite Frage", zeit:"18–26 Sek.",
    kamera:"Balkenbild 02.",
    zeilen:[
-    {wer:"Ralph", text:"Dreißig Punkte Zutatenqualität. Jede einzelne Zutat hat bei uns eine eigene Note."}
+    {wer:"Ralph", text:"Wie gut sind die Zutaten? Dreißig Punkte. Jede einzelne hat bei uns eine eigene Note."}
    ]},
-  {abschnitt:"Abschnitt 4 · Zusatzstoffe", zeit:"28–34 Sek.",
+  {abschnitt:"Abschnitt 4 · Dritte Frage", zeit:"26–33 Sek.",
    kamera:"Balkenbild 03.",
    zeilen:[
-    {wer:"Ralph", text:"Fünfzehn Punkte Zusatzstoffe. Farbstoffe, Süßstoffe, Emulgatoren."}
+    {wer:"Ralph", text:"Wie viele Zusatzstoffe stecken drin? Fünfzehn Punkte."}
    ]},
-  {abschnitt:"Abschnitt 5 · Verarbeitung", zeit:"34–40 Sek.",
+  {abschnitt:"Abschnitt 5 · Vierte Frage", zeit:"33–40 Sek.",
    kamera:"Balkenbild 04.",
    zeilen:[
-    {wer:"Ralph", text:"Und fünfzehn Punkte Verarbeitungsgrad. Wie weit ist das überhaupt noch ein Lebensmittel?"}
+    {wer:"Ralph", text:"Wie stark ist das Ganze verarbeitet? Auch fünfzehn."}
    ]},
   {abschnitt:"Abschnitt 6 · Abbinder", zeit:"40–45 Sek.",
-   kamera:"Zurück auf Ralph, Original-Layout. Danach Logo. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   kamera:"Zurück auf Ralph, Original-Layout. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
     {wer:"Ralph", text:"Vierzig, dreißig, fünfzehn, fünfzehn. Nachrechnen ausdrücklich erlaubt."},
-    {wer:"Ralph", text:"Welche der vier Achsen hättest du am höchsten gewichtet?"}
+    {wer:"Ralph", text:"Zutaten oder Nährwerte — worauf schaust du zuerst?"}
    ]}
  ],
  c4:[
@@ -259,13 +262,14 @@ var SKRIPT={
   {abschnitt:"Abschnitt 2 · Warum", zeit:"5–14 Sek.",
    kamera:"Produktkarte einblenden, die genau das zeigt. Sandra als Kreis.",
    zeilen:[
-    {wer:"Sandra", text:"Fehlt uns eine der vier Achsen, rechnen wir nicht hoch.", regie:"Produktkarte ohne Score zeigen"},
+    {wer:"Sandra", text:"Fehlt uns eine der vier Antworten, rechnen wir nicht hoch.", regie:"Produktkarte ohne Zahl zeigen"},
     {wer:"Sandra", text:"Kein geschätzter Wert. Keine schöne Zahl, die keiner nachprüfen kann."}
    ]},
   {abschnitt:"Abschnitt 3 · Abbinder", zeit:"14–18 Sek.",
    kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Lieber ehrlich nichts als hübsch daneben. Wäre dir eine geschätzte Zahl lieber? Ehrlich jetzt."}
+    {wer:"Sandra", text:"Lieber ehrlich nichts als hübsch daneben."},
+    {wer:"Sandra", text:"Wäre dir eine geschätzte Zahl lieber? Ehrlich jetzt."}
    ]}
  ],
  c5:[
@@ -284,7 +288,7 @@ var SKRIPT={
    kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
     {wer:"Sandra", text:"Deshalb bewerten wir jede Zutat einzeln, nicht nur die Packung."},
-    {wer:"Sandra", text:"Kennst du noch so ein Paar, das gleich klingt und es nicht ist?"}
+    {wer:"Sandra", text:"Welche Zutat klingt harmloser, als sie ist?"}
    ]}
  ],
  c6:[
@@ -294,9 +298,9 @@ var SKRIPT={
     {wer:"Ralph", text:"Wie viele Punkte gibt Bio bei uns? Null."}
    ]},
   {abschnitt:"Abschnitt 2 · Warum", zeit:"4–14 Sek.",
-   kamera:"Filterleiste mit Bio-Schalter einblenden, der Index daneben ändert sich nicht.",
+   kamera:"Filterleiste mit Bio-Schalter einblenden, die Zahl daneben ändert sich nicht.",
    zeilen:[
-    {wer:"Ralph", text:"Bio ist bei uns ein Filter, kein Punkt.", regie:"Schalter umlegen, Index bleibt gleich"},
+    {wer:"Ralph", text:"Bio ist bei uns ein Filter, kein Punkt.", regie:"Schalter umlegen, Zahl bleibt gleich"},
     {wer:"Ralph", text:"Das Siegel sagt, wie angebaut wurde. Nicht, was drin ist. Ein Bio-Keks bleibt ein Keks."}
    ]},
   {abschnitt:"Abschnitt 3 · Abbinder", zeit:"14–18 Sek.",
@@ -306,26 +310,27 @@ var SKRIPT={
    ]}
  ],
  c7:[
-  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–4 Sek.",
+  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–5 Sek.",
    kamera:"Sandra frontal.",
    zeilen:[
-    {wer:"Sandra", text:"Fünfzehn von hundert Punkten hängen an den Zusatzstoffen. Trotzdem ist nicht jeder ein Gegner."}
+    {wer:"Sandra", text:"Fünfzehn von hundert Punkten hängen an den Zusatzstoffen."},
+    {wer:"Sandra", text:"Und trotzdem ist nicht jeder ein Gegner."}
    ]},
-  {abschnitt:"Abschnitt 2 · Die Achse", zeit:"4–13 Sek.",
-   kamera:"Balkenbild 03 kurz, dann Ampelzeile aus der Produktansicht.",
+  {abschnitt:"Abschnitt 2 · Was gemeint ist", zeit:"5–12 Sek.",
+   kamera:"Balkenbild 03 kurz zeigen.",
    zeilen:[
-    {wer:"Sandra", text:"Fünfzehn von hundert Punkten hängen an ihnen. Farbstoffe, Süßstoffe, Emulgatoren."},
-    {wer:"Sandra", text:"Manche sind harmlos. Manche nicht."}
+    {wer:"Sandra", text:"Farbstoffe, Süßstoffe, Emulgatoren. Manche sind harmlos. Manche nicht."}
    ]},
-  {abschnitt:"Abschnitt 3 · Was wir tun", zeit:"13–19 Sek.",
+  {abschnitt:"Abschnitt 3 · Was wir tun", zeit:"12–18 Sek.",
    kamera:"Ampel grün, gelb, rot einzeln hervorheben.",
    zeilen:[
     {wer:"Sandra", text:"Wir sortieren sie — grün, gelb, rot. Und schreiben dazu, warum.", regie:"Ampelzeile zeigen"}
    ]},
-  {abschnitt:"Abschnitt 4 · Abbinder", zeit:"19–22 Sek.",
+  {abschnitt:"Abschnitt 4 · Abbinder", zeit:"18–22 Sek.",
    kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Wir bewerten. Entscheiden tust du. Welchen Zusatzstoff soll ich dir mal genauer erklären?"}
+    {wer:"Sandra", text:"Wir bewerten. Entscheiden tust du."},
+    {wer:"Sandra", text:"Welchen Zusatzstoff soll ich dir mal genauer erklären?"}
    ]}
  ],
  c8:[
@@ -334,10 +339,10 @@ var SKRIPT={
    zeilen:[
     {wer:"Sandra", text:"Zwei Produkte, gleiche Nährwerte. Welches ist besser?"}
    ]},
-  {abschnitt:"Abschnitt 2 · Die Frage", zeit:"5–12 Sek.",
+  {abschnitt:"Abschnitt 2 · Die vierte Frage", zeit:"5–12 Sek.",
    kamera:"Balkenbild 04 einblenden.",
    zeilen:[
-    {wer:"Sandra", text:"Weil der Verarbeitungsgrad eine eigene Frage ist: Wie weit ist das noch ein Lebensmittel?"}
+    {wer:"Sandra", text:"Kommt darauf an, wie stark sie verarbeitet sind. Das ist bei uns eine eigene Frage."}
    ]},
   {abschnitt:"Abschnitt 3 · Der Weg", zeit:"12–19 Sek.",
    kamera:"Drei Stationen nacheinander: Korn, Flocke, Riegel.",
@@ -348,7 +353,8 @@ var SKRIPT={
   {abschnitt:"Abschnitt 4 · Abbinder", zeit:"19–22 Sek.",
    kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Fünfzehn Punkte, unabhängig von allem anderen. Wo würdest du die Grenze ziehen — ab wann ist es kein Lebensmittel mehr?"}
+    {wer:"Sandra", text:"Fünfzehn Punkte, unabhängig von allem anderen."},
+    {wer:"Sandra", text:"Haferflocken oder Müsliriegel — wo hört es für dich auf?"}
    ]}
  ],
  c9:[
@@ -364,34 +370,37 @@ var SKRIPT={
     {wer:"Ralph", text:"Es gibt keine Preisliste, keinen Hersteller-Zugang, keine gekaufte Note. Es gibt nur die Regeln — und die stehen öffentlich da."}
    ]},
   {abschnitt:"Abschnitt 3 · Abbinder", zeit:"13–18 Sek.",
-   kamera:"Logo am Ende. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   kamera:"Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
     {wer:"Ralph", text:"Könnte man bei uns Noten kaufen, könntest du die Seite gleich zumachen."},
     {wer:"Ralph", text:"Was müssten wir tun, damit du uns das glaubst?"}
    ]}
  ],
  c10:[
-  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–6 Sek.",
-   kamera:"Sandra hält zwei Packungen hoch, je eine pro Hand. Echte Kamera.",
+  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–7 Sek.",
+   kamera:"Sandra hält beide Frosta-Packungen hoch. Links Gemüse Mix Italienische Küche (P891), rechts Gemüse Pfanne all Italiana (P894). Echte Kamera.",
    zeilen:[
-    {wer:"Sandra", text:"Zwei Packungen. Welche schneidet besser ab?", regie:"Beide hochhalten"}
+    {wer:"Sandra", text:"Zwei Packungen. Gleiche Marke, beide italienisch.", regie:"Beide hochhalten"},
+    {wer:"Sandra", text:"Welche schneidet besser ab?"}
    ]},
-  {abschnitt:"Abschnitt 2 · Der Scan", zeit:"6–18 Sek.",
-   kamera:"Draufsicht: beide Packungen, Handy daneben. Ralph nur als Stimme.",
+  {abschnitt:"Abschnitt 2 · Der Scan", zeit:"7–16 Sek.",
+   kamera:"Draufsicht: beide Packungen, Handy daneben. Ralph nur als Stimme. Zahlen nacheinander einblenden.",
    zeilen:[
-    {wer:"Sandra", text:"Vorne sagen beide ungefähr das Gleiche."},
-    {wer:"Ralph",  text:"Scannen.", regie:"Aus dem Off. Beide Indizes nacheinander einblenden"},
-    {wer:"Sandra", text:"Und da ist der Unterschied."}
+    {wer:"Ralph",  text:"Scannen.", regie:"Aus dem Off"},
+    {wer:"Sandra", text:"Der Mix: hundert Punkte.", regie:"100 einblenden"},
+    {wer:"Sandra", text:"Die Pfanne: neunundsiebzig.", regie:"79 einblenden"}
    ]},
-  {abschnitt:"Abschnitt 3 · Die Pointe", zeit:"18–24 Sek.",
-   kamera:"Zutatenliste der schlechteren Packung, dritte Zeile hervorheben.",
+  {abschnitt:"Abschnitt 3 · Die Pointe", zeit:"16–25 Sek.",
+   kamera:"Beide Zutatenlisten nebeneinander. Bei der Pfanne ab Zutat 7 markieren.",
    zeilen:[
-    {wer:"Sandra", text:"Es sind nicht die Kalorien. Es ist die dritte Zutat.", regie:"Zeile markieren"}
+    {wer:"Sandra", text:"Beide ohne einen einzigen Zusatzstoff. Daran liegt es also nicht.", regie:"Zusatzstoff-Zeile bei beiden grün zeigen"},
+    {wer:"Sandra", text:"Der Mix ist sieben Gemüse. Bei der Pfanne kommen neun Sachen dazu — Wasser, Öl, Salz, Gewürze, Stärke."},
+    {wer:"Sandra", text:"Das eine ist Gemüse. Das andere ist Gemüse in Soße."}
    ]},
-  {abschnitt:"Abschnitt 4 · Abbinder", zeit:"24–28 Sek.",
-   kamera:"Zurück auf Sandra. Danach Logo. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+  {abschnitt:"Abschnitt 4 · Abbinder", zeit:"25–30 Sek.",
+   kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Welche zwei sollen wir als Nächstes vergleichen? Schreibt es drunter."},
+    {wer:"Sandra", text:"Neunundsiebzig ist übrigens gut. Es ist nur nicht dasselbe."},
     {wer:"Sandra", text:"Welche zwei sollen wir als Nächstes vergleichen?"}
    ]}
  ],
@@ -415,35 +424,35 @@ var SKRIPT={
     {wer:"Sandra", text:"Und ihr seht, wie eine Bewertung entsteht, bevor sie irgendwer sonst sieht."}
    ]},
   {abschnitt:"Abschnitt 4 · Abbinder", zeit:"22–26 Sek.",
-   kamera:"Ins Gesicht. Danach Einblendung mit dem Satz Ich bin dabei und dem Logo. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   kamera:"Ins Gesicht. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
    zeilen:[
-    {wer:"Sandra", text:"Schreibt uns einfach: Ich bin dabei."},
     {wer:"Sandra", text:"Bist du dabei? Dann schreib mir einfach: dabei."}
    ]}
  ]
 };
+
 var VARIANTE='c1';
 /* Staffel 1 — zehn Clips. Reihenfolge = Veröffentlichungsreihenfolge.
    art: 'kamera' = echt drehen, 'heygen' = Avatar-Clip. */
 var VIDEOS=[
  {id:'1',  art:'kamera', titel:'01 · Auftakt',        unter:'30 s · beide',  fass:[
    {k:'c1', l:'Beide'},{k:'c1b', l:'Nur Sandra'}]},
- {id:'2',  art:'heygen', titel:'02 · Zutatenliste',   unter:'12 s · Sandra', fass:[{k:'c2', l:'Hook'}]},
- {id:'3',  art:'heygen', titel:'03 · Die vier Achsen',unter:'45 s · Ralph',  fass:[{k:'c3', l:'Erklärung'}]},
+ {id:'2',  art:'heygen', titel:'02 · Zutatenliste',   unter:'16 s · Sandra', fass:[{k:'c2', l:'Hook'}]},
+ {id:'3',  art:'heygen', titel:'03 · Die vier Fragen',unter:'45 s · Ralph',  fass:[{k:'c3', l:'Erklärung'}]},
  {id:'4',  art:'heygen', titel:'04 · Nicht berechenbar', unter:'18 s · Sandra', fass:[{k:'c4', l:'Haltung'}]},
  {id:'5',  art:'heygen', titel:'05 · Hafer',          unter:'20 s · Sandra', fass:[{k:'c5', l:'Wissen'}]},
  {id:'6',  art:'heygen', titel:'06 · Bio',            unter:'18 s · Ralph',  fass:[{k:'c6', l:'Mythos'}]},
  {id:'7',  art:'heygen', titel:'07 · Zusatzstoffe',   unter:'22 s · Sandra', fass:[{k:'c7', l:'Nuance'}]},
  {id:'8',  art:'heygen', titel:'08 · Verarbeitung',   unter:'22 s · Sandra', fass:[{k:'c8', l:'Wissen'}]},
  {id:'9',  art:'heygen', titel:'09 · Unabhängig',     unter:'18 s · Ralph',  fass:[{k:'c9', l:'Vertrauen'}]},
- {id:'10', art:'kamera', titel:'10 · Duell',          unter:'28 s · beide',  fass:[{k:'c10', l:'Serienformat'}]},
+ {id:'10', art:'kamera', titel:'10 · Duell',          unter:'30 s · beide',  fass:[{k:'c10', l:'Serienformat'}]},
  {id:'11', art:'kamera', titel:'11 · Testnutzer',      unter:'26 s · Sandra', fass:[{k:'c11', l:'Aufruf'}]}
 ];
 
 function videoVon(k){ return VIDEOS.find(function(v){ return v.fass.some(function(f){ return f.k===k; }); }); }
 /* Vorgabedauer je Fassung — Reel-Format 30–60 s. */
 /* Zieldauer je Fassung in Sekunden — Vorgabe aus dem Clipplan Staffel 1. */
-var DAUER_VORGABE={c1:30,c1b:25,c2:12,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:28,c11:26};
+var DAUER_VORGABE={c1:30,c1b:25,c2:16,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:30,c11:26};
 /* Hinweiskasten je Video: 1 = Skript-Ausnahme, 2–5 = Stichwort-Karten. */
 var HINWEIS_HEYGEN='\u{1F3AC} <b>HeyGen-Clip \u2014 Wortskript.</b> '
  +'Der Text wird 1:1 in das Skriptfeld der jeweiligen Szene kopiert. Ein Abschnitt = eine Szene. '
