@@ -30,7 +30,7 @@ var POSTFACH_SIGNATUR_HTML =
 
 var PF_ORDNER = [
   { kind:'inbox',   label:'Posteingang' },
-  { kind:'sent',    label:'Postausgang' },
+  { kind:'sent',    label:'Gesendet' },
   { kind:'trash',   label:'Papierkorb' },
   { kind:'archive', label:'Ablage' }
 ];
@@ -310,12 +310,14 @@ function pfKontaktbuchZeichnen(){
   var arr=window._pfKontakte||[];
   if(!arr.length){ l.innerHTML='<div style="color:var(--muted);font-size:12px;padding:6px 0">Noch keine Kontakte.</div>'; return; }
   l.innerHTML=arr.map(function(k){
+    var istKunde = k.quelle==='kunde';
     return '<div style="display:flex;align-items:center;gap:6px;padding:6px 0;border-top:1px solid var(--line)">'
       +'<div onclick="pfKontaktUebernehmen(\''+esc(k.email)+'\')" style="flex:1;min-width:0;cursor:pointer">'
-        +'<div style="font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(k.name||'(ohne Namen)')+'</div>'
+        +'<div style="font-weight:700;font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(k.name||'(ohne Namen)')
+          +(istKunde?' <span style="font-weight:600;color:var(--muted);font-size:10px">· Kunde</span>':'')+'</div>'
         +'<div style="color:var(--muted);font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(k.email)+'</div>'
       +'</div>'
-      +'<button onclick="postfachKontaktLoeschen('+k.id+')" title="löschen" style="border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px">🗑</button>'
+      +(istKunde?'' : '<button onclick="postfachKontaktLoeschen('+k.id+')" title="löschen" style="border:0;background:transparent;color:var(--muted);font-size:14px;cursor:pointer;padding:2px 4px">🗑</button>')
     +'</div>';
   }).join('');
 }
