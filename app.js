@@ -5179,6 +5179,7 @@ function setMode(m){
   { var _fsv=document.getElementById("fotoView"); if(_fsv) _fsv.style.display = m==="fotostudio"?"":"none"; }
   { var _mdv=document.getElementById("methodikView"); if(_mdv) _mdv.style.display = m==="methodik"?"":"none"; }
   { var _tv=document.getElementById("todoView"); if(_tv) _tv.style.display = m==="todo"?"":"none"; }
+  { var _pfv=document.getElementById("postfachView"); if(_pfv) _pfv.style.display = m==="postfach"?"":"none"; }
   { var _sv=document.getElementById("suppView"); if(_sv) _sv.style.display = m==="supp"?"":"none"; }
   { var _rv=document.getElementById("rikiView"); if(_rv) _rv.style.display = m==="rikiimport"?"":"none"; }
   if(m==="produkte"){ try{ render(); }catch(e){} }
@@ -5203,6 +5204,9 @@ function setMode(m){
      (§3.0) - ist es aus, gibt es die Seite fuer niemanden, auch nicht per Adresszeile. */
   if(m==="methodik"){ if(!methodikAn()){ setMode("produkte"); return; } methodikRender(); }
   if(m==="todo"){ if(!(ME&&ME.is_admin)){ setMode("produkte"); return; } todoRender(); }
+  /* 17.09.2026, Postfach-Seite (Ralph: "wie ein mail programm, nicht nur popup").
+     Seite wird dynamisch erzeugt (postfach-ui.js) statt admin.html anzufassen. */
+  if(m==="postfach"){ if(!(ME&&ME.is_admin)){ setMode("produkte"); return; } if(typeof postfachSeiteRender==="function") postfachSeiteRender(); }
   /* Admin-Riegel wie bei jeder anderen Admin-Ansicht: der Lauf gibt Geld aus. */
   if(m==="supp"){ try{ suppPlanRender(); }catch(e){} }
   if(m==="rikiimport"){ if(!(ME&&ME.is_admin)){ setMode("produkte"); return; } if(typeof rkInit!=="function"){ setMode("produkte"); return; } rkInit(); }
@@ -15192,7 +15196,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-17-7";
+const APP_BUILD = "2026-09-17-8";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

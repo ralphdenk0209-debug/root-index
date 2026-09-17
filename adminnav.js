@@ -148,7 +148,7 @@ function applyAdminMode(){
        produkteditorLaden() in app.js (A4.2: kein zweiter Weg erfunden). */
     if(!document.querySelector('script[data-postfach-ui]')){
       var _pfs=document.createElement('script');
-      _pfs.src='postfach-ui.js?v=2026-09-17-7';
+      _pfs.src='postfach-ui.js?v=2026-09-17-8';
       _pfs.dataset.postfachUi='lazy';
       document.head.appendChild(_pfs);
     }
@@ -161,7 +161,7 @@ function applyAdminMode(){
       k.innerHTML='<span class="riGi">▦</span>'
         +'<span class="riWm">ROOT<b>COCKPIT</b></span>'
         +'<span class="riR">'
-          +'<button id="riMail" onclick="try{postfachDockToggle();}catch(e){}" title="Postfach kontakt@root-index.de" '
+          +'<button id="riMail" onclick="try{navTo(\'postfach\');}catch(e){}" title="Postfach kontakt@root-index.de" '
             +'style="position:relative;border:0;background:transparent;color:inherit;font-size:15px;cursor:pointer;padding:1px 6px;line-height:1">'
             +'✉️<span id="riMailN" style="display:none;position:absolute;top:-3px;right:-1px;background:#c0392b;color:#fff;'
               +'font-size:9px;font-weight:800;line-height:1;padding:2px 4px;border-radius:8px"></span></button>'
@@ -172,11 +172,12 @@ function applyAdminMode(){
               +esc(b)+'</span>':'')
         +'</span>';
       document.body.appendChild(k);
-      /* 17.09.2026, Postfach-Dock: ungelesene Mails einmal beim Laden und dann
-         im gleichen 60s-Takt wie die Versions-Ampel pruefen (A4.2: kein zweiter
-         Timer). postfachLoad() setzt selbst das Abzeichen (riMailN). */
-      try{ if(typeof postfachLoad==='function') postfachLoad(); }catch(e){}
-      try{ setInterval(function(){ try{ if(typeof postfachLoad==='function') postfachLoad(); }catch(e){} }, 60000); }catch(e){}
+      /* 17.09.2026, Postfach: ungelesene Mails einmal beim Laden und dann im
+         gleichen 60s-Takt wie die Versions-Ampel pruefen (A4.2: kein zweiter
+         Timer). postfachBadgeAktualisieren() setzt nur das Abzeichen (riMailN) -
+         die eigentliche Seite (postfachSeiteRender) haengt jetzt in setMode(). */
+      try{ if(typeof postfachBadgeAktualisieren==='function') postfachBadgeAktualisieren(); }catch(e){}
+      try{ setInterval(function(){ try{ if(typeof postfachBadgeAktualisieren==='function') postfachBadgeAktualisieren(); }catch(e){} }, 60000); }catch(e){}
 
       /* ======================================================================
          AMPEL AN DER VERSIONSNUMMER  ·  Ralph-Auftrag 26.08.2026
