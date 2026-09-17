@@ -1,5 +1,10 @@
 // RIKI-SCAN-WORKER
 //
+// v7 (2026-09-17, #214, Ralph jaja): MODELL WIEDER MITSCHICKEN. Der Worker schickte seit dem
+//   Rueckfall auf v4 (Git-Umzug 13.09.) kein Modell mehr - riki-etikett las deshalb mit Haiku,
+//   gegen Ralphs Entscheid A vom 09.09. (Sonnet im Hintergrund). Gemessen in Riki_Nutzung:
+//   09./10.09. Sonnet, 16./17.09. Haiku. Neu: LESE_MODELL wird an riki-etikett uebergeben.
+//
 // v6 (2026-09-17, #214, Ralph 3A): ZUSATZDATEN UEBER DEN FREIGEGEBENEN SCHREIBWEG.
 //   v4 schrieb Wirkstoffe und Mikronaehrstoffe direkt in "Produkt_Naehrstoffe" und
 //   "Produkt_Mikronaehrstoffe". Der Riegel guard_riki_direct_nutrient_write sperrt das
@@ -51,6 +56,8 @@ function response(body: unknown, status = 200) {
 
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
+const LESE_MODELL = "claude-sonnet-4-6";
+
 function fehlerText(e: unknown): string {
   if (e instanceof Error) return e.message;
   if (e && typeof e === "object") {
@@ -106,7 +113,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v6", dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: "riki-scan-worker v7", dauer_ms: Date.now() - jobStarted },
           p_fehler: "Keine verwertbaren Fotos im RIKI-Job.",
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "keine_fotos" });
@@ -122,7 +129,9 @@ Deno.serve(async (req: Request) => {
             Authorization: `Bearer ${serviceKey}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined }),
+          // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
+          // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, modell: LESE_MODELL }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
@@ -131,7 +140,7 @@ Deno.serve(async (req: Request) => {
           await sb.rpc("cb_riki_scan_job_abschliessen", {
             p_job_id: job.job_id,
             p_ok: false,
-            p_ergebnis_meta: { worker: "riki-scan-worker v6", riki_http: r.status, dauer_ms: Date.now() - jobStarted },
+            p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: r.status, dauer_ms: Date.now() - jobStarted },
             p_fehler: String(msg).slice(0, 1000),
           });
           results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "riki_etikett", http: r.status });
@@ -142,7 +151,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v6", dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: "riki-scan-worker v7", dauer_ms: Date.now() - jobStarted },
           p_fehler: msg.slice(0, 1000),
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "riki_fetch" });
@@ -179,7 +188,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v6", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
           p_fehler: "RIKI konnte keinen Produktnamen lesen.",
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "kein_name" });
@@ -191,7 +200,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v6", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
           p_fehler: `Persistenz fehlgeschlagen: ${ingErr.message}`.slice(0, 1000),
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "persistenz" });
@@ -258,7 +267,7 @@ Deno.serve(async (req: Request) => {
           p_job_id: job.job_id,
           p_ok: false,
           p_ergebnis_meta: {
-            worker: "riki-scan-worker v6", ingest: ing, dauer_ms: Date.now() - jobStarted,
+            worker: "riki-scan-worker v7", ingest: ing, dauer_ms: Date.now() - jobStarted,
             untaugliche_zeilen: untauglich,
           },
           p_fehler: `Zusatzdaten-Persistenz fehlgeschlagen: ${fehlerText(e)}`.slice(0, 1000),
@@ -268,7 +277,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const meta = {
-        worker: "riki-scan-worker v6",
+        worker: "riki-scan-worker v7",
         // #530: uebersprungene Zeilen bleiben sichtbar. Ein Job darf nicht als
         // sauber gelten, wenn Angaben unterwegs verloren gingen (Kernvertrag B1).
         untaugliche_zeilen: untauglich,
