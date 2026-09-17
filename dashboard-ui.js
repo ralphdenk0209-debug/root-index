@@ -5030,6 +5030,12 @@ function _abWorkCss(){
    +A+' .gln{font-size:9px;color:#5b6d73;text-transform:uppercase;letter-spacing:.03em}'
    +A+' .glv{font-family:ui-monospace,monospace;font-weight:700;font-size:14px;margin-top:2px}'
    +A+' .glt{font-size:9px;color:#5b6d73;margin-top:1px;line-height:1.25}'
+   +A+' .glblklbl{font-size:9.5px;text-transform:uppercase;letter-spacing:.04em;color:#5b6d73;font-weight:700;margin:10px 0 5px}'
+   +A+' .glblk{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}'
+   +A+' .glamp{display:flex;align-items:center;gap:8px;padding:6px 9px;border-radius:8px;font-size:12px}'
+   +A+' .gld{width:8px;height:8px;border-radius:50%;flex:0 0 auto}'
+   +A+' .glamptxt{flex:1;min-width:0}'
+   +A+' .glampm{font-size:10.5px;color:#5b6d73;font-family:ui-monospace,monospace;flex:0 0 auto}'
    +A+' textarea.awsel{resize:vertical;width:100%;max-width:none}'
    +A+' button[disabled]{opacity:.55;cursor:default}'
    /* Schmale Kachel: Alter und Zustaendigkeit weichen zuerst — die Nummer, der
@@ -5524,6 +5530,25 @@ function _abkGolive(c){
   var gateFaelle=wk?Number(wk.gate_faelle):null, gateGruen=wk?!!wk.gate_offen:null;
   var farbeGate=gateGruen===true?_AB.gut:(gateGruen===false?_AB.krit:_AB.mut);
 
+  /* "Aufgaben, die dich blockieren" (Mockup A) — dieselbe Liste wie die
+     Aufgaben-Kachel (karten.aufgaben.top), hier nur die ersten drei, damit
+     die Go-Live-Kachel nicht zur zweiten Aufgabenliste wird (A4.2, eine
+     Quelle). Nur decision_needed/blocked zaehlt als "blockiert dich". */
+  var arbeit=_abCkKarte('aufgaben');
+  var blockiert=((arbeit&&arbeit.top)||[]).slice(0,3);
+  var blockHtml=blockiert.length
+    ? blockiert.map(function(w){
+        var farbe=w.decision_needed?_AB.krit:_AB.warn;
+        var bg=w.decision_needed?'#fdecea':'#fdf1e4';
+        return '<div class="glamp" style="background:'+bg+'">'
+          +'<span class="gld" style="background:'+farbe+'"></span>'
+          +'<span class="glamptxt">#'+esc(String(w.work_id))+' '+esc(w.title||'')+'</span>'
+          +'<span class="glampm">'+(w.decision_needed?'Du entscheidest':esc(_abCkStatusWort(w.status)))+'</span>'
+        +'</div>';
+      }).join('')
+    : '<div class="glamp" style="background:#e7f5ec"><span class="gld" style="background:'+_AB.gut+'"></span>'
+      +'<span class="glamptxt">Keine offenen Entscheidungen bei dir.</span></div>';
+
   var kette=stationen.map(function(s){
     var istStau=stau && s.kasten_id===stau.kasten_id && Number(s.haengt)>0;
     var farbe=istStau?_AB.krit:(Number(s.haengt)>0?_AB.warn:_AB.gut);
@@ -5559,6 +5584,8 @@ function _abkGolive(c){
           +'<div class="glsub">heute · '+frei7+' in 7 Tagen</div>'
         +'</div>'
       +'</div>'
+      +'<div class="glblklbl">Aufgaben, die dich blockieren</div>'
+      +'<div class="glblk">'+blockHtml+'</div>'
       +'<div class="glkette">'+kette+'</div>'
     +'</div>',
     fuss:'Kette gemessen '+(ck.gemessen_am?new Date(ck.gemessen_am).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'—')
