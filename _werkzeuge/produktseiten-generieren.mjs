@@ -40,7 +40,7 @@ const WEB  = process.env.RI_WEB || dirname(HIER);        // .../webseite
 const ZIEL = join(WEB, "produkt");
 const DOMAIN = "https://root-index.de";
 
-const FELDER = "id,name,marke,kategorie,unterkategorie,clean_score,bewertung,score_vollstaendig,zutaten,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ean,bio,inhalt_menge,inhalt_einheit,mengen_einheit,verifiziert_am,form";
+const FELDER = "id,name,marke,kategorie,unterkategorie,clean_score,bewertung,score_vollstaendig,zutaten,p_zutaten,p_zusatzstoffe,p_nova,p_naehrwert,ernaehrungsform,quelle,warum,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ean,bio,inhalt_menge,inhalt_einheit,mengen_einheit,verifiziert_am,form";
 
 /* ---------- Zugangsdaten aus app.js (nicht duplizieren) ---------- */
 function ausAppJs() {
@@ -154,6 +154,23 @@ ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line
 .krit{color:#a33}
 h2{font-size:1.05rem;margin-top:22px}
 p.einordnung{margin:.2em 0 1em;max-width:62ch}
+.karte{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px 16px 6px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
+.flux{width:250px;max-width:82%;margin:6px auto 0}
+.wort{text-align:center;font-size:1.3rem;font-weight:800;margin:2px 0 0}
+.rang{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.55}
+.kacheln{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
+@media(max-width:520px){.kacheln{grid-template-columns:repeat(2,1fr)}}
+.kachel{background:var(--bg);border-radius:10px;padding:8px 9px;min-width:0}
+.kachel .l{font-size:.72rem;color:var(--muted)}
+.kachel .v{font-size:.94rem;font-weight:600;white-space:nowrap}
+.pille{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600;margin:4px 0 2px}
+details{border-top:1px solid var(--line)}
+summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:.88rem}
+summary::-webkit-details-marker{display:none}
+summary .pf{color:var(--muted);font-size:.75rem}
+details>div{padding:2px 2px 12px}
+.zeile{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
+.zeile span:first-child{color:var(--muted)}
 .fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
 .liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
 .liste a b{color:var(--green)}
@@ -172,17 +189,85 @@ Keine medizinische oder ernährungstherapeutische Beratung.
 </html>`;
 }
 
-/* ---------- Produktseite ---------- */
+/* ---------- Produktseite ----------
+   Die Seite soll aussehen wie die Produktkarte in der App (Ralph 17.09.2026):
+   Fluxkompensator mit den vier Achsen, Notenwort, Platz in der Kategorie,
+   Nährwert-Kacheln, aufklappbare Kapitel. Uebernommen aus app.js (pkFlux,
+   kachel, ACC, katRangHtml, farbe/farbeText) - mit zwei Unterschieden:
+
+   - Keine Animation und kein Count-up. Eine statische Seite hat kein
+     JavaScript, und Google soll die Zahl im Quelltext finden, nicht in
+     einem Bewegungsablauf.
+   - Farben als echte Werte statt als CSS-Variablen: diese Seiten laden
+     ui.css nicht, eine Variable ohne Definition waere schwarz auf schwarz.
+   Die Aufklappkapitel sind <details> - das ist HTML, kein Skript, und der
+   Inhalt steht trotzdem im Quelltext. */
 const NAEHRWERTE = [
   ["m_kcal", "Energie", "kcal"], ["m_protein", "Eiweiß", "g"], ["m_fett", "Fett", "g"],
   ["m_ges_fett", "davon gesättigt", "g"], ["m_kh", "Kohlenhydrate", "g"], ["m_zucker", "davon Zucker", "g"],
   ["m_ballast", "Ballaststoffe", "g"], ["m_salz", "Salz", "g"],
 ];
 
-function produktSeite(p, datei, katDatei, kat, alternativen) {
+const RING = { "Sehr gut": "#16a34a", "Gut": "#65a30d", "Mittel": "#e8920c", "Schwach": "#dc2626" };
+const SCHRIFT = { "Sehr gut": "#15803d", "Gut": "#4d7c0f", "Mittel": "#b45309", "Schwach": "#b91c1c" };
+
+/* Der Fluxkompensator: vier Bahnen, vier Kappen, ein Ring mit der Zahl.
+   Geometrie eins zu eins aus app.js - dieselbe Marke soll dieselbe Form haben. */
+function fluxSvg(p, score, ringfarbe) {
+  const A = [
+    { v: num(p.p_zutaten), max: 30, f: "#16a34a" },
+    { v: num(p.p_zusatzstoffe), max: 15, f: "#3987e5" },
+    { v: num(p.p_nova), max: 15, f: "#7c6fe0" },
+    { v: num(p.p_naehrwert) !== null ? num(p.p_naehrwert) * 2 : null, max: 40, f: "#d97706" },
+  ].map((a) => ({ ...a, pct: a.v === null ? null : Math.max(0, Math.min(1, a.v / a.max)) }));
+  const L = 92;
+  const bahn = ["M26 34 H74 L106 64", "M274 34 H226 L194 64", "M26 142 H74 L106 112", "M274 142 H226 L194 112"];
+  const kap = [[26, 34], [274, 34], [26, 142], [274, 142]];
+  const ziel = score === null ? "–" : String(Math.round(score));
+  return `<svg viewBox="0 0 300 176" style="width:100%;display:block" role="img" aria-label="Root Index ${ziel} von 100, vier Achsen">`
+    + `<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">`
+    + bahn.map((d) => `<path d="${d}" stroke="rgba(120,120,120,.16)"/>`).join("")
+    + A.map((a, i) => `<path d="${bahn[i]}" stroke="${a.pct === null ? "rgba(120,120,120,.28)" : a.f}" stroke-dasharray="${L}" stroke-dashoffset="${(a.pct === null ? L : L * (1 - a.pct)).toFixed(1)}"/>`).join("")
+    + `</g>`
+    + A.map((a, i) => `<circle cx="${kap[i][0]}" cy="${kap[i][1]}" r="7" fill="${a.pct === null ? "#9aa7a0" : a.f}"/>`).join("")
+    + `<circle cx="150" cy="88" r="42" fill="none" stroke="${score === null ? "#9aa7a0" : ringfarbe}" stroke-width="5"/>`
+    + `<text x="150" y="103" text-anchor="middle" style="font-size:44px;font-weight:800" fill="#1c241c">${ziel}</text>`
+    + `</svg>`;
+}
+
+function pille(ef) {
+  const m = { "vegan": ["🌱", "#e7f4ec", "#1f5e34"], "vegetarisch": ["🥚", "#eef6e9", "#4d7c0f"], "enthält Tierprodukte": ["🥩", "#f3eee6", "#7c5e3a"] };
+  const t = m[String(ef || "")];
+  return t ? `<span class="pille" style="background:${t[1]};color:${t[2]}">${t[0]} ${esc(ef)}</span>` : "";
+}
+
+function kachel(p, feld, label, einheit) {
+  const roh = num(p[feld]);
+  if (roh === null) return "";
+  const wert = feld === "m_kcal" ? Math.round(roh) : Math.round(roh * 10) / 10;
+  return `<div class="kachel"><div class="l">${label}</div><div class="v">${String(wert).replace(".", ",")} ${einheit}</div></div>`;
+}
+
+function acc(icon, titel, inner) {
+  return `<details><summary><span>${icon} ${titel}</span><span class="pf">▾</span></summary><div>${inner}</div></details>`;
+}
+
+/* Platz in der eigenen Kategorie. Aus app.js (katRang): ein Score ohne Maßstab
+   verfuehrt zu sinnlosen Vergleichen - ein Oel mit einem Brot zu vergleichen
+   entscheidet niemand. */
+function rangHtml(rang, kat) {
+  if (!rang) return "";
+  const anteil = rang.platz / rang.gesamt;
+  const f = anteil <= 0.25 ? "#166534" : (anteil <= 0.6 ? "#8a5a0b" : "#b45309");
+  const bg = anteil <= 0.25 ? "#eaf5ee" : "#fff7ea";
+  const bd = anteil <= 0.25 ? "#e3e8e3" : "#e4a343";
+  return `<div class="rang" style="background:${bg};border:1px solid ${bd}">`
+    + `<b style="color:${f}">🏆 Platz ${rang.platz} von ${rang.gesamt} in „${esc(kat)}"</b>`
+    + `<div style="color:var(--muted);margin-top:3px">Der Index vergleicht <b>innerhalb der Kategorie</b>. Ein Öl mit einem Brot zu vergleichen ergibt keinen Sinn – ein Öl mit einem anderen Öl schon.</div></div>`;
+}
+
+function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const name = p.name;
-  // Traegt der Name die Marke schon ("dmBio Haferflocken"), waere "von dmBio"
-  // im Titel eine Dopplung - Google zeigt den Titel genau so an, wie er hier steht.
   // Im Stamm stehen Handelsmarken oft als Kommaliste in einem Feld
   // ("Best Moments,Guschlbauer,Penny"). So gehoert das nicht in einen
   // Seitentitel, den Google eins zu eins anzeigt - im Titel steht die erste,
@@ -195,6 +280,10 @@ function produktSeite(p, datei, katDatei, kat, alternativen) {
   const basis = (p.mengen_einheit || "g").toLowerCase() === "ml" ? "100 ml" : "100 g";
   const titel = `${name}${marke ? " von " + marke : ""} – Bewertung, Zutaten & Nährwerte | Root Index`;
   const score = num(p.clean_score);
+  const voll = p.score_vollstaendig !== false;
+  const wort = voll ? (p.bewertung || "") : "Vorläufig";
+  const ringfarbe = RING[p.bewertung] || "#9aa7a0";
+  const schrift = SCHRIFT[p.bewertung] || "#57534e";
   const beschreibung = [
     score !== null ? `Root-Index-Bewertung: ${score}/100${p.bewertung ? " (" + p.bewertung + ")" : ""}.` : null,
     `Zutaten und Nährwerte je ${basis} für ${name}${marke ? " von " + marke : ""}.`,
@@ -202,28 +291,9 @@ function produktSeite(p, datei, katDatei, kat, alternativen) {
   ].filter(Boolean).join(" ").slice(0, 300);
 
   const zutaten = Array.isArray(p.zutaten) ? p.zutaten.filter((z) => z && z.name) : [];
-  const nz = NAEHRWERTE.map(([f, l, e]) => (num(p[f]) !== null ? `<tr><th>${l}</th><td>${zahl(p[f])} ${e}</td></tr>` : "")).join("");
-
-  // KEIN Product-Markup (Aenderung 15.09.2026, Google-Meldung vom selben Tag):
-  // Fuer die Produkt-Auszeichnung verlangt Google eines von drei Feldern -
-  // offers, review oder aggregateRating. Preise haben wir fuer 3 von 38.123
-  // Produkten, Rezensionen gar keine, und den eigenen Score als
-  // aggregateRating auszugeben waere eine vorgetaeuschte Nutzerbewertung.
-  // Also die Auszeichnung weglassen, statt sie falsch zu fuellen.
-  //
-  // Stattdessen die Brotkrume - die stimmt, ist vollstaendig, und Google zeigt
-  // damit im Treffer den Pfad statt der nackten Adresse.
-  const jsonld = {
-    "@context": "https://schema.org", "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Produkte", item: `${DOMAIN}/produkt/` },
-      ...(p.kategorie ? [{ "@type": "ListItem", position: 2, name: p.kategorie, item: `${DOMAIN}/produkt/${katDatei}` }] : []),
-      { "@type": "ListItem", position: p.kategorie ? 3 : 2, name },
-    ],
-  };
 
   // Ein paar Saetze aus dem, was der Server ohnehin liefert. Nichts erfunden,
-  // nichts nachgerechnet - ohne sie steht auf 37.000 Seiten kein einziger Satz,
+  // nichts nachgerechnet - ohne sie steht auf 38.000 Seiten kein einziger Satz,
   // und Google behandelt gleichfoermige Datenblaetter zurueckhaltend.
   const noten = zutaten.map((z) => num(z.rating)).filter((n) => n !== null);
   const schwach = zutaten.filter((z) => num(z.rating) !== null && num(z.rating) <= 3);
@@ -248,18 +318,43 @@ function produktSeite(p, datei, katDatei, kat, alternativen) {
     naehr.length ? `Je ${basis}: ${naehr.join(", ")}.` : null,
   ].filter(Boolean).join(" ");
 
+  const jsonld = {
+    "@context": "https://schema.org", "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Produkte", item: `${DOMAIN}/produkt/` },
+      ...(p.kategorie ? [{ "@type": "ListItem", position: 2, name: p.kategorie, item: `${DOMAIN}/produkt/${katDatei}` }] : []),
+      { "@type": "ListItem", position: p.kategorie ? 3 : 2, name },
+    ],
+  };
+
+  const alleZeilen = NAEHRWERTE.filter(([f]) => num(p[f]) !== null)
+    .map(([f, l, e]) => `<div class="zeile"><span>${l}</span><span style="font-weight:600">${zahl(p[f])} ${e}</span></div>`).join("");
+  const zutatenListe = zutaten.length
+    ? `<ul class="zt">${zutaten.map((z) => `<li>${esc(z.name)}${num(z.rating) !== null ? ` – Note ${z.rating}/10` : ""}${z.kritisch ? ` <span class="krit">· kritisch</span>` : ""}</li>`).join("")}</ul>`
+    : "";
+  const achsen = [
+    ["Zutaten", p.p_zutaten, 30], ["Zusatzstoffe", p.p_zusatzstoffe, 15],
+    ["Verarbeitung (NOVA)", p.p_nova, 15], ["Nährwert", num(p.p_naehrwert) !== null ? num(p.p_naehrwert) * 2 : null, 40],
+  ].filter(([, v]) => num(v) !== null)
+    .map(([l, v, max]) => `<div class="zeile"><span>${l}</span><span style="font-weight:600">${zahl(v)} von ${max}</span></div>`).join("");
+
   const inhalt = `
 <nav class="krumen"><a href="/produkt/">Produkte</a>${p.kategorie ? ` › <a href="/produkt/${katDatei}">${esc(p.kategorie)}</a>` : ""}</nav>
+<div class="karte">
 <h1>${esc(name)}</h1>
-${markeVoll ? `<p class="marke">${esc(markeVoll)}${p.unterkategorie ? " · " + esc(p.unterkategorie) : ""}${p.bio === true ? " · Bio" : ""}</p>` : ""}
-${score !== null ? `<div class="score">Root-Index-Bewertung: ${score}/100${p.bewertung ? " · " + esc(p.bewertung) : ""}</div>` : ""}
+${markeVoll || p.kategorie ? `<p class="marke">${esc([markeVoll, p.kategorie].filter(Boolean).join(" · "))}${p.bio === true ? " · Bio" : ""}</p>` : ""}
+${pille(p.ernaehrungsform)}
+<div class="flux">${fluxSvg(p, score, ringfarbe)}</div>
+${wort ? `<p class="wort" style="color:${schrift}">${esc(wort)}</p>` : ""}
+${rangHtml(rang, kat)}
+<div class="kacheln">${kachel(p, "m_kcal", "Energie", "kcal")}${kachel(p, "m_fett", "Fett", "g")}${kachel(p, "m_protein", "Eiweiß", "g")}${kachel(p, "m_ballast", "Ballaststoffe", "g")}</div>
 ${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
-${zutaten.length ? `<h2>Zutaten (${zutaten.length})</h2><ul class="zt">${zutaten.map((z) =>
-    `<li>${esc(z.name)}${num(z.rating) !== null ? ` – Note ${z.rating}/10` : ""}${z.kritisch ? ` <span class="krit">· kritisch</span>` : ""}</li>`).join("")}</ul>` : ""}
-${nz ? `<h2>Nährwerte je ${basis}</h2><table>${nz}</table>` : ""}
-${p.ean ? `<p>EAN: ${esc(p.ean)}</p>` : ""}
-${p.inhalt_menge ? `<p>Inhalt: ${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}</p>` : ""}
-<p><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
+${alleZeilen ? acc("📊", `Alle Nährwerte je ${basis}`, alleZeilen) : ""}
+${zutatenListe ? acc("🧾", `Zutaten (${zutaten.length})`, zutatenListe) : ""}
+${achsen ? acc("🔬", "Im Root Index", achsen + `<div style="color:var(--muted);font-size:.78rem;margin-top:6px">Die vier Achsen ergeben die Punktzahl. ${p.warum ? esc(p.warum) : "Bewertet wird die Zusammensetzung, nicht die Werbung."}</div>`) : ""}
+${acc("🛡️", "Quelle & Beleg", `<div class="zeile"><span>Quelle</span><span style="font-weight:600">${esc(p.quelle || "nicht angegeben")}</span></div>${p.ean ? `<div class="zeile"><span>EAN</span><span style="font-weight:600">${esc(p.ean)}</span></div>` : ""}${p.inhalt_menge ? `<div class="zeile"><span>Inhalt</span><span style="font-weight:600">${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}</span></div>` : ""}${p.verifiziert_am ? `<div class="zeile"><span>Geprüft am</span><span style="font-weight:600">${esc(String(p.verifiziert_am).slice(0, 10))}</span></div>` : ""}`)}
+</div>
+<p style="margin:16px 0"><a href="/">→ Dieses Produkt in der Root-Index-App ansehen</a></p>
 ${alternativen && alternativen.length ? `<h2>Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</h2><div class="liste">${
   alternativen.map((a) => `<a href="/produkt/${a.datei}">${esc(a.name)}${a.marke ? " · " + esc(a.marke) : ""} <b>${a.score}/100</b></a>`).join("")
 }</div>` : ""}`;
@@ -335,8 +430,15 @@ async function main() {
 
   let geschrieben = 0;
   for (const [kat, { datei: katDatei, eintraege }] of proKat) {
+    // Platz in der Kategorie: nur unter denen, die eine Punktzahl haben -
+    // "Platz 300 von 4000" waere sonst eine Aussage ueber fehlende Daten.
+    const bewertet = eintraege.filter((e) => num(e.p.clean_score) !== null)
+      .sort((a, b) => num(b.p.clean_score) - num(a.p.clean_score));
+    const platzVon = new Map(bewertet.map((e, i) => [e.p.id, i + 1]));
     for (const { p, datei } of eintraege) {
-      writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei, kat, querverweise(p, kat)));
+      const rang = platzVon.has(p.id) && bewertet.length >= 3
+        ? { platz: platzVon.get(p.id), gesamt: bewertet.length } : null;
+      writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei, kat, querverweise(p, kat), rang));
       urls.push(`${DOMAIN}/produkt/${datei}`);
       geschrieben++;
     }
