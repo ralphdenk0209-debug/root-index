@@ -1,5 +1,12 @@
 // RIKI-SCAN-WORKER
 //
+// v8 (2026-09-18, #214, Ralph "machen"): LESEERGEBNIS VOR DEM SPEICHERN ABLEGEN.
+//   Am 17.09. gingen 6 bezahlte Sonnet-Lesungen verloren, weil das Speichern scheiterte
+//   (Timeout) und das Leseergebnis nirgends lag. Neu: nach einer brauchbaren Lesung legt
+//   der Worker sie ueber cb_riki_scan_lesung_ablegen in shadow_v1.riki_scan_lesung ab -
+//   VOR cb_produkt_ingest. Ein Retry desselben Jobs holt sie ueber cb_riki_scan_lesung_holen
+//   und bezahlt nicht neu. Neu lesen erzwingen: ergebnis_meta.retry.neu_lesen = true.
+//
 // v7 (2026-09-17, #214, Ralph jaja): MODELL WIEDER MITSCHICKEN. Der Worker schickte seit dem
 //   Rueckfall auf v4 (Git-Umzug 13.09.) kein Modell mehr - riki-etikett las deshalb mit Haiku,
 //   gegen Ralphs Entscheid A vom 09.09. (Sonnet im Hintergrund). Gemessen in Riki_Nutzung:
@@ -57,6 +64,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
+const WORKER = "riki-scan-worker v8";
 
 function fehlerText(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -113,7 +121,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v7", dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: WORKER, dauer_ms: Date.now() - jobStarted },
           p_fehler: "Keine verwertbaren Fotos im RIKI-Job.",
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "keine_fotos" });
@@ -122,7 +130,18 @@ Deno.serve(async (req: Request) => {
 
       let read: any = null;
       let readStatus = 0;
+      // v8: liegt fuer diesen Job schon eine bezahlte Lesung, wird sie wiederverwendet.
+      let lesungWiederverwendet = false;
+      let lesungAbgelegt: unknown = null;
       try {
+        const h = await sb.rpc("cb_riki_scan_lesung_holen", { p_job_id: job.job_id });
+        if (!h.error && h.data?.lesung?.vorschlag) {
+          read = h.data.lesung;
+          readStatus = Number(h.data.riki_http ?? 200);
+          lesungWiederverwendet = true;
+        }
+      } catch (_) { /* ohne Ablage wird normal gelesen */ }
+      if (!lesungWiederverwendet) try {
         const r = await fetch(`${url}/functions/v1/riki-etikett`, {
           method: "POST",
           headers: {
@@ -140,18 +159,25 @@ Deno.serve(async (req: Request) => {
           await sb.rpc("cb_riki_scan_job_abschliessen", {
             p_job_id: job.job_id,
             p_ok: false,
-            p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: r.status, dauer_ms: Date.now() - jobStarted },
+            p_ergebnis_meta: { worker: WORKER, riki_http: r.status, dauer_ms: Date.now() - jobStarted },
             p_fehler: String(msg).slice(0, 1000),
           });
           results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "riki_etikett", http: r.status });
           continue;
         }
+        // v8: bezahlte Lesung sofort ablegen, bevor irgendetwas gespeichert wird.
+        try {
+          const ab = await sb.rpc("cb_riki_scan_lesung_ablegen", {
+            p_job_id: job.job_id, p_lesung: read, p_modell: LESE_MODELL, p_riki_http: r.status,
+          });
+          lesungAbgelegt = ab.error ? { fehler: fehlerText(ab.error) } : ab.data;
+        } catch (e) { lesungAbgelegt = { fehler: fehlerText(e) }; }
       } catch (e) {
         const msg = String(e);
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v7", dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: WORKER, dauer_ms: Date.now() - jobStarted },
           p_fehler: msg.slice(0, 1000),
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "riki_fetch" });
@@ -188,7 +214,7 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: WORKER, riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
           p_fehler: "RIKI konnte keinen Produktnamen lesen.",
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "kein_name" });
@@ -200,7 +226,8 @@ Deno.serve(async (req: Request) => {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
           p_ok: false,
-          p_ergebnis_meta: { worker: "riki-scan-worker v7", riki_http: readStatus, dauer_ms: Date.now() - jobStarted },
+          p_ergebnis_meta: { worker: WORKER, riki_http: readStatus, dauer_ms: Date.now() - jobStarted,
+            lesung_wiederverwendet: lesungWiederverwendet, lesung_abgelegt: lesungAbgelegt },
           p_fehler: `Persistenz fehlgeschlagen: ${ingErr.message}`.slice(0, 1000),
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "persistenz" });
@@ -267,7 +294,7 @@ Deno.serve(async (req: Request) => {
           p_job_id: job.job_id,
           p_ok: false,
           p_ergebnis_meta: {
-            worker: "riki-scan-worker v7", ingest: ing, dauer_ms: Date.now() - jobStarted,
+            worker: WORKER, ingest: ing, lesung_wiederverwendet: lesungWiederverwendet, dauer_ms: Date.now() - jobStarted,
             untaugliche_zeilen: untauglich,
           },
           p_fehler: `Zusatzdaten-Persistenz fehlgeschlagen: ${fehlerText(e)}`.slice(0, 1000),
@@ -277,7 +304,9 @@ Deno.serve(async (req: Request) => {
       }
 
       const meta = {
-        worker: "riki-scan-worker v7",
+        worker: WORKER,
+        lesung_wiederverwendet: lesungWiederverwendet,
+        lesung_abgelegt: lesungAbgelegt,
         // #530: uebersprungene Zeilen bleiben sichtbar. Ein Job darf nicht als
         // sauber gelten, wenn Angaben unterwegs verloren gingen (Kernvertrag B1).
         untaugliche_zeilen: untauglich,
