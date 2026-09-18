@@ -1,5 +1,12 @@
 // RIKI-SCAN-WORKER
 //
+// v9 (2026-09-18, #214, Ralph jaja): BARCODE AUF DEM FOTO PRUEFEN. Ersatz fuer die am 13.09. verlorene
+//   EAN-Pruefung aus v5 (Quelltext nie abgelegt, neu entworfen, nicht nachgebaut). riki-etikett bekommt
+//   ean_pruefen=true und liest die Nummer selbst ab (ean_auf_foto). Nur wenn Foto-Nummer UND Scan-Nummer
+//   gueltige GTINs mit korrekter Pruefziffer sind und sich unterscheiden, wird der Job angehalten: kein
+//   Ingest, Fehler "Barcode auf dem Foto passt nicht zum gescannten". Unlesbar oder ungueltig -> weiter wie
+//   bisher (Befund steht in ergebnis_meta.ean_pruefung). Vergleich ohne fuehrende Nullen (EAN-13 = UPC-12).
+//
 // v8 (2026-09-18, #214, Ralph "machen"): LESEERGEBNIS VOR DEM SPEICHERN ABLEGEN.
 //   Am 17.09. gingen 6 bezahlte Sonnet-Lesungen verloren, weil das Speichern scheiterte
 //   (Timeout) und das Leseergebnis nirgends lag. Neu: nach einer brauchbaren Lesung legt
@@ -64,7 +71,27 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v8";
+const WORKER = "riki-scan-worker v9";
+
+// v9: GTIN-Pruefziffer (EAN-8/UPC-12/EAN-13/GTIN-14).
+function gtinGueltig(x: string): boolean {
+  if (!/^\d{8}$|^\d{12,14}$/.test(x)) return false;
+  const d = x.split("").map(Number);
+  const pruef = d.pop()!;
+  let summe = 0;
+  for (let i = d.length - 1, g = 3; i >= 0; i--, g = g === 3 ? 1 : 3) summe += d[i] * g;
+  return (10 - (summe % 10)) % 10 === pruef;
+}
+function eanPruefen(scan: unknown, foto: unknown): { ergebnis: string; scan: string | null; foto: string | null } {
+  const s = String(scan ?? "").replace(/\D/g, "");
+  const f = String(foto ?? "").replace(/\D/g, "");
+  if (!s) return { ergebnis: "ohne_scan", scan: null, foto: f || null };
+  if (!f) return { ergebnis: "foto_nicht_lesbar", scan: s, foto: null };
+  if (!gtinGueltig(f)) return { ergebnis: "foto_ungueltig", scan: s, foto: f };
+  if (!gtinGueltig(s)) return { ergebnis: "scan_ungueltig", scan: s, foto: f };
+  const norm = (x: string) => x.replace(/^0+/, "");
+  return { ergebnis: norm(s) === norm(f) ? "gleich" : "verschieden", scan: s, foto: f };
+}
 
 function fehlerText(e: unknown): string {
   if (e instanceof Error) return e.message;
@@ -150,7 +177,7 @@ Deno.serve(async (req: Request) => {
           },
           // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
           // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, modell: LESE_MODELL }),
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
@@ -185,6 +212,19 @@ Deno.serve(async (req: Request) => {
       }
 
       const v = read.vorschlag;
+      // v9: Barcode vom Foto gegen den Scan. Nur ein sicherer Widerspruch haelt an.
+      const eanPruefung = eanPruefen(job.ean, v?.ean_auf_foto);
+      if (eanPruefung.ergebnis === "verschieden") {
+        await sb.rpc("cb_riki_scan_job_abschliessen", {
+          p_job_id: job.job_id,
+          p_ok: false,
+          p_ergebnis_meta: { worker: WORKER, riki_http: readStatus, dauer_ms: Date.now() - jobStarted,
+            ean_pruefung: eanPruefung, lesung_wiederverwendet: lesungWiederverwendet, lesung_abgelegt: lesungAbgelegt },
+          p_fehler: `Barcode auf dem Foto (${eanPruefung.foto}) passt nicht zum gescannten (${eanPruefung.scan}). Nichts gespeichert.`,
+        });
+        results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "ean_widerspruch" });
+        continue;
+      }
       const zusatz = v.zusatzstoffe ?? {};
       // KP-468: Etikettwortlaut in Etikettreihenfolge, aus original_text je Zutat.
       // Kein Gesamtfeld in riki-etikett - das hier ist die verlustfreie Kette der
@@ -305,6 +345,7 @@ Deno.serve(async (req: Request) => {
 
       const meta = {
         worker: WORKER,
+        ean_pruefung: eanPruefung,
         lesung_wiederverwendet: lesungWiederverwendet,
         lesung_abgelegt: lesungAbgelegt,
         // #530: uebersprungene Zeilen bleiben sichtbar. Ein Job darf nicht als

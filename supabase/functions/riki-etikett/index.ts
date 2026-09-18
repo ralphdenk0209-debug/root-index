@@ -1,5 +1,10 @@
 // RIKI-ETIKETT — der Ausweg aus der Sackgasse.
 //
+// 18.09.2026 (#214, Ralph jaja): BARCODE-NUMMER VOM FOTO. Neues Ausgabefeld ean_auf_foto: die Ziffern
+//   unter dem Strichcode, so wie sie auf dem Foto stehen, sonst null. Ruft der Scan-Worker mit
+//   ean_pruefen=true, wird die gescannte Nummer NICHT in den Auftrag geschrieben, damit Riki sie nicht
+//   abschreibt, sondern selbst abliest. Der Vergleich passiert im riki-scan-worker (v9), nicht hier.
+//
 // 18.08.2026 v25 WELLE 1 (#120), Ralph-Entscheid: base_ingredient OHNE Bio-Vorsilbe,
 //   wortgleich zu riki-analyse. parenthetical_items als string[]|null statt [{text}].
 //   Ohne "ignored": gleiche Werteliste wie riki-analyse.
@@ -129,6 +134,9 @@ Bewerte den STOFF, nicht seine Funktionsrolle. Bio aendert die Note nicht.
 === ZUSATZSTOFFE ===
 Erkenne E-Nummer und Klartext. kritisch=true bei Azo-Farbstoffen E102/E104/E110/E122/E124/E129, E250, E407, E950/E951/E954/E955, E450/E451. Aromen sind keine Zusatzstoffe.
 
+=== BARCODE-NUMMER ===
+ean_auf_foto: die Ziffernfolge unter dem Strichcode (EAN/GTIN, 8, 12, 13 oder 14 Stellen), genau so, wie sie auf dem Foto steht, nur Ziffern. Ist kein Strichcode zu sehen oder ist auch nur eine Ziffer nicht sicher lesbar: null. Nie raten, nie ergaenzen.
+
 === WIRKSTOFF-MENGEN ===
 Je Stoff Name, Menge, Einheit mg|µg|g|IU und falls sichtbar nrv. Nichts umrechnen. FCC ist nicht IU; IU ist nicht mg; g ist nicht mg. Keine Menge => kein Wirkstoffeintrag.
 
@@ -144,6 +152,7 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
   \"bezug\": \"100g\"|\"100ml\"|null,
   \"nur_portionswerte\": boolean,
   \"portion_g\": number|null,
+  \"ean_auf_foto\": string|null,
   \"etikett_sprachen\": string[],
   \"naehrwerte_100g\": { \"kcal\": number|null, \"protein\": number|null, \"kh\": number|null, \"zucker\": number|null, \"fett\": number|null, \"ges_fett\": number|null, \"ballaststoffe\": number|null, \"salz\": number|null },
   \"zutaten\": [ {
@@ -479,7 +488,7 @@ Deno.serve(async (req) => {
     if(!istAutopilot){const{data:u}=await sb.auth.getUser();if(!u?.user)return new Response(JSON.stringify({error:"Bitte anmelden, um Etiketten auszulesen."}),{status:401,headers:{...CORS,"Content-Type":"application/json"}});const{data:limitRaw,error:limitErr}=await sb.rpc("cb_riki_etikett_limit_check");if(limitErr)return new Response(JSON.stringify({error:"Limit-Prüfung fehlgeschlagen: "+limitErr.message}),{status:500,headers:{...CORS,"Content-Type":"application/json"}});limit=Array.isArray(limitRaw)?limitRaw[0]:limitRaw;if(limit?.erlaubt!==true)return new Response(JSON.stringify({error:limit?.grund??"Limit erreicht.",heute_genutzt:limit?.heute_genutzt,limit_tag:limit?.limit_tag}),{status:429,headers:{...CORS,"Content-Type":"application/json"}});}
     const bilder:string[]=Array.isArray(body.bilder)?body.bilder.slice(0,3):[];if(!bilder.length)return new Response(JSON.stringify({error:"Keine Bilder übergeben."}),{status:400,headers:{...CORS,"Content-Type":"application/json"}});
     const inhalt:unknown[]=[];for(const b64 of bilder){const m=String(b64).match(/^data:(image\/[a-z]+);base64,(.+)$/);if(!m)continue;inhalt.push({type:"image",source:{type:"base64",media_type:m[1],data:m[2]}});}if(!inhalt.length)return new Response(JSON.stringify({error:"Bilder konnten nicht gelesen werden."}),{status:400,headers:{...CORS,"Content-Type":"application/json"}});
-    inhalt.push({type:"text",text:"Lies aus diesen Etikettfotos die Nährwerttabelle (Spalte 'je 100 g'!), die Zutatenliste UND — falls vorhanden — die Wirkstoff-/Vitamin-Tabelle mit Mengen aus."+(body.ean?` Der Barcode lautet ${body.ean}.`:" Dieses Produkt hat keinen Barcode.")+" Zutaten nur einmal aus der deutschen Fassung. Strukturiere jede Zutatenzeile nach Work #78 in original_text, base_ingredient, processing_modifiers, attributes, parenthetical_role, parenthetical_items und extraction_status. Klammerinhalt erst nach seiner Rolle beurteilen; composition/explanation erzeugt keine weiteren Produktzutaten. Unklar => unresolved. Einheiten nie umdeuten."});
+    inhalt.push({type:"text",text:"Lies aus diesen Etikettfotos die Nährwerttabelle (Spalte 'je 100 g'!), die Zutatenliste UND — falls vorhanden — die Wirkstoff-/Vitamin-Tabelle mit Mengen aus."+(body.ean?(body.ean_pruefen===true?" Das Produkt hat einen Barcode; lies seine Nummer selbst vom Foto ab (Feld ean_auf_foto).":` Der Barcode lautet ${body.ean}.`):" Dieses Produkt hat keinen Barcode.")+" Zutaten nur einmal aus der deutschen Fassung. Strukturiere jede Zutatenzeile nach Work #78 in original_text, base_ingredient, processing_modifiers, attributes, parenthetical_role, parenthetical_items und extraction_status. Klammerinhalt erst nach seiner Rolle beurteilen; composition/explanation erzeugt keine weiteren Produktzutaten. Unklar => unresolved. Einheiten nie umdeuten."});
     const modell:string=body.modell??"claude-haiku-4-5-20251001";const t0=Date.now();
     const ai=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json"},body:JSON.stringify({model:modell,max_tokens:8000,system:[{type:"text",text:REGELWERK,cache_control:{type:"ephemeral"}}],messages:[{role:"user",content:inhalt}]})});
     const j=await ai.json();if(!ai.ok){await sb.rpc("cb_riki_buchen",{p_modus:modusName,p_modell:modell,p_in:0,p_out:0,p_kosten:0,p_produkt_id:null,p_erfolg:false,p_fehler:JSON.stringify(j).slice(0,400)});return new Response(JSON.stringify({error:"Riki konnte das Etikett nicht lesen."}),{status:502,headers:{...CORS,"Content-Type":"application/json"}});}
