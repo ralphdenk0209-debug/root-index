@@ -7971,23 +7971,31 @@ async function renderStart(){
     /* 19.09.2026 (Ralph): "mach raster 3x3 weil wir aktuell 9 kacheln haben.
        wasser, schlaf und schritte darf aufklappen." Aus drei Zweierreihen mit
        Untertiteln wird EIN Raster mit drei Spalten: sechs Wege oben, die drei
-       Werte unten. Die Untertitel sind raus - sie waren der Grund, warum die
-       Seite ueberladen wirkte; ein Wort je Kachel reicht.
-       Zyklus und Darm sind aus dem Raster gewandert, damit Web und App
-       dieselben neun Kacheln zeigen; sie stehen im Menue. */
+       Werte unten. Der Zusatz unter dem Namen ist auf Ralphs Wunsch geblieben
+       (19.09.2026) - er sagt, was die Kachel tut; das Ueberladene kam aus den
+       DREI Reihen, nicht aus der zweiten Zeile.
+       Zyklus und Darm stehen vorerst nirgends - auch nicht im Menue: sie sind
+       noch nicht befuellt (Ralph). Ein Weg auf eine leere Seite ist schlimmer
+       als kein Weg. */
     +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px">'
-    +riMiniTile('produkte','search','Produkte','green','barcode','startProdScan()')
-    +riMiniTile('rezepte','bowl','Rezepte','amber')
-    +riMiniTile('tagebuch','cutlery','Tagebuch','blue')
-    +riMiniTile('training','figure','Training','violet')
-    +riMiniTile('einkauf','cart','Einkauf','teal')
-    +riMiniTile('meinetipps','heart','Empfehlungen','berry')
+    +riMiniTile('produkte','search','Produkte','suchen &amp; scannen','green','barcode','startProdScan()')
+    +riMiniTile('rezepte','bowl','Rezepte','finden &amp; kochen','amber')
+    +riMiniTile('tagebuch','cutlery','Tagebuch','heute erfassen','blue')
+    +riMiniTile('training','figure','Training','Plan &amp; Verlauf','violet')
+    +riMiniTile('einkauf','cart','Einkauf','sammeln &amp; abhaken','teal')
+    +riMiniTile('meinetipps','heart','Empfehlungen','für dich','berry')
     +riWertTile('wasser','Wasser','drop','blue')
     +(hasFeat('gesundheit') ? riWertTile('schlaf','Schlaf','moon','violet')+riWertTile('schritte','Schritte','shoe','green') : '')
     +'</div>'
-    /* Die aufgeklappte Kachel: volle Breite unter dem Raster, immer nur eine. */
-    +'<div id="wasserBox_w" style="display:none"><div id="wasserWidget"></div></div>'
-    +schritteHtml
+    /* 19.09.2026 (Ralph): "wasser, schritte und schlaf als popup, unten
+       angebaut ragen sie nach unten raus." Die drei Karten liegen jetzt in
+       einem Popup ueber der Seite statt im Fluss darunter. */
+    +'<div id="wertPopup" class="wertpop"><div class="wertpop-back" onclick="startWertToggle(null)"></div>'
+      +'<div class="wertpop-card">'
+        +'<button type="button" class="wertpop-zu" onclick="startWertToggle(null)" aria-label="Schließen">✕</button>'
+        +'<div id="wasserBox_w" style="display:none"><div id="wasserWidget"></div></div>'
+        +schritteHtml
+      +'</div></div>'
     +unterstuetzenHtml();
   if(hasFeat('gesundheit')){ renderSchritte(); renderSchlaf(); }
   try{ wasserWidgetLoad(); }catch(e){}
@@ -8001,15 +8009,21 @@ function riMiniPalette(accent){
   return {green:['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'],amber:['#6b4410','#1a120a','#ffc24b','#ffcf6b'],blue:['#143a63','#0b1420','#5ab6ff','#7cc4ff'],violet:['#45256b','#120b1a','#b79bff','#c9b3ff'],berry:['#6b1f45','#1a0a12','#ff6fa8','#ffa8cb'],terra:['#7a3b1f','#1a0e08','#ff9e5e','#ffc59b'],teal:['#0e4a44','#081614','#4fd6c0','#8cf0e0']}[accent]||['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'];
 }
 function riMiniRahmen(A){
-  return 'position:relative;overflow:hidden;cursor:pointer;border-radius:16px;padding:11px 10px;height:88px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 120% at 22% 12%, '+A[0]+' 0%, '+A[1]+' 62%);box-shadow:0 8px 22px rgba(15,40,25,.22)';
+  return 'position:relative;overflow:hidden;cursor:pointer;border-radius:16px;padding:11px 10px;height:104px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 120% at 22% 12%, '+A[0]+' 0%, '+A[1]+' 62%);box-shadow:0 8px 22px rgba(15,40,25,.22)';
 }
-function riMiniTile(nav,ico,label,accent,cornerIco,cornerAct){
+/* Der Zusatz ist auf Ralphs Wunsch geblieben (19.09.2026) - er sagt, was die
+   Kachel tut. In drei Spalten ist er eng, deshalb eine Zeile mit Ellipse statt
+   Umbruch: abgeschnitten mitten im Wort waere schlimmer als gekuerzt. */
+function riMiniTile(nav,ico,label,zusatz,accent,cornerIco,cornerAct){
   var A=riMiniPalette(accent);
   var _akt=(nav==='produkte')?'prodHome()':("navTo('"+nav+"')");
   return '<div onclick="'+_akt+'" style="'+riMiniRahmen(A)+'">'
     +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
     +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
-    +'<div style="position:relative;z-index:2;color:#ffffff;font-size:12.5px;font-weight:700;line-height:1.2">'+label+'</div>'
+    +'<div style="position:relative;z-index:2;min-width:0">'
+      +'<div style="color:#ffffff;font-size:12.5px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>'
+      +'<div style="color:rgba(255,255,255,.6);font-size:9.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+zusatz+'</div>'
+    +'</div>'
     +(cornerIco?'<div onclick="event.stopPropagation();'+cornerAct+'" title="Barcode scannen" style="position:absolute;top:9px;right:10px;color:'+A[3]+';opacity:.92;cursor:pointer;z-index:3">'+riIco(cornerIco,18)+'</div>':'')
   +'</div>';
 }
@@ -8024,17 +8038,23 @@ function riWertTile(art,label,ico,accent){
     +'</div>'
   +'</div>';
 }
-/* Aufklappen: immer nur eine Kachel offen, nochmal tippen schliesst sie wieder.
+/* Die Wertekachel oeffnet ihre Karte als Popup ueber der Seite. Immer nur
+   eine; nochmal tippen, Klick daneben oder das Kreuz schliessen sie.
    Die Widgets darin sind die alten - sie werden nur ein- und ausgeblendet. */
 function startWertToggle(art){
   var H={wasser:'wasserBox_w',schlaf:'schlafBox_w',schritte:'schritteBox_w'};
-  var offen=(window._startWertOffen===art)?null:art;
+  var offen=(art && window._startWertOffen!==art) ? art : null;
   window._startWertOffen=offen;
   Object.keys(H).forEach(function(k){
     var box=document.getElementById(H[k]); if(box) box.style.display=(k===offen)?'':'none';
     var kach=document.getElementById('wertKachel_'+k);
     if(kach){ kach.style.outline=(k===offen)?'2px solid rgba(255,255,255,.38)':'none'; kach.style.outlineOffset='-2px'; }
   });
+  var pop=document.getElementById('wertPopup');
+  if(pop) pop.classList.toggle('open', !!offen);
+  /* Beim Schliessen die Zahl auf der Kachel nachziehen - sie kann sich im
+     Popup geaendert haben. */
+  if(!offen){ try{ startWerteLaden(); }catch(e){} }
 }
 /* Die Zahlen auf den drei Wertekacheln. Eigene Abfrage, weil die Widgets
    darunter erst beim Aufklappen sichtbar werden - die Kachel soll den Wert
@@ -8413,32 +8433,60 @@ function bnActive(m){
 }
 /* ===== Menue: Faecher statt Schublade (Ralph 19.09.2026) =====
    "das menue sollte sich aufziehen im halbkreis wie beim macbook download im
-   dock." Der Knopf in der Leiste faechert die Wege jetzt nach oben auf; die
-   Einstellungen (Darstellung, RIKI, Wiki, Methode) bleiben in der bisherigen
-   Schublade und haengen als letzter Punkt am Faecher.
+   dock." Der Knopf in der Leiste faechert die Wege jetzt nach oben auf.
    Ein voller Halbkreis passt auf 390 px nicht - die Haelfte laege neben dem
    Schirm. Deshalb dieselbe Form wie am Mac: gleicher Schritt nach oben,
-   wachsender Versatz zur Seite. Die Punkte sitzen an der ECHTEN Position des
-   Knopfes (gemessen beim Oeffnen), nicht an einer geratenen. */
-/* Der Faecher traegt genau das, was NICHT auf der Startseite steht - sonst
-   waere jeder Punkt zweimal da. Rezepte, Einkauf, Training, Tagebuch und
-   Produkte sind Kacheln; hier stehen die uebrigen Wege. */
-var MFAN=[
-  ['planer','Planer','book','#8fa79a'],
-  ['zyklus','Zyklus & Nährstoffe','heart','#ff6fa8'],
-  ['darm','Darmgesundheit','leaf','#ff9e5e'],
-  ['supp','Meine Supplements','drop','#5ab6ff'],
-  ['profil','Mein Profil','cutlery','#5ef2a0']
+   wachsender Versatz zur Seite. Die Punkte sitzen an der GEMESSENEN Position
+   des Knopfes, nicht an einer geratenen.
+
+   19.09.2026 (Ralph): "es sollten aber mindestens die kategorien sein oder
+   geclustert, alle einfuegen wird wohl zu viel, oder?" - stimmt, zwoelf
+   Punkte werden auf einem Handy eine Leiter. Deshalb ZWEI BLAETTER: erst vier
+   Gruppen, dann die Wege darin. Dieselben Gruppen wie in der App.
+
+   Zyklus und Darm stehen vorerst nirgends - weder Kachel noch Faecher (Ralph:
+   "bleibt vorerst raus, auch im web, weil noch nicht befuellt"). Ein Weg, der
+   auf eine leere Seite fuehrt, ist schlimmer als kein Weg. */
+var MFAN_GRUPPEN=[
+  ['essen','Essen','cutlery','#5ef2a0',[
+    ['produkte','Produkte','search','#5ef2a0'],
+    ['rezepte','Rezepte','bowl','#ffc24b'],
+    ['einkauf','Einkaufsliste','cart','#4fd6c0'],
+    ['tagebuch','Tagebuch','cutlery','#5ab6ff']
+  ]],
+  ['plan','Plan','book','#b79bff',[
+    ['planer','Planer','book','#8fa79a'],
+    ['training','Training','figure','#b79bff'],
+    ['meinetipps','Empfehlungen','heart','#ff6fa8']
+  ]],
+  ['ich','Ich','shoe','#4fd6c0',[
+    ['profil','Mein Profil','shoe','#5ef2a0'],
+    ['supp','Meine Supplements','drop','#5ab6ff']
+  ]],
+  /* Kein zweites Blatt: hier steht alles, was Einstellung ist - Darstellung,
+     RIKI, Wiki, Methode. Das gehoert in die Schublade, nicht in einen Faecher. */
+  ['mehr','Mehr & Einstellungen','leaf','#8fa79a',[]]
 ];
+/* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
+var _mfanGruppe=null;
 function buildFan(){
   var f=document.getElementById('mehrFan'); if(!f) return;
   var knopf=document.getElementById('bnmehr');
   var r=knopf?knopf.getBoundingClientRect():{right:window.innerWidth-12,top:window.innerHeight-60};
   var ax=r.right-6, ay=(r.top!=null?r.top:window.innerHeight-60)-4;   /* Ankerpunkt: rechte Oberkante des Knopfes */
-  /* Alte Punkte raus, Hintergrund behalten. */
   Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); });
-  var liste=MFAN.slice();
-  liste.push(['__mehr','Einstellungen','book','#8fa79a']);
+
+  var liste=[];
+  if(_mfanGruppe){
+    var g=MFAN_GRUPPEN.filter(function(x){ return x[0]===_mfanGruppe; })[0];
+    if(g){ liste=g[4].map(function(w){ return {art:'weg', ziel:w[0], txt:w[1], ico:w[2], col:w[3]}; }); }
+    liste.push({art:'zurueck', txt:'Zurück', ico:'book', col:'#8fa79a'});
+  } else {
+    liste=MFAN_GRUPPEN.map(function(g){
+      return {art:(g[4].length?'gruppe':'mehr'), ziel:g[0], txt:g[1], ico:g[2], col:g[3]};
+    });
+  }
+
   var n=liste.length;
   liste.forEach(function(it,i){
     var stufe=i+1;
@@ -8450,22 +8498,25 @@ function buildFan(){
     b.style.right=(window.innerWidth-ax)+'px';
     b.style.top=ay+'px';
     b.style.transitionDelay=(i*28)+'ms';
-    b.innerHTML='<span class="mfi" style="color:'+it[3]+'">'+riIco(it[2],20)+'</span>'+esc(it[1]);
-    b.setAttribute('data-ziel', it[0]);
-    b.onclick=function(){ fanGo(it[0]); };
+    b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'+esc(it.txt)
+      +(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':'');
+    b.onclick=function(){ fanKlick(it); };
     f.appendChild(b);
     /* Erst im naechsten Bild verschieben, sonst gibt es keinen Uebergang. */
     requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
   });
 }
-function fanGo(ziel){
+function fanKlick(it){
+  if(it.art==='gruppe'){ _mfanGruppe=it.ziel; buildFan(); return; }
+  if(it.art==='zurueck'){ _mfanGruppe=null; buildFan(); return; }
   closeFan();
-  if(ziel==='__mehr'){ setTimeout(function(){ buildMehr(); var s=document.getElementById('mehrSheet'); if(s) s.classList.add('open'); }, 150); return; }
-  navTo(ziel);
+  if(it.art==='mehr'){ setTimeout(function(){ buildMehr(); var s=document.getElementById('mehrSheet'); if(s) s.classList.add('open'); }, 150); return; }
+  navTo(it.ziel);
 }
 function toggleMehr(){
   var f=document.getElementById('mehrFan'); if(!f) return;
   if(f.classList.contains('open')){ closeFan(); return; }
+  _mfanGruppe=null;
   f.classList.add('open');
   buildFan();
 }
@@ -8476,10 +8527,10 @@ function closeFan(){
     el.style.transitionDelay='0ms';
     el.style.transform='translate(0,0) scale(.35)';
   });
-  setTimeout(function(){ if(!f.classList.contains('open')) Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); }); }, 300);
+  setTimeout(function(){ if(!f.classList.contains('open')){ _mfanGruppe=null; Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); }); } }, 300);
 }
 function closeMehr(){ const s=document.getElementById('mehrSheet'); if(s) s.classList.remove('open'); }
-if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanGo=fanGo; }
+if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanKlick=fanKlick; window.startWertToggle=startWertToggle; }
 function _ktInp(id,ph,val){ return '<input id="'+id+'" placeholder="'+esc(ph)+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px">'; }
 function _ktArea(id,ph){ return '<textarea id="'+id+'" placeholder="'+esc(ph)+'" rows="4" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px"></textarea>'; }
 function ktSwitch(){ const t=(document.querySelector('input[name=ktTyp]:checked')||{}).value; document.getElementById('ktFrageBox').style.display=(t==='frage')?'block':'none'; document.getElementById('ktProdBox').style.display=(t==='produkt')?'block':'none'; }
