@@ -62,10 +62,12 @@ async function wasserAdd(ml){
   try{ var r=await client.rpc("cb_wasser_log_add",{p_ml:(ml||null),p_datum:(window._wasserTag||tbToday())}); if(r&&r.error) throw new Error(r.error.message); }
   catch(e){ var m=document.getElementById("wasserMsg"); if(m) m.textContent="Konnte nicht buchen: "+((e&&e.message)||e); return; }
   await wasserWidgetLoad();
+  try{ startWerteLaden(); }catch(e){}   /* 19.09.2026: Zahl auf der Wertekachel mitziehen */
 }
 async function wasserUndo(){
   try{ await client.rpc("cb_wasser_log_undo",{p_datum:(window._wasserTag||tbToday())}); }catch(e){}
   await wasserWidgetLoad();
+  try{ startWerteLaden(); }catch(e){}
 }
 async function wasserPrefRender(){
   if(!ME) return;

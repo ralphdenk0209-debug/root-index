@@ -7823,6 +7823,7 @@ async function saveSchritte(){
   const v=Math.max(0,parseInt(el.value)||0), datum=window._schrDate||tbToday();
   const {error}=await client.rpc("cb_schritte_speichern",{p_datum:datum, p_schritte:v});
   await renderSchritte();
+  try{ startWerteLaden(); }catch(e){}
   const m=document.getElementById("startSchritteMsg");
   if(m){ if(error){ m.style.color="var(--k-dc2626)"; m.textContent="Fehler: "+error.message; } else { m.style.color="var(--k-16a34a)"; m.textContent="✓ "+v.toLocaleString("de-DE")+" gespeichert"; } }
 }
@@ -7879,6 +7880,7 @@ async function saveSchlaf(){
   const v=Math.max(0,Math.min(24,parseFloat((el.value||"").replace(',','.'))||0)), datum=window._schlDate||tbToday();
   const {error}=await client.rpc("cb_schlaf_speichern",{p_datum:datum, p_stunden:v});
   await renderSchlaf();
+  try{ startWerteLaden(); }catch(e){}
   const m=document.getElementById("startSchlafMsg");
   if(m){ if(error){ m.style.color="var(--k-dc2626)"; m.textContent="Fehler: "+error.message; } else { m.style.color="var(--k-16a34a)"; m.textContent="✓ "+(Math.round(v*10)/10).toLocaleString("de-DE")+" h gespeichert"; } }
 }
@@ -7954,7 +7956,10 @@ async function renderStart(){
    Handys im Rahmen und kann nichts ueberdecken (§1.11n-n: nichts, was ueber
    dem liegt, womit man arbeitet). Ohne Status wird gar nichts gerendert. */
 
-  const schritteHtml = hasFeat('gesundheit') ? '<div id="schritteBox"></div><div id="schlafBox"></div>' : '';
+  /* 19.09.2026 (Ralph, Raster 3x3): Schritte und Schlaf stehen nicht mehr
+     dauerhaft untereinander, sondern haengen an ihrer Wertekachel und klappen
+     auf. Die Widgets selbst bleiben unveraendert - nur ihre Huelle ist neu. */
+  const schritteHtml = hasFeat('gesundheit') ? '<div id="schritteBox_w" style="display:none"><div id="schritteBox"></div></div><div id="schlafBox_w" style="display:none"><div id="schlafBox"></div></div>' : '';
   dash.innerHTML=
     /* Ralph 30.07.: Begruessung + Datum raus, der Status als diagonale Banderole
        in die obere rechte Ecke.
@@ -7963,21 +7968,83 @@ async function renderStart(){
        Startseite. Hier wird sie NICHT mehr gebaut, sonst stuende sie doppelt
        (§1.11n-p: toter Code, der dieselben IDs vergibt, ist eine geladene Falle). */
     startKennzahlen(sum, prof)
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'
-    +riGlowTile('produkte','search','Produkte','suchen &amp; scannen','green','barcode','startProdScan()')
-    +riGlowTile('rezepte','bowl','Rezepte','finden &amp; kochen','amber')
-    +riGlowTile('tagebuch','cutlery','Ernährungstagebuch','heute erfassen','blue')
-    +riGlowTile('training','figure','Training','Plan &amp; Fortschritt','violet')
+    /* 19.09.2026 (Ralph): "mach raster 3x3 weil wir aktuell 9 kacheln haben.
+       wasser, schlaf und schritte darf aufklappen." Aus drei Zweierreihen mit
+       Untertiteln wird EIN Raster mit drei Spalten: sechs Wege oben, die drei
+       Werte unten. Die Untertitel sind raus - sie waren der Grund, warum die
+       Seite ueberladen wirkte; ein Wort je Kachel reicht.
+       Zyklus und Darm sind aus dem Raster gewandert, damit Web und App
+       dieselben neun Kacheln zeigen; sie stehen im Menue. */
+    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:12px">'
+    +riMiniTile('produkte','search','Produkte','green','barcode','startProdScan()')
+    +riMiniTile('rezepte','bowl','Rezepte','amber')
+    +riMiniTile('tagebuch','cutlery','Tagebuch','blue')
+    +riMiniTile('training','figure','Training','violet')
+    +riMiniTile('einkauf','cart','Einkauf','teal')
+    +riMiniTile('meinetipps','heart','Empfehlungen','berry')
+    +riWertTile('wasser','Wasser','drop','blue')
+    +(hasFeat('gesundheit') ? riWertTile('schlaf','Schlaf','moon','violet')+riWertTile('schritte','Schritte','shoe','green') : '')
     +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+riGlowTile('zyklus','heart','Zyklus &amp; Nährstoffe','B6, Magnesium &amp; Co.','berry')+riGlowTile('darm','leaf','Darmgesundheit','Basics &amp; mehr','terra')+'</div>'
-    /* 11.09.2026 (Ralph): Einkaufsliste wird schmal und teilt sich die Zeile mit
-       den Empfehlungen - beide so breit wie die vier Kacheln darueber. */
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">'+riGlowTile('einkauf','cart','Einkaufsliste','sammeln &amp; abhaken','teal')+riGlowTile('meinetipps','heart','Empfehlungen','für dich','berry')+'</div>'
-    +'<div id="wasserWidget"></div>'   /* 28z21: Wasser unter die Einkaufsliste (Ralph) */
+    /* Die aufgeklappte Kachel: volle Breite unter dem Raster, immer nur eine. */
+    +'<div id="wasserBox_w" style="display:none"><div id="wasserWidget"></div></div>'
     +schritteHtml
     +unterstuetzenHtml();
   if(hasFeat('gesundheit')){ renderSchritte(); renderSchlaf(); }
   try{ wasserWidgetLoad(); }catch(e){}
+  try{ startWerteLaden(); }catch(e){}
+}
+/* ===== Raster 3x3: kleine Kachel und Wertekachel (19.09.2026) =====
+   riGlowTile bleibt unveraendert stehen - die ausgeloggte Startseite und
+   andere Stellen benutzen sie weiter. Die neuen Kacheln sind 88 px hoch und
+   tragen nur Symbol und ein Wort. */
+function riMiniPalette(accent){
+  return {green:['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'],amber:['#6b4410','#1a120a','#ffc24b','#ffcf6b'],blue:['#143a63','#0b1420','#5ab6ff','#7cc4ff'],violet:['#45256b','#120b1a','#b79bff','#c9b3ff'],berry:['#6b1f45','#1a0a12','#ff6fa8','#ffa8cb'],terra:['#7a3b1f','#1a0e08','#ff9e5e','#ffc59b'],teal:['#0e4a44','#081614','#4fd6c0','#8cf0e0']}[accent]||['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'];
+}
+function riMiniRahmen(A){
+  return 'position:relative;overflow:hidden;cursor:pointer;border-radius:16px;padding:11px 10px;height:88px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 120% at 22% 12%, '+A[0]+' 0%, '+A[1]+' 62%);box-shadow:0 8px 22px rgba(15,40,25,.22)';
+}
+function riMiniTile(nav,ico,label,accent,cornerIco,cornerAct){
+  var A=riMiniPalette(accent);
+  var _akt=(nav==='produkte')?'prodHome()':("navTo('"+nav+"')");
+  return '<div onclick="'+_akt+'" style="'+riMiniRahmen(A)+'">'
+    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
+    +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
+    +'<div style="position:relative;z-index:2;color:#ffffff;font-size:12.5px;font-weight:700;line-height:1.2">'+label+'</div>'
+    +(cornerIco?'<div onclick="event.stopPropagation();'+cornerAct+'" title="Barcode scannen" style="position:absolute;top:9px;right:10px;color:'+A[3]+';opacity:.92;cursor:pointer;z-index:3">'+riIco(cornerIco,18)+'</div>':'')
+  +'</div>';
+}
+function riWertTile(art,label,ico,accent){
+  var A=riMiniPalette(accent);
+  return '<div id="wertKachel_'+art+'" onclick="startWertToggle(\''+art+'\')" style="'+riMiniRahmen(A)+'">'
+    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
+    +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
+    +'<div style="position:relative;z-index:2">'
+      +'<div id="wertZahl_'+art+'" style="color:'+A[3]+';font-size:15px;font-weight:800;line-height:1.1">–</div>'
+      +'<div style="color:rgba(255,255,255,.6);font-size:10.5px;margin-top:2px">'+label+'</div>'
+    +'</div>'
+  +'</div>';
+}
+/* Aufklappen: immer nur eine Kachel offen, nochmal tippen schliesst sie wieder.
+   Die Widgets darin sind die alten - sie werden nur ein- und ausgeblendet. */
+function startWertToggle(art){
+  var H={wasser:'wasserBox_w',schlaf:'schlafBox_w',schritte:'schritteBox_w'};
+  var offen=(window._startWertOffen===art)?null:art;
+  window._startWertOffen=offen;
+  Object.keys(H).forEach(function(k){
+    var box=document.getElementById(H[k]); if(box) box.style.display=(k===offen)?'':'none';
+    var kach=document.getElementById('wertKachel_'+k);
+    if(kach){ kach.style.outline=(k===offen)?'2px solid rgba(255,255,255,.38)':'none'; kach.style.outlineOffset='-2px'; }
+  });
+}
+/* Die Zahlen auf den drei Wertekacheln. Eigene Abfrage, weil die Widgets
+   darunter erst beim Aufklappen sichtbar werden - die Kachel soll den Wert
+   aber sofort zeigen. */
+async function startWerteLaden(){
+  var setz=function(id,txt){ var el=document.getElementById(id); if(el) el.textContent=txt; };
+  try{ var r=await client.rpc("cb_wasser_log_heute",{p_datum:tbToday()}); var h=(r&&r.data&&r.data[0])||{}; setz('wertZahl_wasser', (h.ml!=null&&h.ml>0)?_wLiter(h.ml):'0,0 l'); }catch(e){}
+  if(!hasFeat('gesundheit')) return;
+  try{ var r2=await client.rpc("cb_schlaf_tag",{p_datum:tbToday()}); var t=Number(r2.data)||0; setz('wertZahl_schlaf', t?((Math.round(t*10)/10).toLocaleString("de-DE")+' h'):'–'); }catch(e){}
+  try{ var r3=await client.rpc("cb_schritte_tag",{p_datum:tbToday()}); var v=Number(r3.data)||0; setz('wertZahl_schritte', v?v.toLocaleString("de-DE"):'–'); }catch(e){}
 }
 function riIco(n,s){ s=s||18;
   var P={
@@ -7988,6 +8055,8 @@ function riIco(n,s){ s=s||18;
     bowl:'<path d="M3 11.5h18"/><path d="M5 11.5a7 7 0 0 0 14 0"/><path d="M12 4.5v3M9 5.5v2M15 5.5v2"/>',
     book:'<path d="M6 4h10a2 2 0 0 1 2 2v13a1.2 1.2 0 0 0-1.2-1.2H6z"/><path d="M6 4v13.8"/><path d="M9.5 8.5h5M9.5 11.5h5"/>',
     shoe:'<path d="M3 15.5h7l3.5-2 4.5 1.3a3 3 0 0 1 2 2.8V19H4.2A1.2 1.2 0 0 1 3 17.8z"/><path d="M3 15.5v-3l2.4 1.1"/>',
+    drop:'<path d="M12 3s6 6.5 6 10.5a6 6 0 1 1-12 0C6 9.5 12 3 12 3z"/>',
+    moon:'<path d="M19 14.5A8 8 0 0 1 9.5 5a7 7 0 1 0 9.5 9.5z"/>',
     cutlery:'<circle cx="12" cy="12.5" r="5.5"/><path d="M4 4v4a1.4 1.4 0 0 0 2.8 0V4"/><path d="M5.4 4v16"/><path d="M19 4c-1.4 1-2 2.8-2 4.6V11h2z"/><path d="M18.4 12v8"/>',
     figure:'<circle cx="12" cy="5" r="2.2"/><path d="M12 7.2v6.3"/><path d="M12 9.3l-4-2M12 9.3l4-2"/><path d="M12 13.5l-3 6M12 13.5l3 6"/>',
     cart:'<circle cx="9.5" cy="19.5" r="1.4"/><circle cx="17" cy="19.5" r="1.4"/><path d="M3 4h2.2l2.3 10.1a1.5 1.5 0 0 0 1.5 1.2h7.6a1.5 1.5 0 0 0 1.5-1.2L20 8H6.1"/>'
@@ -8342,8 +8411,75 @@ function bnActive(m){
   if(m==='start') return;
   const b=document.getElementById(map[m]||'bnmehr'); if(b) b.classList.add('active');
 }
-function toggleMehr(){ const s=document.getElementById('mehrSheet'); if(!s) return; if(s.classList.contains('open')){ closeMehr(); } else { buildMehr(); s.classList.add('open'); } }
+/* ===== Menue: Faecher statt Schublade (Ralph 19.09.2026) =====
+   "das menue sollte sich aufziehen im halbkreis wie beim macbook download im
+   dock." Der Knopf in der Leiste faechert die Wege jetzt nach oben auf; die
+   Einstellungen (Darstellung, RIKI, Wiki, Methode) bleiben in der bisherigen
+   Schublade und haengen als letzter Punkt am Faecher.
+   Ein voller Halbkreis passt auf 390 px nicht - die Haelfte laege neben dem
+   Schirm. Deshalb dieselbe Form wie am Mac: gleicher Schritt nach oben,
+   wachsender Versatz zur Seite. Die Punkte sitzen an der ECHTEN Position des
+   Knopfes (gemessen beim Oeffnen), nicht an einer geratenen. */
+/* Der Faecher traegt genau das, was NICHT auf der Startseite steht - sonst
+   waere jeder Punkt zweimal da. Rezepte, Einkauf, Training, Tagebuch und
+   Produkte sind Kacheln; hier stehen die uebrigen Wege. */
+var MFAN=[
+  ['planer','Planer','book','#8fa79a'],
+  ['zyklus','Zyklus & Nährstoffe','heart','#ff6fa8'],
+  ['darm','Darmgesundheit','leaf','#ff9e5e'],
+  ['supp','Meine Supplements','drop','#5ab6ff'],
+  ['profil','Mein Profil','cutlery','#5ef2a0']
+];
+function buildFan(){
+  var f=document.getElementById('mehrFan'); if(!f) return;
+  var knopf=document.getElementById('bnmehr');
+  var r=knopf?knopf.getBoundingClientRect():{right:window.innerWidth-12,top:window.innerHeight-60};
+  var ax=r.right-6, ay=(r.top!=null?r.top:window.innerHeight-60)-4;   /* Ankerpunkt: rechte Oberkante des Knopfes */
+  /* Alte Punkte raus, Hintergrund behalten. */
+  Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); });
+  var liste=MFAN.slice();
+  liste.push(['__mehr','Einstellungen','book','#8fa79a']);
+  var n=liste.length;
+  liste.forEach(function(it,i){
+    var stufe=i+1;
+    var dy=-(34+stufe*52);
+    var dx=-Math.round(88*Math.pow(stufe/n,1.6));
+    var b=document.createElement('button');
+    b.type='button';
+    b.className='mfan-item';
+    b.style.right=(window.innerWidth-ax)+'px';
+    b.style.top=ay+'px';
+    b.style.transitionDelay=(i*28)+'ms';
+    b.innerHTML='<span class="mfi" style="color:'+it[3]+'">'+riIco(it[2],20)+'</span>'+esc(it[1]);
+    b.setAttribute('data-ziel', it[0]);
+    b.onclick=function(){ fanGo(it[0]); };
+    f.appendChild(b);
+    /* Erst im naechsten Bild verschieben, sonst gibt es keinen Uebergang. */
+    requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
+  });
+}
+function fanGo(ziel){
+  closeFan();
+  if(ziel==='__mehr'){ setTimeout(function(){ buildMehr(); var s=document.getElementById('mehrSheet'); if(s) s.classList.add('open'); }, 150); return; }
+  navTo(ziel);
+}
+function toggleMehr(){
+  var f=document.getElementById('mehrFan'); if(!f) return;
+  if(f.classList.contains('open')){ closeFan(); return; }
+  f.classList.add('open');
+  buildFan();
+}
+function closeFan(){
+  var f=document.getElementById('mehrFan'); if(!f) return;
+  f.classList.remove('open');
+  Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){
+    el.style.transitionDelay='0ms';
+    el.style.transform='translate(0,0) scale(.35)';
+  });
+  setTimeout(function(){ if(!f.classList.contains('open')) Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); }); }, 300);
+}
 function closeMehr(){ const s=document.getElementById('mehrSheet'); if(s) s.classList.remove('open'); }
+if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanGo=fanGo; }
 function _ktInp(id,ph,val){ return '<input id="'+id+'" placeholder="'+esc(ph)+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px">'; }
 function _ktArea(id,ph){ return '<textarea id="'+id+'" placeholder="'+esc(ph)+'" rows="4" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px"></textarea>'; }
 function ktSwitch(){ const t=(document.querySelector('input[name=ktTyp]:checked')||{}).value; document.getElementById('ktFrageBox').style.display=(t==='frage')?'block':'none'; document.getElementById('ktProdBox').style.display=(t==='produkt')?'block':'none'; }
@@ -8425,8 +8561,9 @@ function ktAntwort(i){ const x=(window._ktList||[])[i]; if(!x||!x.email) return;
 function buildMehr(){
   /* Training ist aus der unteren Leiste hierher gewandert - es ist die Funktion,
      die man am seltensten braucht. Der Platz gehoert dem Scannen. */
-  const items=[['einkauf','🛒 Einkaufsliste'],['rezepte','🍲 Rezepte'],['training','🏋️ Training'],['planer','📅 Planer'],['profil','👤 Mein Profil'],['supp','🔁 Meine Supplements']];
-  let html='<div class="mgrid">'+items.map(it=>'<button onclick="navTo(\''+it[0]+'\')">'+esc(it[1])+'</button>').join('')+'</div>';
+  /* 19.09.2026: Die Wege stehen jetzt im Faecher (MFAN) - hier waeren sie ein
+     zweites Mal dasselbe. Diese Schublade traegt nur noch, was Einstellung ist. */
+  let html='';
   /* Wiki direkt unter die Funktionen - es erklaert die App und wird oft zuerst gesucht. */
   html+='<button onclick="closeMehr();wikiOpen()">📖 Wiki · So funktioniert Root Index</button>';
   /* "Unsere Methode" direkt darunter: das Wiki erklaert die BEDIENUNG, die Methodik-Seite
