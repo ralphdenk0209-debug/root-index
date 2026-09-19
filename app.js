@@ -1142,6 +1142,17 @@ async function ladeTierSets(){
     _TIER_SETS=s;
   }catch(e){ _TIER_SETS=null; }
 }
+/* Work #764/#768 (19.09.2026): Die KI-Wege hingen bisher NUR an den
+   Feature_Flags (feat). Das Flag sagt "ist ausgerollt", nicht "darf dieser
+   Nutzer" - die Stufenschluessel ki_premium und ki_produkterfassung standen in
+   Stufen_Features und steuerten nichts. Beides muss stimmen: ausgerollt UND
+   erlaubt. Sonst kostet eine Modellanfrage Geld, ohne dass jemand dafuer zahlt. */
+function kiErlaubt(art){
+  const flagg = (typeof feat==="function") ? feat(art==='rezept' ? "rezept_riki" : "etikett_riki") : true;
+  const stufe = hasFeat(art==='rezept' ? 'ki_premium' : 'ki_produkterfassung');
+  return !!(flagg && stufe);
+}
+if(typeof window!=='undefined'){ window.kiErlaubt=kiErlaubt; }
 function hasFeat(k){
   // Admin-Testschalter „Ansehen als"
   if(window._tierOverride && ME && ME.is_admin && _TIER_SETS){
@@ -1293,7 +1304,8 @@ function gateHtml(feat){
     profil:{t:'Mein Profil',d:'Persönliche Ziele &amp; Körperdaten dauerhaft speichern.',b:['🎯 Kalorien- &amp; Makro-Ziele speichern','🧮 Bedarfsrechner (Körperfett, gemessener Grundumsatz)','🍽️ Makro-Aufteilung auf Mahlzeiten']},
     tagebuch:{t:'Ernährungstagebuch',d:'Das volle Tagebuch mit Verlauf &amp; Auswertung.',b:['📆 Alle Tage statt nur heute','📊 Statistik &amp; Zielerreichung','📅 Kalender-Überblick']},
     erfassung:{t:'Produkt vorschlagen',d:'Eigene Produkte erfassen und einreichen.',b:['➕ Produkte vorschlagen','🔎 Zutaten &amp; Nährwerte erfassen']},
-    einkaufsliste:{t:'Einkaufsliste',d:'Produkte &amp; Rezept-Zutaten sammeln und im Laden abhaken.',b:['🛒 Liste dauerhaft gespeichert','📲 Auf dem Handy dabei','🗓️ Automatisch aus dem Wochenplan']}
+    einkaufsliste:{t:'Einkaufsliste',d:'Produkte &amp; Rezept-Zutaten sammeln und im Laden abhaken.',b:['🛒 Liste dauerhaft gespeichert','📲 Auf dem Handy dabei','🗓️ Automatisch aus dem Wochenplan']},
+    empfehlungen:{t:'Empfehlungen für dich',d:'Vorschläge aus deinen eigenen Gewohnheiten – kein Ratgeber von der Stange.',b:['🎯 Aus deinem Tagebuch abgeleitet','🌿 Bessere Produkte statt der gewohnten','📝 RIKI schreibt dir einmal je Woche']}
   };
   var i=INFO[feat];
   var body = i ? ('<div style="text-align:left;background:var(--greenlt);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:2px 0 14px"><div style="font-weight:700;color:var(--greendk);margin-bottom:6px">Das steckt in „'+i.t+'":</div><div style="font-size:13.5px;color:var(--ink);line-height:1.75">'+i.b.join('<br>')+'</div></div>') : '';
@@ -1513,6 +1525,7 @@ async function loadProfil(){
   try{ pushBoxRender(); }catch(e){}   /* 28z24 */
   try{ hhProfilRender(); }catch(e){}   /* 28z29 */
   try{ blProfilRender(); }catch(e){}   /* Etappe 2: Bundesland (freiwillig) */
+  try{ zeitenRender(); }catch(e){}     /* Work #770: Zeiten im Tagesablauf */
   loadZyklus();
   pfTab('daten');
 }
@@ -2151,25 +2164,49 @@ function altGrund(d, a){
   }catch(e){ return ''; }
 }
 function altSektion(d){
+  /* 19.09.2026 (Ralph, Free/Premium-Zuschnitt): Die Alternativen sind die
+     eigentliche Kaufhilfe und standen bis hierher auch Gaesten offen. Ab jetzt
+     erst mit Konto. Gesperrt wird nicht versteckt, sondern als Kachel gezeigt -
+     wer nicht sieht, was fehlt, hat keinen Grund, sich anzumelden. */
+  /* 19.09.2026 (Ralph): gestaffelt statt ganz oder gar nicht. Gemessen an
+     40.538 aktiven Produkten: 95,4 % haben ueberhaupt eine Alternative, bei den
+     schwachen unter Index 50 sind es 99,7 % - und 97,7 % davon haben zwei oder
+     mehr. Die erste zeigt also fast immer, dass die App etwas kann; der Rest
+     bleibt ein Grund zu zahlen, der auch fast immer greift. */
+  var _alleAlt = hasFeat('pk_alternativen');
+  if(!_alleAlt && !hasFeat('pk_alternative_eine')) return pkSperre('Bessere Alternativen','Bessere Produkte derselben Kategorie, mit Begründung');
   /* 28z16: kuratierter Tausch-Tipp (Ralphs Kuechentisch-Fall Schinken->Tatar) steht VOR der
      Algorithmus-Reihe - gelebtes Wissen schlaegt Rechnung. Nur bestaetigte Tipps (cb_tausch_tipps). */
   const tt = (window._TAUSCH||{})[d.id];
   const tp = tt ? (ALL||[]).find(function(x){ return x.id===tt.tausch_id; }) : null;
-  const alts = besteAlternativen(d, 3).filter(function(a){ return !tp || a.id!==tp.id; });
+  var alts = besteAlternativen(d, 3).filter(function(a){ return !tp || a.id!==tp.id; });
   if(!alts.length && !tp) return '';
+  /* Free sieht genau eine - und darunter, wie viele noch da waeren. */
+  var _verdeckt = 0;
+  if(!_alleAlt){ _verdeckt = Math.max(0, alts.length - 1); alts = alts.slice(0,1); }
   const s = num(d.clean_score);
   return '<div style="margin-top:14px">'
     + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 Bessere Alternativen in dieser Kategorie</div>'
-    + (tp ? prodRef(tp.id, { name:tp.name, marke:tp.marke, label:'💡 Tausch-Tipp der Redaktion', delta:(s!=null&&num(tp.clean_score)!=null?num(tp.clean_score)-s:null), note:(tt.begruendung||'') }) : '')
-    + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, delta:(s!=null?num(a.clean_score) - s:null), note:altGrund(d, a) }); }).join('')
+    + (tp && _alleAlt ? prodRef(tp.id, { name:tp.name, marke:tp.marke, label:'💡 Tausch-Tipp der Redaktion', delta:(s!=null&&num(tp.clean_score)!=null?num(tp.clean_score)-s:null), note:(tt.begruendung||'') }) : '')
+    + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, delta:(s!=null?num(a.clean_score) - s:null), note:(_alleAlt?altGrund(d, a):'') }); }).join('')
+    + (_alleAlt ? '' : '<div onclick="premiumInfo()" style="cursor:pointer;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45">'
+        + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> bessere '+(_verdeckt===1?'Wahl':'Wahlen')+' und die Begründung, warum – mit <b>Premium</b>.'
+                       : '🔒 Die <b>Begründung</b>, warum das besser ist – mit <b>Premium</b>.')
+        + '</div>')
     + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">Besser heißt hier nur eines: höherer Root Index in derselben Kategorie. Keine Werbung, keine bezahlten Plätze.</div>'
     + '</div>';
 }
 /* Dezente Ein-Zeilen-Fassung fuer den Tagebuch-Hinzufuegen-Dialog (Ralph-Entscheid "auch im Tagebuch"). */
 function altHinweisZeile(d){
+  if(!hasFeat('pk_alternativen') && !hasFeat('pk_alternative_eine')) return '';
   const alts = besteAlternativen(d, 3); if(!alts.length) return '';
   const b = alts[0]; const delta = num(b.clean_score) - num(d.clean_score);
-  const mehr = alts.length > 1 ? ' · +' + (alts.length - 1) + ' weitere' : '';
+  /* Free sieht die eine Alternative. „+2 weitere" zu schreiben, ohne sie zeigen
+     zu koennen, waere ein Versprechen ins Leere - dann lieber das Schloss. */
+  const mehr = alts.length > 1
+    ? (hasFeat('pk_alternativen') ? ' · +' + (alts.length - 1) + ' weitere'
+                                  : ' · 🔒 +' + (alts.length - 1))
+    : '';
   return '<div onclick="detailById(\'' + b.id + '\')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:7px 10px;margin-bottom:11px;cursor:pointer">'
     + '<span>🌿</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Bessere Wahl: <b>' + esc(b.name) + '</b> (Index ' + num(b.clean_score) + ', +' + delta + ')' + mehr + '</span><span style="font-weight:800">›</span></div>';
 }
@@ -3237,8 +3274,13 @@ function detail2(d){
     + sonder
     + (_fNw
         ? '<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin:12px 0 2px">'
+          /* 16.09.2026 (Ralph): dieselbe Reihenfolge wie auf der Packung
+             (LMIV) - Energie, Fett, Kohlenhydrate, Eiweiss. Vorher standen
+             Eiweiss und Ballaststoffe an dritter und vierter Stelle; wer die
+             Packung gewohnt ist, sucht dann. Ballaststoffe stehen weiterhin in
+             der vollen Tabelle darunter. */
           + kachel('m_kcal','Energie','kcal') + kachel('m_fett','Fett','g')
-          + kachel('m_protein','Eiweiß','g') + kachel('m_ballast','Ballaststoffe','g')
+          + kachel('m_kh','Kohlenhydrate','g') + kachel('m_protein','Eiweiß','g')
           + '</div>'
         : (_nurIndex?'':pkSperre('Nährwerte pro 100 g','Energie, Fett, Zucker, Ballaststoffe, Eiweiß, Salz')))
     + '<div style="display:flex;gap:7px;margin:12px 0;flex-wrap:wrap">'
@@ -7912,7 +7954,7 @@ async function renderStart(){
    Handys im Rahmen und kann nichts ueberdecken (§1.11n-n: nichts, was ueber
    dem liegt, womit man arbeitet). Ohne Status wird gar nichts gerendert. */
 
-  const schritteHtml = (ME&&ME.is_premium) ? '<div id="schritteBox"></div><div id="schlafBox"></div>' : '';
+  const schritteHtml = hasFeat('gesundheit') ? '<div id="schritteBox"></div><div id="schlafBox"></div>' : '';
   dash.innerHTML=
     /* Ralph 30.07.: Begruessung + Datum raus, der Status als diagonale Banderole
        in die obere rechte Ecke.
@@ -7934,7 +7976,7 @@ async function renderStart(){
     +'<div id="wasserWidget"></div>'   /* 28z21: Wasser unter die Einkaufsliste (Ralph) */
     +schritteHtml
     +unterstuetzenHtml();
-  if(ME&&ME.is_premium){ renderSchritte(); renderSchlaf(); }
+  if(hasFeat('gesundheit')){ renderSchritte(); renderSchlaf(); }
   try{ wasserWidgetLoad(); }catch(e){}
 }
 function riIco(n,s){ s=s||18;
@@ -9731,11 +9773,96 @@ async function einkaufFromPlan(){
   await loadEinkauf();
 }
 function fmtMin(m){ if(m==null) return ""; const h=Math.floor(m/60), mm=m%60; return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm; }
-const TERMCOL={training:"var(--k-2563eb)",termin:"var(--k-0e7490)",mahlzeit:"var(--k-16a34a)",sonstiges:"var(--k-6b7280)"};
-function termChip(t){ const c=TERMCOL[t.typ]||"var(--k-6b7280)"; return `<div onclick="event.stopPropagation();termClick(${t.eintrag_id})" style="background:${c};color:var(--k-ffffff);border-radius:6px;padding:1px 6px;font-size:11px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.titel)}</div>`; }
+/* rezept und produkt kommen aus dem Wochenplan - ohne sie waeren Mahlzeiten grau. */
+const TERMCOL={training:"var(--k-2563eb)",termin:"var(--k-0e7490)",mahlzeit:"var(--k-16a34a)",rezept:"var(--k-16a34a)",produkt:"var(--k-16a34a)",sonstiges:"var(--k-6b7280)"};
+/* 19.09.2026, Work #765: Ein Chip kann jetzt aus drei Quellen kommen.
+   Abgeleitetes (Training aus dem Trainingsplan) hat keine eintrag_id und laesst
+   sich hier nicht loeschen - es wird dort geaendert, wo es herkommt. Deshalb
+   kein Klick, der ins Leere greift, sondern ein Hinweis. */
+function termChip(t){
+  const c=TERMCOL[t.typ]||"var(--k-6b7280)";
+  const zusatz = (t.quelle==='mahlzeit'&&t.slot) ? ' <span style="opacity:.8">·&nbsp;'+esc(t.slot)+'</span>'
+               : (t.quelle==='training') ? ' <span style="opacity:.8">'+(t.verschoben?'·&nbsp;↷':'')+(t.dauer_min?('·&nbsp;'+t.dauer_min+'&nbsp;min'):'')+'</span>' : '';
+  /* Work #770: Eine geplante Einheit laesst sich verschieben oder absagen -
+     ohne sie aus dem Plan zu loesen. Deshalb hier kein Loeschen, sondern ein
+     eigener Dialog. */
+  const klick = t.quelle==='training'
+    ? 'onclick="event.stopPropagation();trainVerschiebenOeffnen(\''+esc(t.plan_datum||t.datum)+'\',\''+esc(t.titel||'')+'\',\''+esc(t.datum)+'\','+(t.start_min||0)+')" title="Verschieben oder absagen"'
+    : 'onclick="event.stopPropagation();kalEintragLoeschen(\''+(t.quelle||'termin')+'\','+t.eintrag_id+')"';
+  return `<div ${klick} style="background:${c};color:var(--k-ffffff);border-radius:6px;padding:1px 6px;font-size:11px;margin-bottom:2px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(t.titel)}${zusatz}</div>`;
+}
+/* Work #770: Trainingseinheit verschieben, umlegen oder absagen.
+   Die Einheit bleibt aus dem Plan abgeleitet - gespeichert wird nur die
+   Abweichung (cb_training_verschieben). Deshalb braucht der Dialog das
+   plan_datum: das ist der Anker, an dem die Abweichung haengt. */
+let _trainVersch=null;
+function trainVerschiebenOeffnen(planDatum, titel, datum, startMin){
+  _trainVersch={plan:planDatum, titel:titel};
+  let ov=document.getElementById("trvOv");
+  if(!ov){
+    ov=document.createElement("div"); ov.id="trvOv";
+    ov.style.cssText="position:fixed;inset:0;z-index:9993;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box";
+    ov.innerHTML='<div style="width:100%;max-width:380px;background:var(--card);border-radius:14px;padding:16px;box-sizing:border-box">'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px"><b id="trvTitel" style="flex:1;font-size:16px;color:var(--ink)"></b>'
+      +'<button onclick="trvClose()" style="border:0;background:transparent;font-size:18px;cursor:pointer;color:var(--muted)">&#10005;</button></div>'
+      +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Kommt aus deinem Trainingsplan. Verschieben ändert nur diesen Termin – der Plan bleibt, wie er ist.</div>'
+      +'<div style="display:flex;gap:8px;margin-bottom:10px"><input type="date" id="trvDatum" style="flex:1;padding:9px;border:1px solid var(--line);border-radius:9px">'
+      +'<input type="time" id="trvZeit" style="padding:9px;border:1px solid var(--line);border-radius:9px"></div>'
+      +'<button onclick="trvSpeichern()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:600;cursor:pointer">Verschieben</button>'
+      +'<button onclick="trvAbsagen()" style="width:100%;margin-top:8px;padding:10px;border:1px solid var(--k-f3c4c4);border-radius:10px;background:var(--card);color:var(--k-dc2626);cursor:pointer">Diesen Termin absagen</button>'
+      +'<button onclick="trvZurueck()" style="width:100%;margin-top:8px;background:none;border:0;color:var(--muted);font-size:12.5px;cursor:pointer;text-decoration:underline">Zurück auf den Plan</button>'
+      +'<div id="trvMsg" style="font-size:12.5px;margin-top:8px"></div></div>';
+    document.body.appendChild(ov);
+  }
+  document.getElementById("trvTitel").textContent=titel||"Training";
+  document.getElementById("trvDatum").value=datum;
+  document.getElementById("trvZeit").value=minToTime(startMin);
+  document.getElementById("trvMsg").textContent="";
+  ov.style.display="flex";
+}
+function trvClose(){ const o=document.getElementById("trvOv"); if(o) o.style.display="none"; }
+async function _trvRuf(args){
+  const msg=document.getElementById("trvMsg");
+  const {error}=await client.rpc("cb_training_verschieben",args);
+  if(error){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+error.message; } return; }
+  trvClose(); renderPlaner();
+}
+function trvSpeichern(){
+  if(!_trainVersch) return;
+  _trvRuf({p_plan_datum:_trainVersch.plan, p_titel:_trainVersch.titel,
+           p_neues_datum:(document.getElementById("trvDatum")||{}).value||null,
+           p_start_min:timeToMinSafe((document.getElementById("trvZeit")||{}).value),
+           p_absagen:false});
+}
+function trvAbsagen(){
+  if(!_trainVersch) return;
+  _trvRuf({p_plan_datum:_trainVersch.plan, p_titel:_trainVersch.titel,
+           p_neues_datum:null, p_start_min:null, p_absagen:true});
+}
+function trvZurueck(){
+  if(!_trainVersch) return;
+  _trvRuf({p_plan_datum:_trainVersch.plan, p_titel:_trainVersch.titel,
+           p_neues_datum:null, p_start_min:null, p_absagen:false});
+}
+if(typeof window!=='undefined'){ window.trainVerschiebenOeffnen=trainVerschiebenOeffnen; window.trvClose=trvClose;
+  window.trvSpeichern=trvSpeichern; window.trvAbsagen=trvAbsagen; window.trvZurueck=trvZurueck; }
+
+/* Jede Quelle hat ihre eigene Tuer zum Loeschen. Ein gemeinsames cb_termin_del
+   waere falsch: eine Mahlzeit steht im Wochenplan, nicht in den Terminen. */
+async function kalEintragLoeschen(quelle,id){
+  if(!id && id!==0) return;
+  if(!confirm("Diesen Eintrag löschen?")) return;
+  if(quelle==='mahlzeit') await client.rpc("cb_plan_del",{p_eintrag:id});
+  else await client.rpc("cb_termin_del",{p_eintrag:id});
+  renderPlaner();
+}
 async function renderKalenderGrid(dates){
   const H0=6,H1=23,rowH=42, multi=dates.length>1, cmin=multi?"130px":"auto";
-  let terms=[]; try{ const {data}=await client.rpc("cb_termine_range",{p_von:dates[0],p_bis:dates[dates.length-1]}); terms=data||[]; }catch(e){}
+  /* 19.09.2026, Work #765 (Ralph: "das training das geplant ist muss auch drin
+     sein"): cb_kalender_range fuehrt Termine, Mahlzeitenplan und Trainingsplan
+     beim LESEN zusammen. Vorher las der Kalender nur cb_termine_range und
+     zeigte deshalb weder Mahlzeiten noch Training. */
+  let terms=[]; try{ const {data}=await client.rpc("cb_kalender_range",{p_von:dates[0],p_bis:dates[dates.length-1]}); terms=data||[]; }catch(e){}
   let head=`<div style="display:flex;min-width:max-content"><div style="width:46px;flex:none"></div>`;
   dates.forEach(ds=>{ const d=new Date(ds+"T00:00:00"), isT=ds===tbToday();
     head+=`<div style="flex:1;min-width:${cmin};text-align:center;padding:4px 2px;font-size:12.5px;font-weight:600;${isT?'color:var(--green)':''}"><div>${d.toLocaleDateString("de-DE",{weekday:"short"})} ${d.getDate()}.</div><button onclick="termAdd('${ds}')" style="margin-top:2px;border:0;background:var(--greenlt);color:var(--greendk);border-radius:6px;font-size:12px;padding:1px 9px;cursor:pointer">+</button></div>`; });
@@ -9750,13 +9877,16 @@ async function renderKalenderGrid(dates){
   dates.forEach(ds=>{ const isT=ds===tbToday();
     body+=`<div onclick="termAddAt('${ds}',event,${H0},${rowH})" style="flex:1;min-width:${cmin};position:relative;border-left:1px solid var(--line);${isT?'background:var(--k-f6fbf7)':''}">`;
     for(let hh=H0;hh<H1;hh++){ body+=`<div style="height:${rowH}px;border-top:1px solid var(--line);box-sizing:border-box"></div>`; }
+    /* Mahlzeiten und Training haben keine Uhrzeit in den Daten - sie stehen
+       oben in der Ganztags-Zeile. Sie hier auf eine geratene Stunde zu legen,
+       waere eine Behauptung. */
     terms.filter(t=>t.datum===ds && !t.ganztags && t.start_min!=null).forEach(t=>{
       const top=Math.max(0,((t.start_min-H0*60)/60)*rowH), h=Math.max(20,(((t.ende_min||t.start_min+60)-t.start_min)/60)*rowH), c=TERMCOL[t.typ]||"var(--k-6b7280)";
-      body+=`<div onclick="event.stopPropagation();termClick(${t.eintrag_id})" style="position:absolute;left:3px;right:3px;top:${top.toFixed(0)}px;height:${h.toFixed(0)}px;background:${c};color:var(--k-ffffff);border-radius:7px;padding:3px 6px;font-size:11.5px;overflow:hidden;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2)"><b>${esc(t.titel)}</b><div style="opacity:.85">${fmtMin(t.start_min)}–${fmtMin(t.ende_min)}</div></div>`;
+      body+=`<div onclick="event.stopPropagation();kalEintragLoeschen('${t.quelle||"termin"}',${t.eintrag_id})" style="position:absolute;left:3px;right:3px;top:${top.toFixed(0)}px;height:${h.toFixed(0)}px;background:${c};color:var(--k-ffffff);border-radius:7px;padding:3px 6px;font-size:11.5px;overflow:hidden;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2)"><b>${esc(t.titel)}</b><div style="opacity:.85">${fmtMin(t.start_min)}–${fmtMin(t.ende_min)}</div></div>`;
     });
     body+=`</div>`; });
   body+=`</div>`;
-  document.getElementById("planGrid").innerHTML=`<div style="overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);padding-bottom:4px">${head}${allday}<div style="max-height:62vh;overflow-y:auto">${body}</div></div><div style="font-size:11.5px;color:var(--k-9aa7a0);margin-top:6px">„+" am Tag oder in eine Stunde tippen, um Termin/Training anzulegen. Eintrag antippen = löschen.</div>`;
+  document.getElementById("planGrid").innerHTML=`<div style="overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);padding-bottom:4px">${head}${allday}<div style="max-height:62vh;overflow-y:auto">${body}</div></div><div style="font-size:11.5px;color:var(--k-9aa7a0);margin-top:6px">„+" am Tag oder in eine Stunde tippen, um einen Termin anzulegen. Eintrag antippen = löschen. <span style="color:var(--k-2563eb)">Blau</span> kommt aus deinem Trainingsplan – antippen zum Verschieben oder Absagen, der Plan bleibt. <span style="color:var(--k-16a34a)">Grün</span> ist der Mahlzeitenplan. Die Uhrzeiten stellst du im Profil ein.</div>`;
 }
 function termToggleAllday(){ const c=document.getElementById("termAllday").checked; document.getElementById("termTimes").style.display=c?"none":"flex"; }
 function termAdd(ds,startMin){
@@ -9779,7 +9909,9 @@ async function termSave(){
   if(error){ msg.textContent="Fehler: "+error.message; return; }
   document.getElementById("termPick").style.display="none"; renderPlaner();
 }
-async function termClick(id){ if(!confirm("Diesen Eintrag löschen?")) return; await client.rpc("cb_termin_del",{p_eintrag:id}); renderPlaner(); }
+/* Bleibt als Einstieg fuer aeltere Aufrufe stehen und fuehrt auf denselben Weg
+   wie der Kalender - zwei Loeschpfade nebeneinander waeren eine Falle. */
+async function termClick(id){ return kalEintragLoeschen('termin', id); }
 async function loadTagebuch(){
   const gate=document.getElementById("tbGate"), inner=document.getElementById("tbInner");
   const _full=hasFeat('tagebuch'), _heute=hasFeat('tagebuch_heute');
@@ -12163,6 +12295,29 @@ function _compressSrc(src, maxPx, q){
     img.onerror=()=>reject(new Error("Bild konnte nicht gelesen werden")); img.src=src;
   });
 }
+/* 19.09.2026, Work #769 (Ralph: „Ging nicht: Can't find variable: _fileZuBase64").
+   Gemessen: die Funktion wurde am 23.07.2026 in rezVorFotoSenden gerufen, aber NIE
+   geschrieben - im ganzen app.js gibt es genau eine Fundstelle, den Aufruf. Das
+   Kuehlschrank-Foto hat also seit dem ersten Tag nie funktioniert; der Fehler
+   erschien erst, wenn jemand wirklich ein Bild auswaehlte.
+   Verkleinert wird ueber denselben Weg wie beim Etikett (_compressSrc) - ein
+   Kuehlschrankfoto aus dem iPhone hat sonst mehrere Megabyte je Bild. */
+function _fileZuBase64(file){
+  return new Promise(function(resolve,reject){
+    if(!file){ reject(new Error("Keine Datei")); return; }
+    var r=new FileReader();
+    r.onload=function(){
+      _compressSrc(String(r.result||""), 1600, 0.82).then(resolve).catch(function(){
+        /* Laesst sich das Bild nicht verkleinern, geht es unveraendert raus -
+           lieber gross als gar nicht. */
+        resolve(String(r.result||""));
+      });
+    };
+    r.onerror=function(){ reject(new Error("Datei konnte nicht gelesen werden")); };
+    r.readAsDataURL(file);
+  });
+}
+if(typeof window!=='undefined'){ window._fileZuBase64=_fileZuBase64; }
 async function _submitFoto(src, produktId, ean){
   const d=await _compressSrc(src);
   const {data,error}=await client.rpc("cb_foto_vormerken",{p_base64:d, p_produkt_id:produktId||null, p_ean:ean||null, p_quelle:"Web-Foto"});
@@ -12261,6 +12416,24 @@ async function submitVorShots(){
    Das Etikettfoto ist unsere Quelle Nr. 1 – so entsteht kein geratener, sondern ein belegter Wert. */
 const ETI_SLOTS=[["zutaten","Zutatenliste"],["naehrwerte","Nährwerttabelle"],["front","Vorderseite (optional)"]];
 let ETI_SHOTS={}; let ETI_EAN=null; let _etiTarget=null;
+/* 19.09.2026 (Ralph, Free/Premium-Zuschnitt): Free darf fuenf neue Produkte am
+   Tag durch die Maschine schicken, Premium unbegrenzt. Gezaehlt und gesperrt
+   wird in der Datenbank (Trigger auf riki_scan_job) - hier steht nur, was der
+   Nutzer davon sieht. Dieselbe Funktion nutzt die App, damit beide Seiten
+   dieselbe Zahl zeigen und niemand sie zweimal ausrechnet. */
+async function erfassungKontingent(){
+  try{
+    const {data,error}=await client.rpc("cb_erfassung_kontingent");
+    if(error) return null;
+    return (typeof data==="string") ? JSON.parse(data) : data;
+  }catch(e){ return null; }
+}
+/* Der Server wirft bei erreichtem Limit ERFASSUNG_LIMIT. Diese Meldung ist fuer
+   den Nutzer geschrieben, aber nicht fuer ihn gedacht - er bekommt stattdessen
+   das Premium-Fenster. */
+function istErfassungsSperre(e){
+  return /ERFASSUNG_LIMIT/.test(String((e&&e.message)||e||""));
+}
 function etiMsg(t,c){ const m=document.getElementById("etiMsg"); if(!m) return; m.style.color=c||"var(--ink)"; m.innerHTML=t; }
 /* Zweiter Parameter seit 18.08.2026: WOHER kommt der Aufruf (Ralph-Auftrag).
    Nicht uebergeben = der Zusammenhang des letzten Scanners gilt weiter; das ist
@@ -12309,6 +12482,14 @@ function etikettOpen(ean, ausTagebuch){
   const rh=document.getElementById("etiResearchHint"); if(rh) rh.style.display=_adm?"block":"none";
   etiMsg("");
   renderEtiShots();
+  erfassungKontingent().then(function(k){
+    if(!k || k.unbegrenzt || k.rest==null) return;
+    if(k.rest>0){
+      etiMsg("Heute noch <b>"+k.rest+"</b> von "+k.grenze+" neuen Produkten.","var(--muted)");
+    }else{
+      etiMsg("Heute sind "+k.grenze+" neue Produkte erfasst. Mit <b>Premium</b> ohne Grenze.","var(--k-b45309)");
+    }
+  });
 }
 /* Scan-Weg: aus den aufgenommenen Produktfotos (v. a. Vorderseite) laesst Riki die
    Herstellerseite suchen und oeffnet daraus einen Entwurf im Editor. Admin/Beta. */
@@ -12433,12 +12614,12 @@ async function etikettSend(){
      eingereiht wird. Ein Vorbelegen mit 100 g waere eine erfundene Zahl in einem
      Tagebuch, das Ralphs Schwaegerin bei Diabetes benutzt (§1.1, §3.4).
      ========================================================================== */
-  if(session && feat("etikett_riki") && etiImTagebuch() && _eanZiffern.length>=8){
+  if(session && kiErlaubt('etikett') && etiImTagebuch() && _eanZiffern.length>=8){
     tbScanMengenformular();
     return;
   }
 
-  if(session && feat("etikett_riki") && !etiImTagebuch() && _eanZiffern.length>=8){
+  if(session && kiErlaubt('etikett') && !etiImTagebuch() && _eanZiffern.length>=8){
     etiMsg("Fotos werden übergeben…","var(--muted)");
     try{
       const {data:erg,error}=await client.rpc("cb_riki_scan_einreihen",{
@@ -12465,6 +12646,12 @@ async function etikettSend(){
       /* Kein stiller Rueckfall: wenn das Einreihen scheitert, sagt die App das und
          nimmt danach den alten Weg - die Fotos des Nutzers gehen nicht verloren. */
       console.warn("cb_riki_scan_einreihen:",e);
+      if(istErfassungsSperre(e)){
+        /* Kein Rueckfall auf den alten Weg: der wuerde das Limit umgehen. */
+        etikettClose();
+        if(typeof premiumInfo==="function") premiumInfo();
+        return;
+      }
       etiMsg("Konnte nicht übergeben ("+((e&&e.message)||e)+"). Ich versuche den alten Weg…","var(--k-b45309)");
     }
   }
@@ -12489,7 +12676,7 @@ async function etikettSend(){
 
      Das Tagebuch bleibt aussen vor: dort verlangt der Server Menge und Mahlzeit.
      ========================================================================== */
-  if(session && feat("etikett_riki") && !etiImTagebuch() && _eanZiffern.length<8){
+  if(session && kiErlaubt('etikett') && !etiImTagebuch() && _eanZiffern.length<8){
     etiMsg("Kein Barcode erkannt – Fotos werden trotzdem übergeben…","var(--muted)");
     try{
       const {data:erg,error}=await client.rpc("cb_riki_ohne_ean_einreihen",{
@@ -12524,7 +12711,7 @@ async function etikettSend(){
   /* 2. Nur für Angemeldete MIT Freigabe: Riki liest die Tabelle und rechnet sofort.
         Ohne das Flag würde der Aufruf bei Nutzern Geld kosten, für die er gar nicht
         freigegeben ist. */
-  if(!session || !feat("etikett_riki")){
+  if(!session || !kiErlaubt('etikett')){
     ETI_SHOTS={}; renderEtiShots();
     etiMsg("&#10003; Danke! "+arr.length+" Foto(s) gespeichert. Wir prüfen das Etikett und nehmen das Produkt auf.<br>"
       +'<span style="font-size:12px;color:var(--muted)">Angemeldet bekommst du den Wert sofort berechnet.</span>',"var(--k-16a34a)");
@@ -12685,6 +12872,11 @@ async function tbScanUebernehmen(){
   }catch(e){
     console.warn("tbScanUebernehmen:",e);
     etiMsg("");
+    if(istErfassungsSperre(e)){
+      etikettClose();
+      if(typeof premiumInfo==="function") premiumInfo();
+      return;
+    }
     zeig("Konnte nicht übernommen werden: "+((e&&e.message)||e));
   }
 }
@@ -13233,7 +13425,7 @@ function prodScan(readerId, msgId){
    ============================================================ */
 function scanWeiterOhneKlick(r, code){
   if(!r || r.stufe !== "unbekannt") return;   // Katalog/Cache/OFF haben geliefert - nichts zu tun
-  if(!feat("etikett_riki")) return;           // Feature nicht frei -> beim Knopf bleiben
+  if(!kiErlaubt('etikett')) return;           // nicht ausgerollt oder Stufe fehlt -> beim Knopf bleiben
   if(!ME) return;                             // Riki nur fuer Angemeldete (Kostenschutz)
   if(typeof etikettOpen !== "function") return;
   /* Kurz warten: Der Nutzer soll den Grund noch lesen ("Dieses Produkt kennt niemand"),
@@ -13636,7 +13828,7 @@ let RZ_FOTOS = [];   // Array von Data-URLs
 
 function rezeptFotoOpen(){
   if(!ME){ openLogin(); return; }
-  if(!feat("rezept_riki")){ alert("Diese Funktion ist noch nicht für dich freigeschaltet."); return; }
+  if(!kiErlaubt('rezept')){ if(typeof premiumInfo==="function"){ premiumInfo(); } else { alert("Diese Funktion ist noch nicht für dich freigeschaltet."); } return; }
   RZ_FOTOS = [];
   let ov=document.getElementById("rzFotoOv");
   if(!ov){
@@ -13774,7 +13966,7 @@ function rezeptFormFuellen(d){
    Neue Edge-Function riki-rezept-vorschlag (Budget-Bremse wie Etikett). Riki schlägt vor,
    der Nutzer wählt und übernimmt in dasselbe Rezeptformular (rezeptFormFuellen). */
 async function rezVorschlagOpen(){
-  if(typeof feat==="function" && !feat('rezept_riki')){
+  if(!kiErlaubt('rezept')){
     if(typeof premiumInfo==="function"){ premiumInfo(); } else { alert("Diese Funktion ist noch nicht für dich freigeschaltet."); }
     return;
   }
@@ -13787,7 +13979,7 @@ async function rezVorschlagOpen(){
   ov.innerHTML='<div style="background:var(--card,#fff);color:var(--ink);border-radius:16px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(20,40,70,.32);padding:20px 20px 18px;margin:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px"><div style="font-weight:800;font-size:18px">🍳 Was koche ich?</div><button onclick="rezVorschlagClose()" style="border:0;background:var(--bg,#eef2f5);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px">✕</button></div>'
     +'<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Gib die Zutaten ein, die du zuhause hast – oder <b>fotografier deinen Kühlschrank</b>. Riki schlägt Gerichte vor, die dazu passen und deinen Kalorienbedarf treffen. Die kcal-Angabe ist eine <b>Schätzung</b>.</div>'
-    +'<button onclick="rezVorFotoWahl()" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:11px;border:1px dashed var(--green);border-radius:11px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534));font-weight:600;cursor:pointer;font-size:13.5px">📷 Kühlschrank / Vorrat fotografieren <span style="font-weight:400;color:var(--muted)">(1–3 Bilder)</span></button>'
+    +'<button onclick="rezVorFotoWahl()" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:11px;border:1px dashed var(--green);border-radius:11px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534));font-weight:600;cursor:pointer;font-size:13.5px">📷 Kühlschrank / Vorrat fotografieren <span style="font-weight:400;color:var(--muted)">(1–6 Bilder)</span></button>'
     +'<input type="file" id="rezVorFotoInp" accept="image/*" multiple style="display:none" onchange="rezVorFotoSenden(this.files)">'
     +'<div id="rezVorFotoMsg" style="font-size:12px;line-height:1.5;margin:-2px 0 10px"></div>'
     +'<label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Zutaten (Komma oder Zeile trennt)</label>'
@@ -13877,7 +14069,11 @@ async function rezVorFotoSenden(files){
     var s=await client.auth.getSession(); var tok=(s&&s.data&&s.data.session)?s.data.session.access_token:client.supabaseKey;
     var r=await fetch(client.supabaseUrl+"/functions/v1/riki-vorrat",{method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok,"apikey":client.supabaseKey},
-      body:JSON.stringify({bilder:b64})});
+      /* Work #769: Modell steuerbar, damit sich Sonnet/Opus/Haiku an denselben
+         Fotos vergleichen lassen. Ohne Angabe entscheidet der Server. */
+      body:JSON.stringify(window.RIKI_VORRAT_MODELL
+        ? {bilder:b64, modell:window.RIKI_VORRAT_MODELL}
+        : {bilder:b64})});
     var d=await r.json();
     if(!r.ok||d.error){ throw new Error(d.error||("Fehler "+r.status)); }
     var neu=(d.zutaten||[]);
@@ -13891,8 +14087,23 @@ async function rezVorFotoSenden(files){
     try{ rezVorFilter(); }catch(e){}
     if(msg){
       var uns=(d.unsicher||[]);
+      /* Work #769: Riki liefert jetzt zwei Listen. Die generischen Zutaten gehen
+         in das Feld oben (daraus entstehen die Rezepte), die konkreten Produkte
+         stehen darunter - nur an denen laesst sich pruefen, ob die Erkennung
+         stimmt. Eine Liste aus "Joghurt, Quark, Kaese" kann man nicht gegen das
+         eigene Regal halten. */
+      var prod=(d.produkte||[]);
+      var prodHtml = prod.length
+        ? '<div style="margin-top:6px;font-size:11.5px;line-height:1.6;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;max-height:150px;overflow:auto"><b>Erkannt ('+prod.length+'):</b><br>'
+          + prod.map(function(p){
+              var t=(p.anzahl&&p.anzahl>1?(p.anzahl+' × '):'')+esc(p.name||'')+(p.marke?(' <span style="color:var(--muted)">'+esc(p.marke)+'</span>'):'');
+              return t+(p.sicher===false?' <span style="color:var(--k-b45309)">unsicher</span>':'');
+            }).join('<br>')
+          + '</div>'
+        : '';
       msg.style.color="var(--muted)";
       msg.innerHTML=(neu.length?('✓ <b>'+neu.length+'</b> Zutat(en) erkannt und eingetragen – bitte prüfen und ggf. korrigieren.'):'Riki hat nichts sicher erkannt.')
+        +prodHtml
         +(uns.length?('<div style="margin-top:4px;color:var(--k-b45309)">Unsicher (nur dazunehmen, wenn es stimmt): '+esc(uns.join(", "))+'</div>'):'')
         +((d.warnungen&&d.warnungen.length)?('<div style="margin-top:4px;color:var(--k-7a5c1e)">'+d.warnungen.map(esc).map(function(x){return '• '+x;}).join('<br>')+'</div>'):'')
         +(d.meta&&d.meta.kosten_usd!=null?('<div style="margin-top:3px;color:var(--k-a89f8f);font-size:11px">~$'+d.meta.kosten_usd+'</div>'):'');
@@ -14901,7 +15112,7 @@ async function openRezeptForm(editId){
     <div style="font-weight:700;font-size:17px;margin-bottom:4px">${ed?"Rezept bearbeiten":"Eigenes Rezept anlegen"}</div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px">${ed?"Änderungen an Zutaten, Mengen & Mahlzeit werden gespeichert.":"Wird zuerst <b>privat</b> gespeichert (nur du siehst es). Du kannst es später veröffentlichen."}</div>
     <input type="hidden" id="rzfEditId" value="${ed?esc(ed.id):''}">
-    ${feat("rezept_riki") ? `<button type="button" onclick="rezeptFotoOpen()" style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:12px;border:1px solid var(--green);border-radius:11px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534));font-weight:600;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px">
+    ${kiErlaubt('rezept') ? `<button type="button" onclick="rezeptFotoOpen()" style="width:100%;box-sizing:border-box;margin-bottom:12px;padding:12px;border:1px solid var(--green);border-radius:11px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534));font-weight:600;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;gap:8px">
       📷 <span>${ed?"Rezept neu einlesen":"Rezept abfotografieren"}</span>
       <span style="font-size:11px;font-weight:500;opacity:.75">– Riki füllt das Formular aus</span>
     </button>` : ""}
@@ -15058,6 +15269,19 @@ function rezeptDetail(r){
         <button onclick="addRezeptToTb()" style="padding:9px 14px;border:0;border-radius:8px;background:var(--k-16a34a);color:var(--k-ffffff);cursor:pointer">Übernehmen</button>
         <span id="rzTbMsg" style="font-size:13px"></span>
       </div>
+    </div>
+    <!-- Work #766 (Ralph 19.09.2026: "rezepte kann ich aktuell nur ins tagebuch
+         uebernehmen oder als favorit"). Der Weg in den Planer fehlte in beide
+         Richtungen: cb_plan_add kann p_typ=rezept laengst, es gab nur keinen
+         Knopf. Heute planen statt heute essen ist der haeufigere Fall. -->
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px">In den Wochenplan</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px">
+        <input type="date" id="rzPlanDatum" value="${tbToday()}" style="padding:8px;border:1px solid var(--line);border-radius:8px">
+        <select id="rzPlanSlot" style="padding:8px;border:1px solid var(--line);border-radius:8px"><option>Frühstück</option><option>Mittag</option><option selected>Abendessen</option><option>Snack</option></select>
+        <button onclick="addRezeptToPlan()" style="padding:9px 14px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer">Einplanen</button>
+        <span id="rzPlanMsg" style="font-size:13px"></span>
+      </div>
     </div>` : '';
   const controls = pro
     ? `<div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0">
@@ -15183,6 +15407,58 @@ async function loadRezeptBudget(){
   }catch(e){ _daySum=_daySum||{}; _goal=_goal||{}; }
   renderRezeptScaled();
 }
+/* ===== Work #770 (Ralph 19.09.2026): Zeiten fuer Mahlzeiten und Training =====
+   "die zeiten fuer mahlzeiten soll man in mein profil definieren koennen,
+    grundeistellung wuerde ich trotzdem setzen. trainigszeiten soll man auch
+    einstellen koennen und dann im planer auch noch verschieben koennen."
+
+   Die Grundeinstellung steht NICHT hier, sondern in cb_zeiten_standard auf dem
+   Server. Zweimal geschrieben liefe sie irgendwann auseinander, und niemand
+   wuesste, welche gilt. cb_zeiten_holen liefert immer einen Wert - entweder den
+   eigenen oder den Standard -, deshalb muss die Oberflaeche nie entscheiden. */
+function minToTime(m){ m=+m||0; return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0'); }
+function timeToMinSafe(s){ if(!s) return null; const p=String(s).split(':'); const m=(+p[0])*60+(+(p[1]||0)); return isFinite(m)?m:null; }
+async function zeitenRender(){
+  const box=document.getElementById("profZeiten"); if(!box) return;
+  let liste=[];
+  try{ const {data,error}=await client.rpc("cb_zeiten_holen"); if(error) throw error; liste=data||[]; }
+  catch(e){ box.innerHTML='<div style="color:var(--k-dc2626);font-size:13px">Zeiten liessen sich nicht laden: '+esc(e.message||"unbekannt")+'</div>'; return; }
+  box.innerHTML='<div style="font-weight:600;font-size:13px;margin-bottom:6px">Zeiten im Tagesablauf</div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Damit Mahlzeiten und Training im Kalender an der richtigen Stelle stehen. Leer lassen heißt: Grundeinstellung.</div>'
+    +liste.map(function(z){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:13px">'
+        +'<span style="flex:1">'+esc(z.label)+'</span>'
+        +'<input type="time" value="'+minToTime(z.start_min)+'" onchange="zeitSetzen(\''+esc(z.schluessel)+'\',this.value)" style="padding:6px;border:1px solid var(--line);border-radius:8px">'
+        +(z.eigen?'<button onclick="zeitSetzen(\''+esc(z.schluessel)+'\',null)" title="Auf Grundeinstellung zurück" style="border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px">↺</button>':'<span style="width:18px"></span>')
+        +'</div>';
+    }).join('')
+    +'<div id="profZeitMsg" style="font-size:12px;margin-top:4px"></div>';
+}
+async function zeitSetzen(schluessel, wert){
+  const msg=document.getElementById("profZeitMsg");
+  const min = (wert===null||wert==="") ? null : timeToMinSafe(wert);
+  const {error}=await client.rpc("cb_zeiten_setzen",{p_schluessel:schluessel,p_start_min:min});
+  if(msg){ msg.style.color = error ? "var(--k-dc2626)" : "var(--k-2e7d32)";
+           msg.textContent = error ? ("Fehler: "+error.message) : "Gespeichert."; }
+  if(!error) zeitenRender();
+}
+if(typeof window!=='undefined'){ window.zeitenRender=zeitenRender; window.zeitSetzen=zeitSetzen; window.minToTime=minToTime; }
+
+/* Work #766: Rezept in den Wochenplan. Titel kommt mit, damit der Planer ihn
+   nicht nachschlagen muss - genau wie planSave() es tut. */
+async function addRezeptToPlan(){
+  const msg=document.getElementById("rzPlanMsg"); if(!msg) return;
+  msg.style.color="var(--k-dc2626)";
+  const r=_rezept; if(!r){ msg.textContent="Kein Rezept offen."; return; }
+  const ds=(document.getElementById("rzPlanDatum")||{}).value;
+  const slot=(document.getElementById("rzPlanSlot")||{}).value;
+  if(!ds){ msg.textContent="Bitte ein Datum wählen."; return; }
+  const {error}=await client.rpc("cb_plan_add",{p_datum:ds,p_slot:slot,p_typ:'rezept',p_rezept:r.id,p_produkt:null,p_menge:null,p_titel:r.name});
+  if(error){ msg.textContent="Fehler: "+error.message; return; }
+  msg.style.color="var(--k-2e7d32)";
+  msg.textContent="Eingeplant: "+new Date(ds+"T00:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})+" · "+slot;
+}
+if(typeof window!=='undefined'){ window.addRezeptToPlan=addRezeptToPlan; }
 async function addRezeptToTb(){
   const r=_rezept; if(!r) return; const msg=document.getElementById("rzTbMsg");
   const meal=(document.getElementById("rzMeal")||{}).value||"Snack";
@@ -15418,6 +15694,9 @@ document.addEventListener("visibilitychange", function(){
 async function renderMeineTipps(){
   const box=document.getElementById("empfehlBox"); if(!box) return;
   if(!ME){ box.innerHTML='<div style="color:var(--muted);font-size:13.5px">Dafür brauchen wir dein Tagebuch – bitte anmelden.</div>'; return; }
+  /* 19.09.2026 (Ralph): "empfehlungen auch nur premium". Die Vorschlaege lesen
+     das ganze Tagebuch aus - genau das, wofuer Premium da ist. */
+  if(!hasFeat('empfehlungen')){ box.innerHTML=gateHtml('empfehlungen'); return; }
   box.innerHTML='<div style="color:var(--muted)">Lade…</div>';
   let liste=[];
   try{

@@ -894,7 +894,7 @@
 <!-- 07.08.2026: Oberflaechenregeln, die frueher als style="..." in app.js standen.
      Bewusst NACH den <style>-Bloecken oben, damit gleich spezifische Regeln hier
      gewinnen. Gleiche Datei in index.html - app.js ist gemeinsam (CLAUDE.md §10.1). -->
-<link rel="stylesheet" href="ui.css?v=2026-09-16-6">
+<link rel="stylesheet" href="ui.css?v=1.0.13">
 </head>
 <body>
 <!-- ===========================================================================
@@ -937,7 +937,7 @@
     <text id="ifZahl" x="150" y="112" text-anchor="middle" font-size="34" font-weight="700" fill="#7CFF9B" letter-spacing="-1" opacity="0">0</text>
   </svg>
   <div id="introWort">ROOT <span>INDEX</span></div>
-  <div class="introClaim">Die Vorderseite verkauft. Wir lesen die Rückseite.</div>
+  <div class="introClaim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div>
   <button class="introSkip" type="button" onclick="riHideIntro()">Überspringen ›</button>
 </div>
 <div class="hero"><div class="wrap">
@@ -1366,6 +1366,9 @@
         <button onclick="saveAnteile()" style="margin-top:12px;padding:10px 16px;border:0;border-radius:8px;background:var(--k-16a34a);color:var(--k-ffffff);cursor:pointer">Anteile speichern</button>
         <span id="pfAnMsg" style="font-size:13px;margin-left:10px"></span>
       </div>
+      <!-- Work #770: Zeiten fuer Mahlzeiten und Training. Inhalt kommt aus
+           cb_zeiten_holen, die Grundeinstellung steht im Server. -->
+      <div class="pf-pane pf-daten" id="profZeiten" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px"></div>
       <div class="pf-pane pf-masse" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px">
         <div style="font-weight:600;margin-bottom:10px">📐 Körpermaße</div>
         <div id="pfMass">…</div>
@@ -1479,23 +1482,23 @@
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script>/* Admin-Modus VOR app.js aktivieren - per Seiten-Flag (nicht mehr per URL-Hash). */
 window.__ADMIN_PAGE=true;</script>
-<script src="ladestelle.js?v=2026-09-07-8"></script>
-<script src="riegel-kern.js?v=2026-09-07-8"></script>
-<script src="adminnav.js?v=2026-09-09-1"></script>
-<script src="admin-benutzer-ui.js?v=2026-09-07-8"></script>
-<script src="fotostudio-ui.js?v=2026-09-07-8"></script>
-<script src="intro-ui.js?v=2026-09-07-8"></script>
-<script src="dashboard-ui.js?v=2026-09-10-10"></script>
-<script src="notiz-dock-ui.js?v=2026-09-07-8"></script>
-<script src="supplementplan-ui.js?v=2026-09-07-8"></script>
-<script src="mikro-zuordnung-ui.js?v=2026-09-07-8"></script>
-<script src="riki-import-ui.js?v=2026-09-07-8"></script>
-<script src="benchmark-ui.js?v=2026-09-07-8"></script>
-<script src="staffel-ui.js?v=2026-09-07-8"></script>
-<script src="bewertung-ui.js?v=2026-09-07-8"></script>
-<script src="app.js?v=2026-09-16-6"></script>
-<script src="produktliste.js?v=2026-09-11-1"></script>
-<script src="produkteditor.js?v=2026-09-19-pe2"></script>
+<script src="ladestelle.js?v=1.0.13"></script>
+<script src="riegel-kern.js?v=1.0.13"></script>
+<script src="adminnav.js?v=1.0.13"></script>
+<script src="admin-benutzer-ui.js?v=1.0.13"></script>
+<script src="fotostudio-ui.js?v=1.0.13"></script>
+<script src="intro-ui.js?v=1.0.13"></script>
+<script src="dashboard-ui.js?v=1.0.13"></script>
+<script src="notiz-dock-ui.js?v=1.0.13"></script>
+<script src="supplementplan-ui.js?v=1.0.13"></script>
+<script src="mikro-zuordnung-ui.js?v=1.0.13"></script>
+<script src="riki-import-ui.js?v=1.0.13"></script>
+<script src="benchmark-ui.js?v=1.0.13"></script>
+<script src="staffel-ui.js?v=1.0.13"></script>
+<script src="bewertung-ui.js?v=1.0.13"></script>
+<script src="app.js?v=1.0.13"></script>
+<script src="produktliste.js?v=1.0.13"></script>
+<script src="produkteditor.js?v=1.0.13"></script>
 <button id="backFab" onclick="goBack()" aria-label="Zurück" style="display:none;position:fixed;left:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--k-ffffff);color:var(--ink);box-shadow:0 4px 14px rgba(20,40,28,.20);cursor:pointer;align-items:center;justify-content:center;font-size:22px;line-height:1">←</button>
 <button id="toTopFab" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Nach oben" style="display:none;position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;width:46px;height:46px;border-radius:50%;border:0;background:var(--green);color:var(--auf-gruen);box-shadow:0 4px 14px rgba(20,40,28,.25);cursor:pointer;align-items:center;justify-content:center;font-size:20px;line-height:1">↑</button>
 <style id="adminOnly">
