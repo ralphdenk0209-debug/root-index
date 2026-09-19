@@ -5253,6 +5253,8 @@ function setMode(m){
   { var _tv=document.getElementById("todoView"); if(_tv) _tv.style.display = m==="todo"?"":"none"; }
   { var _pfv=document.getElementById("postfachView"); if(_pfv) _pfv.style.display = m==="postfach"?"":"none"; }
   { var _sv=document.getElementById("suppView"); if(_sv) _sv.style.display = m==="supp"?"":"none"; }
+  { var _vv=document.getElementById("vitalView"); if(_vv) _vv.style.display = m==="vital"?"":"none"; }
+  if(m==="vital") vitalRender();
   { var _rv=document.getElementById("rikiView"); if(_rv) _rv.style.display = m==="rikiimport"?"":"none"; }
   if(m==="produkte"){ try{ render(); }catch(e){} }
   if(m==="rezepte") loadRezepte();
@@ -7956,10 +7958,6 @@ async function renderStart(){
    Handys im Rahmen und kann nichts ueberdecken (§1.11n-n: nichts, was ueber
    dem liegt, womit man arbeitet). Ohne Status wird gar nichts gerendert. */
 
-  /* 19.09.2026 (Ralph, Raster 3x3): Schritte und Schlaf stehen nicht mehr
-     dauerhaft untereinander, sondern haengen an ihrer Wertekachel und klappen
-     auf. Die Widgets selbst bleiben unveraendert - nur ihre Huelle ist neu. */
-  const schritteHtml = hasFeat('gesundheit') ? '<div id="schritteBox_w" style="display:none"><div id="schritteBox"></div></div><div id="schlafBox_w" style="display:none"><div id="schlafBox"></div></div>' : '';
   dash.innerHTML=
     /* Ralph 30.07.: Begruessung + Datum raus, der Status als diagonale Banderole
        in die obere rechte Ecke.
@@ -7987,20 +7985,33 @@ async function renderStart(){
     +riWertTile('wasser','Wasser','drop','blue')
     +(hasFeat('gesundheit') ? riWertTile('schlaf','Schlaf','moon','violet')+riWertTile('schritte','Schritte','shoe','green') : '')
     +'</div>'
-    /* 19.09.2026 (Ralph): "wasser, schritte und schlaf als popup, unten
-       angebaut ragen sie nach unten raus." Die drei Karten liegen jetzt in
-       einem Popup ueber der Seite statt im Fluss darunter. */
-    +'<div id="wertPopup" class="wertpop"><div class="wertpop-back" onclick="startWertToggle(null)"></div>'
-      +'<div class="wertpop-card">'
-        +'<button type="button" class="wertpop-zu" onclick="startWertToggle(null)" aria-label="Schließen">✕</button>'
-        +'<div id="wasserBox_w" style="display:none"><div id="wasserWidget"></div></div>'
-        +schritteHtml
-      +'</div></div>'
+    /* 19.09.2026 (Ralph): erst angebaut, dann Popup, jetzt eine eigene Seite:
+       "als saubere seite oder direkt seite oeffnen mit eingabe und diagramme."
+       Die Startseite zeigt nur noch die Zahl auf der Kachel; die Karte mit
+       Eingabe und Verlauf steht unter navTo('vital'). */
     +unterstuetzenHtml();
-  if(hasFeat('gesundheit')){ renderSchritte(); renderSchlaf(); }
-  try{ wasserWidgetLoad(); }catch(e){}
   try{ startWerteLaden(); }catch(e){}
 }
+/* Die Seite hinter einer Wertekachel. Sie baut genau EINEN der drei
+   Widget-Anker und laesst die bekannten Renderer hineinschreiben - kein
+   zweiter Bauplan fuer Wasser, Schlaf oder Schritte. */
+function vitalOeffnen(art){ window._vitalArt=art; navTo('vital'); }
+function vitalRender(){
+  var box=document.getElementById("vitalBox"); if(!box) return;
+  var art=window._vitalArt||'wasser';
+  var T={wasser:'Wasser',schlaf:'Schlaf',schritte:'Schritte'};
+  var anker={wasser:'<div id="wasserWidget"></div>',
+             schlaf:'<div id="schlafBox"></div>',
+             schritte:'<div id="schritteBox"></div>'}[art]||'';
+  box.innerHTML='<div style="display:flex;align-items:center;gap:10px;margin:2px 0 12px">'
+    +'<button onclick="goBack()" style="width:34px;height:34px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px;cursor:pointer" aria-label="Zurück">‹</button>'
+    +'<div style="font-size:18px;font-weight:700">'+esc(T[art]||'')+'</div></div>'
+    +anker;
+  if(art==='wasser'){ try{ wasserWidgetLoad(); }catch(e){} }
+  if(art==='schlaf'){ try{ renderSchlaf(); }catch(e){} }
+  if(art==='schritte'){ try{ renderSchritte(); }catch(e){} }
+}
+if(typeof window!=='undefined'){ window.vitalOeffnen=vitalOeffnen; window.vitalRender=vitalRender; }
 /* ===== Raster 3x3: kleine Kachel und Wertekachel (19.09.2026) =====
    riGlowTile bleibt unveraendert stehen - die ausgeloggte Startseite und
    andere Stellen benutzen sie weiter. Die neuen Kacheln sind 88 px hoch und
@@ -8029,7 +8040,7 @@ function riMiniTile(nav,ico,label,zusatz,accent,cornerIco,cornerAct){
 }
 function riWertTile(art,label,ico,accent){
   var A=riMiniPalette(accent);
-  return '<div id="wertKachel_'+art+'" onclick="startWertToggle(\''+art+'\')" style="'+riMiniRahmen(A)+'">'
+  return '<div id="wertKachel_'+art+'" onclick="vitalOeffnen(\''+art+'\')" style="'+riMiniRahmen(A)+'">'
     +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
     +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
     +'<div style="position:relative;z-index:2">'
@@ -8037,24 +8048,6 @@ function riWertTile(art,label,ico,accent){
       +'<div style="color:rgba(255,255,255,.6);font-size:10.5px;margin-top:2px">'+label+'</div>'
     +'</div>'
   +'</div>';
-}
-/* Die Wertekachel oeffnet ihre Karte als Popup ueber der Seite. Immer nur
-   eine; nochmal tippen, Klick daneben oder das Kreuz schliessen sie.
-   Die Widgets darin sind die alten - sie werden nur ein- und ausgeblendet. */
-function startWertToggle(art){
-  var H={wasser:'wasserBox_w',schlaf:'schlafBox_w',schritte:'schritteBox_w'};
-  var offen=(art && window._startWertOffen!==art) ? art : null;
-  window._startWertOffen=offen;
-  Object.keys(H).forEach(function(k){
-    var box=document.getElementById(H[k]); if(box) box.style.display=(k===offen)?'':'none';
-    var kach=document.getElementById('wertKachel_'+k);
-    if(kach){ kach.style.outline=(k===offen)?'2px solid rgba(255,255,255,.38)':'none'; kach.style.outlineOffset='-2px'; }
-  });
-  var pop=document.getElementById('wertPopup');
-  if(pop) pop.classList.toggle('open', !!offen);
-  /* Beim Schliessen die Zahl auf der Kachel nachziehen - sie kann sich im
-     Popup geaendert haben. */
-  if(!offen){ try{ startWerteLaden(); }catch(e){} }
 }
 /* Die Zahlen auf den drei Wertekacheln. Eigene Abfrage, weil die Widgets
    darunter erst beim Aufklappen sichtbar werden - die Kachel soll den Wert
@@ -8470,7 +8463,10 @@ var MFAN_GRUPPEN=[
      der App, wo jedes davon eine eigene Seite ist. Sie hier einzeln
      aufzufuehren wuerde viermal auf dieselbe Seite fuehren. */
   ['profil','Mein Profil','shoe','#4fd6c0',[
-    ['Mein Profil','shoe','#5ef2a0',function(){ navTo('profil'); }],
+    /* Ralph 19.09.: "mein profil im menue mein profil sind persoenliche
+       daten." Die Gruppe heisst schon Mein Profil - der Punkt darin sagt
+       jetzt, was dahinter steht. */
+    ['Persönliche Daten','shoe','#5ef2a0',function(){ navTo('profil'); }],
     ['Meine Supplements','drop','#5ab6ff',function(){ navTo('supp'); }]
   ]],
   ['premium','Premium','heart','#ffc24b',[
@@ -8517,18 +8513,22 @@ function buildFan(){
     });
   }
 
-  /* 19.09.2026 (Ralph): "bitte im halbkreis bogen nach recht anordnen."
+  /* 19.09.2026 (Ralph): "bauch stark nach recht."
+     Der erste Versuch war eine Neigung, die nach oben hin immer staerker
+     wurde - Ralph sah darin zu Recht keinen Bogen, sondern eine Saeule, die
+     nach links kippt. Ein Bauch braucht ZWEI Enden: oben und unten stehen die
+     Punkte weit links, in der Mitte kommen sie nach rechts zurueck. Die
+     rechten Kanten bilden dann einen Bogen, dessen Woelbung zur rechten
+     Bildkante zeigt.
      Der Schritt nach OBEN bleibt gleich gross - nur so beruehren sich die
-     Punkte nie, egal wie viele es sind. Der Versatz zur Seite folgt jetzt
-     einem Viertelkreis (1-cos): anfangs kaum, dann immer staerker. Damit
-     liegt die Reihe rechts von der Verbindungslinie ihrer Enden - das ist der
-     Bogen nach rechts. Ein voller Halbkreis ginge nicht: seine untere Haelfte
-     laege unter der Leiste, seine linke neben dem Schirm. */
+     Punkte nie, egal wie viele es sind. */
   var n=liste.length;
+  var ENDE=148, BAUCH=104;
   liste.forEach(function(it,i){
     var stufe=i+1;
     var dy=-(34+stufe*52);
-    var dx=-Math.round(132*(1-Math.cos(Math.PI/2*(stufe/n))));
+    var dx=(n>2) ? -Math.round(ENDE-BAUCH*Math.sin(Math.PI*i/(n-1)))
+                 : -Math.round(ENDE-BAUCH/2);
     var b=document.createElement('button');
     b.type='button';
     b.className='mfan-item';
@@ -8570,7 +8570,7 @@ function closeFan(){
   setTimeout(function(){ if(!f.classList.contains('open')){ _mfanGruppe=null; Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); }); } }, 300);
 }
 function closeMehr(){ const s=document.getElementById('mehrSheet'); if(s) s.classList.remove('open'); }
-if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanKlick=fanKlick; window.startWertToggle=startWertToggle; }
+if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanKlick=fanKlick; }
 function _ktInp(id,ph,val){ return '<input id="'+id+'" placeholder="'+esc(ph)+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px">'; }
 function _ktArea(id,ph){ return '<textarea id="'+id+'" placeholder="'+esc(ph)+'" rows="4" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px"></textarea>'; }
 function ktSwitch(){ const t=(document.querySelector('input[name=ktTyp]:checked')||{}).value; document.getElementById('ktFrageBox').style.display=(t==='frage')?'block':'none'; document.getElementById('ktProdBox').style.display=(t==='produkt')?'block':'none'; }
