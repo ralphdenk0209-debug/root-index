@@ -3754,7 +3754,9 @@ function fgRefV2Init(){
   if(btn) btn.style.display = adm?"":"none";
   if(!adm){ try{ localStorage.setItem("ri_referenz_v2","aus"); }catch(e){} }
   fgRefV2Anzeigen();
-  if(adm && fgRefV2An()) fgRefV2Laden();
+  /* 19.09.2026: immer laden (auch in der klassischen Ansicht) - Sperrzeilen links und der
+     Rohtext-Reiter lesen diese Daten; ohne Laden standen dort die des vorigen Produkts. */
+  if(adm) fgRefV2Laden();
 }
 function fgRefV2Kopieren(){
   var t=(window._fgRefV2 && window._fgRefV2.rohtext) || "";
@@ -4204,7 +4206,7 @@ async function fgRefV2Laden(){
     box.innerHTML='<div style="color:var(--k-dc2626,#dc2626);font-size:12.5px;padding:6px">Referenz V2 konnte nicht geladen werden: '+esc(fehler)+'</div>';
     return;
   }
-  window._fgRefV2={d:d, st:st, rohtext:(d&&d.rohtext)||""};
+  window._fgRefV2={pid:pid, d:d, st:st, rohtext:(d&&d.rohtext)||""};
   fgRefV2Render(d, st);
   /* Ralph 10.09.2026: das Blockierende steht jetzt AUCH in der linken Liste.
      Ohne diesen Aufruf haette es dort erst nach dem naechsten Tastendruck gestanden. */
@@ -5112,6 +5114,11 @@ async function openFgEditor(id, prefill, targetEl){
   /* 19.09.2026: schnelles Weiterblaettern - nur der LETZTE Aufruf darf zeichnen. */
   var _lauf=(window._fgOeffnenLauf=(window._fgOeffnenLauf||0)+1);
   window._fgZielPid=id||"";
+  /* 19.09.2026, Ralphs Fund (Ricotta P18355 zeigte Etiketttext + Sperrzeile von Fol Epi P1835):
+     Die Referenz des VORIGEN Produkts blieb im Speicher stehen - bei ausgeschalteter
+     Referenz V2 wurde sie nie neu geladen, die linke Liste und der Rohtext-Reiter lasen sie weiter.
+     Beim Oeffnen wird sie deshalb geleert und unten immer neu geholt. */
+  window._fgRefV2=null; window._fgBindung=null; window._fgDublette=null;
   var _veraltet=function(){ return _lauf!==window._fgOeffnenLauf; };
   window._feAlleBereiche=false; window._feQuelleOffen=false;
   /* targetEl (optional): rendert den Editor INLINE in einen Container (z. B. Master-Detail-
