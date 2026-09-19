@@ -33,7 +33,7 @@
     try{ localStorage.setItem("ri_theme", w); }catch(e){}
     window.riThemeWahl = w;
     window.riThemeAnwenden(w);
-    if(typeof buildMehr === "function" && document.getElementById("mehrSheet")) buildMehr();
+    if(typeof pfAppRender === "function" && document.getElementById("pfAppBox")) pfAppRender();
   };
   window.riThemeWahl = W;
 
@@ -72,7 +72,7 @@
        nachtraeglich hineinschreiben - der Inhalt entsteht an einer Stelle. */
     try{ if(document.getElementById("rikiPanel") && typeof rikiPanelOeffnen==="function"){
            rikiPanelSchliessen(); rikiPanelOeffnen(); } }catch(e){}
-    if(typeof buildMehr === "function" && document.getElementById("mehrSheet")) buildMehr();
+    if(typeof pfAppRender === "function" && document.getElementById("pfAppBox")) pfAppRender();
   };
   window.rikiSichtSetzen = function(an){
     try{ localStorage.setItem("ri_riki", an ? "an" : "aus"); }catch(e){}
@@ -81,7 +81,7 @@
     try{ if(an){ if(typeof rikiFabInit==="function") rikiFabInit(); }
          else { if(typeof rikiPanelSchliessen==="function") rikiPanelSchliessen();
                 var f=document.getElementById("rikiFab"); if(f) f.remove(); } }catch(e){}
-    if(typeof buildMehr === "function" && document.getElementById("mehrSheet")) buildMehr();
+    if(typeof pfAppRender === "function" && document.getElementById("pfAppBox")) pfAppRender();
   };
   window.riThemeAnwenden(W);
   /* Steht der Schalter auf "auto", folgt die App dem Geraet - auch wenn es
@@ -940,17 +940,6 @@
   .mfan.open .mfan-item{opacity:1}
   .mfan-item .mfi{display:inline-flex;width:26px;height:26px;border-radius:50%;align-items:center;justify-content:center;flex:0 0 26px}
   .mfan-item:active{filter:brightness(1.08)}
-  .mehr-sheet{position:fixed;inset:0;z-index:41;display:none}
-  .mehr-sheet.open{display:block}
-  .mehr-back{position:absolute;inset:0;background:rgba(20,40,28,.28)}
-  .mehr-card{position:absolute;left:0;right:0;bottom:62px;max-width:600px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:18px 18px 0 0;box-shadow:0 -8px 24px rgba(31,94,52,.16);padding:8px}
-  .mehr-card button{display:flex;align-items:center;gap:12px;width:100%;border:0;background:none;padding:14px 14px;font-size:15px;color:var(--ink);cursor:pointer;border-radius:10px;text-align:left}
-  .mehr-card button:active{background:var(--greenlt)}
-  /* Funktionen als 2-spaltiges Raster: fuenf volle Zeilen wurden zu zwei Reihen,
-     damit die Einkaufsliste oben nicht mehr aus dem Bild scrollt. */
-  .mehr-card .mgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:4px}
-  .mehr-card .mgrid button{width:auto;background:var(--bg);border:1px solid var(--line);padding:12px 12px;font-size:14px;gap:9px}
-  .mehr-card .mgrid button:active{background:var(--greenlt)}
   @media(max-width:640px){
     .hero{padding:16px 16px}
     .hero .tag{font-size:15px;margin-top:8px} .hero .sub{display:none}
@@ -964,7 +953,7 @@
 <!-- 07.08.2026: Oberflaechenregeln, die frueher als style="..." in app.js standen.
      Bewusst NACH den <style>-Bloecken oben, damit gleich spezifische Regeln hier
      gewinnen. Gleiche Datei in admin.html - app.js ist gemeinsam (CLAUDE.md §10.1). -->
-<link rel="stylesheet" href="ui.css?v=1.0.20">
+<link rel="stylesheet" href="ui.css?v=1.0.21">
 </head>
 <body>
 <!-- ===========================================================================
@@ -1229,6 +1218,10 @@
         <button data-p="daten" onclick="pfTab('daten')">Daten</button>
         <button data-p="ziele" onclick="pfTab('ziele')">Ziele</button>
         <button data-p="masse" onclick="pfTab('masse')">Körpermaße</button>
+        <!-- 19.09.2026 (Ralph): "können wir beide in mein profil verschieben?
+             dann könnte einstellungen aus dem menü entfernt werden, oder?"
+             Ja. Darstellung, RIKI und alles zum Konto stehen jetzt hier. -->
+        <button data-p="app" onclick="pfTab('app')">App &amp; Konto</button>
       </div>
       <div class="pf-pane pf-daten" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px">
         <div style="font-weight:600;margin-bottom:10px">Persönliche Daten</div>
@@ -1358,6 +1351,7 @@
       <!-- Work #770: Zeiten fuer Mahlzeiten und Training. Inhalt kommt aus
            cb_zeiten_holen, die Grundeinstellung steht im Server. -->
       <div class="pf-pane pf-daten" id="profZeiten" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px"></div>
+      <div class="pf-pane pf-app" id="pfAppBox" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px"></div>
       <div class="pf-pane pf-masse" style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px">
         <div style="font-weight:600;margin-bottom:10px">📐 Körpermaße</div>
         <div id="pfMass">…</div>
@@ -1409,7 +1403,7 @@
   <button class="bn-item" id="bnmehr" onclick="toggleMehr()"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menü</span></button>
 </div></nav>
 <div class="mfan" id="mehrFan"><div class="mfan-back" onclick="closeFan()"></div></div>
-<div class="mehr-sheet" id="mehrSheet"><div class="mehr-back" onclick="closeMehr()"></div><div class="mehr-card" id="mehrCard"></div></div>
+
 <div class="overlay" id="overlay"><div class="panel" id="panel"></div></div>
 
 <div class="overlay" id="loginOverlay"><div class="panel" style="max-width:400px">
@@ -1435,13 +1429,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
-<script src="training-ui.js?v=1.0.20"></script>
-<script src="intro-ui.js?v=1.0.20"></script>
-<script src="wasser-ui.js?v=1.0.20"></script>
-<script src="supplementplan-ui.js?v=1.0.20"></script>
-<script src="riki-ui.js?v=1.0.20"></script>
-<script src="app.js?v=1.0.20"></script>
-<script src="tagebuch-mikro-ui.js?v=1.0.20"></script>
+<script src="training-ui.js?v=1.0.21"></script>
+<script src="intro-ui.js?v=1.0.21"></script>
+<script src="wasser-ui.js?v=1.0.21"></script>
+<script src="supplementplan-ui.js?v=1.0.21"></script>
+<script src="riki-ui.js?v=1.0.21"></script>
+<script src="app.js?v=1.0.21"></script>
+<script src="tagebuch-mikro-ui.js?v=1.0.21"></script>
 <button id="backFab" onclick="goBack()" aria-label="Zurück" style="display:none;position:fixed;left:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--k-ffffff);color:var(--ink);box-shadow:0 4px 14px rgba(20,40,28,.20);cursor:pointer;align-items:center;justify-content:center;font-size:22px;line-height:1">←</button>
 <button id="toTopFab" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="Nach oben" style="display:none;position:fixed;right:14px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:45;width:46px;height:46px;border-radius:50%;border:0;background:var(--green);color:var(--auf-gruen);box-shadow:0 4px 14px rgba(20,40,28,.25);cursor:pointer;align-items:center;justify-content:center;font-size:20px;line-height:1">↑</button>
 <!-- 28z31 (Ralph 27.08.): Der eigene Scan-Balken ist wieder raus. Gemeint war der

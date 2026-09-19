@@ -5260,7 +5260,7 @@ function setMode(m){
   if(m==="rezepte") loadRezepte();
   if(m==="tagebuch"){ const _d=document.getElementById("tbDatum"); if(_d) _d.value=tbToday(); loadTagebuch(); }
   if(m==="planer") loadPlaner();
-  if(m==="profil"){ loadProfil(); if(typeof wasserPrefRender==="function" && document.getElementById("pfWasserBox")) wasserPrefRender(); }
+  if(m==="profil"){ loadProfil(); if(typeof wasserPrefRender==="function" && document.getElementById("pfWasserBox")) wasserPrefRender(); pfAppRender(); }
   if(m==="training") loadTraining();
   if(m==="zyklus") renderZyklus();
   if(m==="darm") renderDarm();
@@ -8485,9 +8485,11 @@ var MFAN_GRUPPEN=[
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
     ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }]
   ]],
-  /* Kein zweites Blatt: Darstellung, RIKI, Abmelden und Konto loeschen stehen
-     in der Schublade - das ist der Ort dafuer. */
-  ['mehr','Einstellungen','leaf','#8fa79a',[]]
+  /* 19.09.2026 (Ralph): "dann koennte einstellungen aus dem menue entfernt
+     werden, oder?" - ja. Darstellung, RIKI und das Konto stehen jetzt auf der
+     Profilseite unter "App & Konto"; alles andere, was in der Schublade
+     stand, war seit dem Faecher ohnehin doppelt. Der Punkt ist ersatzlos weg,
+     die Schublade auch. */
 ];
 /* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
 var _mfanGruppe=null;
@@ -8507,7 +8509,6 @@ function buildFan(){
     liste=MFAN_GRUPPEN.map(function(g){
       /* Eine Gruppe mit genau einem Weg braucht kein zweites Blatt - sonst
          tippt man zweimal fuer dasselbe. */
-      if(!g[4].length) return {art:'mehr', txt:g[1], ico:g[2], col:g[3]};
       if(g[4].length===1) return {art:'weg', txt:g[1], ico:g[2], col:g[3], tun:g[4][0][3]};
       return {art:'gruppe', ziel:g[0], txt:g[1], ico:g[2], col:g[3]};
     });
@@ -8545,7 +8546,6 @@ function fanKlick(it){
   if(it.art==='gruppe'){ _mfanGruppe=it.ziel; buildFan(); return; }
   if(it.art==='zurueck'){ _mfanGruppe=null; buildFan(); return; }
   closeFan();
-  if(it.art==='mehr'){ setTimeout(function(){ buildMehr(); var s=document.getElementById('mehrSheet'); if(s) s.classList.add('open'); }, 150); return; }
   /* Der Weg traegt seine Aktion selbst - manche wechseln die Seite, manche
      oeffnen eine Auflage (Wiki, Rechtstexte). Beides sind Wege, und beide
      gehoeren in denselben Faecher. */
@@ -8567,7 +8567,10 @@ function closeFan(){
   });
   setTimeout(function(){ if(!f.classList.contains('open')){ _mfanGruppe=null; Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); }); } }, 300);
 }
-function closeMehr(){ const s=document.getElementById('mehrSheet'); if(s) s.classList.remove('open'); }
+/* Die Schublade gibt es nicht mehr (19.09.2026) - der Faecher hat ihre Wege,
+   die Profilseite ihre Einstellungen. Der Name bleibt, weil navTo und goBack
+   ihn rufen; er schliesst jetzt den Faecher. */
+function closeMehr(){ closeFan(); }
 if(typeof window!=='undefined'){ window.toggleMehr=toggleMehr; window.closeFan=closeFan; window.fanKlick=fanKlick; }
 function _ktInp(id,ph,val){ return '<input id="'+id+'" placeholder="'+esc(ph)+'" value="'+(val||'')+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px">'; }
 function _ktArea(id,ph){ return '<textarea id="'+id+'" placeholder="'+esc(ph)+'" rows="4" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px;font-size:14px;margin-bottom:8px"></textarea>'; }
@@ -8647,93 +8650,58 @@ async function ktScanStart(){
 async function ktErledigt(id){ try{ await client.rpc("cb_admin_kontakt_erledigt",{p_id:id}); }catch(e){} loadFreigabe(); }
 function ktAnlegen(i){ const x=(window._ktList||[])[i]; if(!x){ openFgEditor(null); return; } openFgEditor(null, {name:x.produktname, marke:x.marke, ean:x.barcode}); }
 function ktAntwort(i){ const x=(window._ktList||[])[i]; if(!x||!x.email) return; const betr=x.typ==='produkt'?('Deine Produktanfrage: '+(x.produktname||'')):'Deine Nachricht an Root Index'; const body='Hallo'+(x.name?' '+x.name:'')+',\r\n\r\ndanke fuer deine Nachricht an Root Index.\r\n\r\n'; window.location.href='mailto:'+encodeURIComponent(x.email)+'?subject='+encodeURIComponent(betr)+'&body='+encodeURIComponent(body); }
-function buildMehr(){
-  /* Training ist aus der unteren Leiste hierher gewandert - es ist die Funktion,
-     die man am seltensten braucht. Der Platz gehoert dem Scannen. */
-  /* 19.09.2026: Die Wege stehen jetzt im Faecher (MFAN) - hier waeren sie ein
-     zweites Mal dasselbe. Diese Schublade traegt nur noch, was Einstellung ist. */
-  let html='';
-  /* Wiki direkt unter die Funktionen - es erklaert die App und wird oft zuerst gesucht. */
-  html+='<button onclick="closeMehr();wikiOpen()">📖 Wiki · So funktioniert Root Index</button>';
-  /* "Unsere Methode" direkt darunter: das Wiki erklaert die BEDIENUNG, die Methodik-Seite
-     die BEWERTUNG. Zwei Fragen, zwei Orte - aber nebeneinander, weil wer eine sucht,
-     oft die andere meint. */
-  if(methodikAn()) html+='<button onclick="methodikGo()">🧭 Unsere Methode · so entsteht der Index</button>';
-  /* Darstellung: "Automatisch" folgt dem Geraet - das ist die richtige Vorgabe.
-     Wer ein Handy auf dunkel gestellt hat, will nicht von jeder App neu gefragt werden. */
-  const w = window.riThemeWahl || 'auto';
-  const opt = [['auto','Automatisch'],['hell','Hell'],['dunkel','Dunkel']];
-  html+='<div style="padding:10px 12px 4px">'
-    +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px">Darstellung</div>'
-    +'<div style="display:flex;gap:6px">'
-    + opt.map(function(o){
-        const an = (w===o[0]);
-        return '<button onclick="riThemeSetzen(\''+o[0]+'\')" style="flex:1;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;'
-             + 'border:1px solid '+(an?'var(--green)':'var(--line)')+';'
-             + 'background:'+(an?'var(--greenlt)':'var(--card)')+';'
-             + 'color:'+(an?'var(--greendk)':'var(--ink)')+'">'+o[1]+'</button>';
-      }).join('')
-    +'</div></div>';
-  /* 🔴 20.08.2026, Ralph: "im menü das aufklappt soll man ihn ein oder ausblenden
-     können." Dieselbe Segmentform wie die Darstellung darueber - eine zweite
-     Bauart fuer denselben Zweck waere zwei Muster fuer eine Sache.
-     Direkt unter der Darstellung, weil beides dasselbe ist: wie die App aussieht,
-     nicht was sie kann. */
-  {
-    const rAn = (typeof window.rikiSichtbar==='function') ? window.rikiSichtbar() : true;
-    const rOpt = [[true,'An'],[false,'Aus']];
-    html+='<div style="padding:4px 12px 8px">'
-      +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px">RIKI · der Begleiter unten rechts</div>'
+/* ===== App & Konto auf der Profilseite (Ralph 19.09.2026) =====
+   "was ist bei einstellungen noch enthalten? darstellung und der hinweis auf
+   angemeldet. koennen wir beide in mein profil verschieben? dann koennte
+   einstellungen aus dem menue entfernt werden, oder?"
+
+   Gemessen, was wirklich drin stand: Darstellung, zwei RIKI-Schalter, Konto
+   (angemeldet als, Abo, Abmelden, Konto loeschen) - und viermal dasselbe, was
+   seit dem Faecher schon unter "Root Index" und "Rechtliches" steht (Wiki,
+   Methode, Kontakt, Impressum/Datenschutz/AGB). Die Doppelten sind ersatzlos
+   weg, der Rest steht hier. Damit ist die Schublade leer und der Punkt
+   "Einstellungen" aus dem Faecher verschwunden - genau wie Ralph vermutet hat. */
+function pfAppRender(){
+  var box=document.getElementById("pfAppBox"); if(!box) return;
+  var seg=function(titel, hinweis, werte, aktiv, ruf, aus){
+    return '<div style="padding:2px 0 14px'+(aus?';opacity:.45;pointer-events:none':'')+'">'
+      +'<div style="font-weight:600;font-size:13.5px;margin-bottom:2px">'+titel+'</div>'
+      +(hinweis?'<div style="font-size:11.5px;color:var(--muted);margin-bottom:7px">'+hinweis+'</div>':'<div style="height:7px"></div>')
       +'<div style="display:flex;gap:6px">'
-      + rOpt.map(function(o){
-          const an=(rAn===o[0]);
-          return '<button onclick="rikiSichtSetzen('+(o[0]?'true':'false')+')" style="flex:1;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;'
+      + werte.map(function(o){
+          var an=(aktiv===o[0]);
+          return '<button onclick="'+ruf.replace('%W%', (typeof o[0]==='boolean')?(o[0]?'true':'false'):("'"+o[0]+"'"))+'" style="flex:1;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;'
                + 'border:1px solid '+(an?'var(--green)':'var(--line)')+';'
                + 'background:'+(an?'var(--greenlt)':'var(--card)')+';'
                + 'color:'+(an?'var(--greendk)':'var(--ink)')+'">'+o[1]+'</button>';
         }).join('')
       +'</div></div>';
-    /* 🔴 20.08.2026, Ralph: "die soll eine option werden, die man deaktivieren
-       kann." Direkt unter dem RIKI-Schalter, weil sie ihn verfeinert - und
-       ausgegraut, wenn RIKI ganz aus ist: eine Wahl anzubieten, die nichts tut,
-       ist schlimmer als keine. */
-    const iAn = (typeof window.rikiIntroAn==='function') ? window.rikiIntroAn() : true;
-    html+='<div style="padding:0 12px 10px;'+(rAn?'':'opacity:.45;pointer-events:none')+'">'
-      +'<div style="font-size:11.5px;color:var(--muted);margin-bottom:6px">RIKI erklärt auf der Startseite, was Root Index ist</div>'
-      +'<div style="display:flex;gap:6px">'
-      + rOpt.map(function(o){
-          const an=(iAn===o[0]);
-          return '<button onclick="rikiIntroSetzen('+(o[0]?'true':'false')+')" style="flex:1;padding:9px 4px;border-radius:9px;font-size:12.5px;font-weight:600;cursor:pointer;'
-               + 'border:1px solid '+(an?'var(--green)':'var(--line)')+';'
-               + 'background:'+(an?'var(--greenlt)':'var(--card)')+';'
-               + 'color:'+(an?'var(--greendk)':'var(--ink)')+'">'+o[1]+'</button>';
-        }).join('')
-      +'</div>'
-      +'<div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.45">Aus: RIKI erklärt dort nur die Oberfläche.</div>'
-      +'</div>';
+  };
+  var html='';
+  html+=seg('Darstellung',
+            'Automatisch folgt dem Gerät – wer sein Handy auf dunkel gestellt hat, will nicht von jeder App neu gefragt werden.',
+            [['auto','Automatisch'],['hell','Hell'],['dunkel','Dunkel']],
+            (window.riThemeWahl||'auto'), "riThemeSetzen(%W%)");
+
+  var rAn = (typeof window.rikiSichtbar==='function') ? window.rikiSichtbar() : true;
+  html+=seg('RIKI · der Begleiter unten rechts', '', [[true,'An'],[false,'Aus']], rAn, "rikiSichtSetzen(%W%)");
+  var iAn = (typeof window.rikiIntroAn==='function') ? window.rikiIntroAn() : true;
+  html+=seg('RIKI erklärt auf der Startseite, was Root Index ist', '',
+            [[true,'An'],[false,'Aus']], iAn, "rikiIntroSetzen(%W%)", !rAn);
+
+  html+='<div style="border-top:1px solid var(--line);margin:4px 0 12px"></div>';
+  html+='<div style="font-weight:600;font-size:13.5px;margin-bottom:6px">Konto</div>';
+  if(ME){
+    html+='<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Angemeldet als <b style="color:var(--ink)">'+esc(ME.email||'')+'</b></div>';
+    if(ME.is_premium) html+='<button onclick="startPortal()" style="display:block;width:100%;text-align:left;padding:11px 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">💳 Abo verwalten / kündigen</button>';
+    html+='<button onclick="doLogout()" style="display:block;width:100%;text-align:left;padding:11px 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">🚪 Abmelden</button>';
+    html+='<button onclick="kontoLoeschenOpen()" style="display:block;width:100%;text-align:left;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--k-dc2626);font-size:14px;cursor:pointer">🗑️ Konto löschen</button>';
+  } else {
+    html+='<button onclick="openLogin()" style="display:block;width:100%;text-align:left;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">🔑 Anmelden</button>';
   }
-  html+='<button onclick="closeMehr();kontaktOpen()">✉️ Kontakt · Frage oder Produkt melden</button>';
-  /* Die vier Rechtstexte tippt kaum jemand an, sie fraßen aber vier Zeilen und
-     schoben die Funktionen aus dem Bild. Jetzt hinter EINER aufklappbaren Zeile. */
-  html+='<button onclick="mehrLegalToggle(this)" aria-expanded="false">⚖️ Rechtliches<span style="margin-left:auto;color:var(--muted);font-size:13px">▸</span></button>';
-  html+='<div id="mehrLegal" style="display:none">'
-    +'<button onclick="closeMehr();legalOpen(\'impressum\')" style="padding-left:34px">📄 Impressum</button>'
-    +'<button onclick="closeMehr();legalOpen(\'datenschutz\')" style="padding-left:34px">🔒 Datenschutz</button>'
-    +'<button onclick="closeMehr();legalOpen(\'agb\')" style="padding-left:34px">📜 AGB</button>'
-    +'<button onclick="closeMehr();legalOpen(\'widerruf\')" style="padding-left:34px">↩️ Widerrufsbelehrung</button>'
-    +'</div>';
-  if(ME&&ME.is_premium) html+='<button onclick="closeMehr();startPortal()">💳 Abo verwalten / kündigen</button>';
-  html+= ME ? '<button onclick="closeMehr();doLogout()">🚪 Abmelden</button><button onclick="closeMehr();kontoLoeschenOpen()" style="color:var(--k-dc2626)">🗑️ Konto löschen</button>'
-            : '<button onclick="closeMehr();openLogin()">🔑 Anmelden</button>';
-  const c=document.getElementById('mehrCard'); if(c) c.innerHTML=html;
+  box.innerHTML=html;
 }
-function mehrLegalToggle(btn){
-  var box=document.getElementById('mehrLegal'); if(!box) return;
-  var zu = box.style.display==='none';
-  box.style.display = zu ? '' : 'none';
-  btn.setAttribute('aria-expanded', String(zu));
-  var chev=btn.querySelector('span'); if(chev) chev.textContent = zu ? '▾' : '▸';
-}
+if(typeof window!=='undefined'){ window.pfAppRender=pfAppRender; }
 function legalOpen(which){
   let ov=document.getElementById("legalOv"); if(ov) ov.remove();
   ov=document.createElement("div"); ov.id="legalOv";
