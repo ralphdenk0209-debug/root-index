@@ -201,22 +201,36 @@ var SKRIPT={
    ]}
  ],
  c2:[
-  {abschnitt:"Abschnitt 1 · Hook", zeit:"0–4 Sek.",
-   kamera:"Sandra frontal, Avatar im Original-Layout. Direkt anfangen, keine Begrüßung.",
+  {abschnitt:"Abschnitt 1 · Vier Versprechen", zeit:"0–11 Sek.",
+   kamera:"Sandra hält die Packung mit der Vorderseite in die Linse. Dr. Oetker High Protein Grießbrei, P1659. Beim Vorlesen je Versprechen kurz auf das Siegel schneiden.",
    zeilen:[
-    {wer:"Sandra", text:"Fünfzehn Zutaten. Für eine Packung Gemüse."}
+    {wer:"Sandra", text:"Nutri-Score A. Fettarm. Ohne Zuckerzusatz. Dreißig Gramm Protein.", regie:"Vorderseite groß"},
+    {wer:"Sandra", text:"Vier Versprechen. Auf einer Packung Grießbrei."}
    ]},
-  {abschnitt:"Abschnitt 2 · Die Liste", zeit:"4–12 Sek.",
-   kamera:"Zutaten als Text einblenden, ab Zutat 7 in anderer Farbe. Sandra als Kreis unten rechts. Produkt: Frosta Gemüse Pfanne all Italiana, P894.",
+  {abschnitt:"Abschnitt 2 · Umdrehen", zeit:"11–26 Sek.",
+   kamera:"Packung umdrehen, Zutatenliste groß. Die drei Süßstoffe nacheinander markieren.",
    zeilen:[
-    {wer:"Sandra", text:"Zucchini, Bohnen, Karotten, Romanesco, Paprika. So weit, so gut.", regie:"Erste sechs einblenden"},
-    {wer:"Sandra", text:"Und dann: Wasser, Öl, Salz, Basilikum, Thymian, Honig, Knoblauch, Kartoffelstärke, Pfeffer.", regie:"Die restlichen neun einblenden"}
+    {wer:"Sandra", text:"Dreh mal um.", regie:"Umdrehen"},
+    {wer:"Sandra", text:"Acesulfam K. Cyclamat. Saccharin. Drei Süßstoffe.", regie:"Einzeln markieren"},
+    {wer:"Sandra", text:"Ohne Zuckerzusatz stimmt. Gesüßt ist es trotzdem."}
    ]},
-  {abschnitt:"Abschnitt 3 · Pointe", zeit:"12–16 Sek.",
-   kamera:"Zurück auf Sandra. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+  {abschnitt:"Abschnitt 3 · Das Sternchen", zeit:"26–34 Sek.",
+   kamera:"Sternchen und Fußnote groß zeigen, dann die Packungsgröße.",
    zeilen:[
-    {wer:"Sandra", text:"Ab hier ist es nicht mehr Gemüse. Es ist Gemüse in Soße."},
-    {wer:"Sandra", text:"Wie viele davon hättest du erwartet?"}
+    {wer:"Sandra", text:"Und die dreißig Gramm Protein gelten pro Becher.", regie:"Sternchen zeigen"},
+    {wer:"Sandra", text:"Der Becher hat vierhundert Gramm."}
+   ]},
+  {abschnitt:"Abschnitt 4 · Einordnung", zeit:"34–42 Sek.",
+   kamera:"Zurück auf Sandra. Dann der Root-Index-Wert als Einblendung.",
+   zeilen:[
+    {wer:"Sandra", text:"Nutri-Score A ist übrigens nicht falsch. Der rechnet Fett, Zucker, Salz und Eiweiß."},
+    {wer:"Sandra", text:"Was drin ist, schaut er sich nicht an. Wir schon.", regie:"Root Index 44 einblenden"},
+    {wer:"Sandra", text:"Bei uns: vierundvierzig von hundert."}
+   ]},
+  {abschnitt:"Abschnitt 5 · Abbinder", zeit:"42–45 Sek.",
+   kamera:"Ins Gesicht. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   zeilen:[
+    {wer:"Sandra", text:"Hättest du das erwartet?"}
    ]}
  ],
  c3:[
@@ -437,7 +451,7 @@ var VARIANTE='c1';
 var VIDEOS=[
  {id:'1',  art:'kamera', titel:'01 · Auftakt',        unter:'30 s · beide',  fass:[
    {k:'c1', l:'Beide'},{k:'c1b', l:'Nur Sandra'}]},
- {id:'2',  art:'heygen', titel:'02 · Zutatenliste',   unter:'16 s · Sandra', fass:[{k:'c2', l:'Hook'}]},
+ {id:'2',  art:'kamera', titel:'02 · Vier Versprechen',unter:'45 s · Sandra', fass:[{k:'c2', l:'Grießbrei'}]},
  {id:'3',  art:'heygen', titel:'03 · Die vier Fragen',unter:'45 s · Ralph',  fass:[{k:'c3', l:'Erklärung'}]},
  {id:'4',  art:'heygen', titel:'04 · Nicht berechenbar', unter:'18 s · Sandra', fass:[{k:'c4', l:'Haltung'}]},
  {id:'5',  art:'heygen', titel:'05 · Hafer',          unter:'20 s · Sandra', fass:[{k:'c5', l:'Wissen'}]},
@@ -452,7 +466,7 @@ var VIDEOS=[
 function videoVon(k){ return VIDEOS.find(function(v){ return v.fass.some(function(f){ return f.k===k; }); }); }
 /* Vorgabedauer je Fassung — Reel-Format 30–60 s. */
 /* Zieldauer je Fassung in Sekunden — Vorgabe aus dem Clipplan Staffel 1. */
-var DAUER_VORGABE={c1:30,c1b:25,c2:16,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:30,c11:26};
+var DAUER_VORGABE={c1:30,c1b:25,c2:45,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:30,c11:26};
 /* Hinweiskasten je Video: 1 = Skript-Ausnahme, 2–5 = Stichwort-Karten. */
 var HINWEIS_HEYGEN='\u{1F3AC} <b>HeyGen-Clip \u2014 Wortskript.</b> '
  +'Der Text wird 1:1 in das Skriptfeld der jeweiligen Szene kopiert. Ein Abschnitt = eine Szene. '
