@@ -8513,22 +8513,20 @@ function buildFan(){
     });
   }
 
-  /* 19.09.2026 (Ralph): "bauch stark nach recht."
-     Der erste Versuch war eine Neigung, die nach oben hin immer staerker
-     wurde - Ralph sah darin zu Recht keinen Bogen, sondern eine Saeule, die
-     nach links kippt. Ein Bauch braucht ZWEI Enden: oben und unten stehen die
-     Punkte weit links, in der Mitte kommen sie nach rechts zurueck. Die
-     rechten Kanten bilden dann einen Bogen, dessen Woelbung zur rechten
-     Bildkante zeigt.
+  /* 19.09.2026 (Ralph): "doch starker bauch nach links."
+     Ein Bauch braucht ZWEI Enden: der erste und der letzte Punkt stehen nah
+     am Knopf, dazwischen wandert die Reihe weit nach links und kommt wieder
+     zurueck. Die rechten Kanten bilden damit einen Bogen, dessen Woelbung zur
+     linken Bildkante zeigt.
      Der Schritt nach OBEN bleibt gleich gross - nur so beruehren sich die
      Punkte nie, egal wie viele es sind. */
   var n=liste.length;
-  var ENDE=148, BAUCH=104;
+  var ENDE=20, BAUCH=140;
   liste.forEach(function(it,i){
     var stufe=i+1;
     var dy=-(34+stufe*52);
-    var dx=(n>2) ? -Math.round(ENDE-BAUCH*Math.sin(Math.PI*i/(n-1)))
-                 : -Math.round(ENDE-BAUCH/2);
+    var dx=(n>2) ? -Math.round(ENDE+BAUCH*Math.sin(Math.PI*i/(n-1)))
+                 : -Math.round(ENDE+BAUCH/2);
     var b=document.createElement('button');
     b.type='button';
     b.className='mfan-item';
