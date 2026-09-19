@@ -13298,6 +13298,34 @@ function vorlKarte(d, ean){
   return h;
 }
 
+/* 19.09.2026 (Ralph: "die Maschine muss sofort starten, 5 bis 8 Sekunden sind Maximum").
+   Direkt nach dem Scan legt cb_scan_sofort das Produkt an, zerlegt, bindet und rechnet den
+   ECHTEN Index (gemessen 2-5 s) - kein vorlaeufiger Wert, derselbe Score wie ueberall.
+   Fehlt etwas (z. B. Zutatenliste), bleibt es bei der Quellenkarte und dem Posteingang. */
+async function scanSofort(ean, d){
+  try{
+    const {data:{session}} = await client.auth.getSession();
+    if(!session) return null;
+    const {data:r, error} = await client.rpc("cb_scan_sofort",{p_ean:String(ean)});
+    if(error || !r || !r.ok || r.clean_score==null) return null;
+    const n = (d && (d.naehrwerte || (d.vorschlag && d.vorschlag.naehrwerte_100g))) || null;
+    const farbe = r.clean_score>=70 ? "var(--k-16a34a)" : (r.clean_score>=50 ? "var(--k-b45309)" : "var(--k-dc2626)");
+    let h='<div style="display:flex;gap:12px;align-items:center;margin-top:12px">'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-weight:600;color:var(--ink);line-height:1.3">'+esc(r.name||(d&&d.name)||"Produkt")+'</div>'
+      +(r.marke?'<div style="font-size:12.5px;color:var(--muted)">'+esc(r.marke)+'</div>':'')
+      +'</div>'
+      +'<div style="text-align:center;min-width:64px">'
+      +'<div style="font-size:30px;font-weight:800;line-height:1;color:'+farbe+'">'+esc(String(r.clean_score))+'</div>'
+      +'<div style="font-size:12px;font-weight:600;color:'+farbe+'">'+esc(r.bewertung||"")+'</div>'
+      +'</div></div>';
+    if(n && typeof nwZeile==="function") h+=nwZeile(n);
+    h+=vorlBanner('Root Index hat das Produkt eben aus <b>'+esc((d&&d.herkunftText)||"OpenFoodFacts")+'</b> angelegt und bewertet. '
+      +'Es ist noch ein Entwurf &ndash; die Prüfung gegen das Etikett folgt.');
+    return {stufe:"sofort", produkt_id:r.produkt_id, html:h};
+  }catch(e){ console.error("[Scan sofort]", e); return null; }
+}
+
 /* Stufe 3: OpenFoodFacts holen (kostet nichts) und in den Cache schreiben,
    damit der nächste Nutzer es sofort und gratis bekommt. */
 async function offScan(ean){
@@ -13419,11 +13447,17 @@ async function scanKette(ean){
 
   if(res.stufe==="cache"){
     res.herkunftText = res.herkunft==="riki_etikett" ? "einem Etikettfoto (Riki)" : "OpenFoodFacts";
+    const sofortC = await scanSofort(ean, res);
+    if(sofortC) return sofortC;
     return {stufe:"cache", html:vorlKarte(res, ean)};
   }
 
   const off = await offScan(ean);
-  if(off) return {stufe:"off", html:vorlKarte(off, ean)};
+  if(off){
+    const sofortO = await scanSofort(ean, off);
+    if(sofortO) return sofortO;
+    return {stufe:"off", html:vorlKarte(off, ean)};
+  }
 
   return {stufe:"unbekannt", html:
     '<div style="margin-top:10px;padding:11px 12px;border:1px dashed var(--k-c9d2cd);border-radius:10px;background:var(--k-f7f9f8);font-size:13px;line-height:1.55;color:var(--k-5a6660)">'
