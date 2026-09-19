@@ -8454,9 +8454,15 @@ var MFAN_GRUPPEN=[
     ['Einkaufsliste','cart','#4fd6c0',function(){ navTo('einkauf'); }],
     ['Tagebuch','cutlery','#5ab6ff',function(){ navTo('tagebuch'); }]
   ]],
+  /* 19.09.2026 (Ralph): "und training fehlt." Es stand unter "Plan", also
+     zwei Tipps tief - und damit da, wo man es nicht sucht. Training ist
+     taeglich, es gehoert auf die erste Ebene. Eine Gruppe mit einem Weg
+     oeffnet direkt, kein zweites Blatt. */
+  ['training','Training','figure','#b79bff',[
+    ['Training','figure','#b79bff',function(){ navTo('training'); }]
+  ]],
   ['plan','Plan','book','#b79bff',[
     ['Planer','book','#8fa79a',function(){ navTo('planer'); }],
-    ['Training','figure','#b79bff',function(){ navTo('training'); }],
     ['Empfehlungen','heart','#ff6fa8',function(){ navTo('meinetipps'); }]
   ]],
   /* Ralph 19.09.: "ich umbenennen in mein profil". Im Web stehen Ziele,
@@ -8511,11 +8517,18 @@ function buildFan(){
     });
   }
 
+  /* 19.09.2026 (Ralph): "bitte im halbkreis bogen nach recht anordnen."
+     Der Schritt nach OBEN bleibt gleich gross - nur so beruehren sich die
+     Punkte nie, egal wie viele es sind. Der Versatz zur Seite folgt jetzt
+     einem Viertelkreis (1-cos): anfangs kaum, dann immer staerker. Damit
+     liegt die Reihe rechts von der Verbindungslinie ihrer Enden - das ist der
+     Bogen nach rechts. Ein voller Halbkreis ginge nicht: seine untere Haelfte
+     laege unter der Leiste, seine linke neben dem Schirm. */
   var n=liste.length;
   liste.forEach(function(it,i){
     var stufe=i+1;
     var dy=-(34+stufe*52);
-    var dx=-Math.round(88*Math.pow(stufe/n,1.6));
+    var dx=-Math.round(132*(1-Math.cos(Math.PI/2*(stufe/n))));
     var b=document.createElement('button');
     b.type='button';
     b.className='mfan-item';
