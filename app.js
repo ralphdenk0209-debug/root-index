@@ -8449,23 +8449,43 @@ function bnActive(m){
    auf eine leere Seite fuehrt, ist schlimmer als kein Weg. */
 var MFAN_GRUPPEN=[
   ['essen','Essen','cutlery','#5ef2a0',[
-    ['produkte','Produkte','search','#5ef2a0'],
-    ['rezepte','Rezepte','bowl','#ffc24b'],
-    ['einkauf','Einkaufsliste','cart','#4fd6c0'],
-    ['tagebuch','Tagebuch','cutlery','#5ab6ff']
+    ['Produkte','search','#5ef2a0',function(){ prodHome(); }],
+    ['Rezepte','bowl','#ffc24b',function(){ navTo('rezepte'); }],
+    ['Einkaufsliste','cart','#4fd6c0',function(){ navTo('einkauf'); }],
+    ['Tagebuch','cutlery','#5ab6ff',function(){ navTo('tagebuch'); }]
   ]],
   ['plan','Plan','book','#b79bff',[
-    ['planer','Planer','book','#8fa79a'],
-    ['training','Training','figure','#b79bff'],
-    ['meinetipps','Empfehlungen','heart','#ff6fa8']
+    ['Planer','book','#8fa79a',function(){ navTo('planer'); }],
+    ['Training','figure','#b79bff',function(){ navTo('training'); }],
+    ['Empfehlungen','heart','#ff6fa8',function(){ navTo('meinetipps'); }]
   ]],
-  ['ich','Ich','shoe','#4fd6c0',[
-    ['profil','Mein Profil','shoe','#5ef2a0'],
-    ['supp','Meine Supplements','drop','#5ab6ff']
+  /* Ralph 19.09.: "ich umbenennen in mein profil". Im Web stehen Ziele,
+     Koerpermasse, Zeiten und Mitteilungen AUF der Profilseite - anders als in
+     der App, wo jedes davon eine eigene Seite ist. Sie hier einzeln
+     aufzufuehren wuerde viermal auf dieselbe Seite fuehren. */
+  ['profil','Mein Profil','shoe','#4fd6c0',[
+    ['Mein Profil','shoe','#5ef2a0',function(){ navTo('profil'); }],
+    ['Meine Supplements','drop','#5ab6ff',function(){ navTo('supp'); }]
   ]],
-  /* Kein zweites Blatt: hier steht alles, was Einstellung ist - Darstellung,
-     RIKI, Wiki, Methode. Das gehoert in die Schublade, nicht in einen Faecher. */
-  ['mehr','Mehr & Einstellungen','leaf','#8fa79a',[]]
+  ['premium','Premium','heart','#ffc24b',[
+    /* NICHT navTo('premium') - eine Seite "premium" gibt es nicht (28z18,
+       Ralphs Fund). premiumInfo ist derselbe Weg wie ueberall sonst. */
+    ['Premium','heart','#ffc24b',function(){ premiumInfo(); }]
+  ]],
+  ['rootindex','Root Index','book','#5ef2a0',[
+    ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
+    ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }],
+    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }]
+  ]],
+  ['recht','Rechtliches','leaf','#8fa79a',[
+    ['Impressum','book','#8fa79a',function(){ legalOpen('impressum'); }],
+    ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
+    ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
+    ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }]
+  ]],
+  /* Kein zweites Blatt: Darstellung, RIKI, Abmelden und Konto loeschen stehen
+     in der Schublade - das ist der Ort dafuer. */
+  ['mehr','Einstellungen','leaf','#8fa79a',[]]
 ];
 /* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
 var _mfanGruppe=null;
@@ -8479,11 +8499,15 @@ function buildFan(){
   var liste=[];
   if(_mfanGruppe){
     var g=MFAN_GRUPPEN.filter(function(x){ return x[0]===_mfanGruppe; })[0];
-    if(g){ liste=g[4].map(function(w){ return {art:'weg', ziel:w[0], txt:w[1], ico:w[2], col:w[3]}; }); }
+    if(g){ liste=g[4].map(function(w){ return {art:'weg', txt:w[0], ico:w[1], col:w[2], tun:w[3]}; }); }
     liste.push({art:'zurueck', txt:'Zurück', ico:'book', col:'#8fa79a'});
   } else {
     liste=MFAN_GRUPPEN.map(function(g){
-      return {art:(g[4].length?'gruppe':'mehr'), ziel:g[0], txt:g[1], ico:g[2], col:g[3]};
+      /* Eine Gruppe mit genau einem Weg braucht kein zweites Blatt - sonst
+         tippt man zweimal fuer dasselbe. */
+      if(!g[4].length) return {art:'mehr', txt:g[1], ico:g[2], col:g[3]};
+      if(g[4].length===1) return {art:'weg', txt:g[1], ico:g[2], col:g[3], tun:g[4][0][3]};
+      return {art:'gruppe', ziel:g[0], txt:g[1], ico:g[2], col:g[3]};
     });
   }
 
@@ -8511,7 +8535,10 @@ function fanKlick(it){
   if(it.art==='zurueck'){ _mfanGruppe=null; buildFan(); return; }
   closeFan();
   if(it.art==='mehr'){ setTimeout(function(){ buildMehr(); var s=document.getElementById('mehrSheet'); if(s) s.classList.add('open'); }, 150); return; }
-  navTo(it.ziel);
+  /* Der Weg traegt seine Aktion selbst - manche wechseln die Seite, manche
+     oeffnen eine Auflage (Wiki, Rechtstexte). Beides sind Wege, und beide
+     gehoeren in denselben Faecher. */
+  setTimeout(function(){ try{ it.tun(); }catch(e){} }, 150);
 }
 function toggleMehr(){
   var f=document.getElementById('mehrFan'); if(!f) return;
