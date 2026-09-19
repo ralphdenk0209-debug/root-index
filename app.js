@@ -8465,8 +8465,13 @@ var MFAN_GRUPPEN=[
   ['training','Training','figure','#b79bff',[
     ['Training','figure','#b79bff',function(){ navTo('training'); }]
   ]],
-  ['plan','Plan','book','#b79bff',[
-    ['Planer','book','#8fa79a',function(){ navTo('planer'); }],
+  /* 19.09.2026 (Ralph): "empfehlungen gehoert nicht in den planer sondern ins
+     menue." Richtig - unter "Plan" gelesen wirkte es wie ein Teil des
+     Planers. Beide stehen jetzt als eigene Punkte. */
+  ['planer','Planer','book','#8fa79a',[
+    ['Planer','book','#8fa79a',function(){ navTo('planer'); }]
+  ]],
+  ['empfehlungen','Empfehlungen','heart','#ff6fa8',[
     ['Empfehlungen','heart','#ff6fa8',function(){ navTo('meinetipps'); }]
   ]],
 
