@@ -8440,17 +8440,28 @@ function bnActive(m){
    Zyklus und Darm stehen vorerst nirgends - weder Kachel noch Faecher (Ralph:
    "bleibt vorerst raus, auch im web, weil noch nicht befuellt"). Ein Weg, der
    auf eine leere Seite fuehrt, ist schlimmer als kein Weg. */
+/* 19.09.2026 (Ralph): "essen aufloesen und ins menue, ggf. kann man
+   trennstriche einfuegen?" Die vier taeglichen Wege stehen jetzt direkt auf
+   der ersten Ebene, am Daumen. Trennstriche gliedern, was sonst eine Liste
+   aus zehn gleichen Punkten waere.
+   Eine Gruppe OHNE Wege ist ein Trennstrich, eine Gruppe mit GENAU EINEM Weg
+   oeffnet direkt (kein zweites Blatt fuer einen Punkt). */
 var MFAN_GRUPPEN=[
-  ['essen','Essen','cutlery','#5ef2a0',[
-    ['Produkte','search','#5ef2a0',function(){ prodHome(); }],
-    ['Rezepte','bowl','#ffc24b',function(){ navTo('rezepte'); }],
-    ['Einkaufsliste','cart','#4fd6c0',function(){ navTo('einkauf'); }],
+  ['produkte','Produkte','search','#5ef2a0',[
+    ['Produkte','search','#5ef2a0',function(){ prodHome(); }]
+  ]],
+  ['rezepte','Rezepte','bowl','#ffc24b',[
+    ['Rezepte','bowl','#ffc24b',function(){ navTo('rezepte'); }]
+  ]],
+  ['einkauf','Einkaufsliste','cart','#4fd6c0',[
+    ['Einkaufsliste','cart','#4fd6c0',function(){ navTo('einkauf'); }]
+  ]],
+  ['tagebuch','Tagebuch','cutlery','#5ab6ff',[
     ['Tagebuch','cutlery','#5ab6ff',function(){ navTo('tagebuch'); }]
   ]],
-  /* 19.09.2026 (Ralph): "und training fehlt." Es stand unter "Plan", also
-     zwei Tipps tief - und damit da, wo man es nicht sucht. Training ist
-     taeglich, es gehoert auf die erste Ebene. Eine Gruppe mit einem Weg
-     oeffnet direkt, kein zweites Blatt. */
+
+  ['t1','','','',[]],
+
   ['training','Training','figure','#b79bff',[
     ['Training','figure','#b79bff',function(){ navTo('training'); }]
   ]],
@@ -8458,22 +8469,25 @@ var MFAN_GRUPPEN=[
     ['Planer','book','#8fa79a',function(){ navTo('planer'); }],
     ['Empfehlungen','heart','#ff6fa8',function(){ navTo('meinetipps'); }]
   ]],
-  /* Ralph 19.09.: "ich umbenennen in mein profil". Im Web stehen Ziele,
-     Koerpermasse, Zeiten und Mitteilungen AUF der Profilseite - anders als in
-     der App, wo jedes davon eine eigene Seite ist. Sie hier einzeln
-     aufzufuehren wuerde viermal auf dieselbe Seite fuehren. */
+
+  ['t2','','','',[]],
+
   ['profil','Mein Profil','shoe','#4fd6c0',[
-    /* Ralph 19.09.: "mein profil im menue mein profil sind persoenliche
-       daten." Die Gruppe heisst schon Mein Profil - der Punkt darin sagt
-       jetzt, was dahinter steht. */
     ['Persönliche Daten','shoe','#5ef2a0',function(){ navTo('profil'); }],
     ['Meine Supplements','drop','#5ab6ff',function(){ navTo('supp'); }]
   ]],
-  ['premium','Premium','heart','#ffc24b',[
-    /* NICHT navTo('premium') - eine Seite "premium" gibt es nicht (28z18,
-       Ralphs Fund). premiumInfo ist derselbe Weg wie ueberall sonst. */
-    ['Premium','heart','#ffc24b',function(){ premiumInfo(); }]
+  /* Ralph 19.09.: "premium soll dann loeschen enthalten, oder? sollte also
+     abo & co oder so aehnlich sein." Ja - Abo und Konto sind dieselbe Frage:
+     was kostet es und wie komme ich wieder raus. */
+  ['abo','Abo & Konto','heart','#ffc24b',[
+    ['Premium','heart','#ffc24b',function(){ premiumInfo(); }],
+    ['Abo verwalten / kündigen','book','#8fa79a',function(){ startPortal(); }],
+    ['Abmelden','drop','#8fa79a',function(){ doLogout(); }],
+    ['Konto löschen','leaf','#ff6fa8',function(){ kontoLoeschenOpen(); }]
   ]],
+
+  ['t3','','','',[]],
+
   ['rootindex','Root Index','book','#5ef2a0',[
     ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
     ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }],
@@ -8484,12 +8498,7 @@ var MFAN_GRUPPEN=[
     ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
     ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }]
-  ]],
-  /* 19.09.2026 (Ralph): "dann koennte einstellungen aus dem menue entfernt
-     werden, oder?" - ja. Darstellung, RIKI und das Konto stehen jetzt auf der
-     Profilseite unter "App & Konto"; alles andere, was in der Schublade
-     stand, war seit dem Faecher ohnehin doppelt. Der Punkt ist ersatzlos weg,
-     die Schublade auch. */
+  ]]
 ];
 /* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
 var _mfanGruppe=null;
@@ -8509,34 +8518,39 @@ function buildFan(){
     liste=MFAN_GRUPPEN.map(function(g){
       /* Eine Gruppe mit genau einem Weg braucht kein zweites Blatt - sonst
          tippt man zweimal fuer dasselbe. */
+      if(!g[4].length) return {art:'trenner'};
       if(g[4].length===1) return {art:'weg', txt:g[1], ico:g[2], col:g[3], tun:g[4][0][3]};
       return {art:'gruppe', ziel:g[0], txt:g[1], ico:g[2], col:g[3]};
     });
   }
 
-  /* 19.09.2026 (Ralph): "doch starker bauch nach links."
-     Ein Bauch braucht ZWEI Enden: der erste und der letzte Punkt stehen nah
-     am Knopf, dazwischen wandert die Reihe weit nach links und kommt wieder
-     zurueck. Die rechten Kanten bilden damit einen Bogen, dessen Woelbung zur
-     linken Bildkante zeigt.
-     Der Schritt nach OBEN bleibt gleich gross - nur so beruehren sich die
-     Punkte nie, egal wie viele es sind. */
-  var n=liste.length;
-  var ENDE=20, BAUCH=140;
+  /* Bauch nach links (Ralph, 19.09.2026). Ein Bauch braucht ZWEI Enden: der
+     erste und der letzte Punkt stehen nah am Knopf, dazwischen wandert die
+     Reihe weit nach links und kommt wieder zurueck.
+     Die Hoehe ist eine laufende Summe, weil ein Trennstrich flacher ist als
+     ein Punkt - und der Bogen richtet sich nach dieser WIRKLICHEN Hoehe, nicht
+     nach dem Zaehler; sonst knickt er an jedem Trennstrich. */
+  var ENDE=20, BAUCH=140, SCHRITT=50, SCHRITT_T=22;
+  var summe=22, hoehen=[];
+  liste.forEach(function(it){ summe += (it.art==='trenner') ? SCHRITT_T : SCHRITT; hoehen.push(-summe); });
+  var unten=hoehen[0], oben=hoehen[hoehen.length-1];
   liste.forEach(function(it,i){
-    var stufe=i+1;
-    var dy=-(34+stufe*52);
-    var dx=(n>2) ? -Math.round(ENDE+BAUCH*Math.sin(Math.PI*i/(n-1)))
-                 : -Math.round(ENDE+BAUCH/2);
-    var b=document.createElement('button');
-    b.type='button';
-    b.className='mfan-item';
+    var dy=hoehen[i];
+    var anteil=(oben!==unten)?((dy-unten)/(oben-unten)):0.5;
+    var dx=-Math.round(ENDE+BAUCH*Math.sin(Math.PI*anteil));
+    var b=document.createElement(it.art==='trenner'?'div':'button');
+    if(it.art==='trenner'){
+      b.className='mfan-item mfan-trenner';
+    } else {
+      b.type='button';
+      b.className='mfan-item';
+      b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'+esc(it.txt)
+        +(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':'');
+      b.onclick=function(){ fanKlick(it); };
+    }
     b.style.right=(window.innerWidth-ax)+'px';
     b.style.top=ay+'px';
-    b.style.transitionDelay=(i*28)+'ms';
-    b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'+esc(it.txt)
-      +(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':'');
-    b.onclick=function(){ fanKlick(it); };
+    b.style.transitionDelay=(i*24)+'ms';
     f.appendChild(b);
     /* Erst im naechsten Bild verschieben, sonst gibt es keinen Uebergang. */
     requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
@@ -8690,15 +8704,15 @@ function pfAppRender(){
             [[true,'An'],[false,'Aus']], iAn, "rikiIntroSetzen(%W%)", !rAn);
 
   html+='<div style="border-top:1px solid var(--line);margin:4px 0 12px"></div>';
-  html+='<div style="font-weight:600;font-size:13.5px;margin-bottom:6px">Konto</div>';
+  /* Abo, Abmelden und Konto loeschen stehen im Faecher unter "Abo & Konto"
+     (Ralph 19.09.) - hier stuenden sie ein zweites Mal. Nur wer angemeldet
+     ist, sieht ueberhaupt etwas; fuer Gaeste bleibt der Anmeldeweg. */
   if(ME){
-    html+='<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Angemeldet als <b style="color:var(--ink)">'+esc(ME.email||'')+'</b></div>';
-    if(ME.is_premium) html+='<button onclick="startPortal()" style="display:block;width:100%;text-align:left;padding:11px 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">💳 Abo verwalten / kündigen</button>';
-    html+='<button onclick="doLogout()" style="display:block;width:100%;text-align:left;padding:11px 12px;margin-bottom:6px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">🚪 Abmelden</button>';
-    html+='<button onclick="kontoLoeschenOpen()" style="display:block;width:100%;text-align:left;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--k-dc2626);font-size:14px;cursor:pointer">🗑️ Konto löschen</button>';
+    html+='<div style="font-size:12.5px;color:var(--muted)">Angemeldet als <b style="color:var(--ink)">'+esc(ME.email||'')+'</b><br>Abo, Abmelden und Konto löschen stehen im Menü unter „Abo &amp; Konto".</div>';
   } else {
     html+='<button onclick="openLogin()" style="display:block;width:100%;text-align:left;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font-size:14px;cursor:pointer">🔑 Anmelden</button>';
   }
+
   box.innerHTML=html;
 }
 if(typeof window!=='undefined'){ window.pfAppRender=pfAppRender; }
