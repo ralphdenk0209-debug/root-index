@@ -6394,6 +6394,7 @@ async function _abBento2Laden(d){
         + sichtbar('retired ohne Nachfolger',N.retired_ohne_nachfolger,true,'neu:retired')
         + sichtbar('Alias auf nicht aktiv',N.auto_alias_auf_nichtaktiv,true,'neu:alias')
         + sichtbar('Legacy-Bindung auf nicht aktiv',N.legacy_bindung_auf_nichtaktiv,true,'neu:legacy')
+        + sichtbar('Familie-Widerspruch',N.familie_widerspruch,true,'neu:familie') /* 19.09.2026: v_zutaten_familie_qa_offen */
         + stillZeile()
         +'<div class="babs" style="margin-top:10px;color:'+_AB.grau+'">Alt · Legacy, Übergang</div>'
         + z('Einträge',AL.gesamt)

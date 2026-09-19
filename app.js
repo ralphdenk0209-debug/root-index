@@ -5392,6 +5392,7 @@ async function fgStammWaechter(){
         + z(N.retired_ohne_nachfolger,'retired ohne Nachfolger', Number(N.retired_ohne_nachfolger)>0?'rot':'')
         + z(N.auto_alias_auf_nichtaktiv,'Alias auf nicht aktiv', Number(N.auto_alias_auf_nichtaktiv)>0?'rot':'')
         + z(N.legacy_bindung_auf_nichtaktiv,'Legacy-Bindung auf nicht aktiv', Number(N.legacy_bindung_auf_nichtaktiv)>0?'rot':'')
+        + z(N.familie_widerspruch,'Familie-Widerspruch', Number(N.familie_widerspruch)>0?'rot':'') /* 19.09.2026: v_zutaten_familie_qa_offen */
         +'</div></div>'
       /* ═════════════════════════════════════════════════════════════════════
          11.09.2026, RALPH: "geht immer noch nicht. alter stamm mus da eh auch
