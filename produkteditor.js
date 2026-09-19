@@ -1006,11 +1006,20 @@ function _fgGebundeneFehlen(zut){
 }
 if(typeof window!=="undefined"){ window._fgGebundeneFehlen=_fgGebundeneFehlen; }
 /* Gebundene Zeilen zeigen den serverseitigen Canonical-Wert; Legacy-Namen sind kein Default. */
+/* 19.09.2026, Ralphs Fund (Black Forest P22608 zeigte die Zutaten des vorigen Produkts):
+   Jeder Lader schreibt in ein globales Feld. Kommt die Antwort des VORIGEN Produkts
+   spaeter als die des neuen, ueberschrieb sie es. Ab hier gilt: eine Antwort wird nur
+   uebernommen, wenn ihr Produkt noch das ist, das gerade geoeffnet wird/ist. */
+function _fgPidAktuell(pid){
+  var z=(window._fgZielPid!=null)?window._fgZielPid:((window._fgEdit&&window._fgEdit.id)||"");
+  if(!z) return true;
+  return String(z)===String(pid||"");
+}
 async function fgCanonLaden(pid){
   window._fgCanon=null; window._fgCanonFehler="";
   if(!pid) return;
   try{
-    var r=await client.rpc("cb_admin_produkt_zutaten",{p_produkt_id:pid});
+    var r=await client.rpc("cb_admin_produkt_zutaten",{p_produkt_id:pid}); if(!_fgPidAktuell(pid)) return;
     if(r&&r.error) throw r.error;
     window._fgCanon=Array.isArray(r&&r.data)?r.data:[];
   }catch(e){
@@ -1044,7 +1053,7 @@ async function fgZuordnungLaden(pid){
   window._fgZuordnungLaeuft=true;
   if(!pid){ window._fgZuordnungLaeuft=false; return; }
   try{
-    var r=await client.rpc("cb_admin_zutat_zuordnungsstatus",{p_produkt_id:pid});
+    var r=await client.rpc("cb_admin_zutat_zuordnungsstatus",{p_produkt_id:pid}); if(!_fgPidAktuell(pid)) return;
     if(r&&r.error) throw r.error;
     window._fgZuordnung={ produkt_id:pid, zeilen:Array.isArray(r&&r.data)?r.data:[], stand:Date.now() };
   }catch(e){
@@ -1128,7 +1137,7 @@ async function fgZusV2Laden(pid){
   window._fgZusV2=null; window._fgZusV2Fehler="";
   if(!pid) return;
   try{
-    var r=await client.rpc("cb_app_produkt_zusatzstoffe",{p_produkt_id:pid});
+    var r=await client.rpc("cb_app_produkt_zusatzstoffe",{p_produkt_id:pid}); if(!_fgPidAktuell(pid)) return;
     if(r&&r.error) throw r.error;
     window._fgZusV2=(r&&r.data)||null;
   }catch(e){
@@ -1147,7 +1156,7 @@ async function fgZutOffenLaden(pid){
   window._fgZutOffenPid=String(pid||"");
   if(!pid) return;
   try{
-    var r=await client.rpc("cb_admin_zutat_offen_mit_riki",{p_product_id:pid});
+    var r=await client.rpc("cb_admin_zutat_offen_mit_riki",{p_product_id:pid}); if(!_fgPidAktuell(pid)) return;
     if(r&&r.error) throw r.error;
     var rows=Array.isArray(r&&r.data)?r.data:[];
     /* 🔴 28.08.2026, Ralphs Fund: "die blauen wurden aufgebrochen und sind in
@@ -4167,7 +4176,6 @@ async function fgRefV2Laden(){
     bindFehler=(e2&&e2.message)?String(e2.message):String(e2);
     console.error("[Bindungsstand] Laden fehlgeschlagen:", bindFehler);
   }
-  window._fgBindung={stand:bind, fehler:bindFehler};
   /* Work #457 (Ralph-Entscheid 03.09., B mit Freigabesperre): Steht ein
      Dublettenverdacht offen, ist die Freigabe dieses Produkts serverseitig
      gesperrt - ein Riegel auf der Tabelle, nicht in einer Funktion. Der Mensch
@@ -4181,14 +4189,15 @@ async function fgRefV2Laden(){
     dubFehler=(e4&&e4.message)?String(e4.message):String(e4);
     console.error("[Dublettenverdacht] Laden fehlgeschlagen:", dubFehler);
   }
-  window._fgDublette={stand:dub, fehler:dubFehler};
   /* Ralph 10.09.2026 (P9956 zeigte den Pizza-Text von P1204): Wer im Posteingang
      schnell weiterblättert, bekommt die Antworten des VORIGEN Produkts erst
      jetzt. Gehören sie nicht mehr zum geladenen Produkt, werden sie verworfen. */
-  if(((window._fgEdit&&window._fgEdit.id)||"")!==pid){
+  if(((window._fgEdit&&window._fgEdit.id)||"")!==pid || !_fgPidAktuell(pid)){
     try{ console.warn("[Referenz V2] Antwort für "+pid+" verworfen – inzwischen ist "+((window._fgEdit&&window._fgEdit.id)||"–")+" geladen."); }catch(_){}
     return;
   }
+  window._fgBindung={stand:bind, fehler:bindFehler};
+  window._fgDublette={stand:dub, fehler:dubFehler};
   if(fehler){
     /* Kein leerer Fangblock (§1.13i): der Grund muss sichtbar sein. */
     console.error("[Referenz V2] Laden fehlgeschlagen:", fehler);
@@ -5100,6 +5109,10 @@ function feUrlLblSync(){
 }
 if(typeof window!=='undefined'){ window.feUrlOeffnen=feUrlOeffnen; window.feUrlLblSync=feUrlLblSync; }
 async function openFgEditor(id, prefill, targetEl){
+  /* 19.09.2026: schnelles Weiterblaettern - nur der LETZTE Aufruf darf zeichnen. */
+  var _lauf=(window._fgOeffnenLauf=(window._fgOeffnenLauf||0)+1);
+  window._fgZielPid=id||"";
+  var _veraltet=function(){ return _lauf!==window._fgOeffnenLauf; };
   window._feAlleBereiche=false; window._feQuelleOffen=false;
   /* targetEl (optional): rendert den Editor INLINE in einen Container (z. B. Master-Detail-
      Seite „Produkt-Erfassung") statt ins Vollbild-Overlay. Ohne targetEl unveraendert. */
@@ -5111,10 +5124,12 @@ async function openFgEditor(id, prefill, targetEl){
      und kann nicht auf ein spaeteres Ergebnis warten. Beim zweiten Oeffnen kommt sie aus
      dem Speicher, kostet also nur einmal. */
   try{ await loadQuellenTypen(); }catch(e){}
+  if(_veraltet()) return;
   let d={id:null,name:"",marke:"",kategorie:"",unterkategorie:"",ean:"",basis:"100g",bild_url:"",bild_url_off:"",status:"",
     naehrwerte:{},zusatzstoffe_text:"keine",zusatzstoffe_status:"keine",suessstoffe:"nein",zutaten:[]};
   if(id){
     const {data,error}=await client.rpc("cb_produkt_edit_get",{p_id:id});
+    if(_veraltet()) return;
     if(error){ alert("Fehler: "+error.message); return; }
     d=data||d; d.naehrwerte=d.naehrwerte||{}; d.zutaten=d.zutaten||[];
     var _mz=function(v){ return (v==null?null:Number(v)); };
@@ -5175,6 +5190,7 @@ async function openFgEditor(id, prefill, targetEl){
       console.error("[Editor] Etikettfotos konnten nicht geladen werden:", e);
     }
   }
+  if(_veraltet()) return;
   window._fgEdit={ id:id, bild_url:d.bild_url||"", status:String(d.status||""),
                    bratenEignung:String(d.braten_eignung||""),
                    bratenGrund:String(d.braten_grund||""),
@@ -5194,6 +5210,7 @@ async function openFgEditor(id, prefill, targetEl){
   try{ fgRefSet((_savedRef||_boundNames).concat(_boundNames).concat(_boundZus), {gelesen:_gelesenVorher}); }
   catch(_e){ var _refSeen={}; window._fgRef=[]; window._fgRefGelesen={}; (_savedRef||_boundNames).concat(_boundNames).concat(_boundZus).forEach(function(n){ var k=String(n||"").trim().toLowerCase(); if(!k||_refSeen[k]||_refIstLeer(k)) return; _refSeen[k]=1; window._fgRef.push(n); }); }
   await loadZutatenStamm();
+  if(_veraltet()) return;
   const nw=d.naehrwerte||{};
   /* 🔴 23.08.2026, Work #181 Stufe 4 — Ralphs Punkt 3: "Wertefelder schmaler und näher
      an ihren Beschriftungen".
@@ -5669,7 +5686,8 @@ async function openFgEditor(id, prefill, targetEl){
     if(_pn){ _pn.style.maxWidth="none"; _pn.style.width="100%"; _pn.style.height="100vh"; _pn.style.maxHeight="100vh"; _pn.style.borderRadius="0"; _pn.style.background="var(--bg)"; _pn.scrollTop=0; }   /* Panelgrund bleibt transparent zum Vollbildhintergrund. */
     }
     try{ var _katEl=document.getElementById("fe_kat"); if(_katEl) _katEl.addEventListener("change", feKatChange); }catch(e){}
-    try{ await katKonfigLoad(); }catch(e){}    
+    try{ await katKonfigLoad(); }catch(e){}
+    if(_veraltet()) return;    
     try{ feEinheitPrefill(d); }catch(e){}    
     try{ feBioPrefill(d); }catch(e){}        
     try{ feKatChange(); }catch(e){}
@@ -8912,7 +8930,7 @@ async function fgRefStatusLaden(pid){
   window._fgRefDaten=null;
   if(!pid) return;
   try{
-    var r=await client.rpc("cb_referenz_pruefung_status",{p_produkt_id:pid});
+    var r=await client.rpc("cb_referenz_pruefung_status",{p_produkt_id:pid}); if(!_fgPidAktuell(pid)) return;
     if(r&&r.error) throw r.error;
     var d=r&&r.data; if(typeof d==="string"){ try{ d=JSON.parse(d); }catch(e){} }
     window._fgRefDaten=d||null;
