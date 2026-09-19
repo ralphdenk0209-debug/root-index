@@ -6,7 +6,70 @@ var _fsTreffer={l:[],r:[]};
 var _fsOpt={grund:'weiss', beschriftung:true, px:1600, format:'frei'};
 /* Instagram-Stil (instagram/STIL.md): Startseiten-Gruen als Verlauf, Creme-Schrift, 1080x1080. */
 var FS_INSTA={gruen1:'#263e27', gruen2:'#2c462e', creme:'#F3EEDC', px:1080};
-function fsAufGruen(){ return _fsOpt.grund==='gruen'; }
+function fsAufGruen(){ return _fsOpt.grund==='gruen' || _fsOpt.format==='insta'; }
+var _fsFoto={l:null,r:null};   /* Produktfoto je Seite, nur im Browser, wird nirgends gespeichert */
+
+/* Instagram-Produktbild 1080x1080: Foto gross oben, unten klein die Karte mit Flux,
+   Name, Note und Fuellstand der vier Achsen - dieselben Werte und Obergrenzen wie fsTafel. */
+function fsZeilen(s,max,n){ var w=String(s||'').split(/\s+/), z=[], a='';
+  w.forEach(function(x){ if((a+' '+x).trim().length>max && a){ z.push(a); a=x; } else a=(a+' '+x).trim(); });
+  if(a) z.push(a); if(z.length>n){ z=z.slice(0,n); z[n-1]=z[n-1].replace(/.?$/,'…'); } return z; }
+function fsInstaProdukt(p, foto){
+  var F='font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif"', C=FS_INSTA.creme, CM='rgba(243,238,220,0.62)';
+  var o='<rect x="0" y="0" width="1080" height="1080" fill="url(#fsG)"/>'
+    +'<text x="1044" y="42" text-anchor="end" '+F+' font-size="20" fill="rgba(243,238,220,0.5)">@root_index.de</text>';
+  o+= foto ? '<image href="'+foto+'" x="60" y="60" width="960" height="700" preserveAspectRatio="xMidYMid meet"/>'
+           : '<rect x="60" y="60" width="960" height="700" rx="28" fill="none" stroke="rgba(243,238,220,0.25)" stroke-width="3" stroke-dasharray="14 10"/>'
+             +'<text x="540" y="420" text-anchor="middle" '+F+' font-size="34" fill="rgba(243,238,220,0.45)">Produktfoto wählen</text>';
+  o+='<rect x="60" y="790" width="960" height="230" rx="28" fill="rgba(10,23,16,0.74)" stroke="rgba(124,255,155,0.25)" stroke-width="2"/>';
+  if(!p) return o+'<text x="540" y="915" text-anchor="middle" '+F+' font-size="26" fill="'+CM+'">Kein Produkt gewählt</text>';
+  var s=fsNum(p.clean_score);
+  var A=[
+    {t:'Zutaten',      v:fsNum(p.p_zutaten),      max:30, f:'#16a34a'},
+    {t:'Zusatzstoffe', v:fsNum(p.p_zusatzstoffe), max:15, f:'#3987e5'},
+    {t:'Verarbeitung', v:fsNum(p.p_nova),         max:15, f:'#7c6fe0'},
+    {t:'Nährwerte',    v:(fsNum(p.p_naehrwert)!=null ? fsNum(p.p_naehrwert)*2 : null), max:40, f:'#d97706'}
+  ].map(function(a){ a.pct=(a.v==null)?null:Math.max(0,Math.min(1,a.v/a.max)); return a; });
+  /* Flux-Ring: gleiche Geometrie wie fsTafel, verkleinert */
+  var bahn=['M26 34 H74 L106 64','M274 34 H226 L194 64','M26 142 H74 L106 112','M274 142 H226 L194 112'];
+  var kap=[[26,34],[274,34],[26,142],[274,142]], L=92, ringF=(s==null)?'#C9D1CC':fsNoteFarbe(p.bewertung);
+  o+='<g transform="translate(78,824) scale(0.9)"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">'
+    + bahn.map(function(d){ return '<path d="'+d+'" stroke="rgba(243,238,220,0.14)"/>'; }).join('')
+    + A.map(function(a,i){ var off=(a.pct==null)?L:L*(1-a.pct); return '<path d="'+bahn[i]+'" stroke="'+(a.pct==null?'rgba(243,238,220,0.3)':a.f)+'" stroke-dasharray="'+L+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'; }).join('')
+    +'</g>'+A.map(function(a,i){ return '<circle cx="'+kap[i][0]+'" cy="'+kap[i][1]+'" r="7" fill="'+(a.pct==null?'#9aa7a0':a.f)+'"/>'; }).join('')
+    +'<circle cx="150" cy="88" r="42" fill="#0A1710" stroke="'+ringF+'" stroke-width="5"/>'
+    +'<text x="150" y="102" text-anchor="middle" '+F+' font-size="'+((s!=null&&Math.round(s)>=100)?32:40)+'" font-weight="800" fill="'+C+'">'+(s==null?'–':String(Math.round(s)))+'</text></g>';
+  var nz=fsZeilen(p.name,18,3), y=866;
+  nz.forEach(function(z,k){ o+='<text x="370" y="'+(y+k*32)+'" '+F+' font-size="26" font-weight="800" fill="'+C+'">'+fsXml(z)+'</text>'; });
+  y+=nz.length*32;
+  if(p.marke) o+='<text x="370" y="'+(y+2)+'" '+F+' font-size="21" fill="'+CM+'">'+fsXml(p.marke)+'</text>';
+  o+='<text x="370" y="'+(y+42)+'" '+F+' font-size="24" font-weight="800" fill="'+fsNoteFarbe(p.bewertung)+'">'+fsXml(p.bewertung||'keine Note')+'</text>';
+  A.forEach(function(a,i){ var yy=858+i*38;
+    o+='<text x="690" y="'+(yy+7)+'" '+F+' font-size="19" fill="rgba(243,238,220,0.8)">'+a.t+'</text>'
+      +'<rect x="835" y="'+(yy-5)+'" width="100" height="11" rx="5.5" fill="rgba(243,238,220,0.14)"/>'
+      +(a.pct==null?'':'<rect x="835" y="'+(yy-5)+'" width="'+(100*a.pct).toFixed(1)+'" height="11" rx="5.5" fill="'+a.f+'"/>')
+      +'<text x="996" y="'+(yy+7)+'" text-anchor="end" '+F+' font-size="19" font-weight="700" fill="'+C+'">'+(a.v==null?'–':(Math.round(a.v)+'/'+a.max))+'</text>';
+  });
+  return o;
+}
+function fsInstaSvg(seiten){
+  var defs='<defs><linearGradient id="fsG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+FS_INSTA.gruen1+'"/><stop offset="1" stop-color="'+FS_INSTA.gruen2+'"/></linearGradient></defs>';
+  if(seiten!=='beide') return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080">'+defs+fsInstaProdukt(_fsSel[seiten],_fsFoto[seiten])+'</svg>';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2200 1080" width="2200" height="1080">'+defs
+    +fsInstaProdukt(_fsSel.l,_fsFoto.l)+'<g transform="translate(1120,0)">'+fsInstaProdukt(_fsSel.r,_fsFoto.r)+'</g></svg>';
+}
+/* Foto laden und auf hoechstens 1400 px verkleinern; PNG behaelt die Transparenz. */
+function fsFotoLaden(seite, input){
+  var d=input&&input.files&&input.files[0]; if(!d) return;
+  var r=new FileReader();
+  r.onload=function(){ var i=new Image(); i.onload=function(){
+      var k=Math.min(1,1400/Math.max(i.width,i.height)), c=document.createElement('canvas');
+      c.width=Math.round(i.width*k); c.height=Math.round(i.height*k); c.getContext('2d').drawImage(i,0,0,c.width,c.height);
+      _fsFoto[seite]=c.toDataURL('image/png'); fsBuehneZeichnen(); };
+    i.src=r.result; };
+  r.readAsDataURL(d);
+}
+function fsFotoWeg(seite){ _fsFoto[seite]=null; fsBuehneZeichnen(); }
 
 function fsNum(v){ if(v===null||v===undefined||v==='') return null; var n=Number(v); return isFinite(n)?n:null; }
 /* Farbwert einer CSS-Variablen zur Laufzeit aufloesen (wegen Hell-/Dunkelmodus).
@@ -63,6 +126,7 @@ function fsTafel(p, dx, dy){
 
 /* Die ganze Buehne als eigenstaendiges SVG. seiten: 'l', 'r' oder 'beide'. */
 function fsSvg(seiten){
+  if(_fsOpt.format==='insta') return fsInstaSvg(seiten);
   /* Hoehe MIT Beschriftung: Ring endet bei y=196 (20 oben + 176), darunter Name 200,
      Marke 220, Note 242 - plus 26 Luft, sonst schneidet der Rand die Note an.
      OHNE Beschriftung reicht der Ring plus dieselbe Luft. Beides nachgemessen. */
@@ -71,14 +135,7 @@ function fsSvg(seiten){
   var W=eins?340:700;
   var inhalt = eins ? fsTafel(_fsSel[seiten], 0, 20)
                     : (fsTafel(_fsSel.l, 0, 20) + fsTafel(_fsSel.r, 360, 20));
-  /* Instagram: quadratisch, Inhalt senkrecht mittig, Absender unten. */
   var defs='';
-  if(_fsOpt.format==='insta'){
-    var S=Math.max(W,H), oy=Math.round((S-H)/2);
-    inhalt='<g transform="translate(0,'+oy+')">'+inhalt+'</g>'
-      +'<text x="'+(S/2)+'" y="'+(S-18)+'" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="'+(eins?11:15)+'" fill="'+(fsAufGruen()?'rgba(243,238,220,0.6)':fsVar('--muted','#6b6256'))+'">@root_index.de</text>';
-    H=S;
-  }
   if(fsAufGruen()) defs='<defs><linearGradient id="fsG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+FS_INSTA.gruen1+'"/><stop offset="1" stop-color="'+FS_INSTA.gruen2+'"/></linearGradient></defs>';
   var grund=(_fsOpt.grund==='weiss')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#ffffff"/>'
            :(_fsOpt.grund==='gruen')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#fsG)"/>'
@@ -94,6 +151,7 @@ async function fsPng(seiten){
   try{
     if(seiten==='beide' && (!_fsSel.l || !_fsSel.r)){ setz('Für ein Doppelbild müssen beide Seiten ein Produkt haben.',true); return; }
     if(seiten!=='beide' && !_fsSel[seiten]){ setz('Auf dieser Seite ist kein Produkt gewählt.',true); return; }
+    if(_fsOpt.format==='insta' && seiten==='beide'){ await fsPng('l'); await fsPng('r'); return; }
     setz('Bild wird erzeugt…');
     var svg=fsSvg(seiten);
     var m=svg.match(/viewBox="0 0 (\d+) (\d+)"/), vw=Number(m[1]), vh=Number(m[2]);
@@ -182,6 +240,9 @@ function fsSeiteHtml(seite, titel){
       +'style="width:100%;box-sizing:border-box;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--ink);font-size:13.5px">'
     +'<div id="fsListe_'+seite+'" style="max-height:250px;overflow:auto;margin-top:6px;border-radius:9px"></div>'
     +'<div style="margin-top:10px;font-size:13px;line-height:1.5" id="fsGewaehlt_'+seite+'"></div>'
+    +'<label style="display:inline-block;margin:8px 8px 0 0;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12px;cursor:pointer">📷 Foto für Instagram'
+      +'<input type="file" accept="image/*" style="display:none" onchange="fsFotoLaden(\''+seite+'\',this)"></label>'
+    +'<button onclick="fsFotoWeg(\''+seite+'\')" style="margin:8px 8px 0 0;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);font-size:12px;cursor:pointer">Foto weg</button>'
     +'<button onclick="fsLeeren(\''+seite+'\')" style="margin-top:8px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);font-size:12px;cursor:pointer">Seite leeren</button>'
     +'</div>';
 }
@@ -202,7 +263,7 @@ function fsRender(){
           +'<option value="weiss">Weiß</option><option value="transparent">Transparent</option><option value="karte">Kartenfarbe</option><option value="gruen">Grün (Instagram)</option></select></label>'
       +'<label style="font-size:12.5px;color:var(--muted)">Format '
         +'<select onchange="fsOptSetzen(\'format\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px">'
-          +'<option value="frei">Frei (nach Breite)</option><option value="insta">Instagram 1080 × 1080</option></select></label>'
+          +'<option value="frei">Frei (nach Breite)</option><option value="insta">Instagram-Produkt 1080 × 1080</option></select></label>'
       +'<label style="font-size:12.5px;color:var(--muted)">Breite '
         +'<select onchange="fsOptSetzen(\'px\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px">'
           +'<option value="800">800 px</option><option value="1600" selected>1600 px</option><option value="2400">2400 px</option></select></label>'
@@ -224,5 +285,5 @@ function fsRender(){
 if(typeof window!=='undefined'){
   window.fsRender=fsRender; window.fsSuche=fsSuche; window.fsWaehle=fsWaehle;
   window.fsLeeren=fsLeeren; window.fsTauschen=fsTauschen; window.fsPng=fsPng;
-  window.fsOptSetzen=fsOptSetzen; window.fsOptSchalten=fsOptSchalten;
+  window.fsOptSetzen=fsOptSetzen; window.fsFotoLaden=fsFotoLaden; window.fsFotoWeg=fsFotoWeg; window.fsOptSchalten=fsOptSchalten;
 }
