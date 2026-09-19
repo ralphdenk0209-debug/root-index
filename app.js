@@ -12324,9 +12324,42 @@ async function _submitFoto(src, produktId, ean){
   if(error) throw error; return data;
 }
 /* Live-Kamera (Webcam am PC, Rückkamera am Handy) -> dataURL */
+/* 19.09.2026 (Ralph: „die kamera öffnete sich und hat sich direkt wieder
+   geschlossen").
+
+   GEMESSEN: Die alte Fassung baute das schwarze Vollbild-Overlay SOFORT und
+   fragte die Kamera erst DANACH. Zwei Folgen, beide schlecht:
+     1. Chromes Berechtigungsfrage erscheint am oberen Rand - hinter bzw. neben
+        einem schwarzen Vollbild, das gerade aufgegangen ist. Wer sie nicht
+        beantwortet, sieht nur: Kasten auf, Kasten zu.
+     2. Am 19.09. auf Ralphs Rechner gemessen: navigator.permissions fuer
+        „camera" stand auf „prompt" - die Freigabe war also nie erteilt. Genau
+        der Fall, den die alte Reihenfolge unsichtbar machte.
+
+   Jetzt umgekehrt: erst die Kamera holen, dann das Overlay. Die Frage steht
+   damit ueber der normalen Seite, und das schwarze Bild erscheint erst, wenn
+   wirklich ein Bild kommt. Und die Fehlermeldung nennt den Grund, statt eine
+   Browser-Fehlernummer weiterzureichen - „NotAllowedError" hilft niemandem. */
+function camFehlertext(e){
+  const n=(e&&e.name)||"";
+  if(n==="NotAllowedError"||n==="SecurityError")
+    return "Der Browser lässt die Kamera nicht zu. Erlaub den Zugriff in der Adressleiste (Schloss-Symbol → Kamera) und versuch es noch einmal – oder nimm „Datei“.";
+  if(n==="NotFoundError"||n==="OverconstrainedError")
+    return "Es ist keine Kamera gefunden worden. Nimm „Datei“ und wähl ein Foto aus.";
+  if(n==="NotReadableError"||n==="AbortError")
+    return "Die Kamera ist gerade von einem anderen Programm belegt. Schließ es und versuch es noch einmal – oder nimm „Datei“.";
+  return "Die Kamera ließ sich nicht öffnen"+(e&&e.message?(" ("+e.message+")"):"")+". Nimm „Datei“.";
+}
 function camCapture(){
-  return new Promise((resolve)=>{
+  return new Promise(async (resolve)=>{
     let stream=null;
+    /* ERST die Kamera, DANN das Overlay. */
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false});
+    }catch(e){
+      alert(camFehlertext(e));
+      resolve(null); return;
+    }
     const ov=document.createElement("div");
     ov.style.cssText="position:fixed;inset:0;z-index:9999;background:var(--k-000000);display:flex;flex-direction:column;align-items:center;justify-content:center";
     ov.innerHTML='<video autoplay playsinline style="max-width:100%;max-height:78vh"></video>'
@@ -12335,15 +12368,16 @@ function camCapture(){
       +'<button id="camX" style="padding:12px 18px;border:0;border-radius:10px;background:var(--card);color:var(--k-111111);font-size:16px;cursor:pointer">Abbrechen</button></div>';
     document.body.appendChild(ov);
     const video=ov.querySelector("video");
+    video.srcObject=stream;
     const stop=()=>{ if(stream) stream.getTracks().forEach(t=>t.stop()); ov.remove(); };
     ov.querySelector("#camX").onclick=()=>{ stop(); resolve(null); };
     ov.querySelector("#camShot").onclick=()=>{
-      try{ const c=document.createElement("canvas"); c.width=video.videoWidth||1280; c.height=video.videoHeight||720;
+      /* Erst ausloesen, wenn das Bild wirklich steht: videoWidth ist 0, solange
+         der erste Frame fehlt - sonst kaeme ein schwarzes Foto heraus. */
+      if(!video.videoWidth){ return; }
+      try{ const c=document.createElement("canvas"); c.width=video.videoWidth; c.height=video.videoHeight;
         c.getContext("2d").drawImage(video,0,0,c.width,c.height); const d=c.toDataURL("image/jpeg",0.85); stop(); resolve(d);
-      }catch(e){ stop(); resolve(null); } };
-    navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:"environment"}},audio:false})
-      .then(s=>{ stream=s; video.srcObject=s; })
-      .catch(e=>{ stop(); alert("Kamera nicht verfügbar: "+e.message+"\nNutze stattdessen „Datei“."); resolve(null); });
+      }catch(e){ stop(); alert("Das Bild ließ sich nicht übernehmen. Versuch es noch einmal."); resolve(null); } };
   });
 }
 /* ---- Mehrbild-Erfassung: bis zu 3 Etikettfotos sammeln, dann zusammen senden ---- */
