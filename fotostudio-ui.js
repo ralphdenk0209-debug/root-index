@@ -3,13 +3,18 @@
    aus Suche und v_web_produkte. Der Block speichert keine Produktdaten. */
 var _fsSel={l:null,r:null};
 var _fsTreffer={l:[],r:[]};
-var _fsOpt={grund:'weiss', beschriftung:true, px:1600};
+var _fsOpt={grund:'weiss', beschriftung:true, px:1600, format:'frei'};
+/* Instagram-Stil (instagram/STIL.md): Startseiten-Gruen als Verlauf, Creme-Schrift, 1080x1080. */
+var FS_INSTA={gruen1:'#263e27', gruen2:'#2c462e', creme:'#F3EEDC', px:1080};
+function fsAufGruen(){ return _fsOpt.grund==='gruen'; }
 
 function fsNum(v){ if(v===null||v===undefined||v==='') return null; var n=Number(v); return isFinite(n)?n:null; }
 /* Farbwert einer CSS-Variablen zur Laufzeit aufloesen (wegen Hell-/Dunkelmodus).
    Faellt sie aus, gilt der Wert, der im Namen steckt (--k-16a34a -> #16a34a). */
 function fsVar(n,fb){ try{ var v=getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v||fb; }catch(e){ return fb; } }
 function fsNoteFarbe(b){
+  /* Auf Gruen sind die Standardfarben zu dunkel - hellere Stufen, gleiche Reihenfolge. */
+  if(fsAufGruen()) return ({'Sehr gut':'#7CFF9B','Gut':'#B8E36B','Mittel':'#FFB347','Schwach':'#FF7A7A'})[b]||'#C9D1CC';
   if(b==='Sehr gut') return fsVar('--k-16a34a','#16a34a');
   if(b==='Gut')      return fsVar('--k-65a30d','#65a30d');
   if(b==='Mittel')   return fsVar('--k-e8920c','#e8920c');
@@ -20,7 +25,7 @@ function fsXml(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</
 
 /* Eine Tafel: Flux-Ring plus Beschriftung, als SVG-Gruppe in einem 340x250-Feld. */
 function fsTafel(p, dx, dy){
-  var tinte=fsVar('--ink','#1d3c24'), grau=fsVar('--muted','#6b6256');
+  var tinte=fsAufGruen()?FS_INSTA.creme:fsVar('--ink','#1d3c24'), grau=fsAufGruen()?'rgba(243,238,220,0.65)':fsVar('--muted','#6b6256');
   if(!p){
     return '<g transform="translate('+dx+','+dy+')">'
       +'<text x="170" y="120" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="15" fill="'+grau+'">Kein Produkt gewählt</text></g>';
@@ -38,7 +43,7 @@ function fsTafel(p, dx, dy){
   var g='<g transform="translate('+dx+','+dy+')">'
     +'<g transform="translate(20,0)">'
       +'<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">'
-      + bahn.map(function(d){ return '<path d="'+d+'" stroke="rgba(120,120,120,0.16)"/>'; }).join('')
+      + bahn.map(function(d){ return '<path d="'+d+'" stroke="'+(fsAufGruen()?'rgba(243,238,220,0.14)':'rgba(120,120,120,0.16)')+'"/>'; }).join('')
       + A.map(function(a,i){ var off=(a.pct==null)?L:L*(1-a.pct);
           return '<path d="'+bahn[i]+'" stroke="'+(a.pct==null?'rgba(120,120,120,0.28)':a.f)+'" stroke-dasharray="'+L+'" stroke-dashoffset="'+off.toFixed(1)+'"/>'; }).join('')
       +'</g>'
@@ -64,11 +69,21 @@ function fsSvg(seiten){
   var H=_fsOpt.beschriftung?268:216;
   var eins=(seiten!=='beide');
   var W=eins?340:700;
-  var grund=(_fsOpt.grund==='weiss')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#ffffff"/>'
-           :(_fsOpt.grund==='karte')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" rx="16" fill="'+fsVar('--card','#ffffff')+'"/>':'';
   var inhalt = eins ? fsTafel(_fsSel[seiten], 0, 20)
                     : (fsTafel(_fsSel.l, 0, 20) + fsTafel(_fsSel.r, 360, 20));
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">'+grund+inhalt+'</svg>';
+  /* Instagram: quadratisch, Inhalt senkrecht mittig, Absender unten. */
+  var defs='';
+  if(_fsOpt.format==='insta'){
+    var S=Math.max(W,H), oy=Math.round((S-H)/2);
+    inhalt='<g transform="translate(0,'+oy+')">'+inhalt+'</g>'
+      +'<text x="'+(S/2)+'" y="'+(S-18)+'" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif" font-size="'+(eins?11:15)+'" fill="'+(fsAufGruen()?'rgba(243,238,220,0.6)':fsVar('--muted','#6b6256'))+'">@root_index.de</text>';
+    H=S;
+  }
+  if(fsAufGruen()) defs='<defs><linearGradient id="fsG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+FS_INSTA.gruen1+'"/><stop offset="1" stop-color="'+FS_INSTA.gruen2+'"/></linearGradient></defs>';
+  var grund=(_fsOpt.grund==='weiss')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="#ffffff"/>'
+           :(_fsOpt.grund==='gruen')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" fill="url(#fsG)"/>'
+           :(_fsOpt.grund==='karte')?'<rect x="0" y="0" width="'+W+'" height="'+H+'" rx="16" fill="'+fsVar('--card','#ffffff')+'"/>':'';
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" width="'+W+'" height="'+H+'">'+defs+grund+inhalt+'</svg>';
 }
 
 /* SVG -> PNG. Laeuft ohne Fremdbibliothek: das SVG wird als Datenadresse in ein
@@ -82,7 +97,7 @@ async function fsPng(seiten){
     setz('Bild wird erzeugt…');
     var svg=fsSvg(seiten);
     var m=svg.match(/viewBox="0 0 (\d+) (\d+)"/), vw=Number(m[1]), vh=Number(m[2]);
-    var breite=Math.max(300, Math.round(_fsOpt.px)), hoehe=Math.round(breite*vh/vw);
+    var breite=(_fsOpt.format==='insta')?FS_INSTA.px:Math.max(300, Math.round(_fsOpt.px)), hoehe=Math.round(breite*vh/vw);
     var url='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
     var bild=await new Promise(function(ok,fehl){ var i=new Image(); i.onload=function(){ok(i);}; i.onerror=function(){fehl(new Error('SVG nicht ladbar'));}; i.src=url; });
     var c=document.createElement('canvas'); c.width=breite; c.height=hoehe;
@@ -184,7 +199,10 @@ function fsRender(){
       +'<button onclick="fsTauschen()" style="padding:7px 11px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);font-size:12.5px;cursor:pointer">⇄ Seiten tauschen</button>'
       +'<label style="font-size:12.5px;color:var(--muted)">Hintergrund '
         +'<select onchange="fsOptSetzen(\'grund\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px">'
-          +'<option value="weiss">Weiß</option><option value="transparent">Transparent</option><option value="karte">Kartenfarbe</option></select></label>'
+          +'<option value="weiss">Weiß</option><option value="transparent">Transparent</option><option value="karte">Kartenfarbe</option><option value="gruen">Grün (Instagram)</option></select></label>'
+      +'<label style="font-size:12.5px;color:var(--muted)">Format '
+        +'<select onchange="fsOptSetzen(\'format\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px">'
+          +'<option value="frei">Frei (nach Breite)</option><option value="insta">Instagram 1080 × 1080</option></select></label>'
       +'<label style="font-size:12.5px;color:var(--muted)">Breite '
         +'<select onchange="fsOptSetzen(\'px\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px">'
           +'<option value="800">800 px</option><option value="1600" selected>1600 px</option><option value="2400">2400 px</option></select></label>'
