@@ -282,6 +282,45 @@ var SKRIPT={
     {wer:"Sandra", text:"Hättest du das erwartet?"}
    ]}
  ],
+ c2c:[
+  /* Ersatz fuer den Griess (nicht bekommen, 19.09.2026). Werte aus v_web_produkte P20097:
+     Index 55 · Zutaten 17,8/30 · Zusatzstoffe 5/15 · Verarbeitung 3/15 · Naehrwerte 14,5x2 = 29/40.
+     Zutaten laut Katalog: Suessstoffe E950 (Acesulfam K) und Sucralose, Verdicker Carrageen und E466. */
+  {abschnitt:"Abschnitt 1 · Die Versprechen", zeit:"0–10 Sek.",
+   kamera:"Becher mit der Vorderseite in die Linse. Ehrmann High Protein Chocolate Pudding, 200 g, P20097.",
+   zeilen:[
+    {wer:"Sandra", text:"[Die Versprechen vorne auf dem Becher wörtlich vorlesen]", regie:"Vorderseite groß — Text vom echten Becher übernehmen, nichts dazuerfinden"},
+    {wer:"Sandra", text:"Klingt nach Sportlerfrühstück. Schauen wir mal hinten."}
+   ]},
+  {abschnitt:"Abschnitt 2 · Umdrehen", zeit:"10–24 Sek.",
+   kamera:"Umdrehen, Zutatenliste groß. Süßstoffe und Verdicker nacheinander markieren.",
+   zeilen:[
+    {wer:"Sandra", text:"Dreh mal um.", regie:"Umdrehen"},
+    {wer:"Sandra", text:"Acesulfam K. Sucralose. Zwei Süßstoffe.", regie:"Einzeln markieren"},
+    {wer:"Sandra", text:"Dazu Carrageen und E 466. Zwei Verdickungsmittel.", regie:"Einzeln markieren"}
+   ]},
+  {abschnitt:"Abschnitt 3 · Einordnung", zeit:"24–33 Sek.",
+   kamera:"Zurück auf Sandra, dann Root Index 55 einblenden.",
+   zeilen:[
+    {wer:"Sandra", text:"Eiweiß ist drin, keine Frage."},
+    {wer:"Sandra", text:"Aber was sonst drin ist, zählt bei uns mit.", regie:"55 einblenden"},
+    {wer:"Sandra", text:"Bei uns: fünfundfünfzig von hundert."}
+   ]},
+  {abschnitt:"Abschnitt 4 · Warum fünfundfünfzig", zeit:"33–52 Sek.",
+   kamera:"Die vier Werte einzeln einblenden. Nach den Nährwerten kurz stehen lassen — dann fällt es ab.",
+   zeilen:[
+    {wer:"Sandra", text:"Warum nur fünfundfünfzig? Ich zeig es dir."},
+    {wer:"Sandra", text:"Nährwerte: neunundzwanzig von vierzig. Ordentlich.", regie:"29/40"},
+    {wer:"Sandra", text:"Zutaten: knapp achtzehn von dreißig.", regie:"17,8/30"},
+    {wer:"Sandra", text:"Zusatzstoffe: fünf von fünfzehn. Verarbeitung: drei von fünfzehn.", regie:"5/15 · 3/15"},
+    {wer:"Sandra", text:"Viel Eiweiß macht aus einem Pudding noch kein gutes Lebensmittel."}
+   ]},
+  {abschnitt:"Abschnitt 5 · Abbinder", zeit:"52–55 Sek.",
+   kamera:"Ins Gesicht. Endkarte 2 Sek.: Logo, root-index.de, @root_index.de.",
+   zeilen:[
+    {wer:"Sandra", text:"Hättest du das erwartet?"}
+   ]}
+ ],
  c3:[
   {abschnitt:"Abschnitt 1 · Aufschlag", zeit:"0–10 Sek.",
    kamera:"Ralph frontal, Küche, Original-Layout. Noch keine Grafik.",
@@ -501,7 +540,7 @@ var VIDEOS=[
  {id:'1',  art:'kamera', titel:'01 · Auftakt',        unter:'30 s · beide',  fass:[
    {k:'c1', l:'Beide'},{k:'c1b', l:'Nur Sandra'}]},
  {id:'2',  art:'kamera', titel:'02 · Vier Versprechen',unter:'60 s · Sandra', fass:[
-   {k:'c2',  l:'Tüte · Index 44'},{k:'c2b', l:'Becher · Index 50'}]},
+   {k:'c2c', l:'Ehrmann · Index 55'},{k:'c2',  l:'Grieß Tüte · 44 (nicht gekauft)'},{k:'c2b', l:'Grieß Becher · 50 (nicht gekauft)'}]},
  {id:'3',  art:'heygen', titel:'03 · Die vier Fragen',unter:'45 s · Ralph',  fass:[{k:'c3', l:'Erklärung'}]},
  {id:'4',  art:'heygen', titel:'04 · Nicht berechenbar', unter:'18 s · Sandra', fass:[{k:'c4', l:'Haltung'}]},
  {id:'5',  art:'heygen', titel:'05 · Hafer',          unter:'20 s · Sandra', fass:[{k:'c5', l:'Wissen'}]},
@@ -516,7 +555,7 @@ var VIDEOS=[
 function videoVon(k){ return VIDEOS.find(function(v){ return v.fass.some(function(f){ return f.k===k; }); }); }
 /* Vorgabedauer je Fassung — Reel-Format 30–60 s. */
 /* Zieldauer je Fassung in Sekunden — Vorgabe aus dem Clipplan Staffel 1. */
-var DAUER_VORGABE={c1:30,c1b:25,c2:60,c2b:61,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:30,c11:26};
+var DAUER_VORGABE={c1:30,c1b:25,c2:60,c2b:61,c2c:55,c3:45,c4:18,c5:20,c6:18,c7:22,c8:22,c9:18,c10:30,c11:26};
 /* Hinweiskasten je Video: 1 = Skript-Ausnahme, 2–5 = Stichwort-Karten. */
 var HINWEIS_HEYGEN='\u{1F3AC} <b>HeyGen-Clip \u2014 Wortskript.</b> '
  +'Der Text wird 1:1 in das Skriptfeld der jeweiligen Szene kopiert. Ein Abschnitt = eine Szene. '
