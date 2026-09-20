@@ -4208,6 +4208,21 @@ async function fgRefV2Laden(){
   }
   window._fgRefV2={pid:pid, d:d, st:st, rohtext:(d&&d.rohtext)||""};
   fgRefV2Render(d, st);
+  /* 🔴 20.09.2026, RALPH (P134): "3 blockiert passt immer noch nicht, da habe ich
+     gerade 2 texte entfernt, aber die anzeige oben ist einfach falsch, vermutlich
+     wird sie nicht neu geladen nach aenderungen." Genau so war es: Kopfband,
+     Stationskarten und Abschluss lesen ihren Sperrstand aus window._fgRefDaten -
+     das wurde nur beim Oeffnen des Produkts gefuellt (fgRefStatusLaden). Jede
+     Entscheidung danach aktualisierte nur die Referenzkarte rechts. Ab jetzt
+     schreibt das Laden der Referenz denselben Stand auch nach oben - eine Quelle,
+     eine Zahl. */
+  try{
+    var _stRef=st; if(typeof _stRef==="string"){ try{ _stRef=JSON.parse(_stRef); }catch(_e){} }
+    window._fgRefDaten=_stRef||null;
+    if(typeof feStatusStreifen==="function") feStatusStreifen();
+    if(typeof feFokusNavBauen==="function") feFokusNavBauen();
+    if(typeof feAbschlussRender==="function") feAbschlussRender();
+  }catch(e){ console.error("[Status] Neuzeichnen nach Referenz:", e); }
   /* Ralph 10.09.2026: das Blockierende steht jetzt AUCH in der linken Liste.
      Ohne diesen Aufruf haette es dort erst nach dem naechsten Tastendruck gestanden. */
   try{ if(typeof fgBestandteileRender==="function") fgBestandteileRender(); }catch(e){ console.error("[Bestandteile] Neuzeichnen nach Referenz", e); }
