@@ -16,6 +16,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
 <title>Vergleiche planen · Root Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
 <style>
   :root{
     --rand:#dcd8ea; --tinte:#2a2640; --muted:#6b6592; --lila:#534AB7;
@@ -91,6 +94,7 @@
     </table>
     <div id="vgMsg"></div>
   </div>
+  <div id="vgVorschau"></div>
   <div class="vgMini">
     Bildrechte: <span class="sm offen">offen</span> noch nichts gefragt ·
     <span class="sm warn">angefragt</span> Mail raus, keine Antwort ·
@@ -183,7 +187,8 @@ function vgZeichnen(){
       +'<td>'+e(plan)+'<div class="vgMini">'+e(kanal||"kein Kanal")+'</div></td>'
       +'<td><span class="sm '+statusKlasse(r.Status)+'">'+e(r.Status)+'</span>'
           +(darfRaus(r)?'':'<div class="vgMini">Bilder nicht frei</div>')+'</td>'
-      +'<td><button class="vgBtn klein" onclick="vgOeffnen('+r.id+')">'+(VG_OFFEN===r.id?"zu":"öffnen")+'</button></td>'
+      +'<td><button class="vgBtn klein" onclick="vgOeffnen('+r.id+')">'+(VG_OFFEN===r.id?"zu":"öffnen")+'</button>'
+          +'<button class="vgBtn klein" style="margin-top:4px" onclick="vgGrafik('+r.id+')">Grafik</button></td>'
       +'</tr>';
     return zeile + (VG_OFFEN===r.id ? detailHtml(r) : "");
   }).join("");
@@ -308,5 +313,6 @@ async function vgFotoHoch(id, seite, input){
   vgLaden();
 })();
 </script>
+<script src="vergleich-grafik.js?v=1.0.0"></script>
 </body>
 </html>
