@@ -20,3 +20,8 @@ verify_jwt = true
 
 [functions.seo-search-console-sync]
 verify_jwt = true
+
+# mail-agent prueft seinen eigenen Schluessel (SHA-256 gegen
+# Postfach_Agent_Schluessel), darum hier bewusst aus.
+[functions.mail-agent]
+verify_jwt = false
