@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<!-- VERGLEICHE · angelegt 20.09.2026 (Ralph: "tabelle, in die wir vergleiche
+     definieren können, inkl. Herstellerzusage für die Bilder, Bild-Upload und
+     Planung für Instagram und Facebook").
+
+     Eigene Seite wie marken-domains.html - kein Panel in app.js, damit keine
+     zweite Sitzung sich an derselben Datei stoesst. Anmeldung kommt aus
+     admin.html (gleicher storageKey), es gibt keinen zweiten Anmeldeweg.
+
+     Wahrheit ist die Tabelle public."Instagram_Vergleich"; Produktnamen und
+     Noten kommen aus v_web_produkte und werden hier nur angezeigt, nie
+     gerechnet. Fotos liegen im privaten Bucket vergleich-fotos. -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Vergleiche planen · Root Index</title>
+<style>
+  :root{
+    --rand:#dcd8ea; --tinte:#2a2640; --muted:#6b6592; --lila:#534AB7;
+    --kopf:#16233d; --kopf2:#1d2b45; --karte:#fff; --grund:#f2f0f8;
+    --gruen:#e6f4ea; --gruenR:#2e9e57; --gelb:#fdf3d7; --gelbR:#e0a32e;
+    --rot:#fde8e4; --rotR:#cf5442; --blau:#e8effc; --blauR:#4a72b7;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif; color:var(--tinte); background:var(--grund); }
+  #vgTop{ position:sticky; top:0; z-index:50; background:linear-gradient(180deg,var(--kopf),var(--kopf2)); color:#fff; padding:10px 18px 9px; box-shadow:0 2px 10px rgba(20,20,50,.25); }
+  .vgZ1{ display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+  .vgBrand{ font-size:12px; color:#aab3d0; } .vgBrand b{ color:#fff; font-size:14px; }
+  #vgTitel{ font-size:17px; font-weight:700; margin-right:auto; }
+  .vgChip{ background:rgba(255,255,255,.09); border:1px solid rgba(255,255,255,.18); border-radius:8px; padding:4px 12px; text-align:center; line-height:1.15; }
+  .vgChip b{ display:block; font-size:16px; } .vgChip small{ font-size:10px; color:#aab3d0; }
+  #vgInhalt{ max-width:1560px; margin:0 auto; padding:14px 18px 80px; }
+  .vgKarte{ background:var(--karte); border:1px solid var(--rand); border-radius:10px; padding:12px 14px; margin-bottom:14px; }
+  .vgBtn{ padding:7px 13px; border:1px solid var(--rand); background:#fff; border-radius:8px; font:inherit; cursor:pointer; color:var(--tinte); }
+  .vgBtn.prim{ background:var(--lila); border-color:var(--lila); color:#fff; font-weight:600; }
+  .vgBtn.klein{ padding:3px 9px; font-size:12px; }
+  table{ width:100%; border-collapse:collapse; }
+  th{ text-align:left; font-size:11.5px; letter-spacing:.4px; text-transform:uppercase; color:var(--muted); border-bottom:1px solid var(--rand); padding:7px 8px; }
+  td{ border-bottom:1px solid #eeecf6; padding:9px 8px; vertical-align:top; }
+  tr:hover td{ background:#faf9ff; }
+  .sm{ display:inline-block; border-radius:12px; padding:1px 9px; font-size:11.5px; font-weight:600; border:1px solid; white-space:nowrap; }
+  .sm.ok{ background:var(--gruen); border-color:var(--gruenR); color:#1d6b3a; }
+  .sm.warn{ background:var(--gelb); border-color:var(--gelbR); color:#7a5406; }
+  .sm.rot{ background:var(--rot); border-color:var(--rotR); color:#8c3325; }
+  .sm.offen{ background:#eceaf3; border-color:var(--rand); color:var(--muted); }
+  .sm.blau{ background:var(--blau); border-color:var(--blauR); color:#2c4d85; }
+  .vgProd{ font-weight:600; } .vgProd small{ display:block; font-weight:400; color:var(--muted); }
+  .vgMini{ font-size:11.5px; color:var(--muted); }
+  select,input[type=text],input[type=datetime-local],textarea{ font:inherit; padding:5px 7px; border:1px solid var(--rand); border-radius:7px; background:#fff; color:var(--tinte); max-width:100%; }
+  textarea{ width:100%; min-height:70px; }
+  .vgFoto{ width:52px; height:52px; object-fit:contain; background:#f4f2fb; border:1px solid var(--rand); border-radius:7px; }
+  .vgLeer{ width:52px; height:52px; border:1px dashed var(--rand); border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:10px; text-align:center; }
+  .vgSpalte{ display:flex; gap:8px; align-items:flex-start; }
+  #vgMsg{ font-size:12.5px; color:var(--muted); min-height:18px; margin-top:6px; }
+  .vgDetail td{ background:#f8f7ff; }
+  .vgGrid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; }
+  label.vgL{ display:block; font-size:11.5px; color:var(--muted); margin-bottom:3px; }
+  .vgTrefferListe{ max-height:190px; overflow:auto; border:1px solid var(--rand); border-radius:8px; margin-top:4px; }
+  .vgTrefferListe button{ display:block; width:100%; text-align:left; border:0; border-bottom:1px solid #eee; background:#fff; padding:6px 9px; font:inherit; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<div id="vgTop"><div class="vgZ1">
+  <span class="vgBrand">Root&nbsp;Index · <b>Vergleiche planen</b></span>
+  <span id="vgTitel">Instagram &amp; Facebook</span>
+  <span class="vgChip"><b id="cGes">–</b><small>gesamt</small></span>
+  <span class="vgChip"><b id="cBereit">–</b><small>bereit</small></span>
+  <span class="vgChip"><b id="cGeplant">–</b><small>geplant</small></span>
+  <span class="vgChip"><b id="cRaus">–</b><small>veröffentlicht</small></span>
+  <button class="vgBtn prim" onclick="vgNeu()">+ Neuer Vergleich</button>
+  <button class="vgBtn" onclick="vgLaden()">↻ Neu laden</button>
+</div></div>
+
+<div id="vgInhalt">
+  <div class="vgKarte">
+    <table>
+      <thead><tr>
+        <th style="width:190px">Überschrift</th>
+        <th>Produkt A</th>
+        <th>Produkt B</th>
+        <th style="width:150px">Bildrechte</th>
+        <th style="width:120px">Fotos</th>
+        <th style="width:150px">Planung</th>
+        <th style="width:120px">Status</th>
+        <th style="width:70px"></th>
+      </tr></thead>
+      <tbody id="vgBody"><tr><td colspan="8" class="vgMini">lädt …</td></tr></tbody>
+    </table>
+    <div id="vgMsg"></div>
+  </div>
+  <div class="vgMini">
+    Bildrechte: <span class="sm offen">offen</span> noch nichts gefragt ·
+    <span class="sm warn">angefragt</span> Mail raus, keine Antwort ·
+    <span class="sm ok">zugesagt</span> schriftlich erlaubt ·
+    <span class="sm rot">abgelehnt</span> nicht erlaubt ·
+    <span class="sm blau">eigenes Foto</span> selbst fotografiert, immer erlaubt.
+    <br>Posten darfst du erst, wenn beide Seiten <b>zugesagt</b> oder <b>eigenes Foto</b> sind.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+/* Dieselben Zugangsdaten und derselbe storageKey wie app.js - die
+   Admin-Anmeldung aus admin.html gilt hier mit. */
+var VG_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+var VG_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+var vg = supabase.createClient(VG_URL, VG_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:false,
+          storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+
+var VG_ROWS = [], VG_PROD = {}, VG_OFFEN = null, VG_FOTO_URL = {};
+var RECHTE = ["offen","angefragt","zugesagt","abgelehnt","eigenes Foto"];
+var STATUS  = ["Idee","In Arbeit","Bereit","Geplant","Veröffentlicht","Verworfen"];
+
+function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
+function msg(t,rot){ var m=document.getElementById("vgMsg"); if(m){ m.style.color=rot?"var(--rotR)":"var(--muted)"; m.textContent=t; } }
+function rechteKlasse(w){ return w==="zugesagt"?"ok":w==="angefragt"?"warn":w==="abgelehnt"?"rot":w==="eigenes Foto"?"blau":"offen"; }
+function statusKlasse(s){ return s==="Veröffentlicht"?"ok":s==="Bereit"?"blau":s==="Geplant"?"warn":s==="Verworfen"?"rot":"offen"; }
+function darfRaus(r){ var ok=function(w){ return w==="zugesagt"||w==="eigenes Foto"; }; return ok(r.Bildrechte_A)&&ok(r.Bildrechte_B); }
+
+/* ---- Laden ---------------------------------------------------------------- */
+async function vgLaden(){
+  msg("lädt …");
+  var r = await vg.from("Instagram_Vergleich").select("*").order("Geplant_am",{ascending:true,nullsFirst:false}).order("id");
+  if(r.error){ msg("Laden fehlgeschlagen: "+r.error.message,true); return; }
+  VG_ROWS = r.data || [];
+  var ids = [];
+  VG_ROWS.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
+  if(ids.length){
+    var p = await vg.from("v_web_produkte").select("id,name,marke,clean_score,bewertung").in("id", ids);
+    if(!p.error) (p.data||[]).forEach(function(x){ VG_PROD[x.id]=x; });
+  }
+  vgZeichnen(); vgZaehler();
+  msg(VG_ROWS.length+" Vergleiche geladen.");
+}
+function vgZaehler(){
+  var z=function(f){ return VG_ROWS.filter(f).length; };
+  document.getElementById("cGes").textContent = VG_ROWS.length;
+  document.getElementById("cBereit").textContent = z(function(r){ return r.Status==="Bereit"; });
+  document.getElementById("cGeplant").textContent = z(function(r){ return r.Status==="Geplant"; });
+  document.getElementById("cRaus").textContent = z(function(r){ return r.Status==="Veröffentlicht"; });
+}
+function prodHtml(id){
+  if(!id) return '<span class="vgMini">– kein Produkt –</span>';
+  var p = VG_PROD[id];
+  if(!p) return '<span class="vgProd">'+e(id)+'</span>';
+  return '<span class="vgProd">'+e(p.name)+'<small>'+e(p.marke||"")+' · '+e(id)+
+         ' · Index '+(p.clean_score==null?"–":e(p.clean_score))+'</small></span>';
+}
+function fotoHtml(r, seite){
+  var pfad = seite==="A" ? r.Foto_A : r.Foto_B;
+  if(!pfad) return '<div class="vgLeer">kein<br>Foto</div>';
+  var u = VG_FOTO_URL[pfad];
+  if(u) return '<img class="vgFoto" src="'+e(u)+'" alt="">';
+  vgFotoUrl(pfad);
+  return '<div class="vgLeer" data-p="'+e(pfad)+'">…</div>';
+}
+async function vgFotoUrl(pfad){
+  if(VG_FOTO_URL[pfad]) return;
+  var s = await vg.storage.from("vergleich-fotos").createSignedUrl(pfad, 3600);
+  if(s.error || !s.data) return;
+  VG_FOTO_URL[pfad] = s.data.signedUrl;
+  vgZeichnen();
+}
+function vgZeichnen(){
+  var b = document.getElementById("vgBody");
+  if(!VG_ROWS.length){ b.innerHTML='<tr><td colspan="8" class="vgMini">Noch kein Vergleich angelegt.</td></tr>'; return; }
+  b.innerHTML = VG_ROWS.map(function(r){
+    var plan = r.Geplant_am ? new Date(r.Geplant_am).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}) : "–";
+    var kanal = (r.Kanal_Instagram?"IG ":"")+(r.Kanal_Facebook?"FB":"");
+    var zeile =
+      '<tr>'
+      +'<td><b>'+e(r.Zeile1||"")+'</b><div class="vgMini">'+e(r.Zeile2||"")+'</div></td>'
+      +'<td>'+prodHtml(r.Produkt_A)+'</td>'
+      +'<td>'+prodHtml(r.Produkt_B)+'</td>'
+      +'<td><span class="sm '+rechteKlasse(r.Bildrechte_A)+'">A: '+e(r.Bildrechte_A)+'</span><br>'
+          +'<span class="sm '+rechteKlasse(r.Bildrechte_B)+'" style="margin-top:4px">B: '+e(r.Bildrechte_B)+'</span></td>'
+      +'<td><div class="vgSpalte">'+fotoHtml(r,"A")+fotoHtml(r,"B")+'</div></td>'
+      +'<td>'+e(plan)+'<div class="vgMini">'+e(kanal||"kein Kanal")+'</div></td>'
+      +'<td><span class="sm '+statusKlasse(r.Status)+'">'+e(r.Status)+'</span>'
+          +(darfRaus(r)?'':'<div class="vgMini">Bilder nicht frei</div>')+'</td>'
+      +'<td><button class="vgBtn klein" onclick="vgOeffnen('+r.id+')">'+(VG_OFFEN===r.id?"zu":"öffnen")+'</button></td>'
+      +'</tr>';
+    return zeile + (VG_OFFEN===r.id ? detailHtml(r) : "");
+  }).join("");
+}
+
+/* ---- Detail: bearbeiten, Fotos, Planung ------------------------------------ */
+function optionen(liste, wert){ return liste.map(function(x){ return '<option'+(x===wert?' selected':'')+'>'+e(x)+'</option>'; }).join(""); }
+function lokalZeit(iso){
+  if(!iso) return "";
+  var d=new Date(iso), p=function(n){ return String(n).padStart(2,"0"); };
+  return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate())+"T"+p(d.getHours())+":"+p(d.getMinutes());
+}
+function detailHtml(r){
+  return '<tr class="vgDetail"><td colspan="8"><div class="vgGrid">'
+    +'<div><label class="vgL">Überschrift Zeile 1</label><input type="text" id="f_z1" value="'+e(r.Zeile1||"")+'" style="width:100%">'
+      +'<label class="vgL" style="margin-top:8px">Zeile 2 (grün)</label><input type="text" id="f_z2" value="'+e(r.Zeile2||"")+'" style="width:100%"></div>'
+    +'<div><label class="vgL">Produkt A</label>'+suchHtml("A", r.Produkt_A)+'</div>'
+    +'<div><label class="vgL">Produkt B</label>'+suchHtml("B", r.Produkt_B)+'</div>'
+    +'<div><label class="vgL">Bildrechte A</label><select id="f_rA">'+optionen(RECHTE,r.Bildrechte_A)+'</select>'
+      +'<label class="vgL" style="margin-top:8px">Bildrechte B</label><select id="f_rB">'+optionen(RECHTE,r.Bildrechte_B)+'</select>'
+      +'<label class="vgL" style="margin-top:8px">Notiz zu den Rechten</label><input type="text" id="f_rn" value="'+e(r.Bildrechte_Notiz||"")+'" style="width:100%"></div>'
+    +'<div><label class="vgL">Foto A</label><input type="file" accept="image/*" onchange="vgFotoHoch('+r.id+',\'A\',this)">'
+      +(r.Foto_A?'<div class="vgMini">'+e(r.Foto_A)+'</div>':'')
+      +'<label class="vgL" style="margin-top:10px">Foto B</label><input type="file" accept="image/*" onchange="vgFotoHoch('+r.id+',\'B\',this)">'
+      +(r.Foto_B?'<div class="vgMini">'+e(r.Foto_B)+'</div>':'')+'</div>'
+    +'<div><label class="vgL">Geplant für</label><input type="datetime-local" id="f_plan" value="'+e(lokalZeit(r.Geplant_am))+'">'
+      +'<label class="vgL" style="margin-top:8px">Kanäle</label>'
+      +'<label><input type="checkbox" id="f_ig"'+(r.Kanal_Instagram?" checked":"")+'> Instagram</label><br>'
+      +'<label><input type="checkbox" id="f_fb"'+(r.Kanal_Facebook?" checked":"")+'> Facebook</label>'
+      +'<label class="vgL" style="margin-top:8px">Status</label><select id="f_st">'+optionen(STATUS,r.Status)+'</select></div>'
+    +'<div style="grid-column:1/-1"><label class="vgL">Beitragstext</label><textarea id="f_txt">'+e(r.Beitragstext||"")+'</textarea>'
+      +'<label class="vgL" style="margin-top:8px">Notiz</label><input type="text" id="f_no" value="'+e(r.Notiz||"")+'" style="width:100%"></div>'
+    +'</div>'
+    +'<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">'
+      +'<button class="vgBtn prim" onclick="vgSpeichern('+r.id+')">Speichern</button>'
+      +'<button class="vgBtn" onclick="vgOeffnen(0)">Schließen</button>'
+      +'<button class="vgBtn" onclick="vgLoeschen('+r.id+')" style="margin-left:auto;color:var(--rotR)">Löschen</button>'
+    +'</div></td></tr>';
+}
+function suchHtml(seite, id){
+  return '<input type="text" id="q_'+seite+'" placeholder="🔍 Produkt suchen (mind. 2 Zeichen)" oninput="vgSuche(\''+seite+'\',this.value)" style="width:100%">'
+    +'<div id="l_'+seite+'" class="vgTrefferListe" style="display:none"></div>'
+    +'<div class="vgMini" style="margin-top:4px">gewählt: <b id="s_'+seite+'">'+e(id||"–")+'</b></div>';
+}
+function vgOeffnen(id){ VG_OFFEN = (VG_OFFEN===id?null:id); vgZeichnen(); }
+
+var _t={A:null,B:null};
+function vgSuche(seite, q){
+  clearTimeout(_t[seite]);
+  _t[seite] = setTimeout(async function(){
+    var l = document.getElementById("l_"+seite); if(!l) return;
+    q = String(q||"").trim();
+    if(q.length<2){ l.style.display="none"; l.innerHTML=""; return; }
+    var r = await vg.from("v_web_produkte").select("id,name,marke,clean_score").ilike("name","%"+q+"%").limit(15);
+    if(r.error){ l.style.display="block"; l.innerHTML='<div class="vgMini" style="padding:6px">'+e(r.error.message)+'</div>'; return; }
+    l.style.display="block";
+    l.innerHTML = (r.data||[]).map(function(p){
+      VG_PROD[p.id]=p;
+      return '<button onclick="vgWaehle(\''+seite+'\',\''+p.id+'\')"><b>'+e(p.name)+'</b> <span class="vgMini">'+e(p.marke||"")+' · '+e(p.id)+' · '+(p.clean_score==null?"–":e(p.clean_score))+'</span></button>';
+    }).join("") || '<div class="vgMini" style="padding:6px">Kein Treffer.</div>';
+  }, 280);
+}
+function vgWaehle(seite, id){
+  document.getElementById("s_"+seite).textContent = id;
+  document.getElementById("l_"+seite).style.display="none";
+  document.getElementById("q_"+seite).value="";
+}
+
+/* ---- Schreiben ------------------------------------------------------------- */
+async function vgNeu(){
+  var r = await vg.from("Instagram_Vergleich").insert({ "Zeile1":"Neuer Vergleich", "Zeile2":"" }).select().single();
+  if(r.error){ msg("Anlegen fehlgeschlagen: "+r.error.message,true); return; }
+  await vgLaden(); vgOeffnen(r.data.id);
+}
+async function vgSpeichern(id){
+  var v=function(x){ var el=document.getElementById(x); return el?el.value:null; };
+  var plan = v("f_plan");
+  var daten = {
+    "Zeile1": v("f_z1"), "Zeile2": v("f_z2"),
+    "Produkt_A": (document.getElementById("s_A").textContent||"").replace("–",""),
+    "Produkt_B": (document.getElementById("s_B").textContent||"").replace("–",""),
+    "Bildrechte_A": v("f_rA"), "Bildrechte_B": v("f_rB"), "Bildrechte_Notiz": v("f_rn"),
+    "Geplant_am": plan ? new Date(plan).toISOString() : null,
+    "Kanal_Instagram": document.getElementById("f_ig").checked,
+    "Kanal_Facebook": document.getElementById("f_fb").checked,
+    "Status": v("f_st"), "Beitragstext": v("f_txt"), "Notiz": v("f_no")
+  };
+  if(!daten.Produkt_A) daten.Produkt_A=null;
+  if(!daten.Produkt_B) daten.Produkt_B=null;
+  var r = await vg.from("Instagram_Vergleich").update(daten).eq("id", id);
+  if(r.error){ msg("Speichern fehlgeschlagen: "+r.error.message,true); return; }
+  msg("✓ gespeichert"); await vgLaden();
+}
+async function vgLoeschen(id){
+  if(!confirm("Diesen Vergleich wirklich löschen?")) return;
+  var r = await vg.from("Instagram_Vergleich").delete().eq("id", id);
+  if(r.error){ msg("Löschen fehlgeschlagen: "+r.error.message,true); return; }
+  VG_OFFEN=null; await vgLaden();
+}
+/* Foto hochladen: Datei geht in den privaten Bucket, in der Zeile steht nur der
+   Pfad. Angezeigt wird sie ueber eine Signatur mit Ablauf - der Bucket bleibt zu. */
+async function vgFotoHoch(id, seite, input){
+  var d = input && input.files && input.files[0]; if(!d) return;
+  msg("Foto wird hochgeladen …");
+  var endung = (d.name.split(".").pop()||"png").toLowerCase();
+  var pfad = id+"/"+seite+"-"+Date.now()+"."+endung;
+  var u = await vg.storage.from("vergleich-fotos").upload(pfad, d, { upsert:true, contentType:d.type||"image/png" });
+  if(u.error){ msg("Upload fehlgeschlagen: "+u.error.message,true); return; }
+  var feld = seite==="A" ? {"Foto_A":pfad} : {"Foto_B":pfad};
+  var r = await vg.from("Instagram_Vergleich").update(feld).eq("id", id);
+  if(r.error){ msg("Pfad konnte nicht gespeichert werden: "+r.error.message,true); return; }
+  msg("✓ Foto gespeichert"); await vgLaden();
+}
+
+/* ---- Start ----------------------------------------------------------------- */
+(async function(){
+  var s = await vg.auth.getSession();
+  if(!s.data || !s.data.session){
+    document.getElementById("vgBody").innerHTML='<tr><td colspan="8">Bitte zuerst im Admin anmelden, dann diese Seite neu laden.</td></tr>';
+    return;
+  }
+  vgLaden();
+})();
+</script>
+</body>
+</html>

@@ -101,6 +101,11 @@ function applyAdminMode(){
          Fenster mit Cache-Buster, damit nach einem Deploy nie ein alter Stand
          aus dem Cache kommt (die 15.08.-Falle). Kein app.js-Panel: die Seite
          braucht weder Datenbank noch Anmeldung. */
+      /* 20.09.2026, Ralph: „tabelle, in die wir vergleiche definieren können,
+         inkl. Herstellerzusage für die Bilder, Upload und Planung für Instagram
+         und Facebook." Eigene Seite wie marken-domains.html, damit app.js
+         unberuehrt bleibt. Wahrheit: Tabelle Instagram_Vergleich. */
+      +_an('vergleiche','⚖️','Vergleiche',"window.open('vergleiche.html?cb='+Date.now(),'_blank')")
       +_an('videoskript','🎬','Video-Skript',"window.open('video-skript-01.html?cb='+Date.now(),'_blank')")
       /* 🔴 06.09.2026, Ralph (#580): „ich will die liste im dashboard haben und
          sehen, wenn riki etwas ergaenzt." Marken-Domain-Liste als eigene Seite
