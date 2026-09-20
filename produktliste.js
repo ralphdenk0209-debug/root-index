@@ -49,6 +49,15 @@ function peIstOffen(p){
       || ['offen','noch_nicht_erfasst'].indexOf(String(p.ean_status||''))>=0)
       && !peIstOffImport(p);
 }
+/* 🔴 20.09.2026 (Ralph jaja): EINE Zahl je Produkt. Lebensmittel haben den Root Index
+   (p.score), Nahrungsergaenzung den Reinheits-Index (p.supp_index, aus der Datenbank).
+   Sortierung, Spaltenfilter und der Chip "Ohne Index" fragen ab jetzt hier nach - sonst
+   stuenden alle Supplements unter "Ohne Index", obwohl ihre Zahl danebensteht. */
+function peIndexWert(p){
+  if(p && p.supp_index!=null){ var r=Number(p.supp_index); if(isFinite(r)) return r; }
+  if(!p || p.score==null) return null;
+  var v=Number(p.score); return isFinite(v)?v:null;
+}
 /* Wächtertreffer bleiben bis zur Freigabe auffindbar.
    🔴 06.09.2026 (#619, Ralph: "der Browser soll doch aus der Datenbank lesen"):
    Vorher stand hier ein NACHBAU der Wächterregel:
@@ -595,7 +604,7 @@ function pePasst(p, ohneSpalte, ohneChip){
   if(chipf==='import'&&!(String(p.pstatus||'')==='Entwurf'&&peIstOffImport(p))) return false;
   if(chipf==='scan'&&!peIstScan(p)) return false;
   if(chipf==='zuverif'&&!p.zu_verifizieren) return false;
-  if(chipf==='keinscore'&&p.score!=null) return false;
+  if(chipf==='keinscore'&&peIndexWert(p)!=null) return false;
   if(chipf==='keinquelle'&&p.quelle_typ) return false;
   if(chipf==='keinzut'&&p.hat_zutaten) return false;
   if(chipf==='markiert'&&!p.markiert) return false;
@@ -762,7 +771,7 @@ function peRender(){
      sortiert, sortiert innerhalb dieser Seite. Eine katalogweite Sortierung braeuchte
      einen weiteren Parameter an cb_erfassung_liste - der ist bewusst NICHT erfunden. */
   list.sort(function(a,b){
-    if(sort==='score'){ var sa=(a.score==null?9999:a.score), sb=(b.score==null?9999:b.score); if(sa!==sb) return sa-sb; }
+    if(sort==='score'){ var _ia=peIndexWert(a), _ib=peIndexWert(b); var sa=(_ia==null?9999:_ia), sb=(_ib==null?9999:_ib); if(sa!==sb) return sa-sb; }
     else if(sort==='titel'){ var ta=String(a.name||'').toLowerCase(),tb=String(b.name||'').toLowerCase(); if(ta!==tb) return ta<tb?-1:1; }
     var da=String(a.erfasst||''),db=String(b.erfasst||''); if(da!==db) return da<db?1:-1;
     var na=parseInt(String(a.id).replace(/\D/g,''),10)||0,nb=parseInt(String(b.id).replace(/\D/g,''),10)||0; return nb-na; });
@@ -780,7 +789,18 @@ function peRender(){
   window._peColW=_peColW;
   var cols='<colgroup>'+_peColW.map(function(w,i){
     return '<col'+(w>0?(' style="width:'+w+'px"'):'')+'>'; }).join('')+'</colgroup>';
-  var scoreCell=function(s){ if(s==null) return '<span style="font-weight:800;color:#7b8698">–</span>';
+  /* 🔴 20.09.2026, RALPH (P1045 Magnesiumcitrat): der Reinheits-Index gehoert auch in die
+     Liste - siehe peIndexWert oben. Eigene Optik mit "R" davor, damit niemand ihn fuer einen
+     Root Index haelt. */
+  var scoreCell=function(s, p){
+    var si=(p&&p.supp_index!=null)?Number(p.supp_index):null;
+    if(si!=null && isFinite(si)){
+      var cr=si>=80?'#2e9e57':si>=60?'#c88616':'#7b5cd6';
+      return '<span title="Reinheits-Index für Nahrungsergänzung (Dosis 35 · Wirkform 25 · Transparenz 20 · Zusatzstoffe 20) – nicht der Root Index"'
+        +' style="font-weight:800;color:'+cr+'"><span style="font-size:10px;opacity:.75;margin-right:2px">R</span>'
+        +String(Math.round(si))+'</span>';
+    }
+    if(s==null) return '<span style="font-weight:800;color:#7b8698">–</span>';
     var c=s>=80?'#2e9e57':s>=60?'#c88616':'#cf5442'; return '<span style="font-weight:800;color:'+c+'">'+s+'</span>'; };
   var statPill=function(p){
     /* Scan-Zeile: noch kein Produkt. Statt der Status-Pille steht hier der Knopf, der den
@@ -866,7 +886,7 @@ function peRender(){
       +td(_scan?('<span title="Scan-Kandidat – noch keine Produkt-Nummer" style="color:#3b56b0;font-weight:700">'+esc(p.id)+'</span>'):esc(p.id),'color:#7b8698')
       +td('<b>'+esc(p.name||'—')+'</b>','', 'title="'+esc(p.name||'')+'"')
       +td(esc(p.marke||''),'','title="'+esc(p.marke||'')+'"')
-      +td(scoreCell(p.score),'overflow:visible')
+      +td(scoreCell(p.score,p),'overflow:visible')
       +td(statPill(p),'overflow:visible')
       +td(p.ean?esc(p.ean):'<span style="color:#c88616">offen</span>','color:#7b8698')
       +td(p.quelle_typ?esc(p.quelle_typ):'<span style="color:#cf5442">fehlt</span>','color:#7b8698;font-size:12px','title="'+esc(p.quelle_typ||'')+'"')
@@ -907,7 +927,7 @@ function peColVal(p,col){
   if(col==='titel') return String(p.name||'');
   /* Index: Zehner-Gruppen NUR fuers Filtern/Zaehlen (90–100 zusammen, weil 100 sonst allein steht).
      Das sind Anzeige-Eimer, keine Bewertungsgrenzen. */
-  if(col==='index'){ var s=(p.score==null?null:Number(p.score)); if(s==null||!isFinite(s)) return 'ohne Index'; if(s>=90) return '90–100'; var lo=Math.floor(s/10)*10; return lo+'–'+(lo+9); }
+  if(col==='index'){ var s=peIndexWert(p); if(s==null||!isFinite(s)) return 'ohne Index'; if(s>=90) return '90–100'; var lo=Math.floor(s/10)*10; return lo+'–'+(lo+9); }
   return '';
 }
 /* Spaltenfilter arbeiten serverseitig. Werte und Zahlen kommen aus

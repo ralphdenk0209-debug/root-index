@@ -2741,6 +2741,7 @@ function suppKarte(d){
       + '<span style="font-size:16px">💊</span>'
       + '<span style="font-size:12px;line-height:1.45;color:var(--k-2f5d33)"><b>Nahrungsergänzung.</b> Keine Root-Index-Note – eine Kapsel ist kein Lebensmittel. Wir prüfen zwei Dinge: <b>ist die Dosis sicher</b> und <b>ist ein Nutzen belegt</b>.</span>'
     + '</div>'
+    + '<div id="suppIdx"></div>'
     + '<div id="suppBody"><div class="note" style="background:var(--k-f4f5f4);color:var(--muted);margin-top:10px">Prüfe Dosierung und Nutzen gegen EFSA &amp; EU-Register …</div></div>';
   var ov=document.getElementById("overlay"); if(ov) ov.classList.add("open");
   /* 2026-07-27u (Ralph): ohne Anmeldung nur der Index - Supplements haben keinen,
@@ -2752,6 +2753,25 @@ function suppKarte(d){
     if(gb) gb.innerHTML=pkSperre('Dosis-Check & Nutzen','Dosierung vs. EFSA-Grenzen, belegter EU-Nutzen, Zutaten & Verarbeitung');
     return;
   }
+  /* 🔴 20.09.2026, RALPH (P1045): "produktkarten wird nur 1 angezeigt, entweder den
+     reinheitsindex den wir berechnen oder alternative, auch in der produktliste so
+     darstellen bei supplements." Die Karte zeigte gar keine Zahl, die Liste eine falsche.
+     Ab jetzt steht hier dieselbe Zahl wie in Liste und Editor: der abgelegte Reinheits-Index.
+     Nichts wird hier gerechnet - nur geholt und gezeigt. */
+  client.rpc("cb_supplement_index_gespeichert",{p_id:d.id}).then(function(ri){
+    var box=document.getElementById("suppIdx"); if(!box) return;
+    var v=ri&&ri.data; if(typeof v==="string"){ try{ v=JSON.parse(v); }catch(e){} }
+    if(!v||v.index==null){ box.innerHTML=""; return; }
+    var n=Math.round(Number(v.index)); if(!isFinite(n)){ box.innerHTML=""; return; }
+    var a=v.achsen||{}, pk=function(k){ var o=a[k]; return (o&&o.punkte!=null)?String(o.punkte).replace(".",","):"–"; };
+    var farbe=n>=80?"var(--k-1f5e34,#1f5e34)":n>=60?"var(--k-92400e,#92400e)":"var(--k-6d28d9,#6d28d9)";
+    box.innerHTML='<div style="display:flex;gap:12px;align-items:center;border:1px solid var(--k-e3e7ee,#e3e7ee);border-radius:12px;padding:10px 12px;margin:8px 0 4px">'
+      +'<div style="text-align:center;min-width:64px"><div style="font-size:26px;font-weight:800;line-height:1;color:'+farbe+'">'+n+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">von 100</div></div>'
+      +'<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:var(--ink)">Reinheits-Index</div>'
+      +'<div style="font-size:11.5px;color:var(--muted);line-height:1.45">Eigene Skala für Nahrungsergänzung – nicht der Root Index.<br>'
+      +'Dosis '+pk("dosis")+'/35 · Wirkform '+pk("wirkform")+'/25 · Transparenz '+pk("transparenz")+'/20 · Zusatzstoffe '+pk("zusatzstoffe")+'/20</div></div></div>';
+  },function(e){ console.log("cb_supplement_index_gespeichert:",e); });
   client.rpc("cb_supplement_karte",{p_produkt_id:d.id}).then(function(r){
     var body=document.getElementById("suppBody"); if(body){ body.innerHTML=suppKarteFill(r&&r.data,d); try{ body.querySelectorAll(".suCnt").forEach(suppCountUp); }catch(e){} }
   },function(e){ console.log("cb_supplement_karte:",e); var body=document.getElementById("suppBody"); if(body) body.innerHTML=suppKarteFill(null,d); });
