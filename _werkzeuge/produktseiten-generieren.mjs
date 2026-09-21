@@ -123,6 +123,27 @@ const num = (v) => (v === null || v === undefined || v === "" ? null : Number(v)
 function zahl(v) { const n = num(v); return n === null ? null : String(n).replace(".", ","); }
 
 /* ---------- Seitengeruest ---------- */
+/* ---------- Besucherzaehler (Ralph 21.09.2026) ----------
+   Ohne Cookie, ohne Kennung, ohne IP in der Datenbank: die Seite meldet nur
+   "an diesem Tag wurde diese Adresse aus dieser Richtung aufgerufen", der
+   Server zaehlt Tagessummen hoch (cb_seite_zaehlen). Kein Besucher laesst
+   sich wiedererkennen - deshalb braucht es auch kein Einwilligungsbanner.
+   Suchmaschinen-Robots fuehren JavaScript aus und wuerden sonst mitgezaehlt;
+   sie werden am Browserkennzeichen aussortiert. */
+let _zaehlerJs = null;
+function zaehlerJs() {
+  if (_zaehlerJs) return _zaehlerJs;
+  const { url, key } = ausAppJs();
+  _zaehlerJs = `<script>(function(){try{
+if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent))return;
+var r=document.referrer,q="direkt";
+if(r){var h="";try{h=new URL(r).hostname}catch(e){}
+q=/(^|\\.)google\\./.test(h)?"google":/bing\\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\\.de$/.test(h)?"intern":"andere";}
+fetch("${url}/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,headers:{"apikey":"${key}","Content-Type":"application/json"},body:JSON.stringify({p_seite:location.pathname,p_quelle:q})}).catch(function(){});
+}catch(e){}})();</script>`;
+  return _zaehlerJs;
+}
+
 function seite({ titel, beschreibung, kanonisch, inhalt, jsonld }) {
   return `<!doctype html>
 <html lang="de">
@@ -192,6 +213,7 @@ ${inhalt}
 Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
+${zaehlerJs()}
 </body>
 </html>`;
 }

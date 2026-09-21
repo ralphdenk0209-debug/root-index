@@ -1288,6 +1288,20 @@ function premiumInfo(){
     }
   }, 200);
 })();
+/* Besucherzaehler der App (Ralph 21.09.2026): ein Aufruf = eine Zeile mehr in
+   der Tagessumme, ohne Cookie und ohne Kennung (cb_seite_zaehlen). Nur beim
+   ersten Laden der Seite, nicht bei jedem Wechsel innerhalb der App. */
+(function(){
+  try{
+    if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent)) return;
+    var r=document.referrer, q="direkt";
+    if(r){ var h=""; try{ h=new URL(r).hostname; }catch(e){}
+      q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere"; }
+    fetch(SUPABASE_URL+"/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,
+      headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({p_seite:"app",p_quelle:q})}).catch(function(){});
+  }catch(e){}
+})();
 async function startPortal(){
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativeManage(); }
   try{
