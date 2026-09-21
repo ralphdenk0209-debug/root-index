@@ -56,6 +56,9 @@ function applyAdminMode(){
       +_an('steuerung','🎛️','Steuerung',"window.open('steuerung.html?cb='+Date.now(),'_blank')")
       /* 07.09.2026 (#217, Ralph): die Maschine als Netzplan - eigene Seite, eigenes Fenster. */
       +_an('maschine','🚇','Maschine',"window.open('maschine.html?cb='+Date.now(),'_blank')")
+      /* 21.09.2026, Ralph (Dashboard-Umbau): das Cockpit - Vorlage 1:1 nachgebaut,
+         Wellen aus echten Takt- und Datenbankzahlen. Eigene Seite, eigenes Fenster. */
+      +_an('cockpit','🛸','Cockpit',"window.open('cockpit.html?cb='+Date.now(),'_blank')")
       /* 09.09.2026 (#217, Ralph): Riki-Kosten je Aufruf und Produkt - eigene Seite. */
       +_an('rikikosten','💸','Kosten',"window.open('riki-kosten.html?cb='+Date.now(),'_blank')")
       /* 16.09.2026, Ralph: "Benchmark im Menü löschen." Wie schon bei bewerten/

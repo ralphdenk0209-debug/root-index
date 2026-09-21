@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cockpit — Root Index</title>
+<!-- cockpit.html · 21.09.2026 · Dashboard-Umbau
+     Ralph: "1:1 Nachbau der Vorlage, nur mit unseren Daten füllen. Die Wellen müssen
+     realen Daten und Raten entsprechen. Ich will sehen, wie die Seite und Datenbank lebt."
+     Liest genau eine Funktion: cb_admin_cockpit_puls() (nur Admin, nur lesen, ~1 s).
+     Alle 30 s neu. Raten (Commits/s, Zeilen/s, Blöcke/s) rechnet die Seite aus zwei
+     Abrufen — kein Takt, keine Tabelle, keine zweite Regel. Die Wellen sind die
+     Takt-Sekunden je 5 Minuten der letzten 24 h; die Bewegung folgt den Raten. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#222b38;--card:#252f3d;--stage:#1a2230;--ink:#e6edf5;--ink2:#95a4b6;--ink3:#5f6f83;
+  --teal:#3ee6c4;--teal2:#1cc2c9;--teal3:#0f8f9c;--bad:#ff5c72;--warn:#f2b544;
+  --out:14px 14px 30px rgba(8,12,20,.55),-8px -8px 22px rgba(70,86,110,.18);
+  --in:inset 8px 8px 20px rgba(8,12,20,.5),inset -6px -6px 16px rgba(70,86,110,.16);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;--disp:"Rajdhani","IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:linear-gradient(160deg,#26303f,#1a2230 70%);min-height:100vh;color:var(--ink);font:12px/1.4 "IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:var(--teal)}
+.top{display:flex;gap:14px;align-items:center;padding:12px 20px 0;max-width:1500px;margin:0 auto;flex-wrap:wrap}
+.top .t{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#fff}
+.top .t span{color:var(--teal)}
+.top .stand{color:var(--ink3);font-size:11px}
+.top .r{margin-left:auto;display:flex;gap:8px;align-items:center}
+.top .btn{border:1px solid rgba(120,200,220,.2);border-radius:8px;padding:5px 12px;color:var(--teal);font-family:var(--disp);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.wrap{padding:16px 20px 40px;display:grid;grid-template-columns:200px 1fr 200px;gap:18px;max-width:1500px;margin:0 auto}
+.col{display:flex;flex-direction:column;gap:16px;min-width:0}
+.card{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative}
+.card h4{margin:0;font-family:var(--disp);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:6px}
+.card p{margin:0;font-size:10px;color:var(--ink3);line-height:1.35}
+.big{font-family:var(--disp);font-weight:600;font-size:44px;line-height:1;color:#fff;display:flex;align-items:center;gap:14px}
+.big .arrow{width:0;height:0;border:9px solid transparent;border-bottom:14px solid var(--teal);margin-top:-8px;filter:drop-shadow(0 0 6px var(--teal))}
+.big .arrow.down{transform:rotate(180deg);border-bottom-color:var(--bad);filter:drop-shadow(0 0 6px var(--bad))}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pair div{text-align:center}
+.pair .l{font-family:var(--disp);letter-spacing:.14em;text-transform:uppercase;font-size:10px;color:var(--ink2)}
+.pair .v{font-family:var(--disp);font-size:24px;font-weight:600;color:var(--teal)}
+.hbar{display:flex;flex-direction:column;gap:5px}
+.hbar div{display:grid;grid-template-columns:1fr 36px;gap:6px;align-items:center}
+.hbar i{display:block;height:9px;border-radius:2px;background:linear-gradient(90deg,var(--teal3),var(--teal));box-shadow:0 0 8px rgba(62,230,196,.35)}
+.hbar i.g{background:#3a4658;box-shadow:none}.hbar i.w{background:linear-gradient(90deg,#b07a1a,var(--warn));box-shadow:none}.hbar i.b{background:var(--bad);box-shadow:none}
+.hbar .n{font-family:var(--mono);font-size:10px;color:var(--ink2);text-align:right}
+.hbar .lab{font-size:9px;color:var(--ink3);display:block;margin-bottom:-3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vbars{display:flex;align-items:flex-end;gap:2px;height:70px}
+.vbars i{flex:1;background:var(--teal);border-radius:1px;min-width:1px;opacity:.85}
+.vbars i.b{background:var(--bad)}
+.vlab{display:flex;justify-content:space-between;font-size:9px;color:var(--ink3)}
+.stage{background:var(--stage);border-radius:20px;box-shadow:var(--in);padding:18px 22px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
+.stage .ttl{text-align:center;font-family:var(--disp);letter-spacing:.2em;text-transform:uppercase;font-size:11px;color:var(--ink2)}
+.stage .hd{display:flex;justify-content:space-between;align-items:flex-start;font-size:10px;color:var(--ink3);gap:12px}
+.stage .hd b{display:block;font-family:var(--disp);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.stage .hd .r{text-align:right}.stage .hd .r b{color:#fff;font-size:14px;letter-spacing:.02em}
+.gauges{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:10px;align-items:center;margin-top:4px}
+.gauge{display:flex;flex-direction:column;align-items:center}
+.gauge svg{width:100%;max-width:230px;height:auto}
+canvas.waves{width:100%;height:300px;display:block;border-radius:12px}
+.callouts{position:absolute;inset:0;pointer-events:none;font-size:9px;color:var(--ink2)}
+.callouts div{position:absolute;padding-left:8px;border-left:1px solid var(--ink3);max-width:150px}
+.callouts b{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;font-weight:600}
+.callouts em{font-style:normal;color:var(--teal);font-family:var(--mono)}
+.foot3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:9px;color:var(--ink3);margin-top:4px}
+.foot3 b{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
+.foot3 .c{text-align:center}.foot3 .r{text-align:right}
+.slider{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center}
+.slider .big{font-size:38px}
+.track{position:relative;height:3px;background:#39475a;border-radius:2px}
+.track:before{content:"";position:absolute;left:0;right:0;top:9px;height:3px;background:#39475a;border-radius:2px}
+.track i{position:absolute;left:0;top:0;height:100%;background:var(--teal);border-radius:2px;box-shadow:0 0 8px var(--teal)}
+.track .up,.track .dn{position:absolute;width:0;height:0;border:7px solid transparent}
+.track .dn{border-top-color:#fff;top:-18px;margin-left:-7px}.track .up{border-bottom-color:#fff;top:20px;margin-left:-7px}
+.rings3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.ring{display:flex;flex-direction:column;align-items:center}
+.ring svg{width:52px;height:52px}
+.ring .v{font-family:var(--disp);font-size:14px;font-weight:600;color:#fff;margin-top:-36px;height:36px;display:flex;align-items:center}
+.ring .l{font-size:8px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:9px;color:var(--ink2);font-family:var(--mono)}
+td{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
+td:last-child{text-align:right;color:var(--ink)}
+.dring{display:flex;justify-content:center}.dring svg{width:120px;height:120px}
+.pie{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4px;font-size:9px;color:var(--ink3)}
+.pie svg{width:84px;height:84px}
+.bottom{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px}
+.chart{width:100%;height:140px;display:block}
+.srv{font-family:var(--mono);font-size:9px;color:var(--ink3);border:1px dashed var(--ink3);border-radius:4px;padding:0 4px}
+.legend{display:flex;gap:12px;font-size:9px;color:var(--ink3)}
+.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
+.stop div{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.05);font-size:11px}
+.stop div:first-child{border-top:0}
+.stop a{color:var(--ink);text-decoration:none}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 8px var(--bad)}
+.dot.w{background:var(--warn);box-shadow:0 0 8px var(--warn)}
+#hinweis{max-width:1500px;margin:20px auto;padding:0 20px;color:var(--warn);font-size:14px}
+#hinweis:empty{display:none}
+@media (max-width:1050px){.wrap{grid-template-columns:1fr 1fr}.col.mid{grid-column:1/-1;order:-1}.bottom{grid-template-columns:1fr}}
+@media (max-width:640px){.wrap{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}.slider{grid-template-columns:1fr}.callouts{display:none}}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="t">Root <span>Index</span> · Cockpit</div>
+  <div class="stand" id="stand">lädt …</div>
+  <div class="r"><span class="stand" id="rate"></span><button class="btn" onclick="laden()">Aktualisieren</button></div>
+</div>
+<div id="hinweis"></div>
+
+<div class="wrap">
+<div class="col">
+  <div class="card"><div class="pair"><div><div class="l">Takte</div><div class="v" id="kTakte">–</div></div><div><div class="l">Läufe 24 h</div><div class="v" id="kLaeufe">–</div></div></div></div>
+  <div class="card">
+    <h4>Bei dir</h4>
+    <p id="beiDirText">Entscheide, die nur du treffen kannst.</p>
+    <div class="big"><span id="beiDir">–</span><span class="arrow" id="beiDirPfeil" hidden></span></div>
+    <p id="beiDirSub"></p>
+  </div>
+  <div class="card">
+    <h4>Wächter <span id="gate">–</span></h4>
+    <p id="wText">24 Wächter · Gate-Wächter w1, w3–w10</p>
+    <div class="hbar" id="waechter"></div>
+  </div>
+  <div class="card">
+    <h4>Takt-Läufe je 5 Minuten</h4>
+    <p>letzte 24 h · rot = 5 Minuten mit Fehler</p>
+    <div class="vbars" id="vb"></div>
+    <div class="vlab"><span id="vb0"></span><span>−12 h</span><span>jetzt</span></div>
+  </div>
+  <div class="card">
+    <h4>Katalog</h4>
+    <p id="katText"></p>
+    <div class="pie">
+      <div>aktiv<br><b style="color:#fff" id="kAktiv">–</b></div>
+      <svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="30" fill="none" stroke="#3a4658" stroke-width="20"/><circle id="pie1" cx="42" cy="42" r="30" fill="none" stroke="var(--teal)" stroke-width="20" stroke-dasharray="0 188.5" transform="rotate(-90 42 42)"/><circle id="pie2" cx="42" cy="42" r="30" fill="none" stroke="var(--teal2)" stroke-width="20" stroke-dasharray="0 188.5" transform="rotate(-90 42 42)"/></svg>
+      <div style="text-align:right">Entwurf<br><b style="color:#fff" id="kEntwurf">–</b></div>
+    </div>
+    <p style="text-align:center">frei 7 T <b style="color:var(--teal)" id="kFrei7">–</b> · heute <b style="color:var(--teal)" id="kFreiHeute">–</b></p>
+  </div>
+</div>
+
+<div class="col mid">
+  <div class="stage">
+    <div class="ttl">Root Index · Maschine</div>
+    <div class="hd">
+      <div><b id="hdTitel">Maschine</b><span id="hdSub">–</span></div>
+      <div class="r"><b id="hdDb">–</b><span id="hdDbSub">Datenbank</span></div>
+    </div>
+    <div class="gauges">
+      <div class="gauge"><svg viewBox="0 0 200 200" id="g1"></svg></div>
+      <div class="gauge"><svg viewBox="0 0 260 260" id="g2"></svg></div>
+      <div class="gauge"><svg viewBox="0 0 200 200" id="g3"></svg></div>
+    </div>
+    <div style="position:relative">
+      <canvas class="waves" id="waves" aria-label="Energiefluss: Takt-Sekunden je 5 Minuten, 24 h"></canvas>
+      <div class="callouts">
+        <div style="left:3%;top:14%"><b>Takte</b><span id="coTakte">–</span></div>
+        <div style="left:27%;top:6%"><b>Cache</b><span id="coCache">–</span></div>
+        <div style="left:51%;top:14%"><b>Datentransfer</b><span id="coTransfer">–</span></div>
+        <div style="left:76%;top:5%"><b>Schreiben</b><span id="coSchreiben">–</span></div>
+      </div>
+    </div>
+    <div class="foot3" id="foot3"></div>
+  </div>
+  <div class="card">
+    <div class="slider">
+      <div><div class="big" id="pFrei">–</div><p id="pFreiSub">freigegeben von aktiv, 7 Tage</p></div>
+      <div class="track"><i id="trFrei" style="width:0"></i><span class="dn" id="trDn" style="left:0"></span><span class="up" id="trUp" style="left:0"></span></div>
+      <div style="text-align:right"><div class="big" style="justify-content:flex-end" id="pEntw">–</div><p id="pEntwSub">Entwürfe im Katalog</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="col">
+  <div class="card">
+    <h4>RIKI je Tag</h4>
+    <p id="rikiText"></p>
+    <div class="vbars" id="riki" style="height:90px;gap:5px"></div>
+    <div class="vlab"><span id="riki0"></span><span>heute</span></div>
+  </div>
+  <div class="card">
+    <h4>Schwerste Aufrufe</h4>
+    <p>pg_stat_statements · Sekunden gesamt seit Reset</p>
+    <table id="aufrufe"></table>
+    <div class="rings3" id="rings3"></div>
+  </div>
+  <div class="card">
+    <div class="pair"><div><div class="l">Instagram</div><div class="v"><span class="srv">–</span></div></div><div><div class="l">Facebook</div><div class="v"><span class="srv">–</span></div></div></div>
+    <p>Follower · Reichweite 7 T. Anbindung Meta Graph API – wartet auf App und Token.</p>
+  </div>
+  <div class="card">
+    <h4>Google</h4>
+    <p id="seoText">Ziel 10.000 indexierte Produktseiten.</p>
+    <div class="dring"><svg viewBox="0 0 120 120"><circle cx="60" cy="60" r="48" fill="none" stroke="#3a4658" stroke-width="10"/><circle id="seoRing" cx="60" cy="60" r="48" fill="none" stroke="var(--teal)" stroke-width="10" stroke-dasharray="0 302" stroke-linecap="round" transform="rotate(-90 60 60)"/><text id="seoN" x="60" y="56" text-anchor="middle" fill="#fff" font-family="Rajdhani,sans-serif" font-weight="600" font-size="26">–</text><text x="60" y="74" text-anchor="middle" fill="#95a4b6" font-size="9" letter-spacing="1">INDEXIERT</text></svg></div>
+    <p style="text-align:center" id="seoSub"></p>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="card">
+    <h4>Takt-Sekunden je 5 Minuten</h4>
+    <p id="c1Text">24 h · Summe aller Laufzeiten</p>
+    <svg class="chart" id="c1" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="card">
+    <h4>Läufe und Fehler</h4>
+    <p id="c2Text">24 h · teal = Läufe je 5 Minuten · rot = Fehler</p>
+    <svg class="chart" id="c2" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
+    <div class="legend"><span><i style="background:var(--teal)"></i>Läufe</span><span><i style="background:var(--bad)"></i>Fehler</span></div>
+  </div>
+  <div class="card">
+    <h4>Stopper <span id="stopN"></span></h4>
+    <p>Entscheide, Blockiertes, rote Takte – Klick öffnet die Steuerung.</p>
+    <div class="stop" id="stopper"></div>
+  </div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const de = n => Number(n||0).toLocaleString('de-DE');
+const de1 = n => Number(n||0).toLocaleString('de-DE',{maximumFractionDigits:1});
+const usd = x => Number(x||0).toFixed(2).replace('.',',')+' $';
+const hhmm = t => t ? new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '–';
+
+/* ===== Zustand: aktueller und vorheriger Abruf, daraus Raten ===== */
+let P=null, Pvor=null, raten={commits:0,zeilen:0,bloecke:0,schreiben:0,hit:null}, S5=[], F5=[], N5=[];
+
+async function laden(){
+  $('stand').textContent='lädt …';
+  const {data,error}=await client.rpc('cb_admin_cockpit_puls');
+  if(error){ $('stand').textContent='Fehler'; $('hinweis').innerHTML='Kein Zugriff: '+esc(error.message)+' – <a href="admin.html">im Admin anmelden</a>, dann hier neu laden.'; return; }
+  $('hinweis').textContent='';
+  Pvor=P; P=data;
+  if(Pvor){
+    const dt=(new Date(P.db.jetzt)-new Date(Pvor.db.jetzt))/1000;
+    if(dt>0){
+      raten.commits=(P.db.commits-Pvor.db.commits)/dt;
+      raten.zeilen=(P.db.tup_returned-Pvor.db.tup_returned)/dt;
+      raten.bloecke=(P.db.blks_read-Pvor.db.blks_read)/dt;
+      raten.schreiben=(P.db.tup_inserted-Pvor.db.tup_inserted+P.db.tup_updated-Pvor.db.tup_updated+P.db.tup_deleted-Pvor.db.tup_deleted)/dt;
+      const h=P.db.blks_hit-Pvor.db.blks_hit, r=P.db.blks_read-Pvor.db.blks_read;
+      raten.hit=(h+r)>0?100*h/(h+r):null;
+    }
+  }
+  zeichnen();
+  $('stand').textContent='Stand '+new Date(P.stand).toLocaleTimeString('de-DE')+' · alle 30 s';
+}
+
+function zeichnen(){
+  const t=P.takte, tk=t.filter(x=>x.aktiv), rot=t.filter(x=>x.aktiv&&x.status&&x.status!=='succeeded');
+  const laeufe=t.reduce((a,x)=>a+x.n24,0), fehler=t.reduce((a,x)=>a+x.f24,0);
+  $('kTakte').textContent=t.length; $('kLaeufe').textContent=de(laeufe);
+
+  // Bei dir
+  const w=P.work; $('beiDir').textContent=w.bei_ralph;
+  if(Pvor){const d=w.bei_ralph-Pvor.work.bei_ralph; const a=$('beiDirPfeil'); a.hidden=d===0; a.className='arrow'+(d<0?' down':''); }
+  $('beiDirText').textContent='Entscheide, die nur du treffen kannst. '+P.work_top.filter(x=>x.status==='decision_ralph').map(x=>'#'+x.id).join(' · ');
+  $('beiDirSub').textContent='dazu '+w.blockiert+' blockiert · '+rot.length+' Takt'+(rot.length===1?'':'e')+' rot · '+w.abnahme+' warten auf Abnahme';
+
+  // Wächter
+  const GATE=['w1','w3','w4','w5','w6','w7','w8','w9','w10'];
+  const ws=P.waechter, gate=ws.filter(x=>GATE.includes(x.k)), gateSum=gate.reduce((a,x)=>a+x.n,0);
+  const beob=ws.filter(x=>!GATE.includes(x.k)&&x.k!=='wb_sperrebestand'&&x.n>0), nullB=ws.filter(x=>!GATE.includes(x.k)&&x.k!=='wb_sperrebestand'&&x.n===0).length;
+  const sperre=ws.find(x=>x.k==='wb_sperrebestand');
+  const maxB=Math.max(1,...beob.map(x=>x.n));
+  const stdH=ws.length?((Date.now()-new Date(ws[0].stand))/36e5):null;
+  $('gate').innerHTML=gateSum===0?'<span style="color:var(--teal)">Gate offen</span>':'<span style="color:var(--bad)">Gate zu · '+gateSum+'</span>';
+  $('wText').textContent=ws.length+' Wächter · gemessen vor '+(stdH!==null?de1(stdH):'?')+' h · Gate-Wächter '+(gateSum===0?'alle 0':gateSum+' Fälle');
+  $('waechter').innerHTML=beob.map(x=>`<div><span><span class="lab">${esc(x.k)}</span><i style="width:${Math.max(4,100*x.n/maxB)}%"></i></span><span class="n">${de(x.n)}</span></div>`).join('')
+    +`<div><span><span class="lab">${gate.length} Gate · ${nullB} weitere</span><i class="${gateSum?'b':'g'}" style="width:${gateSum?100:3}%"></i></span><span class="n">${de(gateSum)}</span></div>`
+    +(sperre?`<div><span><span class="lab">wb_sperrebestand · Bestand</span><i class="g" style="width:100%"></i></span><span class="n">${de(sperre.n)}</span></div>`:'');
+
+  // 5-Minuten-Reihe (24 h) → Wellen, Balken, Flächen
+  const raster=[]; const jetzt=Math.floor(Date.now()/3e5)*3e5;
+  const map=new Map(P.takte_5min.map(x=>[new Date(x.t).getTime(),x]));
+  for(let i=287;i>=0;i--){const ts=jetzt-i*3e5; const x=map.get(ts); raster.push(x||{t:new Date(ts).toISOString(),s:0,n:0,f:0});}
+  S5=raster.map(x=>x.s); N5=raster.map(x=>x.n); F5=raster.map(x=>x.f);
+  const maxS=Math.max(1,...S5), maxN=Math.max(1,...N5);
+  $('vb').innerHTML=raster.map(x=>`<i style="height:${Math.max(2,100*x.n/maxN)}%"${x.f?' class="b"':''} title="${hhmm(x.t)} · ${x.n} Läufe · ${x.s} s${x.f?' · '+x.f+' Fehler':''}"></i>`).join('');
+  $('vb0').textContent=hhmm(raster[0].t);
+
+  // Katalog
+  const k=P.katalog, ges=k.aktiv+k.entwurf;
+  $('kAktiv').textContent=de(k.aktiv); $('kEntwurf').textContent=de(k.entwurf); $('kFrei7').textContent=de(k.frei_7t); $('kFreiHeute').textContent=de(k.frei_heute);
+  $('katText').textContent=de(ges)+' Produkte · '+k.kategorien+' Kategorien · '+k.neu_7t+' neu in 7 Tagen';
+  const U=188.5; $('pie1').setAttribute('stroke-dasharray',(U*k.aktiv/ges)+' '+U);
+  $('pie2').setAttribute('stroke-dasharray',(U*k.frei_7t/ges)+' '+U); $('pie2').setAttribute('stroke-dashoffset',-(U*k.aktiv/ges));
+
+  // Bühne
+  const s5=S5[S5.length-1]||0, gleichzeitig=s5/300;
+  $('hdTitel').textContent=rot.length?'Maschine läuft · '+rot.length+' Takt rot':'Maschine läuft';
+  $('hdSub').textContent=tk.length+' von '+t.length+' Takten aktiv · '+fehler+' Fehler in 24 h · '+P.aktiv+' Abfragen gerade aktiv';
+  $('hdDb').textContent=de(P.db.db_mb)+' MB'; $('hdDbSub').textContent='Datenbank · '+P.db.conns+' Verbindungen · '+de(P.db.temp_mb)+' MB temporär';
+  ring('g1',tk.length,t.length,String(tk.length),'TAKTE AKTIV');
+  ring('g3',gateSum,10,String(gateSum),'GATE-FÄLLE',gateSum?'#ff5c72':null);
+  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'LETZTE 5 MIN · '+de(s5)+' s');
+  $('coTakte').innerHTML=`<em>${de(s5)} s</em> in 5 Minuten<br>Spitze 24 h: ${de(maxS)} s`;
+  $('coCache').innerHTML=raten.hit!==null?`<em>${de1(raten.hit)} %</em> Treffer seit letztem Abruf<br>${de1(raten.bloecke)} Blöcke/s von Platte`:`<em>${de1(100*P.db.blks_hit/(P.db.blks_hit+P.db.blks_read))} %</em> Treffer gesamt<br>Rate nach dem 2. Abruf`;
+  $('coTransfer').innerHTML=Pvor?`<em>${de(Math.round(raten.zeilen))}</em> Zeilen/s gelesen<br>${de1(raten.commits)} Commits/s`:`<em>${de(P.db.tup_returned)}</em> Zeilen gesamt<br>Rate nach dem 2. Abruf`;
+  $('coSchreiben').innerHTML=Pvor?`<em>${de1(raten.schreiben)}</em> Zeilen/s geschrieben`:`<em>${de(P.db.tup_inserted)}</em> eingefügt · ${de(P.db.tup_updated)} geändert`;
+  const au=P.aufrufe;
+  $('foot3').innerHTML=[['Meiste Zeit',au[0]],['Schwerster Aufruf',[...au].sort((a,b)=>b.ms-a.ms)[0]],['Meiste Aufrufe',[...au].sort((a,b)=>b.calls-a.calls)[0]]].map(([l,x],i)=>x?`<div class="${['','c','r'][i]}"><b>${l}</b>${esc(x.q.replace(/\(.*$/,''))}<br>${de(x.ms)} ms je Lauf · ${de(x.calls)} Läufe · ${de(x.tot_s)} s</div>`:'').join('');
+
+  // Schieber
+  const pf=100*k.frei_7t/k.aktiv, pe=100*k.entwurf/ges;
+  $('pFrei').textContent=de1(pf)+' %'; $('pFreiSub').textContent='freigegeben von aktiv, 7 Tage · '+de(k.frei_7t);
+  $('pEntw').textContent=de1(pe)+' %'; $('pEntwSub').textContent='Entwürfe im Katalog · '+de(k.entwurf);
+  $('trFrei').style.width=pf+'%'; $('trDn').style.left=pf+'%'; $('trUp').style.left=pe+'%';
+
+  // RIKI
+  const r=P.riki, r14=P.riki_14t, maxU=Math.max(0.01,...r14.map(x=>x.usd));
+  $('rikiText').textContent='14 Tage · '+usd(r.monat_usd)+' im Monat · heute '+usd(r.heute_usd)+' · '+r.fehler_24h+' Fehler in 24 h';
+  $('riki').innerHTML=r14.map(x=>`<i style="height:${Math.max(3,100*x.usd/maxU)}%" title="${x.tag} · ${usd(x.usd)}"></i>`).join('');
+  $('riki0').textContent=r14[0].tag.slice(8)+'.'+r14[0].tag.slice(5,7)+'.';
+
+  // Aufrufe + Ringe
+  $('aufrufe').innerHTML=au.slice(0,6).map(x=>`<tr><td title="${esc(x.q)}">${esc(x.q.replace(/^cb_/,'').replace(/\(.*$/,''))}</td><td>${de(x.tot_s)}</td></tr>`).join('');
+  const R=138; $('rings3').innerHTML=[['offen',w.offen,'var(--teal)'],['Abnahme',w.abnahme,'var(--warn)'],['in Arbeit',w.in_arbeit,'var(--teal)']].map(([l,v,c])=>`<div class="ring"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="22" fill="none" stroke="#3a4658" stroke-width="3"/><circle cx="26" cy="26" r="22" fill="none" stroke="${c}" stroke-width="3" stroke-dasharray="${R*Math.min(1,v/w.gesamt)} ${R}" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+
+  // Google
+  const seo=P.seo, ziel=10000, idx=seo.indexiert||0;
+  $('seoN').textContent=de(idx); $('seoRing').setAttribute('stroke-dasharray',Math.max(1,302*Math.min(1,idx/ziel))+' 302');
+  $('seoText').textContent='Ziel '+de(ziel)+' indexierte Produktseiten · Stichprobe '+de(seo.stichprobe)+' Seiten';
+  $('seoSub').innerHTML=seo.stand?`${de(seo.klicks_28t)} Klicks · ${de(seo.impr_28t)} Impressionen · Position ${de1(seo.position)} · Stand ${seo.stand}`:'Klicks · Impressionen · Position <span class="srv">noch keine Suchdaten</span>';
+
+  // Flächen unten
+  const lab=i=>hhmm(raster[i].t);
+  flaeche('c1',S5,maxS,'#3ee6c4',lab,(x,y)=>{const i=S5.indexOf(maxS);return `<text x="${x(i)}" y="${y(maxS)-4}" text-anchor="middle" fill="#fff" font-size="10">${de(maxS)} s</text>`;});
+  $('c1Text').textContent='24 h · Spitze '+de(maxS)+' s um '+lab(S5.indexOf(maxS))+' · jetzt '+de(s5)+' s';
+  flaeche('c2',N5,maxN,'#3ee6c4',lab,(x,y)=>{const yf=v=>y(v*maxN/Math.max(1,Math.max(...F5)*1.5));return F5.map((f,i)=>f?`<rect x="${x(i)-2}" y="${yf(f)}" width="4" height="${y(0)-yf(f)}" rx="1" fill="#ff5c72"><title>${lab(i)} · ${f} Fehler</title></rect>`:'').join('');});
+  $('c2Text').textContent='24 h · '+de(laeufe)+' Läufe · '+fehler+' Fehler';
+
+  // Stopper
+  const st=[...rot.map(x=>({c:'',t:`Takt ${x.name} fehlgeschlagen ${hhmm(x.lauf)}`,h:'maschine.html'})),
+    ...P.work_top.map(x=>({c:x.status==='decision_ralph'||x.status==='open'?'':'w',t:`#${x.id} ${x.titel}`,h:'steuerung.html'}))];
+  $('stopN').textContent=st.length; $('stopper').innerHTML=st.length?st.map(x=>`<div><i class="dot ${x.c}"></i><a href="${x.h}?cb=${Date.now()}" target="_blank">${esc(x.t)}</a></div>`).join(''):'<div><i class="dot" style="background:var(--teal);box-shadow:none"></i>nichts – freie Fahrt</div>';
+}
+
+/* ===== Zeiger ===== */
+function ring(id,val,max,txt,sub,farbe){
+  const s=$(id),c=100,R=78,f=Math.min(1,max?val/max:0),L=2*Math.PI*R,col=farbe||'#3ee6c4';
+  let t='';for(let i=0;i<60;i++){const a=i/60*2*Math.PI,l=i%15?3:7;t+=`<line x1="${c+(R+10)*Math.cos(a)}" y1="${c+(R+10)*Math.sin(a)}" x2="${c+(R+10+l)*Math.cos(a)}" y2="${c+(R+10+l)*Math.sin(a)}" stroke="#5f6f83" stroke-width="1"/>`;}
+  s.innerHTML=`<defs><radialGradient id="rg${id}" cx="40%" cy="35%"><stop offset="0" stop-color="#2c3746"/><stop offset="1" stop-color="#151c27"/></radialGradient></defs>
+  <circle cx="${c}" cy="${c}" r="${R+22}" fill="#1a2230" style="filter:drop-shadow(6px 6px 10px rgba(0,0,0,.5)) drop-shadow(-4px -4px 8px rgba(70,86,110,.15))"/>${t}
+  <circle cx="${c}" cy="${c}" r="${R}" fill="url(#rg${id})" stroke="#0f151e" stroke-width="6"/>
+  <circle cx="${c}" cy="${c}" r="${R}" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="${Math.max(0.01,L*f)} ${L}" stroke-linecap="round" transform="rotate(-90 ${c} ${c})" style="filter:drop-shadow(0 0 5px ${col})"/>
+  <text x="${c}" y="${c-30}" text-anchor="middle" fill="#95a4b6" font-size="9" letter-spacing="2">${sub}</text>
+  <text x="${c}" y="${c+16}" text-anchor="middle" fill="#fff" font-family="Rajdhani,sans-serif" font-weight="600" font-size="48">${txt}</text>`;
+}
+function tacho(val,max,titel,txt,sub){
+  const s=$('g2'),c=130,R=100,a0=Math.PI*0.75,a1=Math.PI*2.25,av=a0+(a1-a0)*Math.min(1,val/max);
+  const arc=(x,y,r)=>{const p=q=>[c+r*Math.cos(q),c+r*Math.sin(q)],[x0,y0]=p(x),[x1,y1]=p(y);return `M${x0} ${y0}A${r} ${r} 0 ${y-x>Math.PI?1:0} 1 ${x1} ${y1}`;};
+  let t='';for(let i=0;i<=40;i++){const a=a0+(a1-a0)*i/40,l=i%5?4:9;t+=`<line x1="${c+(R-4)*Math.cos(a)}" y1="${c+(R-4)*Math.sin(a)}" x2="${c+(R-4-l)*Math.cos(a)}" y2="${c+(R-4-l)*Math.sin(a)}" stroke="#7f8ea3" stroke-width="1.2"/>`;
+    if(i%10===0){t+=`<text x="${c+(R-24)*Math.cos(a)}" y="${c+(R-24)*Math.sin(a)+3}" text-anchor="middle" fill="#95a4b6" font-size="9">${max*i/40}</text>`;}}
+  s.innerHTML=`<defs><linearGradient id="bz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a4a5e"/><stop offset="1" stop-color="#121923"/></linearGradient><radialGradient id="face" cx="45%" cy="40%"><stop offset="0" stop-color="#232d3b"/><stop offset="1" stop-color="#121923"/></radialGradient></defs>
+  <circle cx="${c}" cy="${c}" r="${R+26}" fill="url(#bz)" style="filter:drop-shadow(8px 8px 14px rgba(0,0,0,.55))"/>
+  <circle cx="${c}" cy="${c}" r="${R+18}" fill="none" stroke="#0e141c" stroke-width="3"/>
+  <path d="${arc(a0,a1,R+14)}" fill="none" stroke="#2a3644" stroke-width="7"/>
+  <path d="${arc(a0,av,R+14)}" fill="none" stroke="#3ee6c4" stroke-width="7" stroke-linecap="round" style="filter:drop-shadow(0 0 6px #3ee6c4)"/>
+  <circle cx="${c}" cy="${c}" r="${R}" fill="url(#face)" stroke="#0b1018" stroke-width="2"/>${t}
+  <text x="${c}" y="${c-46}" text-anchor="middle" fill="#95a4b6" font-size="10" letter-spacing="2">${titel}</text>
+  <line x1="${c}" y1="${c}" x2="${c+(R-28)*Math.cos(av)}" y2="${c+(R-28)*Math.sin(av)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="${c}" cy="${c}" r="7" fill="#fff"/><circle cx="${c}" cy="${c}" r="3" fill="#1a2230"/>
+  <text x="${c}" y="${c+52}" text-anchor="middle" fill="#fff" font-family="Rajdhani,sans-serif" font-weight="600" font-size="26">${txt}</text>
+  <text x="${c}" y="${c+70}" text-anchor="middle" fill="#95a4b6" font-size="9" letter-spacing="1">${sub}</text>`;
+}
+function flaeche(id,vals,max,color,lab,extra){
+  const svg=$(id),W=400,H=140,L=6,B=18,T=10,n=vals.length;
+  const x=i=>L+i*(W-2*L)/(n-1),y=v=>T+(H-T-B)*(1-v/max);
+  const pts=vals.map((v,i)=>[x(i),y(v)]);const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  let g='';for(let k=1;k<=4;k++)g+=`<line x1="${L}" x2="${W-L}" y1="${y(max*k/4)}" y2="${y(max*k/4)}" stroke="rgba(255,255,255,.05)"/>`;
+  svg.innerHTML=`<defs><linearGradient id="f${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity=".02"/></linearGradient></defs>${g}
+  <path d="${line} L${x(n-1)} ${y(0)} L${x(0)} ${y(0)}Z" fill="url(#f${id})"/><path d="${line}" fill="none" stroke="${color}" stroke-width="1.5"/>${extra?extra(x,y):''}
+  ${[0,72,144,216,287].map(i=>`<text x="${x(i)}" y="${H-4}" text-anchor="${i?i===287?'end':'middle':'start'}" fill="#5f6f83" font-size="9">${lab(i)}</text>`).join('')}`;
+}
+
+/* ===== Wellen: Höhe = Takt-Sekunden je 5 Min (24 h, gemessen); Bewegung = Raten ===== */
+(function(){
+  const cv=$('waves'),ctx=cv.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches,LINES=22;
+  const smooth=(arr,t)=>{const i=Math.floor(t),f=t-i,a=arr[Math.max(0,Math.min(arr.length-1,i))]||0,b=arr[Math.max(0,Math.min(arr.length-1,i+1))]||0;return a+(b-a)*(f*f*(3-2*f));};
+  let ph=0;
+  function draw(){
+    const W=cv.clientWidth,H=cv.clientHeight,dpr=devicePixelRatio||1;
+    if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;}
+    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+    const max=Math.max(1,...S5), cols=160;
+    // Tempo der Kräuselung folgt den Commits/s, ihre Höhe den gelesenen Zeilen/s
+    const tempo=0.006+Math.min(0.03,raten.commits/2000), kraus=0.5+Math.min(1,raten.zeilen/2e6);
+    for(let l=0;l<LINES;l++){
+      const depth=l/(LINES-1), base=H*0.30+depth*H*0.55;
+      ctx.beginPath();
+      for(let c=0;c<=cols;c++){
+        const u=c/cols, load=S5.length?smooth(S5,u*(S5.length-1))/max:0;
+        const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.25+Math.sin(u*5+ph*0.4)*0.25;
+        const amp=(H*0.16*load+H*0.04)*kraus;
+        const y=base-load*H*0.32-ripple*amp*(0.35+0.65*depth)+Math.sin(l*1.7+u*3)*4;
+        c?ctx.lineTo(u*W,y):ctx.moveTo(u*W,y);
+      }
+      ctx.strokeStyle=`rgba(62,230,196,${0.10+depth*0.55})`;ctx.lineWidth=depth>0.8?1.2:0.8;ctx.stroke();
+    }
+    F5.forEach((f,i)=>{if(!f)return;const x=i/(F5.length-1)*W;ctx.fillStyle='rgba(255,92,114,.9)';ctx.beginPath();ctx.arc(x,H*0.88,3+Math.min(6,f)*0.6,0,7);ctx.fill();});
+    ph+=reduce?0:tempo;
+    if(!reduce)requestAnimationFrame(draw);
+  }
+  draw();addEventListener('resize',draw);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&reduce)draw();});
+})();
+
+laden();
+setInterval(()=>{ if(!document.hidden) laden(); },30000);
+$('rate').textContent='';
+</script>
+</body>
+</html>
