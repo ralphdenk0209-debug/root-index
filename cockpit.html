@@ -10,7 +10,11 @@
      Liest genau eine Funktion: cb_admin_cockpit_puls() (nur Admin, nur lesen, ~1 s).
      Alle 30 s neu. Raten (Commits/s, Zeilen/s, Blöcke/s) rechnet die Seite aus zwei
      Abrufen — kein Takt, keine Tabelle, keine zweite Regel. Die Wellen sind die
-     Takt-Sekunden je 5 Minuten der letzten 24 h; die Bewegung folgt den Raten. -->
+     Takt-Sekunden je 5 Minuten der letzten 24 h; die Bewegung folgt den Raten.
+     Nachtrag 21.09. abends (Ralph: "der Herzschlag der Webseite"): die Wellen zeigen jetzt
+     in Echtzeit, was passiert - fünf Ströme (Lesen, Schreiben, Maschine, Menschen, RIKI),
+     alle 3 s aus cb_admin_cockpit_herzschlag() (nur Zähler, ~15 ms), Ausschlag = Aktivität
+     im Verhältnis zum eigenen Maximum der letzten Minuten. Kein Takt, keine Tabelle. -->
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 :root{
@@ -62,10 +66,11 @@ a{color:var(--teal)}
 .gauge{display:flex;flex-direction:column;align-items:center}
 .gauge svg{width:100%;max-width:230px;height:auto}
 canvas.waves{width:100%;height:300px;display:block;border-radius:12px}
-.callouts{position:absolute;inset:0;pointer-events:none;font-size:9px;color:var(--ink2)}
-.callouts div{position:absolute;padding-left:8px;border-left:1px solid var(--ink3);max-width:150px}
-.callouts b{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#fff;font-weight:600}
-.callouts em{font-style:normal;color:var(--teal);font-family:var(--mono)}
+.legende{position:absolute;right:10px;top:8px;display:flex;flex-direction:column;gap:3px;font-size:10px;color:var(--ink2);pointer-events:none}
+.legende div{display:grid;grid-template-columns:10px 92px auto;gap:6px;align-items:center}
+.legende i{width:10px;height:3px;border-radius:2px;display:block}
+.legende b{font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;color:#fff;font-weight:600;font-size:10px}
+.legende em{font-style:normal;font-family:var(--mono);color:var(--ink)}
 .foot3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:9px;color:var(--ink3);margin-top:4px}
 .foot3 b{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
 .foot3 .c{text-align:center}.foot3 .r{text-align:right}
@@ -100,7 +105,7 @@ td:last-child{text-align:right;color:var(--ink)}
 #hinweis{max-width:1500px;margin:20px auto;padding:0 20px;color:var(--warn);font-size:14px}
 #hinweis:empty{display:none}
 @media (max-width:1050px){.wrap{grid-template-columns:1fr 1fr}.col.mid{grid-column:1/-1;order:-1}.bottom{grid-template-columns:1fr}}
-@media (max-width:640px){.wrap{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}.slider{grid-template-columns:1fr}.callouts{display:none}}
+@media (max-width:640px){.wrap{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}.slider{grid-template-columns:1fr}.legende{display:none}}
 </style>
 </head>
 <body>
@@ -156,13 +161,8 @@ td:last-child{text-align:right;color:var(--ink)}
       <div class="gauge"><svg viewBox="0 0 200 200" id="g3"></svg></div>
     </div>
     <div style="position:relative">
-      <canvas class="waves" id="waves" aria-label="Energiefluss: Takt-Sekunden je 5 Minuten, 24 h"></canvas>
-      <div class="callouts">
-        <div style="left:3%;top:14%"><b>Takte</b><span id="coTakte">–</span></div>
-        <div style="left:27%;top:6%"><b>Cache</b><span id="coCache">–</span></div>
-        <div style="left:51%;top:14%"><b>Datentransfer</b><span id="coTransfer">–</span></div>
-        <div style="left:76%;top:5%"><b>Schreiben</b><span id="coSchreiben">–</span></div>
-      </div>
+      <canvas class="waves" id="waves" aria-label="Herzschlag: fünf Ströme in Echtzeit, letzte 3 Minuten"></canvas>
+      <div class="legende" id="legende"></div>
     </div>
     <div class="foot3" id="foot3"></div>
   </div>
@@ -306,10 +306,6 @@ function zeichnen(){
   ring('g1',tk.length,t.length,String(tk.length),'TAKTE AKTIV');
   ring('g3',gateSum,10,String(gateSum),'GATE-FÄLLE',gateSum?'#ff5c72':null);
   tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'5 MIN · '+de(s5)+' s · '+laufend+' AKTIV');
-  $('coTakte').innerHTML=`<em>${de(s5)} s</em> Laufzeit in den letzten 5 Minuten<br>${(P.jetzt&&P.jetzt.n_5min)||0} Läufe · Spitze 24 h: ${de(maxS)} s`;
-  $('coCache').innerHTML=raten.hit!==null?`<em>${de1(raten.hit)} %</em> Treffer seit letztem Abruf<br>${de1(raten.bloecke)} Blöcke/s von Platte`:`<em>${de1(100*P.db.blks_hit/(P.db.blks_hit+P.db.blks_read))} %</em> Treffer gesamt<br>Rate nach dem 2. Abruf`;
-  $('coTransfer').innerHTML=Pvor?`<em>${de(Math.round(raten.zeilen))}</em> Zeilen/s gelesen<br>${de1(raten.commits)} Commits/s`:`<em>${de(P.db.tup_returned)}</em> Zeilen gesamt<br>Rate nach dem 2. Abruf`;
-  $('coSchreiben').innerHTML=Pvor?`<em>${de1(raten.schreiben)}</em> Zeilen/s geschrieben`:`<em>${de(P.db.tup_inserted)}</em> eingefügt · ${de(P.db.tup_updated)} geändert`;
   const au=P.aufrufe;
   $('foot3').innerHTML=[['Meiste Zeit',au[0]],['Schwerster Aufruf',[...au].sort((a,b)=>b.ms-a.ms)[0]],['Meiste Aufrufe',[...au].sort((a,b)=>b.calls-a.calls)[0]]].map(([l,x],i)=>x?`<div class="${['','c','r'][i]}"><b>${l}</b>${esc(x.q.replace(/\(.*$/,''))}<br>${de(x.ms)} ms je Lauf · ${de(x.calls)} Läufe · ${de(x.tot_s)} s</div>`:'').join('');
 
@@ -386,50 +382,83 @@ function flaeche(id,vals,max,color,lab,extra){
   ${[0,72,144,216,287].map(i=>`<text x="${x(i)}" y="${H-4}" text-anchor="${i?i===287?'end':'middle':'start'}" fill="#5f6f83" font-size="9">${lab(i)}</text>`).join('')}`;
 }
 
-/* ===== Wellen: Höhe = Takt-Sekunden je 5 Min (24 h, gemessen); Bewegung = Raten =====
-   Ralph 21.09.: "Werte ändern sich, aber die Wellen bewegen sich nicht." Die erste Fassung
-   bewegte nur wenige Pixel. Jetzt: Kräuselung mit sichtbarer Höhe, Zeitbasis statt
-   Bildzähler, und Energie-Punkte, die auf der vordersten Welle entlanglaufen —
-   ihre Zahl folgt den Commits/s, ihr Tempo den gelesenen Zeilen/s. */
+/* ===== Herzschlag: fünf Ströme in Echtzeit =====
+   Jede 3 s ein Abruf reiner Zähler. Aus zwei Abrufen wird eine Rate. Jeder Strom schlägt
+   im Verhältnis zu seinem eigenen Maximum der letzten Minuten aus - ruhig = flach,
+   Last = Spitze. Die Linie läuft von rechts nach links wie ein EKG. */
+const STROEME=[
+  {k:'lesen',    name:'Lesen',     einheit:'Zeilen/s',   farbe:'#3ee6c4', boden:2000},
+  {k:'schreiben',name:'Schreiben', einheit:'Zeilen/s',   farbe:'#9ff5e4', boden:20},
+  {k:'maschine', name:'Maschine',  einheit:'Takte aktiv',farbe:'#5aa9ff', boden:2},
+  {k:'menschen', name:'Menschen',  einheit:'Aktionen/min',farbe:'#e6edf5', boden:2},
+  {k:'riki',     name:'RIKI',      einheit:'Aufrufe/min',farbe:'#ff9ab0', boden:2}
+];
+const HB={proben:[],vor:null,fenster:180000,fehler:0};
+async function herzschlag(){
+  const {data:h,error}=await client.rpc('cb_admin_cockpit_herzschlag');
+  if(error||!h){HB.fehler++;return;}
+  const t=Date.now();
+  if(HB.vor){
+    const dt=Math.max(0.5,(new Date(h.jetzt)-new Date(HB.vor.jetzt))/1000), d=(a)=>Math.max(0,h[a]-HB.vor[a]);
+    HB.proben.push({t,
+      lesen:d('lesen')/dt, schreiben:d('schreiben')/dt,
+      maschine:h.takte_laufend+Math.max(0,h.aktiv-h.takte_laufend)*0.25,
+      menschen:(d('seiten_heute')+d('tagebuch_heute')+d('scans_heute'))/dt*60,
+      riki:(d('riki_heute')+d('scanjobs_heute'))/dt*60,
+      commits:d('commits')/dt, platte:d('platte')/dt, verbindungen:h.verbindungen});
+    while(HB.proben.length&&HB.proben[0].t<t-HB.fenster-20000)HB.proben.shift();
+  }
+  HB.vor=h;
+  legende();
+}
+function legende(){
+  const p=HB.proben[HB.proben.length-1];
+  $('legende').innerHTML=STROEME.map(s=>`<div><i style="background:${s.farbe};box-shadow:0 0 6px ${s.farbe}"></i><b>${s.name}</b><em>${p?de1(p[s.k]):'–'} ${s.einheit}</em></div>`).join('')
+    +(p?`<div><i></i><span style="color:var(--ink3)">Commits</span><em>${de1(p.commits)}/s · ${p.verbindungen} Verb.</em></div>`:'<div><i></i><span style="color:var(--ink3)">erster Schlag in 3 s</span><em></em></div>');
+}
 (function(){
-  const cv=$('waves'),ctx=cv.getContext('2d'),LINES=22;
-  const smooth=(arr,t)=>{const i=Math.floor(t),f=t-i,a=arr[Math.max(0,Math.min(arr.length-1,i))]||0,b=arr[Math.max(0,Math.min(arr.length-1,i+1))]||0;return a+(b-a)*(f*f*(3-2*f));};
-  const punkte=Array.from({length:48},(_,i)=>({u:i/48,v:0.6+Math.random()*0.8}));
+  const cv=$('waves'),ctx=cv.getContext('2d');
+  const lerp=(a,b,f)=>a+(b-a)*f;
   function draw(now){
     const W=cv.clientWidth,H=cv.clientHeight,dpr=devicePixelRatio||1;
     if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-    const max=Math.max(1,...S5), cols=160;
-    // Tempo aus Commits/s, Kräuselhöhe aus Zeilen/s — beides gemessen aus zwei Abrufen
-    const tempo=0.9+Math.min(2.5,raten.commits/400), kraus=0.8+Math.min(1.5,raten.zeilen/1.5e6);
-    const ph=(now/1000)*tempo;
-    for(let l=0;l<LINES;l++){
-      const depth=l/(LINES-1), base=H*0.30+depth*H*0.55;
+    const t=Date.now(), x0=t-HB.fenster, basis=H*0.86, band=H*0.72;
+    // Raster: eine Linie je 30 s
+    ctx.strokeStyle='rgba(120,200,220,.07)';ctx.lineWidth=1;
+    for(let s=Math.ceil(x0/30000)*30000;s<=t;s+=30000){const x=(s-x0)/HB.fenster*W;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    ctx.strokeStyle='rgba(120,200,220,.18)';ctx.beginPath();ctx.moveTo(0,basis);ctx.lineTo(W,basis);ctx.stroke();
+    ctx.fillStyle='#5f6f83';ctx.font='9px IBM Plex Sans,sans-serif';ctx.fillText('−3 min',4,H-4);ctx.textAlign='right';ctx.fillText('jetzt',W-4,H-4);ctx.textAlign='left';
+    const pr=HB.proben;
+    STROEME.forEach((s,si)=>{
+      if(pr.length<1)return;
+      const max=Math.max(s.boden,...pr.map(p=>p[s.k]));
+      const y=v=>basis-Math.min(1,v/max)*band*(0.55+0.09*si);
       ctx.beginPath();
-      for(let c=0;c<=cols;c++){
-        const u=c/cols, load=S5.length?smooth(S5,u*(S5.length-1))/max:0;
-        const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.3+Math.sin(u*5+ph*0.4)*0.2;
-        const amp=(H*0.07+H*0.10*load)*kraus;
-        const y=base-load*H*0.32-ripple*amp*(0.35+0.65*depth)+Math.sin(l*1.7+u*3)*4;
-        c?ctx.lineTo(u*W,y):ctx.moveTo(u*W,y);
-      }
-      ctx.strokeStyle=`rgba(62,230,196,${0.10+depth*0.55})`;ctx.lineWidth=depth>0.8?1.2:0.8;ctx.stroke();
-    }
-    // Energie-Punkte auf der vordersten Welle: Zahl = Commits/s, Tempo = Zeilen/s
-    const anzahl=Math.min(48,8+Math.round(raten.commits/10)), speed=0.02+Math.min(0.12,raten.zeilen/2e7);
-    for(let i=0;i<anzahl;i++){
-      const p=punkte[i]; p.u=(p.u+speed*p.v/60)%1;
-      const l=LINES-1, u=p.u, load=S5.length?smooth(S5,u*(S5.length-1))/max:0;
-      const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.3+Math.sin(u*5+ph*0.4)*0.2;
-      const y=H*0.85-load*H*0.32-ripple*(H*0.07+H*0.10*load)*kraus+Math.sin(l*1.7+u*3)*4;
-      ctx.fillStyle='rgba(180,255,240,.95)';ctx.shadowColor='#3ee6c4';ctx.shadowBlur=10;
-      ctx.beginPath();ctx.arc(u*W,y,1.8,0,7);ctx.fill();ctx.shadowBlur=0;
-    }
-    F5.forEach((f,i)=>{if(!f)return;const x=i/(F5.length-1)*W;ctx.fillStyle='rgba(255,92,114,.9)';ctx.beginPath();ctx.arc(x,H*0.88,3+Math.min(6,f)*0.6,0,7);ctx.fill();});
+      pr.forEach((p,i)=>{
+        const x=(p.t-x0)/HB.fenster*W, yv=y(p[s.k]);
+        if(i===0){ctx.moveTo(x,yv);return;}
+        const q=pr[i-1], xq=(q.t-x0)/HB.fenster*W, yq=y(q[s.k]);
+        // EKG-Form: vom letzten Schlag kurz zur Grundlinie zurück, dann steil hoch zum neuen
+        const xm=lerp(xq,x,0.55), yb=basis-(basis-Math.min(yq,yv))*0.18;
+        ctx.quadraticCurveTo(lerp(xq,x,0.25),yq,xm,yb);
+        ctx.lineTo(lerp(xm,x,0.7),yv);ctx.lineTo(x,yv);
+      });
+      // bis "jetzt" auf gleicher Höhe weiterziehen
+      const l=pr[pr.length-1]; ctx.lineTo(W,y(l[s.k]));
+      ctx.strokeStyle=s.farbe;ctx.globalAlpha=0.85;ctx.lineWidth=si===0?1.8:1.3;
+      ctx.shadowColor=s.farbe;ctx.shadowBlur=8;ctx.stroke();ctx.shadowBlur=0;ctx.globalAlpha=1;
+      // Puls am rechten Rand
+      const puls=0.5+0.5*Math.sin(now/1000*3+si);
+      ctx.fillStyle=s.farbe;ctx.beginPath();ctx.arc(W-3,y(l[s.k]),2+puls*2,0,7);ctx.fill();
+    });
+    if(!pr.length){ctx.fillStyle='#5f6f83';ctx.font='11px IBM Plex Sans,sans-serif';ctx.textAlign='center';ctx.fillText('Herzschlag beginnt nach dem zweiten Abruf …',W/2,H/2);ctx.textAlign='left';}
     requestAnimationFrame(draw);
   }
   requestAnimationFrame(draw);
 })();
+herzschlag();
+setInterval(()=>{ if(!document.hidden) herzschlag(); },3000);
 
 laden();
 setInterval(()=>{ if(!document.hidden) laden(); },30000);
