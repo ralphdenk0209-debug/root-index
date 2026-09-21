@@ -154,63 +154,81 @@ function seite({ titel, beschreibung, kanonisch, inhalt, jsonld }) {
 <meta name="description" content="${esc(beschreibung)}">
 <link rel="canonical" href="${kanonisch}">
 <link rel="icon" href="/icon-192.png">
+<meta name="theme-color" content="#263e27">
 <meta property="og:title" content="${esc(titel)}">
 <meta property="og:description" content="${esc(beschreibung)}">
 <meta property="og:url" content="${kanonisch}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Root Index">
+<link rel="preload" href="/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
 <style>
-:root{--green:#34D399;--greendk:#047857;--greenlt:#ECFDF5;--line:#e4e8e2;--muted:#6b6256;--bg:#eef1ec;--card:#fff;--ink:#1d3c24}
-*{box-sizing:border-box}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
-/* Kopf wie in der App: Logo und Wortmarke, heller Grund - nicht der gruene
-   Balken von vorher. Wer aus der Suche kommt, soll dieselbe Seite sehen. */
-.kopf{background:var(--card);border-bottom:1px solid var(--line);padding:10px 18px}
-.kopf a{display:inline-flex;align-items:center;gap:.55em;color:var(--greendk);text-decoration:none;font-weight:700;font-size:1.05rem}
-.kopf img{height:34px;width:auto}
-main{max-width:760px;margin:0 auto;padding:18px}
-h1{font-size:1.45rem;margin:.3em 0 .1em}
-.marke{color:var(--muted);margin:0 0 12px}
-.score{display:inline-block;background:var(--green);color:#fff;border-radius:9px;padding:6px 14px;font-weight:700;margin:6px 0 14px}
-table{border-collapse:collapse;width:100%;max-width:430px}
-td,th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;font-size:.95rem}
-th{color:var(--muted);font-weight:600}
-ul.zt{padding-left:0;list-style:none}ul.zt li{border-bottom:1px solid var(--line);padding:6px 2px}
-.krit{color:#a33}
-h2{font-size:1.05rem;margin-top:22px}
-p.einordnung{margin:.2em 0 1em;max-width:62ch}
-.karte{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 14px 4px;box-shadow:0 1px 3px rgba(20,40,28,.05)}
-.flux{width:250px;max-width:82%;margin:6px auto 0}
-.wort{text-align:center;font-size:1.3rem;font-weight:800;margin:2px 0 0}
-.rang{margin:12px 0 0;border-radius:12px;padding:10px 12px;font-size:.8rem;line-height:1.55}
-.kacheln{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 4px}
-@media(max-width:520px){.kacheln{grid-template-columns:repeat(2,1fr)}}
-.kachel{background:var(--bg);border-radius:10px;padding:8px 9px;min-width:0}
-.appbtn{display:block;margin:12px 0 2px;padding:11px 14px;border-radius:10px;background:var(--greenlt);border:1px solid #a7e3c6;color:var(--greendk);font-weight:700;text-align:center;text-decoration:none;font-size:.92rem}
-.kachel .l{font-size:.72rem;color:var(--muted)}
-.kachel .v{font-size:.94rem;font-weight:600;white-space:nowrap}
-.pille{display:inline-block;border-radius:999px;padding:3px 10px;font-size:.76rem;font-weight:600;margin:4px 0 2px}
-details{border-top:1px solid var(--line)}
-summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:.88rem}
-summary::-webkit-details-marker{display:none}
-summary .pf{color:var(--muted);font-size:.75rem}
-details>div{padding:2px 2px 12px}
-.zeile{display:flex;justify-content:space-between;font-size:.82rem;padding:5px 0;border-bottom:1px solid var(--line)}
-.zeile span:first-child{color:var(--muted)}
-h1{font-size:1.3rem}
-main{max-width:720px}
-.fuss{margin:34px 0 20px;padding-top:14px;border-top:1px solid var(--line);font-size:.8rem;color:var(--muted)}
-.liste a{display:block;padding:7px 2px;border-bottom:1px solid var(--line);text-decoration:none;color:#1c241c}
-.liste a b{color:var(--green)}
-nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
+/* Stil der Instagram-Vorlage (instagram/STIL.md, Ralph 20.09.2026) und der
+   Startseite der App: dunkles Gruen, Creme, Akzent #7CFF9B, Schrift Inter,
+   Untertitel "Die Vorderseite verkauft. Wir lesen die Rueckseite."
+   Wer aus der Suche kommt, soll sofort sehen, dass er bei Root Index ist. */
+@font-face{font-family:Inter;src:url(/fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+@font-face{font-family:Inter;src:url(/fonts/inter-latin-600-normal.woff2) format("woff2");font-weight:600;font-display:swap}
+@font-face{font-family:Inter;src:url(/fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+:root{--acc:#7CFF9B;--cream:#F3EEDC;--mut:rgba(243,238,220,.66);--line:rgba(124,255,155,.2);--panel:rgba(10,26,16,.5);--gelb:#FFC24B}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--cream);line-height:1.55;
+  background:#1d321f radial-gradient(120% 60% at 50% 0%,#2f4b31 0%,#263e27 50%,#1d321f 100%) no-repeat;min-height:100vh}
+a{color:var(--acc)}
+.kopf{max-width:760px;margin:0 auto;padding:18px 18px 4px;display:flex;align-items:center;gap:14px}
+.kopf .logo{display:inline-flex;align-items:center;gap:.5em;color:var(--cream);text-decoration:none;font-weight:800;font-size:1.15rem;flex:0 0 auto}
+.kopf img{height:40px;width:auto}
+.kopf .claim{border-left:2px solid var(--line);padding-left:14px;font-size:.78rem;line-height:1.3;color:var(--mut);font-weight:600}
+main{max-width:760px;margin:0 auto;padding:6px 18px 28px}
+nav.krumen{font-size:.8rem;margin:10px 0 14px;color:var(--mut)}nav.krumen a{text-decoration:none}
+.mk{font-size:.78rem;font-weight:600;color:var(--mut);letter-spacing:1px;text-transform:uppercase}
+h1{font-weight:800;font-size:clamp(1.55rem,4.6vw,2.25rem);line-height:1.1;letter-spacing:-.5px;margin:.12em 0 .25em}
+.zs,.marke{color:var(--mut);font-size:.95rem;margin:0}
+.pille{display:inline-block;border-radius:999px;padding:3px 12px;font-size:.78rem;font-weight:600;margin:10px 0 0;background:rgba(124,255,155,.12);color:var(--acc);border:1px solid var(--line)}
+/* Der Bewertungsbalken nach STIL.md: Flux mit Zahl, ROOT INDEX / Wert / Urteil,
+   daneben vier gleichrangige Achsen mit kurzem Fuellbalken und Wert. */
+.bal{margin:20px 0 10px;border:2px solid rgba(124,255,155,.55);border-radius:20px;background:var(--panel);padding:16px 14px;display:flex;flex-wrap:wrap;align-items:center;gap:14px 18px}
+.bal .kt{display:flex;align-items:center;gap:12px;flex:0 0 auto}
+.bal .flux{width:132px}
+.bal .ri small{display:block;font-size:.68rem;letter-spacing:1.6px;font-weight:800;color:var(--mut)}
+.bal .ri strong{display:block;font-size:1.9rem;font-weight:800;line-height:1.1}
+.bal .ri em{font-style:normal;font-weight:800;letter-spacing:1px;font-size:.9rem}
+.achsen{flex:1 1 300px;display:grid;grid-template-columns:repeat(4,1fr)}
+.achse{padding:2px 8px;border-left:1px solid var(--line);text-align:center;min-width:0}
+.achse:first-child{border-left:0}
+.achse .l{font-size:.68rem;color:var(--mut);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.achse .bar{height:8px;border-radius:5px;background:rgba(243,238,220,.12);margin:8px auto 6px;max-width:72px;overflow:hidden}
+.achse .bar i{display:block;height:100%;border-radius:5px}
+.achse .v{font-weight:800;font-size:.88rem}
+@media(max-width:560px){.achsen{grid-template-columns:repeat(2,1fr);row-gap:12px}.achse:nth-child(3){border-left:0}}
+.rang{font-size:.84rem;color:var(--mut);margin:6px 2px 0}.rang b{color:var(--acc)}
+.lab{display:inline-block;border:2px solid rgba(124,255,155,.55);color:var(--acc);border-radius:30px;padding:3px 14px;font-weight:800;font-size:.7rem;letter-spacing:1px;margin:28px 0 12px;text-transform:uppercase}
+.zt{font-size:1.02rem;line-height:1.75}
+.zt span{white-space:nowrap}
+.zt u{text-decoration:none;color:var(--gelb);font-weight:600}
+.zt sup{color:var(--mut);font-size:.66rem;margin-left:1px}
+.legende{font-size:.76rem;color:var(--mut);margin-top:8px}
+.nw{display:grid;grid-template-columns:1fr 1fr;gap:0 26px;align-items:start}
+@media(max-width:520px){.nw{grid-template-columns:1fr}}
+.zeile{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--line);font-size:.92rem}
+.zeile span:first-child{color:var(--mut)}.zeile b{font-weight:600}
+.zeile.davon span:first-child{padding-left:12px}
+p.einordnung{margin:26px 0 0;padding:14px 16px;border-left:3px solid var(--acc);background:var(--panel);border-radius:0 12px 12px 0}
+.appbtn{display:block;margin:22px 0 4px;padding:15px;border-radius:14px;background:var(--acc);color:#123018;font-weight:800;text-align:center;text-decoration:none;font-size:1rem}
+.appbtn span{display:block;font-weight:600;font-size:.78rem;opacity:.75}
+.liste a{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);color:var(--cream);text-decoration:none}
+.liste a b{color:var(--acc);white-space:nowrap}
+h2{font-size:1rem;margin-top:24px}
+.quelle{font-size:.78rem;color:var(--mut);margin-top:26px;line-height:1.7}
+.krit{color:#ff8a7a}
+.fuss{margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
 </style>
 </head>
 <body>
-<div class="kopf"><a href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a></div>
+<header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
 <main>
 ${inhalt}
-<p class="fuss">Root Index liefert Informationen zur Zusammensetzung von Lebensmitteln.
-Keine medizinische oder ernährungstherapeutische Beratung.
+<p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
 ${zaehlerJs()}
@@ -238,69 +256,55 @@ const NAEHRWERTE = [
 ];
 
 const RING = { "Sehr gut": "#16a34a", "Gut": "#65a30d", "Mittel": "#e8920c", "Schwach": "#dc2626" };
-const SCHRIFT = { "Sehr gut": "#15803d", "Gut": "#4d7c0f", "Mittel": "#b45309", "Schwach": "#b91c1c" };
+// Auf dunklem Grund braucht das Urteil hellere Toene als in der weissen App-Karte.
+const SCHRIFT = { "Sehr gut": "#7CFF9B", "Gut": "#b9e56f", "Mittel": "#FFC24B", "Schwach": "#ff8a7a" };
+const ACHSEN = [
+  ["p_zutaten", "Zutaten", 30, "#16a34a", 1],
+  ["p_zusatzstoffe", "Zusatzstoffe", 15, "#3987e5", 1],
+  ["p_nova", "Verarbeitung", 15, "#7c6fe0", 1],
+  ["p_naehrwert", "Nährwerte", 40, "#d97706", 2],   // steht auf 20 skaliert, wie in app.js x2
+];
 
-/* Der Fluxkompensator: vier Bahnen, vier Kappen, ein Ring mit der Zahl.
-   Geometrie eins zu eins aus app.js - dieselbe Marke soll dieselbe Form haben. */
+/* Der Fluxkompensator - Geometrie eins zu eins aus app.js (pkFlux), Farben fuer
+   dunklen Grund. Ohne Animation: die Zahl soll im Quelltext stehen. */
 function fluxSvg(p, score, ringfarbe) {
-  const A = [
-    { v: num(p.p_zutaten), max: 30, f: "#16a34a" },
-    { v: num(p.p_zusatzstoffe), max: 15, f: "#3987e5" },
-    { v: num(p.p_nova), max: 15, f: "#7c6fe0" },
-    { v: num(p.p_naehrwert) !== null ? num(p.p_naehrwert) * 2 : null, max: 40, f: "#d97706" },
-  ].map((a) => ({ ...a, pct: a.v === null ? null : Math.max(0, Math.min(1, a.v / a.max)) }));
+  const A = ACHSEN.map(([f, , max, farbe, k]) => {
+    const v = num(p[f]) === null ? null : num(p[f]) * k;
+    return { f: farbe, pct: v === null ? null : Math.max(0, Math.min(1, v / max)) };
+  });
   const L = 92;
   const bahn = ["M26 34 H74 L106 64", "M274 34 H226 L194 64", "M26 142 H74 L106 112", "M274 142 H226 L194 112"];
   const kap = [[26, 34], [274, 34], [26, 142], [274, 142]];
   const ziel = score === null ? "–" : String(Math.round(score));
   return `<svg viewBox="0 0 300 176" style="width:100%;display:block" role="img" aria-label="Root Index ${ziel} von 100, vier Achsen">`
     + `<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">`
-    + bahn.map((d) => `<path d="${d}" stroke="rgba(120,120,120,.16)"/>`).join("")
-    + A.map((a, i) => `<path d="${bahn[i]}" stroke="${a.pct === null ? "rgba(120,120,120,.28)" : a.f}" stroke-dasharray="${L}" stroke-dashoffset="${(a.pct === null ? L : L * (1 - a.pct)).toFixed(1)}"/>`).join("")
+    + bahn.map((d) => `<path d="${d}" stroke="rgba(243,238,220,.14)"/>`).join("")
+    + A.map((a, i) => `<path d="${bahn[i]}" stroke="${a.pct === null ? "rgba(243,238,220,.28)" : a.f}" stroke-dasharray="${L}" stroke-dashoffset="${(a.pct === null ? L : L * (1 - a.pct)).toFixed(1)}"/>`).join("")
     + `</g>`
     + A.map((a, i) => `<circle cx="${kap[i][0]}" cy="${kap[i][1]}" r="7" fill="${a.pct === null ? "#9aa7a0" : a.f}"/>`).join("")
-    + `<circle cx="150" cy="88" r="42" fill="none" stroke="${score === null ? "#9aa7a0" : ringfarbe}" stroke-width="5"/>`
-    + `<text x="150" y="103" text-anchor="middle" style="font-size:44px;font-weight:800" fill="#1c241c">${ziel}</text>`
+    + `<circle cx="150" cy="88" r="42" fill="#1d321f" stroke="${score === null ? "#9aa7a0" : ringfarbe}" stroke-width="5"/>`
+    + `<text x="150" y="103" text-anchor="middle" style="font-size:44px;font-weight:800;font-family:Inter,sans-serif" fill="#F3EEDC">${ziel}</text>`
     + `</svg>`;
 }
 
 function pille(ef) {
-  const m = { "vegan": ["🌱", "#e7f4ec", "#1f5e34"], "vegetarisch": ["🥚", "#eef6e9", "#4d7c0f"], "enthält Tierprodukte": ["🥩", "#f3eee6", "#7c5e3a"] };
-  const t = m[String(ef || "")];
-  return t ? `<span class="pille" style="background:${t[1]};color:${t[2]}">${t[0]} ${esc(ef)}</span>` : "";
+  const m = { "vegan": "🌱", "vegetarisch": "🥚", "enthält Tierprodukte": "🥩" };
+  return m[String(ef || "")] ? `<span class="pille">${m[ef]} ${esc(ef)}</span>` : "";
 }
 
-function kachel(p, feld, label, einheit) {
-  const roh = num(p[feld]);
-  if (roh === null) return "";
-  const wert = feld === "m_kcal" ? Math.round(roh) : Math.round(roh * 10) / 10;
-  return `<div class="kachel"><div class="l">${label}</div><div class="v">${String(wert).replace(".", ",")} ${einheit}</div></div>`;
-}
-
-function acc(icon, titel, inner) {
-  return `<details><summary><span>${icon} ${titel}</span><span class="pf">▾</span></summary><div>${inner}</div></details>`;
-}
-
-/* Platz in der eigenen Kategorie. Aus app.js (katRang): ein Score ohne Maßstab
-   verfuehrt zu sinnlosen Vergleichen - ein Oel mit einem Brot zu vergleichen
-   entscheidet niemand. */
-function rangHtml(rang, kat) {
-  if (!rang) return "";
-  const anteil = rang.platz / rang.gesamt;
-  const f = anteil <= 0.25 ? "#166534" : (anteil <= 0.6 ? "#8a5a0b" : "#b45309");
-  const bg = anteil <= 0.25 ? "#eaf5ee" : "#fff7ea";
-  const bd = anteil <= 0.25 ? "#e3e8e3" : "#e4a343";
-  return `<div class="rang" style="background:${bg};border:1px solid ${bd}">`
-    + `<b style="color:${f}">🏆 Platz ${rang.platz} von ${rang.gesamt} in „${esc(kat)}"</b>`
-    + `<div style="color:var(--muted);margin-top:3px">Der Index vergleicht <b>innerhalb der Kategorie</b>. Ein Öl mit einem Brot zu vergleichen ergibt keinen Sinn – ein Öl mit einem anderen Öl schon.</div></div>`;
+function achsenHtml(p) {
+  return ACHSEN.map(([f, label, max, farbe, k]) => {
+    const v = num(p[f]) === null ? null : Math.round(num(p[f]) * k * 10) / 10;
+    const pct = v === null ? 0 : Math.max(0, Math.min(100, v / max * 100));
+    return `<div class="achse"><div class="l">${label}</div><div class="bar"><i style="width:${pct.toFixed(0)}%;background:${farbe}"></i></div>`
+      + `<div class="v">${v === null ? "–" : String(v).replace(".", ",")}<span style="color:var(--mut);font-weight:600">/${max}</span></div></div>`;
+  }).join("");
 }
 
 function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const name = p.name;
-  // Im Stamm stehen Handelsmarken oft als Kommaliste in einem Feld
-  // ("Best Moments,Guschlbauer,Penny"). So gehoert das nicht in einen
-  // Seitentitel, den Google eins zu eins anzeigt - im Titel steht die erste,
-  // die vollstaendige Liste steht lesbar unter der Ueberschrift.
+  // Handelsmarken stehen im Stamm oft als Kommaliste ("Best Moments,Guschlbauer,Penny"):
+  // im Titel die erste, darueber alle lesbar getrennt.
   const marken = String(p.marke || "").split(",").map((t) => t.trim()).filter(Boolean);
   const markeVoll = marken.join(" · ");
   const erste = marken[0] || "";
@@ -308,26 +312,20 @@ function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const kanonisch = `${DOMAIN}/produkt/${datei}`;
   const basis = (p.mengen_einheit || "g").toLowerCase() === "ml" ? "100 ml" : "100 g";
   // Titel wie gesucht wird (Search Console, 21.09.2026): Marke vorne, dann das
-  // Produkt - "böklunder rindergulasch", "milsani panna cotta". Und das Wort,
-  // das die Leute tippen: "hanuta inhaltsstoffe", nicht "Bewertung".
-  // Traegt der Name die Marke schon, bleibt es beim Namen allein.
+  // Produkt, und das Wort, das die Leute tippen: "Inhaltsstoffe".
   const titel = `${marke ? marke + " " : ""}${name} – Zutaten, Inhaltsstoffe & Bewertung | Root Index`;
   const score = num(p.clean_score);
   const voll = p.score_vollstaendig !== false;
   const wort = voll ? (p.bewertung || "") : "Vorläufig";
   const ringfarbe = RING[p.bewertung] || "#9aa7a0";
-  const schrift = SCHRIFT[p.bewertung] || "#57534e";
+  const schrift = SCHRIFT[p.bewertung] || "#F3EEDC";
   const beschreibung = [
     score !== null ? `Root-Index-Bewertung: ${score}/100${p.bewertung ? " (" + p.bewertung + ")" : ""}.` : null,
-    `Zutaten und Nährwerte je ${basis} für ${name}${marke ? " von " + marke : ""}.`,
+    `Zutaten, Inhaltsstoffe und Nährwerte je ${basis} für ${marke ? marke + " " : ""}${name}.`,
     p.kategorie ? `Kategorie: ${p.kategorie}.` : null,
   ].filter(Boolean).join(" ").slice(0, 300);
 
   const zutaten = Array.isArray(p.zutaten) ? p.zutaten.filter((z) => z && z.name) : [];
-
-  // Ein paar Saetze aus dem, was der Server ohnehin liefert. Nichts erfunden,
-  // nichts nachgerechnet - ohne sie steht auf 38.000 Seiten kein einziger Satz,
-  // und Google behandelt gleichfoermige Datenblaetter zurueckhaltend.
   const noten = zutaten.map((z) => num(z.rating)).filter((n) => n !== null);
   const schwach = zutaten.filter((z) => num(z.rating) !== null && num(z.rating) <= 3);
   const stark = noten.filter((n) => n >= 8).length;
@@ -338,6 +336,7 @@ function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
     num(p.m_ballast) !== null ? `${zahl(p.m_ballast)} g Ballaststoffe` : null,
     num(p.m_salz) !== null ? `${zahl(p.m_salz)} g Salz` : null,
   ].filter(Boolean);
+  // Ein paar Saetze aus dem, was der Server ohnehin liefert - nichts erfunden.
   const einordnung = [
     score !== null
       ? `${esc(name)}${marke ? " von " + esc(marke) : ""} erreicht im Root Index ${score} von 100 Punkten${p.bewertung ? ` – ${esc(p.bewertung)}` : ""}.`
@@ -360,40 +359,66 @@ function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
     ],
   };
 
-  const alleZeilen = NAEHRWERTE.filter(([f]) => num(p[f]) !== null)
-    .map(([f, l, e]) => `<div class="zeile"><span>${l}</span><span style="font-weight:600">${zahl(p[f])} ${e}</span></div>`).join("");
-  const zutatenListe = zutaten.length
-    ? `<ul class="zt">${zutaten.map((z) => `<li>${esc(z.name)}${num(z.rating) !== null ? ` – Note ${z.rating}/10` : ""}${z.kritisch ? ` <span class="krit">· kritisch</span>` : ""}</li>`).join("")}</ul>`
-    : "";
-  const achsen = [
-    ["Zutaten", p.p_zutaten, 30], ["Zusatzstoffe", p.p_zusatzstoffe, 15],
-    ["Verarbeitung (NOVA)", p.p_nova, 15], ["Nährwert", num(p.p_naehrwert) !== null ? num(p.p_naehrwert) * 2 : null, 40],
-  ].filter(([, v]) => num(v) !== null)
-    .map(([l, v, max]) => `<div class="zeile"><span>${l}</span><span style="font-weight:600">${zahl(v)} von ${max}</span></div>`).join("");
+  // Zutaten offen wie auf der Instagram-Karte: Fliesstext, schwache in Gelb,
+  // die Note klein dahinter. Nichts muss aufgeklappt werden.
+  const zutatenHtml = zutaten.map((z) => {
+    const n = num(z.rating);
+    const t = esc(z.name) + (n !== null ? `<sup>${n}</sup>` : "") + (z.kritisch ? ` <span class="krit">⚠</span>` : "");
+    return `<span>${n !== null && n <= 3 ? `<u>${t}</u>` : t}</span>`;
+  }).join(", ");
+
+  // Zwei feste Spalten, damit "davon ..." nie von seiner Hauptzeile getrennt wird.
+  const NW = [
+    [["m_kcal", "Energie", "kcal", 0], ["m_protein", "Eiweiß", "g", 0], ["m_fett", "Fett", "g", 0], ["m_ges_fett", "davon gesättigt", "g", 1]],
+    [["m_kh", "Kohlenhydrate", "g", 0], ["m_zucker", "davon Zucker", "g", 1], ["m_ballast", "Ballaststoffe", "g", 0], ["m_salz", "Salz", "g", 0]],
+  ];
+  const nwHtml = NW.map((spalte) => spalte.filter(([f]) => num(p[f]) !== null)
+    .map(([f, l, e, davon]) => `<div class="zeile${davon ? " davon" : ""}"><span>${l}</span><b>${f === "m_kcal" ? Math.round(num(p[f])) : zahl(p[f])} ${e}</b></div>`).join(""))
+    .filter(Boolean).map((h) => `<div>${h}</div>`).join("");
+
+  const zusatz = [p.kategorie, p.inhalt_menge ? `${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}`.trim() : null, p.bio === true ? "Bio" : null].filter(Boolean);
 
   const inhalt = `
 <nav class="krumen"><a href="/produkt/">Produkte</a>${p.kategorie ? ` › <a href="/produkt/${katDatei}">${esc(p.kategorie)}</a>` : ""}</nav>
-<div class="karte">
+${markeVoll ? `<div class="mk">${esc(markeVoll)}</div>` : ""}
 <h1>${esc(name)}</h1>
-${markeVoll || p.kategorie ? `<p class="marke">${esc([markeVoll, p.kategorie].filter(Boolean).join(" · "))}${p.bio === true ? " · Bio" : ""}</p>` : ""}
+${zusatz.length ? `<p class="zs">${esc(zusatz.join(" · "))}</p>` : ""}
 ${pille(p.ernaehrungsform)}
-<div class="flux">${fluxSvg(p, score, ringfarbe)}</div>
-${wort ? `<p class="wort" style="color:${schrift}">${esc(wort)}</p>` : ""}
-${rangHtml(rang, kat)}
-<div class="kacheln">${kachel(p, "m_kcal", "Energie", "kcal")}${kachel(p, "m_fett", "Fett", "g")}${kachel(p, "m_protein", "Eiweiß", "g")}${kachel(p, "m_ballast", "Ballaststoffe", "g")}</div>
-${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
-<a class="appbtn" href="/?p=${encodeURIComponent(p.id)}">In der App öffnen – mit Tagebuch, Einkaufsliste und Alternativen</a>
-${alleZeilen ? acc("📊", `Alle Nährwerte je ${basis}`, alleZeilen) : ""}
-${zutatenListe ? acc("🧾", `Zutaten (${zutaten.length})`, zutatenListe) : ""}
-${achsen ? acc("🔬", "Im Root Index", achsen + `<div style="color:var(--muted);font-size:.78rem;margin-top:6px">Die vier Achsen ergeben die Punktzahl. ${p.warum ? esc(p.warum) : "Bewertet wird die Zusammensetzung, nicht die Werbung."}</div>`) : ""}
-${acc("🛡️", "Quelle & Beleg", `<div class="zeile"><span>Quelle</span><span style="font-weight:600">${esc(p.quelle || "nicht angegeben")}</span></div>${p.ean ? `<div class="zeile"><span>EAN</span><span style="font-weight:600">${esc(p.ean)}</span></div>` : ""}${p.inhalt_menge ? `<div class="zeile"><span>Inhalt</span><span style="font-weight:600">${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}</span></div>` : ""}${p.verifiziert_am ? `<div class="zeile"><span>Geprüft am</span><span style="font-weight:600">${esc(String(p.verifiziert_am).slice(0, 10))}</span></div>` : ""}`)}
+<div class="bal">
+  <div class="kt"><div class="flux">${fluxSvg(p, score, ringfarbe)}</div>
+  <div class="ri"><small>ROOT INDEX</small><strong style="color:${schrift}">${score === null ? "–" : score}/100</strong><em style="color:${schrift}">${esc(String(wort).toUpperCase())}</em></div></div>
+  <div class="achsen">${achsenHtml(p)}</div>
 </div>
-
-${alternativen && alternativen.length ? `<h2>Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</h2><div class="liste">${
-  alternativen.map((a) => `<a href="/produkt/${a.datei}">${esc(a.name)}${a.marke ? " · " + esc(a.marke) : ""} <b>${a.score}/100</b></a>`).join("")
-}</div>` : ""}`;
+${rang ? `<p class="rang">🏆 <b>Platz ${rang.platz} von ${rang.gesamt}</b> in „${esc(kat)}" – verglichen wird innerhalb der Kategorie, nicht Öl mit Brot.</p>` : ""}
+${zutaten.length ? `<span class="lab">In der Zutatenliste · ${zutaten.length}</span>
+<div class="zt">${zutatenHtml}</div>
+<div class="legende">Kleine Zahl = Note der Zutat von 0 bis 10 · <span style="color:var(--gelb)">Gelb</span> = Note 3 oder schlechter${kritische ? " · ⚠ = als kritisch gekennzeichnet" : ""}</div>` : ""}
+${nwHtml ? `<span class="lab">Nährwerte je ${basis}</span><div class="nw">${nwHtml}</div>` : ""}
+${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
+<a class="appbtn" href="/?p=${encodeURIComponent(p.id)}">In der App öffnen<span>mit Tagebuch, Einkaufsliste und besseren Alternativen</span></a>
+${alternativen && alternativen.length ? `<span class="lab">Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</span><div class="liste">${
+  alternativen.map((a) => `<a href="/produkt/${a.datei}"><span>${esc(a.name)}${a.marke ? ` <span style="color:var(--mut)">· ${esc(a.marke)}</span>` : ""}</span><b>${a.score}/100</b></a>`).join("")
+}</div>` : ""}
+<div class="quelle">Quelle: ${esc(p.quelle || "nicht angegeben")}${p.ean && !String(p.quelle||"").includes(String(p.ean)) ? ` · EAN ${esc(p.ean)}` : ""}${p.verifiziert_am ? ` · geprüft am ${esc(String(p.verifiziert_am).slice(0, 10))}` : ""}${p.warum ? `<br>${esc(p.warum)}` : ""}</div>`;
 
   return seite({ titel, beschreibung, kanonisch, inhalt, jsonld });
+}
+
+/* Produktnamen tragen im Stamm manchmal den Kassenbon mit - "Tortilla Chips
+   Salz 300g 1.59€ 1kg 5.30€" (126 von 45.509 am 21.09.2026). Auf der Seite und
+   im Suchtreffer ist das Rauschen. Ab dem ersten Preis wird abgeschnitten,
+   danach fallen Mengen- und Gebindeangaben am Ende weg. Der Stamm selbst bleibt
+   unveraendert - das ist Anzeige, keine Korrektur der Daten. */
+function sauberName(n) {
+  const roh = String(n || "");
+  let s = roh;
+  const i = s.search(/\s\d+[.,]\d{2}\s?€/);
+  if (i > 0) s = s.slice(0, i);
+  for (let k = 0; k < 3; k++) {
+    s = s.replace(/\s+(\d+[.,]?\d*\s?(g|kg|ml|l)(-Packung)?|\d+-g-Packung|Beutel|Flasche|Packung|Dose|Glas|Becher|Schale|Stück)\s*$/i, "");
+  }
+  s = s.trim();
+  return s.length >= 3 ? s : roh;
 }
 
 /* ---------- Hauptlauf ---------- */
@@ -404,6 +429,7 @@ async function main() {
     : await alleProdukte();
 
   if (!Array.isArray(produkte) || produkte.length === 0) throw new Error("0 Produkte erhalten – Abbruch, nichts geschrieben.");
+  for (const p of produkte) if (p && p.name) p.name = sauberName(p.name);
 
   mkdirSync(ZIEL, { recursive: true });
   // Vollstaendige Neuerzeugung: alte generierte Seiten entfernen (keine Waisen).
