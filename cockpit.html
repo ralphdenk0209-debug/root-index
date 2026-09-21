@@ -285,7 +285,7 @@ function zeichnen(){
   // 5-Minuten-Reihe (24 h) → Wellen, Balken, Flächen
   const raster=[]; const jetzt=Math.floor(Date.now()/3e5)*3e5;
   const map=new Map(P.takte_5min.map(x=>[new Date(x.t).getTime(),x]));
-  for(let i=287;i>=0;i--){const ts=jetzt-i*3e5; const x=map.get(ts); raster.push(x||{t:new Date(ts).toISOString(),s:0,n:0,f:0});}
+  for(let i=288;i>=1;i--){const ts=jetzt-i*3e5; const x=map.get(ts); raster.push(x||{t:new Date(ts).toISOString(),s:0,n:0,f:0});}
   S5=raster.map(x=>x.s); N5=raster.map(x=>x.n); F5=raster.map(x=>x.f);
   const maxS=Math.max(1,...S5), maxN=Math.max(1,...N5);
   $('vb').innerHTML=raster.map(x=>`<i style="height:${Math.max(2,100*x.n/maxN)}%"${x.f?' class="b"':''} title="${hhmm(x.t)} · ${x.n} Läufe · ${x.s} s${x.f?' · '+x.f+' Fehler':''}"></i>`).join('');
@@ -299,14 +299,14 @@ function zeichnen(){
   $('pie2').setAttribute('stroke-dasharray',(U*k.frei_7t/ges)+' '+U); $('pie2').setAttribute('stroke-dashoffset',-(U*k.aktiv/ges));
 
   // Bühne
-  const s5=S5[S5.length-1]||0, gleichzeitig=s5/300;
+  const s5=(P.jetzt&&P.jetzt.s_5min)||0, gleichzeitig=s5/300, laufend=(P.jetzt&&P.jetzt.laufend)||0;
   $('hdTitel').textContent=rot.length?'Maschine läuft · '+rot.length+' Takt rot':'Maschine läuft';
   $('hdSub').textContent=tk.length+' von '+t.length+' Takten aktiv · '+fehler+' Fehler in 24 h · '+P.aktiv+' Abfragen gerade aktiv';
   $('hdDb').textContent=de(P.db.db_mb)+' MB'; $('hdDbSub').textContent='Datenbank · '+P.db.conns+' Verbindungen · '+de(P.db.temp_mb)+' MB temporär';
   ring('g1',tk.length,t.length,String(tk.length),'TAKTE AKTIV');
   ring('g3',gateSum,10,String(gateSum),'GATE-FÄLLE',gateSum?'#ff5c72':null);
-  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'LETZTE 5 MIN · '+de(s5)+' s');
-  $('coTakte').innerHTML=`<em>${de(s5)} s</em> in 5 Minuten<br>Spitze 24 h: ${de(maxS)} s`;
+  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'LETZTE 5 MIN · '+de(s5)+' s · '+laufend+' LAUFEN JETZT');
+  $('coTakte').innerHTML=`<em>${de(s5)} s</em> Laufzeit in den letzten 5 Minuten<br>${(P.jetzt&&P.jetzt.n_5min)||0} Läufe · Spitze 24 h: ${de(maxS)} s`;
   $('coCache').innerHTML=raten.hit!==null?`<em>${de1(raten.hit)} %</em> Treffer seit letztem Abruf<br>${de1(raten.bloecke)} Blöcke/s von Platte`:`<em>${de1(100*P.db.blks_hit/(P.db.blks_hit+P.db.blks_read))} %</em> Treffer gesamt<br>Rate nach dem 2. Abruf`;
   $('coTransfer').innerHTML=Pvor?`<em>${de(Math.round(raten.zeilen))}</em> Zeilen/s gelesen<br>${de1(raten.commits)} Commits/s`:`<em>${de(P.db.tup_returned)}</em> Zeilen gesamt<br>Rate nach dem 2. Abruf`;
   $('coSchreiben').innerHTML=Pvor?`<em>${de1(raten.schreiben)}</em> Zeilen/s geschrieben`:`<em>${de(P.db.tup_inserted)}</em> eingefügt · ${de(P.db.tup_updated)} geändert`;
@@ -338,7 +338,7 @@ function zeichnen(){
   // Flächen unten
   const lab=i=>hhmm(raster[i].t);
   flaeche('c1',S5,maxS,'#3ee6c4',lab,(x,y)=>{const i=S5.indexOf(maxS);return `<text x="${x(i)}" y="${y(maxS)-4}" text-anchor="middle" fill="#fff" font-size="10">${de(maxS)} s</text>`;});
-  $('c1Text').textContent='24 h · Spitze '+de(maxS)+' s um '+lab(S5.indexOf(maxS))+' · jetzt '+de(s5)+' s';
+  $('c1Text').textContent='24 h · Spitze '+de(maxS)+' s um '+lab(S5.indexOf(maxS))+' · letzte 5 Minuten '+de(s5)+' s';
   flaeche('c2',N5,maxN,'#3ee6c4',lab,(x,y)=>{const yf=v=>y(v*maxN/Math.max(1,Math.max(...F5)*1.5));return F5.map((f,i)=>f?`<rect x="${x(i)-2}" y="${yf(f)}" width="4" height="${y(0)-yf(f)}" rx="1" fill="#ff5c72"><title>${lab(i)} · ${f} Fehler</title></rect>`:'').join('');});
   $('c2Text').textContent='24 h · '+de(laeufe)+' Läufe · '+fehler+' Fehler';
 
