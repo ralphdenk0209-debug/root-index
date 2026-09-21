@@ -386,36 +386,49 @@ function flaeche(id,vals,max,color,lab,extra){
   ${[0,72,144,216,287].map(i=>`<text x="${x(i)}" y="${H-4}" text-anchor="${i?i===287?'end':'middle':'start'}" fill="#5f6f83" font-size="9">${lab(i)}</text>`).join('')}`;
 }
 
-/* ===== Wellen: Höhe = Takt-Sekunden je 5 Min (24 h, gemessen); Bewegung = Raten ===== */
+/* ===== Wellen: Höhe = Takt-Sekunden je 5 Min (24 h, gemessen); Bewegung = Raten =====
+   Ralph 21.09.: "Werte ändern sich, aber die Wellen bewegen sich nicht." Die erste Fassung
+   bewegte nur wenige Pixel. Jetzt: Kräuselung mit sichtbarer Höhe, Zeitbasis statt
+   Bildzähler, und Energie-Punkte, die auf der vordersten Welle entlanglaufen —
+   ihre Zahl folgt den Commits/s, ihr Tempo den gelesenen Zeilen/s. */
 (function(){
-  // Ralph 21.09.: die Wellen sollen sich immer bewegen - auch wenn macOS "Bewegung reduzieren" an hat.
   const cv=$('waves'),ctx=cv.getContext('2d'),LINES=22;
   const smooth=(arr,t)=>{const i=Math.floor(t),f=t-i,a=arr[Math.max(0,Math.min(arr.length-1,i))]||0,b=arr[Math.max(0,Math.min(arr.length-1,i+1))]||0;return a+(b-a)*(f*f*(3-2*f));};
-  let ph=0;
-  function draw(){
+  const punkte=Array.from({length:48},(_,i)=>({u:i/48,v:0.6+Math.random()*0.8}));
+  function draw(now){
     const W=cv.clientWidth,H=cv.clientHeight,dpr=devicePixelRatio||1;
     if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;}
     ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
     const max=Math.max(1,...S5), cols=160;
-    // Tempo der Kräuselung folgt den Commits/s, ihre Höhe den gelesenen Zeilen/s
-    const tempo=0.02+Math.min(0.05,raten.commits/1000), kraus=0.6+Math.min(1.2,raten.zeilen/2e6);
+    // Tempo aus Commits/s, Kräuselhöhe aus Zeilen/s — beides gemessen aus zwei Abrufen
+    const tempo=0.9+Math.min(2.5,raten.commits/400), kraus=0.8+Math.min(1.5,raten.zeilen/1.5e6);
+    const ph=(now/1000)*tempo;
     for(let l=0;l<LINES;l++){
       const depth=l/(LINES-1), base=H*0.30+depth*H*0.55;
       ctx.beginPath();
       for(let c=0;c<=cols;c++){
         const u=c/cols, load=S5.length?smooth(S5,u*(S5.length-1))/max:0;
-        const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.25+Math.sin(u*5+ph*0.4)*0.25;
-        const amp=(H*0.16*load+H*0.04)*kraus;
+        const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.3+Math.sin(u*5+ph*0.4)*0.2;
+        const amp=(H*0.07+H*0.10*load)*kraus;
         const y=base-load*H*0.32-ripple*amp*(0.35+0.65*depth)+Math.sin(l*1.7+u*3)*4;
         c?ctx.lineTo(u*W,y):ctx.moveTo(u*W,y);
       }
       ctx.strokeStyle=`rgba(62,230,196,${0.10+depth*0.55})`;ctx.lineWidth=depth>0.8?1.2:0.8;ctx.stroke();
     }
+    // Energie-Punkte auf der vordersten Welle: Zahl = Commits/s, Tempo = Zeilen/s
+    const anzahl=Math.min(48,8+Math.round(raten.commits/10)), speed=0.02+Math.min(0.12,raten.zeilen/2e7);
+    for(let i=0;i<anzahl;i++){
+      const p=punkte[i]; p.u=(p.u+speed*p.v/60)%1;
+      const l=LINES-1, u=p.u, load=S5.length?smooth(S5,u*(S5.length-1))/max:0;
+      const ripple=Math.sin(u*14+ph*1.3+l*0.35)*0.5+Math.sin(u*31-ph*0.8+l*0.9)*0.3+Math.sin(u*5+ph*0.4)*0.2;
+      const y=H*0.85-load*H*0.32-ripple*(H*0.07+H*0.10*load)*kraus+Math.sin(l*1.7+u*3)*4;
+      ctx.fillStyle='rgba(180,255,240,.95)';ctx.shadowColor='#3ee6c4';ctx.shadowBlur=10;
+      ctx.beginPath();ctx.arc(u*W,y,1.8,0,7);ctx.fill();ctx.shadowBlur=0;
+    }
     F5.forEach((f,i)=>{if(!f)return;const x=i/(F5.length-1)*W;ctx.fillStyle='rgba(255,92,114,.9)';ctx.beginPath();ctx.arc(x,H*0.88,3+Math.min(6,f)*0.6,0,7);ctx.fill();});
-    ph+=tempo;
     requestAnimationFrame(draw);
   }
-  draw();
+  requestAnimationFrame(draw);
 })();
 
 laden();
