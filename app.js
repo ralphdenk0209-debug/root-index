@@ -2497,6 +2497,7 @@ var KAT_META={
   "Brot & Backwaren":{e:"🍞",bg:"var(--k-faeeda)",fg:"var(--k-854f0b)"},
   "Supplement":{e:"💊",bg:"var(--k-eeedfe)",fg:"var(--k-534ab7)"},
   "Proteinpulver":{e:"🥤",bg:"var(--k-eeedfe)",fg:"var(--k-534ab7)"},
+  "Trinknahrung":{e:"🧃",bg:"var(--k-eeedfe)",fg:"var(--k-534ab7)"},
   "Protein Cookies":{e:"🍪",bg:"var(--k-eeedfe)",fg:"var(--k-534ab7)"},
   "Nüsse & Hülsenfrüchte":{e:"🥜",bg:"var(--k-f1efe8)",fg:"var(--k-5f5e5a)"},
   "Nussmus":{e:"🥜",bg:"var(--k-f1efe8)",fg:"var(--k-5f5e5a)"},
@@ -6771,7 +6772,9 @@ async function ladeWirkDB(){
 const KATEGORIEN=["Backen","Brot & Backwaren","Brotaufstrich","Energy-Gel","Fertigprodukte","Fleisch & Fisch","Getränk",
   "Getreide & Beilagen","Milchprodukte & Eier","Nüsse & Hülsenfrüchte","Obst & Gemüse","Öle & Fette",
   "Proteinpulver","Riegel","Snacks","Supplement","Süßungsmittel","Süßwaren","Desserts & Süßspeisen",
-  "Tofu & Fleischalternativen","Würzen & Saucen","Salze","Lebensmittel","Sonstiges"];
+  "Tofu & Fleischalternativen","Trinknahrung","Würzen & Saucen","Salze","Lebensmittel","Sonstiges"];
+/* 21.09.2026 (Ralph jaja): "Trinknahrung" (Fresubin, Nutrini, Slim-/Balance-Shakes) - eigene Kategorie
+   mit normalem Root Index; steht auch in Kategorie_Konfig und Naehrwert_Erwartung. */
 /* ===== Kategorie-Vorschlag von Riki pruefen (Ralph 27.07.2026) =====
    Riki liefert kategorie_vorschlag als FREIEN TEXT. Bisher wurde er ungeprueft ins Dropdown
    geschrieben - und ein <select> ignoriert stillschweigend jeden Wert, den es nicht als <option>
