@@ -285,7 +285,11 @@ function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const marke = erste && !String(p.name).toLowerCase().startsWith(erste.toLowerCase()) ? erste : "";
   const kanonisch = `${DOMAIN}/produkt/${datei}`;
   const basis = (p.mengen_einheit || "g").toLowerCase() === "ml" ? "100 ml" : "100 g";
-  const titel = `${name}${marke ? " von " + marke : ""} – Bewertung, Zutaten & Nährwerte | Root Index`;
+  // Titel wie gesucht wird (Search Console, 21.09.2026): Marke vorne, dann das
+  // Produkt - "böklunder rindergulasch", "milsani panna cotta". Und das Wort,
+  // das die Leute tippen: "hanuta inhaltsstoffe", nicht "Bewertung".
+  // Traegt der Name die Marke schon, bleibt es beim Namen allein.
+  const titel = `${marke ? marke + " " : ""}${name} – Zutaten, Inhaltsstoffe & Bewertung | Root Index`;
   const score = num(p.clean_score);
   const voll = p.score_vollstaendig !== false;
   const wort = voll ? (p.bewertung || "") : "Vorläufig";
