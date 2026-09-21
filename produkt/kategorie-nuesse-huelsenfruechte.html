@@ -70,5 +70,12 @@ nav.krumen{font-size:.85rem;margin-bottom:6px}nav.krumen a{color:var(--green)}
 Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
+<script>(function(){try{
+if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent))return;
+var r=document.referrer,q="direkt";
+if(r){var h="";try{h=new URL(r).hostname}catch(e){}
+q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere";}
+fetch("https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,headers:{"apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw","Content-Type":"application/json"},body:JSON.stringify({p_seite:location.pathname,p_quelle:q})}).catch(function(){});
+}catch(e){}})();</script>
 </body>
 </html>
