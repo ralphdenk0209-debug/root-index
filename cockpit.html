@@ -305,7 +305,7 @@ function zeichnen(){
   $('hdDb').textContent=de(P.db.db_mb)+' MB'; $('hdDbSub').textContent='Datenbank · '+P.db.conns+' Verbindungen · '+de(P.db.temp_mb)+' MB temporär';
   ring('g1',tk.length,t.length,String(tk.length),'TAKTE AKTIV');
   ring('g3',gateSum,10,String(gateSum),'GATE-FÄLLE',gateSum?'#ff5c72':null);
-  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'LETZTE 5 MIN · '+de(s5)+' s · '+laufend+' LAUFEN JETZT');
+  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'5 MIN · '+de(s5)+' s · '+laufend+' AKTIV');
   $('coTakte').innerHTML=`<em>${de(s5)} s</em> Laufzeit in den letzten 5 Minuten<br>${(P.jetzt&&P.jetzt.n_5min)||0} Läufe · Spitze 24 h: ${de(maxS)} s`;
   $('coCache').innerHTML=raten.hit!==null?`<em>${de1(raten.hit)} %</em> Treffer seit letztem Abruf<br>${de1(raten.bloecke)} Blöcke/s von Platte`:`<em>${de1(100*P.db.blks_hit/(P.db.blks_hit+P.db.blks_read))} %</em> Treffer gesamt<br>Rate nach dem 2. Abruf`;
   $('coTransfer').innerHTML=Pvor?`<em>${de(Math.round(raten.zeilen))}</em> Zeilen/s gelesen<br>${de1(raten.commits)} Commits/s`:`<em>${de(P.db.tup_returned)}</em> Zeilen gesamt<br>Rate nach dem 2. Abruf`;
