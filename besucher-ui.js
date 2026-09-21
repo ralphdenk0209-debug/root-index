@@ -28,22 +28,26 @@
     return b;
   }
 
+  // Balken als SVG mit fester Hoehe und gestreckter Breite, Beschriftung als
+  // HTML darunter - sonst waechst die Grafik auf breiten Bildschirmen mit der
+  // Breite mit, und die Datumsangaben werden riesig (live gesehen 21.09.).
   function balken(tage){
-    var w=560,h=110,pad=4,n=tage.length||1;
+    var w=100,h=100,n=tage.length||1;
     var max=Math.max(1,Math.max.apply(null,tage.map(function(t){return t.produkt+t.app+t.sonst;})));
-    var bw=(w-pad*2)/n, g=Math.min(6,bw*.25);
-    var s='<svg viewBox="0 0 '+w+' '+(h+18)+'" style="width:100%;display:block" role="img" aria-label="Aufrufe je Tag">';
+    var bw=w/n, g=bw*.22;
+    var s='<svg viewBox="0 0 '+w+' '+h+'" preserveAspectRatio="none" style="width:100%;height:96px;display:block" role="img" aria-label="Aufrufe je Tag">';
     tage.forEach(function(t,i){
-      var x=pad+i*bw+g/2, bb=bw-g, y=h;
+      var x=i*bw+g/2, bb=bw-g, y=h;
       [['sonst',F.sonst],['app',F.app],['produkt',F.produkt]].forEach(function(k){
         var v=t[k[0]]||0; if(!v) return;
-        var hh=v/max*(h-4); y-=hh;
-        s+='<rect x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" width="'+bb.toFixed(1)+'" height="'+hh.toFixed(1)+'" rx="2" fill="'+k[1]+'"><title>'+esc(t.tag)+': '+v+'</title></rect>';
+        var hh=v/max*(h-2); y-=hh;
+        s+='<rect x="'+x.toFixed(2)+'" y="'+y.toFixed(2)+'" width="'+bb.toFixed(2)+'" height="'+hh.toFixed(2)+'" fill="'+k[1]+'"><title>'+esc(t.tag)+': '+v+'</title></rect>';
       });
-      if(i===0||i===n-1||n<=10){ var d=String(t.tag).slice(8,10)+'.'+String(t.tag).slice(5,7);
-        s+='<text x="'+(x+bb/2).toFixed(1)+'" y="'+(h+14)+'" text-anchor="middle" font-size="10" fill="'+F.mut+'">'+d+'</text>'; }
     });
-    return s+'</svg>';
+    s+='</svg>';
+    var d=function(t){ return t? String(t.tag).slice(8,10)+'.'+String(t.tag).slice(5,7) : ''; };
+    s+='<div style="display:flex;justify-content:space-between;font-size:11px;color:'+F.mut+';margin-top:3px"><span>'+d(tage[0])+'</span><span>max. '+zahl(max)+' am Tag</span><span>'+d(tage[tage.length-1])+'</span></div>';
+    return s;
   }
 
   function kachel(label, wert, sub){

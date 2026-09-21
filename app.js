@@ -1294,6 +1294,7 @@ function premiumInfo(){
 (function(){
   try{
     if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent)) return;
+    if(window.__ADMIN_PAGE) return;   /* das Admin-Cockpit laedt app.js mit - kein Besuch */
     var r=document.referrer, q="direkt";
     if(r){ var h=""; try{ h=new URL(r).hostname; }catch(e){}
       q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere"; }
