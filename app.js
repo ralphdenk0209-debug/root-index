@@ -8532,10 +8532,15 @@ var MFAN_GRUPPEN=[
 
   ['t3','','','',[]],
 
+  /* 22.09.2026 (Ralph): "kontakt muesste aus root index raus und direkt ins
+     menue." Eine Frage stellen ist kein Kapitel ueber Root Index, sondern ein
+     eigener Weg - er steht jetzt mit einem Tipp erreichbar ueber dem Recht. */
+  ['kontakt','Kontakt','drop','#5ab6ff',[
+    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }]
+  ]],
   ['rootindex','Root Index','book','#5ef2a0',[
     ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
-    ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }],
-    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }]
+    ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }]
   ]],
   ['recht','Rechtliches','leaf','#8fa79a',[
     ['Impressum','book','#8fa79a',function(){ legalOpen('impressum'); }],
