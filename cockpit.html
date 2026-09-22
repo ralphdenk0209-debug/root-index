@@ -1,327 +1,93 @@
-<!DOCTYPE html>
-<html lang="de">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
 <title>Cockpit — Root Index</title>
-<!-- cockpit.html · 21./22.09.2026 · Dashboard-Umbau
-     Ralph 21.09.: "1:1 Nachbau der Vorlage, nur mit unseren Daten füllen. Die Wellen müssen
-     realen Daten und Raten entsprechen - der Herzschlag der Webseite."
-     Ralph 22.09.: "Stil ok, aber zu stark auf die Takte ausgelegt. Bau die Maschinenkette usw.
-     mit ein, auch Google - alles, was im Dashboard ist."
-     Drei Abrufe, alle nur Admin, nur lesen, keine zweite Regel:
-       cb_admin_cockpit_herzschlag()  alle 3 s   · reine Zähler → Raten im Browser (EKG)
-       cb_admin_cockpit_puls()        alle 30 s  · Takte, Wächter, Work Items, Projekte, RIKI, Aufrufe
-       cb_admin_cockpit_lage()        alle 5 min · bündelt cb_dashboard, cb_netzplan, cb_kette_stand,
-                                                   cb_dashboard_stamm, Besucher je Tag und Quelle -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-:root{
-  --bg:#222b38;--card:#252f3d;--stage:#1a2230;--ink:#e6edf5;--ink2:#95a4b6;--ink3:#5f6f83;
-  --teal:#3ee6c4;--teal2:#1cc2c9;--teal3:#0f8f9c;--bad:#ff5c72;--warn:#f2b544;--blue:#5aa9ff;
-  --out:14px 14px 30px rgba(8,12,20,.55),-8px -8px 22px rgba(70,86,110,.18);
-  --in:inset 8px 8px 20px rgba(8,12,20,.5),inset -6px -6px 16px rgba(70,86,110,.16);
-  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;--disp:"Rajdhani","IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;
-}
+/* Cockpit neu (Konzept 22.09.2026) – warm. Drei Zonen: Maschine · Seite · Ich, darunter die Kette. */
 *{box-sizing:border-box}
+:root{--bg:#1a1714;--card:#242019;--card2:#2c2720;--ink:#f4efe6;--ink2:#bdb3a3;--ink3:#7f776b;--line:rgba(255,255,255,.07);--acc:#e6a15a;--g:#7fd99a;--y:#f2cd6c;--r:#f2716c;--out:0 10px 30px rgba(0,0,0,.4)}
 html,body{margin:0}
-body{background:linear-gradient(160deg,#26303f,#1a2230 70%);min-height:100vh;color:var(--ink);font:12px/1.4 "IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums}
-button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
-a{color:var(--teal)}
-.top{display:flex;gap:14px;align-items:center;padding:12px 20px 0;max-width:1500px;margin:0 auto;flex-wrap:wrap}
-.top .t{font-family:var(--disp);font-weight:700;font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:#fff}
-.top .t span{color:var(--teal)}
-.top .stand{color:var(--ink3);font-size:11px}
-.top .r{margin-left:auto;display:flex;gap:8px;align-items:center}
-.top .btn{border:1px solid rgba(120,200,220,.2);border-radius:8px;padding:5px 12px;color:var(--teal);font-family:var(--disp);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
-.wrap{padding:16px 20px 40px;display:grid;grid-template-columns:200px 1fr 210px;gap:18px;max-width:1500px;margin:0 auto}
-.col{display:flex;flex-direction:column;gap:16px;min-width:0}
-.card{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0;position:relative}
-.card h4{margin:0;font-family:var(--disp);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:6px;align-items:baseline}
-.card h4 .st{font-family:var(--mono);font-size:9px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
-.card p{margin:0;font-size:10px;color:var(--ink3);line-height:1.35}
-.big{font-family:var(--disp);font-weight:600;font-size:44px;line-height:1;color:#fff;display:flex;align-items:center;gap:14px}
-.big .arrow{width:0;height:0;border:9px solid transparent;border-bottom:14px solid var(--teal);margin-top:-8px;filter:drop-shadow(0 0 6px var(--teal))}
-.big .arrow.down{transform:rotate(180deg);border-bottom-color:var(--bad);filter:drop-shadow(0 0 6px var(--bad))}
-.pair{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.pair div{text-align:center}
-.pair .l{font-family:var(--disp);letter-spacing:.14em;text-transform:uppercase;font-size:10px;color:var(--ink2)}
-.pair .v{font-family:var(--disp);font-size:24px;font-weight:600;color:var(--teal)}
-.hbar{display:flex;flex-direction:column;gap:5px}
-.hbar div{display:grid;grid-template-columns:1fr 40px;gap:6px;align-items:center}
-.hbar i{display:block;height:9px;border-radius:2px;background:linear-gradient(90deg,var(--teal3),var(--teal));box-shadow:0 0 8px rgba(62,230,196,.35)}
-.hbar i.g{background:#3a4658;box-shadow:none}.hbar i.w{background:linear-gradient(90deg,#b07a1a,var(--warn));box-shadow:none}.hbar i.b{background:var(--bad);box-shadow:none}.hbar i.bl{background:linear-gradient(90deg,#2b5f9e,var(--blue));box-shadow:none}
-.hbar .n{font-family:var(--mono);font-size:10px;color:var(--ink2);text-align:right}
-.hbar .lab{font-size:9px;color:var(--ink3);display:block;margin-bottom:-3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.vbars{display:flex;align-items:flex-end;gap:2px;height:70px}
-.vbars i{flex:1;background:var(--teal);border-radius:1px;min-width:1px;opacity:.85}
-.vbars i.b{background:var(--bad)}.vbars i.bl{background:var(--blue)}.vbars i.g{background:#3a4658}
-.vlab{display:flex;justify-content:space-between;font-size:9px;color:var(--ink3)}
-.stage{background:var(--stage);border-radius:20px;box-shadow:var(--in);padding:18px 22px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden}
-.stage .ttl{text-align:center;font-family:var(--disp);letter-spacing:.2em;text-transform:uppercase;font-size:11px;color:var(--ink2)}
-.stage .hd{display:flex;justify-content:space-between;align-items:flex-start;font-size:10px;color:var(--ink3);gap:12px}
-.stage .hd b{display:block;font-family:var(--disp);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2);font-weight:600}
-.stage .hd .r{text-align:right}.stage .hd .r b{color:#fff;font-size:14px;letter-spacing:.02em}
-.gauges{display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:10px;align-items:center;margin-top:4px}
-.gauge{display:flex;flex-direction:column;align-items:center}
-.gauge svg{width:100%;max-width:210px;height:auto}
-canvas.waves{width:100%;height:190px;display:block;border-radius:12px}
-.legende{position:absolute;right:10px;top:8px;display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink2);pointer-events:none}
-.legende div{display:grid;grid-template-columns:10px 82px auto;gap:6px;align-items:center}
-.legende i{width:10px;height:3px;border-radius:2px;display:block}
-.legende b{font-family:var(--disp);letter-spacing:.12em;text-transform:uppercase;color:#fff;font-weight:600;font-size:10px}
-.legende em{font-style:normal;font-family:var(--mono);color:var(--ink)}
-.foot3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:9px;color:var(--ink3);margin-top:4px}
-.foot3 b{display:block;font-family:var(--disp);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink2)}
-.foot3 .c{text-align:center}.foot3 .r{text-align:right}
-/* Maschinen-Kette */
-.kette{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
-.kette>div{background:var(--stage);border-radius:12px;padding:8px 8px 6px;box-shadow:var(--in);position:relative;min-width:0}
-.kette>div:not(:last-child):after{content:"›";position:absolute;right:-7px;top:22px;color:var(--ink3);font-size:14px}
-.kette .r{font-family:var(--mono);font-size:8px;color:var(--ink3)}
-.kette .t{font-family:var(--disp);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kette .v{font-family:var(--disp);font-size:24px;font-weight:600;line-height:1.1;color:var(--teal)}
-.kette .v.w{color:var(--warn)}.kette .v.b{color:var(--bad)}
-.kette .s{font-size:9px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.kette .bar{height:4px;border-radius:2px;background:#3a4658;margin:4px 0 3px;overflow:hidden}
-.kette .bar i{display:block;height:100%;background:var(--teal)}
-.kette .bar i.w{background:var(--warn)}.kette .bar i.b{background:var(--bad)}
-.kv{display:flex;justify-content:space-between;gap:8px;font-size:11px;color:var(--ink2);padding:3px 0;border-top:1px solid rgba(255,255,255,.05)}
-.kv:first-of-type{border-top:0}
-.kv b{color:var(--ink);font-family:var(--mono);font-weight:500;white-space:nowrap}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-.slider{display:grid;grid-template-columns:auto 1fr auto;gap:22px;align-items:center}
-.slider .big{font-size:34px}
-.track{position:relative;height:3px;background:#39475a;border-radius:2px}
-.track:before{content:"";position:absolute;left:0;right:0;top:9px;height:3px;background:#39475a;border-radius:2px}
-.track i{position:absolute;left:0;top:0;height:100%;background:var(--teal);border-radius:2px;box-shadow:0 0 8px var(--teal)}
-.track .up,.track .dn{position:absolute;width:0;height:0;border:7px solid transparent}
-.track .dn{border-top-color:#fff;top:-18px;margin-left:-7px}.track .up{border-bottom-color:#fff;top:20px;margin-left:-7px}
-.rings3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
-.ring{display:flex;flex-direction:column;align-items:center}
-.ring svg{width:52px;height:52px}
-.ring .v{font-family:var(--disp);font-size:14px;font-weight:600;color:#fff;margin-top:-36px;height:36px;display:flex;align-items:center}
-.ring .l{font-size:8px;color:var(--ink3);letter-spacing:.08em;text-transform:uppercase;margin-top:6px}
-table{width:100%;border-collapse:collapse;font-size:9px;color:var(--ink2);font-family:var(--mono)}
-td{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px}
-td:last-child{text-align:right;color:var(--ink)}
-.dring{display:flex;justify-content:center}.dring svg{width:110px;height:110px}
-.pie{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:4px;font-size:9px;color:var(--ink3)}
-.pie svg{width:84px;height:84px}
-.bottom{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.chart{width:100%;height:140px;display:block}
-.srv{font-family:var(--mono);font-size:9px;color:var(--ink3);border:1px dashed var(--ink3);border-radius:4px;padding:0 4px}
-.legend{display:flex;gap:12px;font-size:9px;color:var(--ink3);flex-wrap:wrap}
-.legend i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:middle}
-.stop div{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:center;padding:6px 0;border-top:1px solid rgba(255,255,255,.05);font-size:11px}
-.stop div:first-child{border-top:0}
-.stop a{color:var(--ink);text-decoration:none}
-.dot{width:8px;height:8px;border-radius:50%;background:var(--bad);box-shadow:0 0 8px var(--bad)}
-.dot.w{background:var(--warn);box-shadow:0 0 8px var(--warn)}.dot.t{background:var(--teal);box-shadow:none}
-.pill{display:inline-block;font-size:9px;padding:1px 7px;border-radius:99px;border:1px solid rgba(120,200,220,.25);color:var(--ink2);font-family:var(--disp);letter-spacing:.1em;text-transform:uppercase}
-.pill.ok{color:var(--teal);border-color:rgba(62,230,196,.4)}.pill.b{color:var(--bad);border-color:rgba(255,92,114,.4)}.pill.w{color:var(--warn);border-color:rgba(242,181,68,.4)}
-#hinweis{max-width:1500px;margin:20px auto;padding:0 20px;color:var(--warn);font-size:14px}
-#hinweis:empty{display:none}
-@media (max-width:1050px){.wrap{grid-template-columns:1fr 1fr}.col.mid{grid-column:1/-1;order:-1}.bottom{grid-template-columns:1fr}.kette{grid-template-columns:repeat(4,1fr)}}
-@media (max-width:640px){.wrap{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}.slider{grid-template-columns:1fr}.legende{display:none}.two{grid-template-columns:1fr}.kette{grid-template-columns:repeat(2,1fr)}}
-
-/* LESBARKEIT (22.09.2026): größere Schrift, nichts läuft mehr über Kästen */
-body{font-size:13px}
-.wrap{grid-template-columns:250px 1fr 270px;max-width:1600px}
-.card{overflow:hidden}
-.card h4{font-size:12px}
-.st{font-size:10px}
-.card p{font-size:11.5px;line-height:1.4;overflow-wrap:anywhere}
-.top .stand{font-size:12px}
-.hbar div{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:3px 8px;align-items:center}
-.hbar div>span:first-child{display:contents}
-.hbar .lab{font-size:11px;grid-column:1/-1;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip;margin-bottom:0;line-height:1.3}
-.hbar i{grid-column:1;grid-row:2;min-width:0;max-width:100%}
-.hbar .n{font-size:12px;grid-column:2;grid-row:2}
-.vlab{font-size:11px}
-.stage .hd{font-size:12px}
-.legende{font-size:12px;gap:3px;background:rgba(26,34,48,.78);padding:4px 8px;border-radius:8px}
-.foot3{font-size:11.5px}
-.kette .r{font-size:10px}
-.kette .t{font-size:13px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
-.kette .s{font-size:11px;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.3}
-.kv{flex-wrap:wrap;font-size:12px;row-gap:2px}
-.kv b{white-space:normal;text-align:right;margin-left:auto;overflow-wrap:anywhere}
-.ring .l{font-size:10px}
-table{font-size:11px}
-td,th{overflow-wrap:anywhere}
-.pie,.legend{font-size:11px}
-.stop div{font-size:12px}
-.stop div>*{min-width:0;overflow-wrap:anywhere}
-.pill{font-size:10px}
-@media (max-width:1150px){.wrap{grid-template-columns:1fr 1fr}}
-</style>
-</head>
-<body>
-<div class="top">
-  <div class="t">Root <span>Index</span> · Cockpit</div>
-  <div class="stand" id="stand">lädt …</div>
-  <div class="r"><span class="stand" id="standLage"></span><button class="btn" onclick="laden();lage()">Aktualisieren</button></div>
+body{background:var(--bg);color:var(--ink);font:14px/1.45 "IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;min-height:100vh}
+a{color:var(--acc);text-decoration:none}
+.bar{position:sticky;top:0;z-index:5;background:var(--card);border-bottom:1px solid var(--line);padding:10px 22px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.ampel{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;font-size:13px}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--ink3);box-shadow:0 0 0 4px color-mix(in srgb,var(--ink3) 25%,transparent)}
+.dot.gruen{background:var(--g);box-shadow:0 0 0 4px color-mix(in srgb,var(--g) 25%,transparent)}
+.dot.gelb{background:var(--y);box-shadow:0 0 0 4px color-mix(in srgb,var(--y) 25%,transparent)}
+.dot.rot{background:var(--r);box-shadow:0 0 0 4px color-mix(in srgb,var(--r) 25%,transparent)}
+.delta{display:flex;gap:16px;font-size:13px;color:var(--ink2);margin-left:6px;flex-wrap:wrap}
+.delta b{color:var(--ink);font-weight:500}.up{color:var(--g)!important}.dn{color:var(--r)!important}
+.right{margin-left:auto;display:flex;gap:10px;align-items:center;font-size:12px;color:var(--ink3)}
+.right button{background:transparent;border:1px solid var(--line);color:var(--ink2);padding:5px 12px;border-radius:99px;cursor:pointer;font:inherit;font-size:12px}
+#hinweis{max-width:1400px;margin:14px auto 0;padding:0 22px;color:var(--r);font-size:13px}
+.wrap{max-width:1400px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.zone{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0;color:inherit;border:1px solid transparent;transition:border-color .15s}
+.zone:hover{border-color:var(--acc)}
+.zone h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.s{width:10px;height:10px;border-radius:50%;background:var(--ink3)}
+.s.gruen{background:var(--g)}.s.gelb{background:var(--y)}.s.rot{background:var(--r)}
+.lead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.lead .n{font-size:42px;font-weight:600;line-height:1}
+.lead .u{font-size:14px;color:var(--ink3)}
+.lead .d{font-size:13px;font-weight:600;margin-left:auto}
+.q{font-size:12.5px;color:var(--ink3);margin-top:-6px}
+svg.ch{width:100%;height:90px;display:block}
+.neben{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;border-top:1px solid var(--line);padding-top:10px}
+.neben div{font-size:12px;color:var(--ink3);min-width:0}
+.neben b{display:block;font-size:16px;font-weight:600;color:var(--ink);margin-top:2px;overflow-wrap:anywhere}
+.neben b.gelb{color:var(--y)}.neben b.rot{color:var(--r)}
+.link{font-size:12px;color:var(--acc);margin-top:auto}
+.kette{grid-column:1/-1;background:var(--card);border-radius:18px;box-shadow:var(--out);padding:16px 20px}
+.kette h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.kette h4 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
+.st{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
+.st div{background:var(--card2);border-radius:12px;padding:10px 12px;border-top:3px solid var(--g);min-width:0}
+.st .t{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.st .n{font-size:24px;font-weight:600;margin:2px 0}
+.st .h{font-size:11.5px;color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.st .gelb{border-color:var(--y)}.st .gelb .n{color:var(--y)}
+.st .rot{border-color:var(--r)}.st .rot .n{color:var(--r)}
+.fuss{grid-column:1/-1;font-size:12px;color:var(--ink3);padding:0 4px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}}
+@media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
+</style></head><body>
+<div class="bar">
+ <div class="ampel"><span class="dot" id="gesamt"></span>Root Index</div>
+ <div class="delta" id="delta"></div>
+ <div class="right"><span id="stand">lädt …</span><button onclick="laden()">Aktualisieren</button></div>
 </div>
 <div id="hinweis"></div>
-
 <div class="wrap">
-<!-- ===== LINKS ===== -->
-<div class="col">
-  <div class="card"><div class="pair"><div><div class="l">Takte</div><div class="v" id="kTakte">–</div></div><div><div class="l">Läufe 24 h</div><div class="v" id="kLaeufe">–</div></div></div></div>
-  <div class="card">
-    <h4>Bei dir</h4>
-    <p id="beiDirText">Entscheide, die nur du treffen kannst.</p>
-    <div class="big"><span id="beiDir">–</span><span class="arrow" id="beiDirPfeil" hidden></span></div>
-    <p id="beiDirSub"></p>
-  </div>
-  <div class="card">
-    <h4>Wächter <span id="gate">–</span></h4>
-    <p id="wText"></p>
-    <div class="hbar" id="waechter"></div>
-  </div>
-  <div class="card">
-    <h4>Eingang <span class="st">cb_netzplan</span></h4>
-    <p id="eingangText">Was ankommt und wartet – mit Weg und Alter.</p>
-    <div class="hbar" id="eingang"></div>
-  </div>
-  <div class="card">
-    <h4>Katalog</h4>
-    <p id="katText"></p>
-    <div class="pie">
-      <div>aktiv<br><b style="color:#fff" id="kAktiv">–</b></div>
-      <svg viewBox="0 0 84 84"><circle cx="42" cy="42" r="30" fill="none" stroke="#3a4658" stroke-width="20"/><circle id="pie1" cx="42" cy="42" r="30" fill="none" stroke="var(--teal)" stroke-width="20" stroke-dasharray="0 188.5" transform="rotate(-90 42 42)"/><circle id="pie2" cx="42" cy="42" r="30" fill="none" stroke="var(--teal2)" stroke-width="20" stroke-dasharray="0 188.5" transform="rotate(-90 42 42)"/></svg>
-      <div style="text-align:right">Entwurf<br><b style="color:#fff" id="kEntwurf">–</b></div>
-    </div>
-    <div class="kv"><span>frei 7 T · heute</span><b><span id="kFrei7">–</span> · <span id="kFreiHeute">–</span></b></div>
-    <div class="kv"><span>mit EAN · fehlt</span><b id="kEan">–</b></div>
-    <div class="kv"><span>Ø Score · ohne Score</span><b id="kScore">–</b></div>
-  </div>
-</div>
 
-<!-- ===== MITTE ===== -->
-<div class="col mid">
-  <div class="stage">
-    <div class="ttl">Root Index · Maschine</div>
-    <div class="hd">
-      <div><b id="hdTitel">Maschine</b><span id="hdSub">–</span></div>
-      <div class="r"><b id="hdDb">–</b><span id="hdDbSub">Datenbank</span></div>
-    </div>
-    <div class="gauges">
-      <div class="gauge"><svg viewBox="0 0 200 200" id="g1"></svg></div>
-      <div class="gauge"><svg viewBox="0 0 260 260" id="g2"></svg></div>
-      <div class="gauge"><svg viewBox="0 0 200 200" id="g3"></svg></div>
-    </div>
-    <div style="position:relative">
-      <canvas class="waves" id="waves" aria-label="Herzschlag: fünf Ströme in Echtzeit, letzte 3 Minuten"></canvas>
-      <div class="legende" id="legende"></div>
-    </div>
-    <div class="foot3" id="foot3"></div>
-  </div>
+ <a class="zone" href="maschine.html"><h4>Maschine <span class="s" id="aM"></span></h4>
+  <div class="lead"><span class="n" id="mN">–</span><span class="u" id="mU">von – Takten</span></div>
+  <div class="q">Läuft sie?</div>
+  <svg class="ch" id="mCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
+  <div class="q" id="mQ">Läufe je 5 Minuten · letzte 3 Stunden</div>
+  <div class="neben" id="mNeben"></div>
+  <div class="link">→ maschine.html</div>
+ </a>
 
-  <div class="card">
-    <h4>Maschinen-Kette <span class="st" id="ketteStand">cb_kette_stand</span></h4>
-    <p id="ketteText">Wo die Produkte hängen – je Station: wie viele, warum am häufigsten.</p>
-    <div class="kette" id="kette"></div>
-  </div>
+ <a class="zone" href="https://search.google.com/search-console?resource_id=sc-domain%3Aroot-index.de" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
+  <div class="lead"><span class="n" id="sN">–</span><span class="u">Klicks 7 T</span><span class="d" id="sD"></span></div>
+  <div class="q">Wächst sie?</div>
+  <svg class="ch" id="sCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
+  <div class="q" id="sQ">Google-Klicks je Tag · 28 Tage</div>
+  <div class="neben" id="sNeben"></div>
+  <div class="link">→ Search Console</div>
+ </a>
 
-  <div class="two">
-    <div class="card">
-      <div class="slider">
-        <div><div class="big" id="pFrei">–</div><p id="pFreiSub">freigegeben von aktiv, 7 Tage</p></div>
-        <div class="track"><i id="trFrei" style="width:0"></i><span class="dn" id="trDn" style="left:0"></span><span class="up" id="trUp" style="left:0"></span></div>
-        <div style="text-align:right"><div class="big" style="justify-content:flex-end" id="pEntw">–</div><p id="pEntwSub">Entwürfe im Katalog</p></div>
-      </div>
-    </div>
-    <div class="card">
-      <h4>Projekte <span class="st">fertig / gesamt</span></h4>
-      <div class="hbar" id="projekte"></div>
-    </div>
-  </div>
-</div>
+ <a class="zone" href="steuerung.html"><h4>Ich <span class="s" id="aI"></span></h4>
+  <div class="lead"><span class="n" id="iN">–</span><span class="u">Entscheidungen</span></div>
+  <div class="q">Was muss ich tun, was kostet es?</div>
+  <svg class="ch" id="iCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
+  <div class="q" id="iQ">RIKI je Tag · 14 T · Linie = Tagesbudget</div>
+  <div class="neben" id="iNeben"></div>
+  <div class="link">→ steuerung.html · admin.html</div>
+ </a>
 
-<!-- ===== RECHTS ===== -->
-<div class="col">
-  <div class="card">
-    <h4>RIKI <span id="rikiBudget" class="pill">–</span></h4>
-    <p id="rikiText"></p>
-    <div class="vbars" id="riki" style="height:70px;gap:4px"></div>
-    <div class="vlab"><span id="riki0"></span><span>heute</span></div>
-    <div class="kv"><span>Autopilot</span><b id="autopilot">–</b></div>
-  </div>
-  <div class="card">
-    <h4>Google <span class="st">Besucher · Search Console</span></h4>
-    <p id="seoText"></p>
-    <div class="vbars" id="besucher" style="height:60px;gap:3px"></div>
-    <div class="vlab"><span id="bes0"></span><span>heute</span></div>
-    <div class="legend"><span><i style="background:var(--teal)"></i>Google</span><span><i style="background:var(--blue)"></i>Bing</span><span><i style="background:#3a4658"></i>direkt/andere</span></div>
-    <div class="kv"><span>Indexiert (Stichprobe)</span><b id="seoIdx">–</b></div>
-    <div class="kv"><span>Klicks · Impr. 28 T</span><b id="seoKlicks">–</b></div>
-    <div class="kv"><span>Position</span><b id="seoPos">–</b></div>
-  </div>
-  <div class="card">
-    <h4>Nutzung</h4>
-    <div class="pair"><div><div class="l">Nutzer</div><div class="v" id="nNutzer">–</div></div><div><div class="l">aktiv 7 T</div><div class="v" id="nAktiv">–</div></div></div>
-    <div class="kv"><span>Premium · Admins</span><b id="nPremium">–</b></div>
-    <div class="kv"><span>Tagebuch 7 T · gesamt</span><b id="nTagebuch">–</b></div>
-    <div class="kv"><span>Scans: Warteschlange · Cache</span><b id="nScans">–</b></div>
-  </div>
-  <div class="card">
-    <h4>Stamm <span class="st">cb_dashboard_stamm</span></h4>
-    <div class="big" style="font-size:30px" id="sGesamt">–</div>
-    <div class="kv"><span>bewertet · unbewertet</span><b id="sBewertet">–</b></div>
-    <div class="kv"><span>gebunden · nie gebunden</span><b id="sGebunden">–</b></div>
-    <div class="kv"><span>Zusatzstoffe · mit E-Nummer</span><b id="sZusatz">–</b></div>
-  </div>
-  <div class="card">
-    <h4>Schwerste Aufrufe</h4>
-    <table id="aufrufe"></table>
-    <div class="rings3" id="rings3"></div>
-  </div>
-  <div class="card">
-    <h4>Social <span class="st" id="socStand">social_kennzahlen_taeglich</span></h4>
-    <div class="pair"><div><div class="l">Instagram</div><div class="v" id="socIg">–</div></div><div><div class="l">Facebook</div><div class="v" id="socFb">–</div></div></div>
-    <div class="kv"><span>Reichweite · Profilaufrufe (IG, 24 h)</span><b id="socIgR">–</b></div>
-    <div class="kv"><span>Beiträge · Interaktionen (IG)</span><b id="socIgB">–</b></div>
-    <div class="kv"><span>Reichweite · Aufrufe (FB, 24 h)</span><b id="socFbR">–</b></div>
-    <div class="vbars" id="socVerlauf" style="height:40px;gap:2px"></div>
-    <p id="socText">Follower je Tag, 28 Tage · täglicher Abruf 07:30</p>
-  </div>
-</div>
-
-<!-- ===== UNTEN ===== -->
-<div class="bottom">
-  <div class="card">
-    <h4>Takt-Sekunden je 5 Minuten</h4>
-    <p id="c1Text">24 h · Summe aller Laufzeiten</p>
-    <svg class="chart" id="c1" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-  </div>
-  <div class="card">
-    <h4>Score-Verteilung <span class="st">aktive Produkte</span></h4>
-    <p id="scoreText"></p>
-    <svg class="chart" id="c3" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-  </div>
-  <div class="card">
-    <h4>Quellen <span class="st">woher die Produkte kommen</span></h4>
-    <div class="hbar" id="quellen"></div>
-  </div>
-  <div class="card">
-    <h4>Läufe und Fehler</h4>
-    <p id="c2Text">24 h</p>
-    <svg class="chart" id="c2" viewBox="0 0 400 140" preserveAspectRatio="none"></svg>
-  </div>
-  <div class="card">
-    <h4>Stopper <span id="stopN"></span></h4>
-    <p>Entscheide, Blockiertes, rote Takte – Klick öffnet die Steuerung.</p>
-    <div class="stop" id="stopper"></div>
-  </div>
-  <div class="card">
-    <h4>Takte je Stunde</h4>
-    <p>24 h · Läufe · rot = Fehler</p>
-    <div class="vbars" id="vb"></div>
-    <div class="vlab"><span id="vb0"></span><span>jetzt</span></div>
-  </div>
-</div>
+ <div class="kette"><h4>Kette <span id="kStand"></span></h4><div class="st" id="kette"></div></div>
+ <div class="fuss">Jede Zone ist ein Klick auf die Detailseite. Farbe nur für Status. Aktualisiert sich jede Minute.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -334,291 +100,62 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const de = n => Number(n||0).toLocaleString('de-DE');
-const de1 = n => Number(n||0).toLocaleString('de-DE',{maximumFractionDigits:1});
 const usd = x => Number(x||0).toFixed(2).replace('.',',')+' $';
-const hhmm = t => t ? new Date(t).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) : '–';
+const vor = t => { if(!t) return '–'; const m=Math.round((Date.now()-new Date(t))/60000); return m<1?'gerade eben':m<60?'vor '+m+' min':m<1440?'vor '+Math.round(m/60)+' h':'vor '+Math.round(m/1440)+' T'; };
 const tagK = t => t ? t.slice(8,10)+'.'+t.slice(5,7)+'.' : '';
 
-/* ===================== PULS (30 s) ===================== */
-let P=null, Pvor=null, S5=[], F5=[], N5=[];
+let A=null;
 async function laden(){
   $('stand').textContent='lädt …';
-  const {data,error}=await client.rpc('cb_admin_cockpit_puls');
+  const {data,error}=await client.rpc('cb_admin_cockpit_ampel');
   if(error){ $('stand').textContent='Fehler'; $('hinweis').innerHTML='Kein Zugriff: '+esc(error.message)+' – <a href="admin.html">im Admin anmelden</a>, dann hier neu laden.'; return; }
-  $('hinweis').textContent=''; Pvor=P; P=data; puls();
-  $('stand').textContent='Puls '+new Date(P.stand).toLocaleTimeString('de-DE')+' · alle 30 s';
+  $('hinweis').textContent=''; A=data; zeichnen();
+  $('stand').textContent='aktualisiert '+new Date(A.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 }
-function puls(){
-  const t=P.takte, tk=t.filter(x=>x.aktiv), rot=t.filter(x=>x.aktiv&&x.status&&x.status!=='succeeded');
-  const laeufe=t.reduce((a,x)=>a+x.n24,0), fehler=t.reduce((a,x)=>a+x.f24,0);
-  $('kTakte').textContent=t.length; $('kLaeufe').textContent=de(laeufe);
-  const w=P.work; $('beiDir').textContent=w.bei_ralph;
-  if(Pvor){const d=w.bei_ralph-Pvor.work.bei_ralph; const a=$('beiDirPfeil'); a.hidden=d===0; a.className='arrow'+(d<0?' down':''); }
-  $('beiDirText').textContent='Entscheide, die nur du treffen kannst. '+P.work_top.filter(x=>x.status==='decision_ralph').map(x=>'#'+x.id).join(' · ');
-  $('beiDirSub').textContent='dazu '+w.blockiert+' blockiert · '+rot.length+' Takt'+(rot.length===1?'':'e')+' rot · '+w.abnahme+' warten auf Abnahme';
+function neben(id, arr){ $(id).innerHTML=arr.map(([l,v,c])=>`<div>${esc(l)}<b class="${c||''}">${v}</b></div>`).join(''); }
+function zeichnen(){
+  $('gesamt').className='dot '+A.gesamt;
+  const d=A.delta, kd=(d.klicks_tag??0)-(d.klicks_vortag??0);
+  $('delta').innerHTML=`<span>heute</span><span>Frei <b>${de(d.frei_heute)}</b></span><span>Klicks <b class="${kd>0?'up':kd<0?'dn':''}">${de(d.klicks_tag)} ${kd>0?'▲':kd<0?'▼':''}</b></span><span>Fehler 24 h <b class="${d.fehler_24h>=20?'dn':''}">${de(d.fehler_24h)}</b></span>`;
 
-  // Wächter: die 9 Gate-Wächter (Namen aus der Lage, sonst Schlüssel) + Beobachtungen
-  const GATE=['w1','w3','w4','w5','w6','w7','w8','w9','w10'];
-  const ws=P.waechter, gate=ws.filter(x=>GATE.includes(x.k)), gateSum=gate.reduce((a,x)=>a+x.n,0);
-  const beob=ws.filter(x=>!GATE.includes(x.k)&&x.k!=='wb_sperrebestand'&&x.n>0), nullB=ws.filter(x=>!GATE.includes(x.k)&&x.k!=='wb_sperrebestand'&&x.n===0).length;
-  const sperre=ws.find(x=>x.k==='wb_sperrebestand'), maxB=Math.max(1,...beob.map(x=>x.n),...gate.map(x=>x.n));
-  const stdH=ws.length?((Date.now()-new Date(ws[0].stand))/36e5):null;
-  const gName=k=>{const n=Number(k.slice(1)); const g=L&&L.dash.gate.waechter.find(x=>x.nr===n); return g?g.name:k;};
-  $('gate').innerHTML=gateSum===0?'<span class="pill ok">Gate offen</span>':'<span class="pill b">Gate zu · '+gateSum+'</span>';
-  $('wText').textContent=ws.length+' Wächter · vor '+(stdH!==null?de1(stdH):'?')+' h · 9 Gate-Wächter: '+(gateSum===0?'alle 0':gateSum+' Fälle');
-  $('waechter').innerHTML=gate.filter(x=>x.n>0).map(x=>`<div><span><span class="lab">⛔ ${esc(gName(x.k))}</span><i class="b" style="width:${Math.max(4,100*x.n/maxB)}%"></i></span><span class="n">${de(x.n)}</span></div>`).join('')
-    +beob.map(x=>`<div><span><span class="lab">${esc(x.k)}</span><i style="width:${Math.max(4,100*x.n/maxB)}%"></i></span><span class="n">${de(x.n)}</span></div>`).join('')
-    +`<div><span><span class="lab">${gate.filter(x=>!x.n).length} Gate · ${nullB} weitere still</span><i class="g" style="width:3%"></i></span><span class="n">0</span></div>`
-    +(sperre?`<div><span><span class="lab">wb_sperrebestand · Bestand</span><i class="g" style="width:100%"></i></span><span class="n">${de(sperre.n)}</span></div>`:'');
+  // Maschine
+  const m=A.maschine; $('aM').className='s '+m.ampel;
+  $('mN').textContent=m.aktiv; $('mU').textContent='von '+m.gesamt+' Takten'+(m.rot?' · '+m.rot+' rot':'');
+  linie('mCh', (m.verlauf||[]).map(x=>x.n), (m.verlauf||[]).map(x=>x.f));
+  neben('mNeben',[['Fehler 24 h',de(m.fehler_24h),m.fehler_24h>=20?'gelb':''],['Gate-Fälle',de(m.gate),m.gate>0?'rot':''],['letzter Lauf',vor(m.letzter_lauf),m.still>0?'gelb':'']]);
 
-  // 5-Minuten-Reihe (24 h, nur volle Kästen)
-  const raster=[]; const jetzt=Math.floor(Date.now()/3e5)*3e5;
-  const map=new Map(P.takte_5min.map(x=>[new Date(x.t).getTime(),x]));
-  for(let i=288;i>=1;i--){const ts=jetzt-i*3e5; raster.push(map.get(ts)||{t:new Date(ts).toISOString(),s:0,n:0,f:0});}
-  S5=raster.map(x=>x.s); N5=raster.map(x=>x.n); F5=raster.map(x=>x.f);
-  const maxS=Math.max(1,...S5);
-  // Takte je Stunde (24 Balken)
-  const std=[];for(let h=0;h<24;h++){const sl=raster.slice(h*12,h*12+12);std.push({t:sl[0].t,n:sl.reduce((a,x)=>a+x.n,0),f:sl.reduce((a,x)=>a+x.f,0)});}
-  const maxN=Math.max(1,...std.map(x=>x.n));
-  $('vb').innerHTML=std.map(x=>`<i style="height:${Math.max(2,100*x.n/maxN)}%"${x.f?' class="b"':''} title="ab ${hhmm(x.t)} · ${x.n} Läufe${x.f?' · '+x.f+' Fehler':''}"></i>`).join('');
-  $('vb0').textContent=hhmm(std[0].t);
+  // Seite
+  const s=A.seite; $('aS').className='s '+s.ampel;
+  $('sN').textContent=de(s.klicks_7t);
+  const dp=s.delta_pct; $('sD').textContent=dp==null?'':(dp>=0?'▲ +':'▼ ')+de(dp)+' %'; $('sD').className='d '+(dp==null?'':dp>=0?'up':'dn');
+  balken('sCh',(s.klicks_tage||[]).map(x=>x.klicks),null,(s.klicks_tage||[]).length-7);
+  $('sQ').textContent='Google-Klicks je Tag · 28 Tage · Stand '+tagK(s.seo_stand||'');
+  neben('sNeben',[['Position',s.position!=null?Number(s.position).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'],['Indexiert',de(s.indexiert)+' / '+de(s.stichprobe)],['Besucher 14 T',de(s.besucher_14t)]]);
 
-  // Katalog (Puls-Teil)
-  const k=P.katalog, ges=k.aktiv+k.entwurf;
-  $('kAktiv').textContent=de(k.aktiv); $('kEntwurf').textContent=de(k.entwurf); $('kFrei7').textContent=de(k.frei_7t); $('kFreiHeute').textContent=de(k.frei_heute);
-  $('katText').textContent=de(ges)+' Produkte · '+k.kategorien+' Kategorien · '+k.neu_7t+' neu in 7 Tagen';
-  const U=188.5; $('pie1').setAttribute('stroke-dasharray',(U*k.aktiv/ges)+' '+U);
-  $('pie2').setAttribute('stroke-dasharray',(U*k.frei_7t/ges)+' '+U); $('pie2').setAttribute('stroke-dashoffset',-(U*k.aktiv/ges));
-  const pf=100*k.frei_7t/k.aktiv, pe=100*k.entwurf/ges;
-  $('pFrei').textContent=de1(pf)+' %'; $('pFreiSub').textContent='freigegeben von aktiv, 7 Tage · '+de(k.frei_7t);
-  $('pEntw').textContent=de1(pe)+' %'; $('pEntwSub').textContent='Entwürfe im Katalog · '+de(k.entwurf);
-  $('trFrei').style.width=pf+'%'; $('trDn').style.left=pf+'%'; $('trUp').style.left=pe+'%';
+  // Ich
+  const i=A.ich; $('aI').className='s '+i.ampel;
+  $('iN').textContent=i.bei_ralph;
+  balken('iCh',(i.riki_14t||[]).map(x=>Number(x.usd)),Number(i.riki_tagesbudget_usd));
+  $('iQ').textContent='RIKI je Tag · 14 T · '+usd(i.riki_monat_usd)+' von '+usd(i.riki_budget_usd)+' im Monat · Linie = '+usd(i.riki_tagesbudget_usd)+'/Tag';
+  neben('iNeben',[['Warten auf Abnahme',de(i.abnahme)],['Scan-Eingang',de(i.eingang)+(i.autopilot_an?'':' · Autopilot aus'),i.autopilot_an?'':'gelb'],['blockiert',de(i.blockiert),i.blockiert>0?'rot':'']]);
 
-  // Bühne
-  const s5=(P.jetzt&&P.jetzt.s_5min)||0, gleichzeitig=s5/300, laufend=(P.jetzt&&P.jetzt.laufend)||0;
-  $('hdTitel').textContent=rot.length?'Maschine läuft · '+rot.length+' Takt rot':'Maschine läuft';
-  $('hdSub').textContent=tk.length+' von '+t.length+' Takten aktiv · '+fehler+' Fehler in 24 h · '+P.aktiv+' Abfragen gerade aktiv';
-  $('hdDb').textContent=de(P.db.db_mb)+' MB'; $('hdDbSub').textContent='Datenbank · '+P.db.conns+' Verbindungen · '+de(P.db.temp_mb)+' MB temporär';
-  ring('g1',tk.length,t.length,String(tk.length),'TAKTE AKTIV');
-  ring('g3',gateSum,10,String(gateSum),'GATE-FÄLLE',gateSum?'#ff5c72':null);
-  tacho(gleichzeitig,8,'TAKTE GLEICHZEITIG',de1(gleichzeitig),'5 MIN · '+de(s5)+' s · '+laufend+' AKTIV');
-  const au=P.aufrufe;
-  $('foot3').innerHTML=[['Meiste Zeit',au[0]],['Schwerster Aufruf',[...au].sort((a,b)=>b.ms-a.ms)[0]],['Meiste Aufrufe',[...au].sort((a,b)=>b.calls-a.calls)[0]]].map(([l,x],i)=>x?`<div class="${['','c','r'][i]}"><b>${l}</b>${esc(x.q.replace(/\(.*$/,''))}<br>${de(x.ms)} ms je Lauf · ${de(x.calls)} Läufe · ${de(x.tot_s)} s</div>`:'').join('');
-  $('aufrufe').innerHTML=au.slice(0,6).map(x=>`<tr><td title="${esc(x.q)}">${esc(x.q.replace(/^cb_/,'').replace(/\(.*$/,''))}</td><td>${de(x.tot_s)} s</td></tr>`).join('');
-  const R=138; $('rings3').innerHTML=[['offen',w.offen,'var(--teal)'],['Abnahme',w.abnahme,'var(--warn)'],['in Arbeit',w.in_arbeit,'var(--teal)']].map(([l,v,c])=>`<div class="ring"><svg viewBox="0 0 52 52"><circle cx="26" cy="26" r="22" fill="none" stroke="#3a4658" stroke-width="3"/><circle cx="26" cy="26" r="22" fill="none" stroke="${c}" stroke-width="3" stroke-dasharray="${R*Math.min(1,v/w.gesamt)} ${R}" stroke-linecap="round" transform="rotate(-90 26 26)"/></svg><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
-
-  // Projekte
-  const pr=P.projekte, maxP=1;
-  $('projekte').innerHTML=pr.map(p=>{const g=p.ok+p.offen, q=g?p.ok/g:0; const cls=q>=1?'':q>=0.5?'':q>0?'w':'b';
-    return `<div><span><span class="lab">${esc(p.p)}</span><i class="${cls}" style="width:${Math.max(3,100*q)}%"></i></span><span class="n">${p.ok}/${g}</span></div>`;}).join('');
-
-  // RIKI (Puls-Teil)
-  const r=P.riki, r14=P.riki_14t, maxU=Math.max(0.01,...r14.map(x=>x.usd));
-  $('rikiText').textContent='14 Tage · '+usd(r.monat_usd)+' im Monat · heute '+usd(r.heute_usd)+' · '+r.fehler_24h+' Fehler in 24 h';
-  $('riki').innerHTML=r14.map(x=>`<i style="height:${Math.max(3,100*x.usd/maxU)}%" title="${x.tag} · ${usd(x.usd)}"></i>`).join('');
-  $('riki0').textContent=tagK(r14[0].tag);
-
-  // SEO-Zahlen (Puls-Teil)
-  const seo=P.seo;
-  $('seoIdx').textContent=seo.stichprobe?de(seo.indexiert)+' von '+de(seo.stichprobe):'noch keine Stichprobe';
-  $('seoKlicks').textContent=seo.stand?de(seo.klicks_28t)+' · '+de(seo.impr_28t):'noch keine Suchdaten';
-  $('seoPos').textContent=seo.position?de1(seo.position):'–';
-
-  // Flächen
-  const lab=i=>hhmm(raster[i].t);
-  flaeche('c1',S5,maxS,'#3ee6c4',lab,(x,y)=>{const i=S5.indexOf(maxS);return `<text x="${x(i)}" y="${y(maxS)-4}" text-anchor="middle" fill="#fff" font-size="10">${de(maxS)} s</text>`;});
-  $('c1Text').textContent='24 h · Spitze '+de(maxS)+' s um '+lab(S5.indexOf(maxS))+' · letzte 5 Minuten '+de(s5)+' s';
-  const maxN5=Math.max(1,...N5);
-  flaeche('c2',N5,maxN5,'#3ee6c4',lab,(x,y)=>{const mf=Math.max(1,...F5)*1.5;return F5.map((f,i)=>f?`<rect x="${x(i)-2}" y="${y(f*maxN5/mf)}" width="4" height="${y(0)-y(f*maxN5/mf)}" rx="1" fill="#ff5c72"><title>${lab(i)} · ${f} Fehler</title></rect>`:'').join('');});
-  $('c2Text').textContent='24 h · '+de(laeufe)+' Läufe · '+fehler+' Fehler';
-
-  // Stopper
-  const st=[...rot.map(x=>({c:'',t:`Takt ${x.name} fehlgeschlagen ${hhmm(x.lauf)}`,h:'maschine.html'})),
-    ...P.work_top.map(x=>({c:x.status==='decision_ralph'||x.status==='open'?'':'w',t:`#${x.id} ${x.titel}`,h:'steuerung.html'}))];
-  $('stopN').textContent=st.length; $('stopper').innerHTML=st.length?st.map(x=>`<div><i class="dot ${x.c}"></i><a href="${x.h}?cb=${Date.now()}" target="_blank">${esc(x.t)}</a></div>`).join(''):'<div><i class="dot t"></i>nichts – freie Fahrt</div>';
-}
-
-/* ===================== LAGE (5 min) ===================== */
-let L=null;
-async function lage(){
-  $('standLage').textContent='Lage lädt …';
-  const {data,error}=await client.rpc('cb_admin_cockpit_lage');
-  if(error){ $('standLage').textContent='Lage: Fehler'; return; }
-  L=data; lageZeichnen();
-  const soc=await client.rpc('cb_admin_cockpit_social'); if(!soc.error&&soc.data) socialZeichnen(soc.data);
-  $('standLage').textContent='Lage '+new Date(L.stand).toLocaleTimeString('de-DE')+' · alle 5 min';
-}
-function lageZeichnen(){
-  const d=L.dash;
-  // Eingang
-  const z=L.zufluesse||[], maxZ=Math.max(1,...z.filter(x=>x.id!=='zutat_neu').map(x=>x.wartend));
-  $('eingang').innerHTML=z.filter(x=>x.id!=='zutat_neu').map(x=>{const cls=x.weg==='auto'?'':x.weg==='hand'?'bl':'w';
-    return `<div><span><span class="lab">${esc(x.name)} · ${x.weg==='auto'?'automatisch':x.weg==='hand'?'von Hand':'kein Weg'} · ältester ${x.aeltester_tage} T</span><i class="${cls}" style="width:${Math.max(3,100*x.wartend/maxZ)}%"></i></span><span class="n">${de(x.wartend)}</span></div>`;}).join('')
-    +(z.find(x=>x.id==='zutat_neu')?`<div><span><span class="lab">Neue Zutaten · Wochenlauf</span><i class="g" style="width:100%"></i></span><span class="n">${de(z.find(x=>x.id==='zutat_neu').wartend)}</span></div>`:'');
-  const ap=L.autopilot||{};
-  $('eingangText').textContent='Autopilot '+(ap.an?'AN':'AUS')+' · letzter Lauf '+(ap.letzter_lauf?new Date(ap.letzter_lauf).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–')+' · '+de(ap.wartend_erreichbar)+' erreichbar, '+de(ap.wartend_unerreichbar)+' nicht';
-  $('autopilot').innerHTML=(ap.an?'<span class="pill ok">an</span>':'<span class="pill w">aus</span>')+' · '+usd(ap.heute_usd)+' / '+usd(ap.tageslimit_usd)+' heute';
-  // RIKI-Budget
-  const rk=d.riki; $('rikiBudget').textContent=de1(100*rk.monat_usd/rk.monatslimit_usd)+' % von '+usd(rk.monatslimit_usd); $('rikiBudget').title=usd(rk.monat_usd)+' im Monat';
-  $('rikiBudget').className='pill '+(rk.monat_usd/rk.monatslimit_usd>0.9?'b':rk.monat_usd/rk.monatslimit_usd>0.7?'w':'ok');
   // Kette
-  const ke=L.kette||{}, stn=ke.stationen||[], maxH=Math.max(1,...stn.map(s=>s.haengt));
-  $('kette').innerHTML=stn.map(s=>{const cls=s.prozent>=30?'b':s.prozent>=3?'w':'';
-    return `<div title="${esc(s.kurz)} – häufigster Grund: ${esc(s.haeufigster_grund||'')}"><div class="r">${s.rang} · ${esc(s.kurz)}</div><div class="t">${esc(s.titel)}</div><div class="v ${cls}">${de(s.haengt)}</div><div class="bar"><i class="${cls}" style="width:${Math.max(2,100*s.haengt/maxH)}%"></i></div><div class="s">${de1(s.prozent)} % · ${esc(s.haeufigster_grund||'')}</div></div>`;}).join('');
-  $('ketteText').textContent=de(ke.gemessen)+' Produkte gemessen, '+de(ke.durch)+' durch · Stationen von links nach rechts: Eingang → Freigabe · Zahl = hängt hier';
-  $('ketteStand').textContent='gemessen '+(ke.gemessen_am?new Date(ke.gemessen_am).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–');
-  // Katalog-Extras
-  $('kEan').textContent=de(d.katalog.mit_ean)+' · '+de(d.katalog.ean_fehlt);
-  $('kScore').textContent=de1(d.katalog.schnitt_score)+' · '+de(d.qualitaet.ohne_score);
-  // Google / Besucher
-  const b=L.besucher||[], maxBes=Math.max(1,...b.map(x=>x.gesamt));
-  $('besucher').innerHTML=b.map(x=>`<i style="height:${Math.max(2,100*x.gesamt/maxBes)}%;background:linear-gradient(180deg,var(--teal) 0 ${x.gesamt?100*x.google/x.gesamt:0}%,var(--blue) ${x.gesamt?100*x.google/x.gesamt:0}% ${x.gesamt?100*(x.google+x.bing)/x.gesamt:0}%,#3a4658 ${x.gesamt?100*(x.google+x.bing)/x.gesamt:0}% 100%)" title="${tagK(x.tag)} · ${x.gesamt} Aufrufe · Google ${x.google} · Bing ${x.bing} · direkt ${x.direkt} · andere ${x.andere}"></i>`).join('');
-  $('bes0').textContent=tagK(b[0]&&b[0].tag);
-  const sumG=b.reduce((a,x)=>a+x.google,0), sumA=b.reduce((a,x)=>a+x.gesamt,0);
-  $('seoText').textContent='Seitenaufrufe 14 Tage: '+de(sumA)+', davon '+de(sumG)+' über Google · Zählung seit 21.09. · Ziel 10.000 indexierte Produktseiten';
-  // Nutzung
-  const n=d.nutzer, nu=d.nutzung, sc=d.scans;
-  $('nNutzer').textContent=de(n.gesamt); $('nAktiv').textContent=de(n.aktiv_7t);
-  $('nPremium').textContent=de(n.premium)+' · '+de(n.admins);
-  $('nTagebuch').textContent=de(nu.eintraege_7t)+' · '+de(nu.tagebuch_eintraege);
-  $('nScans').textContent=de(sc.warteschlange)+' · '+de(sc.cache_gesamt)+' ('+de(sc.uebernommen)+' übernommen)';
-  // Stamm
-  const s=L.stamm.stamm, zs=L.stamm.zusatzstoffe;
-  $('sGesamt').innerHTML=de(s.gesamt)+'<small style="font-size:11px;color:var(--ink2);font-family:IBM Plex Sans,sans-serif;font-weight:500;margin-left:8px">Zutaten</small>';
-  $('sBewertet').textContent=de(s.bewertet)+' · '+de(s.unbewertet);
-  $('sGebunden').textContent=de(s.gebunden)+' · '+de(s.nie_gebunden);
-  $('sZusatz').textContent=de(zs.zusammen)+' · '+de(zs.mit_e_nummer);
-  // Score-Verteilung
-  const sv=d.score_verteilung||[], maxSv=Math.max(1,...sv.map(x=>x.anzahl)), W=400,H=140,B=18,T=14,bw=W/sv.length;
-  $('c3').innerHTML=sv.map((x,i)=>{const h=(H-T-B)*x.anzahl/maxSv, xx=i*bw+bw*.15, c=x.von>=70?'#3ee6c4':x.von>=50?'#1cc2c9':x.von>=30?'#f2b544':'#ff5c72';
-    return `<rect x="${xx}" y="${H-B-h}" width="${bw*.7}" height="${Math.max(1,h)}" rx="2" fill="${c}"><title>${x.von}–${x.von+9}: ${de(x.anzahl)}</title></rect><text x="${xx+bw*.35}" y="${H-B-h-4}" text-anchor="middle" fill="#e6edf5" font-size="9">${de(x.anzahl)}</text><text x="${xx+bw*.35}" y="${H-5}" text-anchor="middle" fill="#5f6f83" font-size="9">${x.von}</text>`;}).join('');
-  $('scoreText').textContent='Ø '+de1(d.katalog.schnitt_score)+' · '+de(d.katalog.aktiv)+' aktive Produkte · Balken = Score-Zehner';
-  // Quellen
-  const q=d.quellen||[], maxQ=Math.max(1,...q.map(x=>x.anzahl));
-  $('quellen').innerHTML=q.map(x=>`<div><span><span class="lab">${esc(x.typ)}</span><i style="width:${Math.max(2,100*x.anzahl/maxQ)}%"></i></span><span class="n">${de(x.anzahl)}</span></div>`).join('');
-  // Wächter-Namen nachziehen
-  if(P)puls();
+  const k=A.kette;
+  $('kStand').textContent=de(k.gemessen)+' gemessen · '+(k.stand?new Date(k.stand).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+' · Zahl = hängt hier';
+  $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div><div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
 }
-
-function socialZeichnen(S){
-  const ig=S.instagram, fb=S.facebook;
-  $('socIg').textContent=ig?de(ig.follower):'–'; $('socFb').textContent=fb?de(fb.follower):'–';
-  $('socIgR').textContent=ig?de(ig.reichweite)+' · '+de(ig.profilaufrufe):'–';
-  $('socIgB').textContent=ig?de(ig.beitraege)+' · '+de(ig.interaktionen):'–';
-  $('socFbR').textContent=fb?(fb.reichweite==null?'–':de(fb.reichweite))+' · '+(fb.profilaufrufe==null?'–':de(fb.profilaufrufe)):'–';
-  const v=(S.verlauf||[]).filter(x=>x.kanal==='instagram'), maxF=Math.max(1,...v.map(x=>x.follower||0));
-  $('socVerlauf').innerHTML=v.map(x=>`<i style="height:${Math.max(4,100*(x.follower||0)/maxF)}%" title="${tagK(x.tag)} · ${de(x.follower)} Follower"></i>`).join('');
-  $('socStand').textContent=S.letzter_lauf?'Stand '+new Date(S.letzter_lauf).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'noch kein Lauf';
-  $('socText').textContent=(ig?'root_index.de':'Instagram')+' · Follower je Tag, 28 Tage · Abruf täglich 07:30';
+function linie(id, vals, fehler){
+  const W=400,H=90,m=Math.max(1,...vals); if(!vals.length){$(id).innerHTML='';return;}
+  const pts=vals.map((v,i)=>`${(i/(vals.length-1))*W},${(H-8-(v/m)*(H-18)).toFixed(1)}`);
+  const f=(fehler||[]).map((v,i)=>v>0?`<circle cx="${(i/(vals.length-1))*W}" cy="${(H-8-(vals[i]/m)*(H-18)).toFixed(1)}" r="3" fill="var(--r)"/>`:'').join('');
+  $(id).innerHTML=`<line x1="0" y1="${H-8}" x2="${W}" y2="${H-8}" stroke="var(--line)"/><polygon points="0,${H-8} ${pts.join(' ')} ${W},${H-8}" fill="var(--acc)" opacity=".12"/><polyline fill="none" stroke="var(--acc)" stroke-width="1.6" points="${pts.join(' ')}"/>${f}<circle cx="${W}" cy="${pts[pts.length-1].split(',')[1]}" r="3" fill="var(--acc)"/>`;
 }
-
-/* ===================== HERZSCHLAG (3 s) ===================== */
-const STROEME=[
-  {k:'lesen',    name:'Lesen',     einheit:'Zeilen/s',    farbe:'#3ee6c4', boden:2000},
-  {k:'schreiben',name:'Schreiben', einheit:'Zeilen/s',    farbe:'#9ff5e4', boden:20},
-  {k:'maschine', name:'Maschine',  einheit:'Takte aktiv', farbe:'#5aa9ff', boden:2},
-  {k:'menschen', name:'Menschen',  einheit:'Aktionen/min',farbe:'#e6edf5', boden:2},
-  {k:'riki',     name:'RIKI',      einheit:'Aufrufe/min', farbe:'#ff9ab0', boden:2}
-];
-const HB={proben:[],vor:null,fenster:180000,fehler:0};
-async function herzschlag(){
-  const {data:h,error}=await client.rpc('cb_admin_cockpit_herzschlag');
-  if(error||!h){HB.fehler++;return;}
-  const t=Date.now();
-  if(HB.vor){
-    const dt=Math.max(0.5,(new Date(h.jetzt)-new Date(HB.vor.jetzt))/1000), d=(a)=>Math.max(0,h[a]-HB.vor[a]);
-    HB.proben.push({t, lesen:d('lesen')/dt, schreiben:d('schreiben')/dt,
-      maschine:h.takte_laufend+Math.max(0,h.aktiv-h.takte_laufend)*0.25,
-      menschen:(d('seiten_heute')+d('tagebuch_heute')+d('scans_heute'))/dt*60,
-      riki:(d('riki_heute')+d('scanjobs_heute'))/dt*60,
-      commits:d('commits')/dt, verbindungen:h.verbindungen});
-    while(HB.proben.length&&HB.proben[0].t<t-HB.fenster-20000)HB.proben.shift();
-  }
-  HB.vor=h; legende();
+function balken(id, vals, limit, hellAb){
+  const W=400,H=90,m=Math.max(limit||0,...vals,1),bw=W/vals.length-2; if(!vals.length){$(id).innerHTML='';return;}
+  let s=vals.map((v,i)=>`<rect x="${i*(bw+2)}" y="${(H-4-(v/m)*(H-14)).toFixed(1)}" width="${bw}" height="${Math.max(1,(v/m)*(H-14)).toFixed(1)}" rx="2" fill="${limit&&v>limit?'var(--y)':'var(--acc)'}" opacity="${hellAb!=null&&i<hellAb?.45:1}"/>`).join('');
+  if(limit){const y=(H-4-(limit/m)*(H-14)).toFixed(1); s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--r)" stroke-dasharray="4 4" stroke-width="1.2"/>`;}
+  $(id).innerHTML=s;
 }
-function legende(){
-  const p=HB.proben[HB.proben.length-1];
-  $('legende').innerHTML=STROEME.map(s=>`<div><i style="background:${s.farbe}"></i><b>${s.name}</b><em>${p?de1(p[s.k]):'–'} ${s.einheit}</em></div>`).join('')
-    +(p?`<div><i></i><span style="color:var(--ink3)">Commits</span><em>${de1(p.commits)}/s · ${p.verbindungen} Verb.</em></div>`:'<div><i></i><span style="color:var(--ink3)">erster Schlag in 3 s</span><em></em></div>');
-}
-(function(){
-  const cv=$('waves'),ctx=cv.getContext('2d');
-  const lerp=(a,b,f)=>a+(b-a)*f;
-  function draw(){
-    const W=cv.clientWidth,H=cv.clientHeight,dpr=devicePixelRatio||1;
-    if(cv.width!==W*dpr||cv.height!==H*dpr){cv.width=W*dpr;cv.height=H*dpr;}
-    ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
-    const t=Date.now(), x0=t-HB.fenster, basis=H*0.86, band=H*0.70;
-    ctx.strokeStyle='rgba(120,200,220,.07)';ctx.lineWidth=1;
-    for(let s=Math.ceil(x0/30000)*30000;s<=t;s+=30000){const x=(s-x0)/HB.fenster*W;ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
-    ctx.strokeStyle='rgba(120,200,220,.18)';ctx.beginPath();ctx.moveTo(0,basis);ctx.lineTo(W,basis);ctx.stroke();
-    ctx.fillStyle='#5f6f83';ctx.font='9px IBM Plex Sans,sans-serif';ctx.fillText('−3 min',4,H-4);ctx.textAlign='right';ctx.fillText('jetzt',W-4,H-4);ctx.textAlign='left';
-    const pr=HB.proben;
-    STROEME.forEach((s,si)=>{
-      if(pr.length<1)return;
-      const max=Math.max(s.boden,...pr.map(p=>p[s.k]));
-      const y=v=>basis-Math.min(1,v/max)*band*(0.55+0.09*si);
-      ctx.beginPath();
-      pr.forEach((p,i)=>{
-        const x=(p.t-x0)/HB.fenster*W, yv=y(p[s.k]);
-        if(i===0){ctx.moveTo(x,yv);return;}
-        const q=pr[i-1], xq=(q.t-x0)/HB.fenster*W, yq=y(q[s.k]);
-        const xm=lerp(xq,x,0.55), yb=basis-(basis-Math.min(yq,yv))*0.18;
-        ctx.quadraticCurveTo(lerp(xq,x,0.25),yq,xm,yb);
-        ctx.lineTo(lerp(xm,x,0.7),yv);ctx.lineTo(x,yv);
-      });
-      const l=pr[pr.length-1]; ctx.lineTo(W,y(l[s.k]));
-      ctx.strokeStyle=s.farbe;ctx.globalAlpha=0.8;ctx.lineWidth=si===0?1.6:1.1;ctx.stroke();ctx.globalAlpha=1;
-      ctx.fillStyle=s.farbe;ctx.beginPath();ctx.arc(W-3,y(l[s.k]),2.5,0,7);ctx.fill();
-    });
-    if(!pr.length){ctx.fillStyle='#5f6f83';ctx.font='11px IBM Plex Sans,sans-serif';ctx.textAlign='center';ctx.fillText('Herzschlag beginnt nach dem zweiten Abruf …',W/2,H/2);ctx.textAlign='left';}
-    requestAnimationFrame(draw);
-  }
-  requestAnimationFrame(draw);
-})();
-
-/* ===================== Zeiger & Flächen ===================== */
-function ring(id,val,max,txt,sub,farbe){
-  const s=$(id),c=100,R=78,f=Math.min(1,max?val/max:0),L2=2*Math.PI*R,col=farbe||'#3ee6c4';
-  let t='';for(let i=0;i<60;i++){const a=i/60*2*Math.PI,l=i%15?3:7;t+=`<line x1="${c+(R+10)*Math.cos(a)}" y1="${c+(R+10)*Math.sin(a)}" x2="${c+(R+10+l)*Math.cos(a)}" y2="${c+(R+10+l)*Math.sin(a)}" stroke="#5f6f83" stroke-width="1"/>`;}
-  s.innerHTML=`<defs><radialGradient id="rg${id}" cx="40%" cy="35%"><stop offset="0" stop-color="#2c3746"/><stop offset="1" stop-color="#151c27"/></radialGradient></defs>
-  <circle cx="${c}" cy="${c}" r="${R+22}" fill="#1a2230" style="filter:drop-shadow(6px 6px 10px rgba(0,0,0,.5)) drop-shadow(-4px -4px 8px rgba(70,86,110,.15))"/>${t}
-  <circle cx="${c}" cy="${c}" r="${R}" fill="url(#rg${id})" stroke="#0f151e" stroke-width="6"/>
-  <circle cx="${c}" cy="${c}" r="${R}" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="${Math.max(0.01,L2*f)} ${L2}" stroke-linecap="round" transform="rotate(-90 ${c} ${c})" style="filter:drop-shadow(0 0 5px ${col})"/>
-  <text x="${c}" y="${c-30}" text-anchor="middle" fill="#95a4b6" font-size="9" letter-spacing="2">${sub}</text>
-  <text x="${c}" y="${c+16}" text-anchor="middle" fill="#fff" font-family="Rajdhani,sans-serif" font-weight="600" font-size="48">${txt}</text>`;
-}
-function tacho(val,max,titel,txt,sub){
-  const s=$('g2'),c=130,R=100,a0=Math.PI*0.75,a1=Math.PI*2.25,av=a0+(a1-a0)*Math.min(1,val/max);
-  const arc=(x,y,r)=>{const p=q=>[c+r*Math.cos(q),c+r*Math.sin(q)],[x0,y0]=p(x),[x1,y1]=p(y);return `M${x0} ${y0}A${r} ${r} 0 ${y-x>Math.PI?1:0} 1 ${x1} ${y1}`;};
-  let t='';for(let i=0;i<=40;i++){const a=a0+(a1-a0)*i/40,l=i%5?4:9;t+=`<line x1="${c+(R-4)*Math.cos(a)}" y1="${c+(R-4)*Math.sin(a)}" x2="${c+(R-4-l)*Math.cos(a)}" y2="${c+(R-4-l)*Math.sin(a)}" stroke="#7f8ea3" stroke-width="1.2"/>`;
-    if(i%10===0){t+=`<text x="${c+(R-24)*Math.cos(a)}" y="${c+(R-24)*Math.sin(a)+3}" text-anchor="middle" fill="#95a4b6" font-size="9">${max*i/40}</text>`;}}
-  s.innerHTML=`<defs><linearGradient id="bz" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a4a5e"/><stop offset="1" stop-color="#121923"/></linearGradient><radialGradient id="face" cx="45%" cy="40%"><stop offset="0" stop-color="#232d3b"/><stop offset="1" stop-color="#121923"/></radialGradient></defs>
-  <circle cx="${c}" cy="${c}" r="${R+26}" fill="url(#bz)" style="filter:drop-shadow(8px 8px 14px rgba(0,0,0,.55))"/>
-  <circle cx="${c}" cy="${c}" r="${R+18}" fill="none" stroke="#0e141c" stroke-width="3"/>
-  <path d="${arc(a0,a1,R+14)}" fill="none" stroke="#2a3644" stroke-width="7"/>
-  <path d="${arc(a0,av,R+14)}" fill="none" stroke="#3ee6c4" stroke-width="7" stroke-linecap="round" style="filter:drop-shadow(0 0 6px #3ee6c4)"/>
-  <circle cx="${c}" cy="${c}" r="${R}" fill="url(#face)" stroke="#0b1018" stroke-width="2"/>${t}
-  <text x="${c}" y="${c-46}" text-anchor="middle" fill="#95a4b6" font-size="10" letter-spacing="2">${titel}</text>
-  <line x1="${c}" y1="${c}" x2="${c+(R-28)*Math.cos(av)}" y2="${c+(R-28)*Math.sin(av)}" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
-  <circle cx="${c}" cy="${c}" r="7" fill="#fff"/><circle cx="${c}" cy="${c}" r="3" fill="#1a2230"/>
-  <text x="${c}" y="${c+52}" text-anchor="middle" fill="#fff" font-family="Rajdhani,sans-serif" font-weight="600" font-size="26">${txt}</text>
-  <text x="${c}" y="${c+70}" text-anchor="middle" fill="#95a4b6" font-size="9" letter-spacing="1">${sub}</text>`;
-}
-function flaeche(id,vals,max,color,lab,extra){
-  const svg=$(id),W=400,H=140,Lm=6,B=18,T=10,n=vals.length;
-  const x=i=>Lm+i*(W-2*Lm)/(n-1),y=v=>T+(H-T-B)*(1-v/max);
-  const pts=vals.map((v,i)=>[x(i),y(v)]);const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-  let g='';for(let k=1;k<=4;k++)g+=`<line x1="${Lm}" x2="${W-Lm}" y1="${y(max*k/4)}" y2="${y(max*k/4)}" stroke="rgba(255,255,255,.05)"/>`;
-  svg.innerHTML=`<defs><linearGradient id="f${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".5"/><stop offset="1" stop-color="${color}" stop-opacity=".02"/></linearGradient></defs>${g}
-  <path d="${line} L${x(n-1)} ${y(0)} L${x(0)} ${y(0)}Z" fill="url(#f${id})"/><path d="${line}" fill="none" stroke="${color}" stroke-width="1.5"/>${extra?extra(x,y):''}
-  ${[0,72,144,216,287].map(i=>`<text x="${x(i)}" y="${H-4}" text-anchor="${i?i===287?'end':'middle':'start'}" fill="#5f6f83" font-size="9">${lab(i)}</text>`).join('')}`;
-}
-
-laden(); lage(); herzschlag();
-setInterval(()=>{ if(!document.hidden) laden(); },30000);
-setInterval(()=>{ if(!document.hidden) lage(); },300000);
-setInterval(()=>{ if(!document.hidden) herzschlag(); },3000);
+laden(); setInterval(laden, 60000);
 </script>
-</body>
-</html>
+</body></html>
