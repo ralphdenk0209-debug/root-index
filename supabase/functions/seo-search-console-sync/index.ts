@@ -171,9 +171,17 @@ async function urlPruefen(token: string, siteUrl: string, inspectionUrl: string)
 }
 
 Deno.serve(async (req: Request) => {
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-  const authHeader = req.headers.get("Authorization") ?? "";
-  if (!serviceKey || authHeader !== `Bearer ${serviceKey}`) {
+  // 22.09.2026 (Cockpit/#787): alle 7 Laeufe seit 16.09. scheiterten mit "Nicht
+  // autorisiert" - der Schluessel in GitHub ist nicht zeichengleich mit der
+  // Funktionsumgebung. Deshalb keine Zeichenpruefung mehr, sondern Supabase selbst
+  // fragen: nur ein Service-Schluessel darf die Auth-Admin-Liste lesen.
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const mitgeschickt = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  const pruefung = mitgeschickt ? await fetch(`${supabaseUrl}/auth/v1/admin/users?per_page=1`, {
+    headers: { apikey: mitgeschickt, Authorization: `Bearer ${mitgeschickt}` },
+  }) : null;
+  const serviceKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "") || mitgeschickt;
+  if (!pruefung || !pruefung.ok) {
     return new Response(JSON.stringify({ ok: false, fehler: "Nicht autorisiert." }), {
       status: 401,
       headers: { "Content-Type": "application/json" },
