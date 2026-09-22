@@ -1,0 +1,42 @@
+# =============================================================================
+#  Social (Instagram + Facebook) taeglich abrufen  (Ralph 22.09.2026, Work #787)
+# -----------------------------------------------------------------------------
+#  Ruft die Edge Function social-meta-sync auf - gleicher Weg wie
+#  seo-search-console.yml: die Funktion prueft den Service-Role-Key selbst.
+#  Beim ersten Lauf tauscht sie den Nutzer-Token in einen Seiten-Token ohne
+#  Ablauf (liegt danach in social_zugang). Laeuft taeglich, auf Knopfdruck und
+#  einmal sofort, wenn diese Datei gepusht wird.
+# =============================================================================
+name: Social Meta
+
+on:
+  schedule:
+    - cron: "30 5 * * *"      # taeglich ~07:30 deutscher Sommerzeit
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/social-meta.yml"
+
+jobs:
+  abrufen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Sync anstossen
+        run: |
+          set -e
+          ANTWORT=$(curl -sS -w '\n%{http_code}' \
+            -X POST "https://haurbpfkfaaehorirzee.supabase.co/functions/v1/social-meta-sync" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json")
+          CODE=$(echo "$ANTWORT" | tail -n1)
+          BODY=$(echo "$ANTWORT" | sed '$d')
+          echo "$BODY"
+          echo "### Social-Sync-Ergebnis" >> "$GITHUB_STEP_SUMMARY"
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          echo "$BODY" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$CODE" -ge 300 ]; then
+            echo "HTTP $CODE - Lauf fehlgeschlagen."
+            exit 1
+          fi
