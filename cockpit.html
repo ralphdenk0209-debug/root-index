@@ -422,7 +422,7 @@ function lageZeichnen(){
   $('eingangText').textContent='Autopilot '+(ap.an?'AN':'AUS')+' · letzter Lauf '+(ap.letzter_lauf?new Date(ap.letzter_lauf).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–')+' · '+de(ap.wartend_erreichbar)+' erreichbar, '+de(ap.wartend_unerreichbar)+' nicht';
   $('autopilot').innerHTML=(ap.an?'<span class="pill ok">an</span>':'<span class="pill w">aus</span>')+' · '+usd(ap.heute_usd)+' / '+usd(ap.tageslimit_usd)+' heute';
   // RIKI-Budget
-  const rk=d.riki; $('rikiBudget').textContent=usd(rk.monat_usd)+' von '+usd(rk.monatslimit_usd)+' · '+de1(100*rk.monat_usd/rk.monatslimit_usd)+' %';
+  const rk=d.riki; $('rikiBudget').textContent=de1(100*rk.monat_usd/rk.monatslimit_usd)+' % von '+usd(rk.monatslimit_usd); $('rikiBudget').title=usd(rk.monat_usd)+' im Monat';
   $('rikiBudget').className='pill '+(rk.monat_usd/rk.monatslimit_usd>0.9?'b':rk.monat_usd/rk.monatslimit_usd>0.7?'w':'ok');
   // Kette
   const ke=L.kette||{}, stn=ke.stationen||[], maxH=Math.max(1,...stn.map(s=>s.haengt));
