@@ -124,6 +124,37 @@ td:last-child{text-align:right;color:var(--ink)}
 #hinweis:empty{display:none}
 @media (max-width:1050px){.wrap{grid-template-columns:1fr 1fr}.col.mid{grid-column:1/-1;order:-1}.bottom{grid-template-columns:1fr}.kette{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:640px){.wrap{grid-template-columns:1fr}.gauges{grid-template-columns:1fr}.slider{grid-template-columns:1fr}.legende{display:none}.two{grid-template-columns:1fr}.kette{grid-template-columns:repeat(2,1fr)}}
+
+/* LESBARKEIT (22.09.2026): größere Schrift, nichts läuft mehr über Kästen */
+body{font-size:13px}
+.wrap{grid-template-columns:250px 1fr 270px;max-width:1600px}
+.card{overflow:hidden}
+.card h4{font-size:12px}
+.st{font-size:10px}
+.card p{font-size:11.5px;line-height:1.4;overflow-wrap:anywhere}
+.top .stand{font-size:12px}
+.hbar div{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto auto;gap:3px 8px;align-items:center}
+.hbar div>span:first-child{display:contents}
+.hbar .lab{font-size:11px;grid-column:1/-1;grid-row:1;white-space:normal;overflow:visible;text-overflow:clip;margin-bottom:0;line-height:1.3}
+.hbar i{grid-column:1;grid-row:2;min-width:0;max-width:100%}
+.hbar .n{font-size:12px;grid-column:2;grid-row:2}
+.vlab{font-size:11px}
+.stage .hd{font-size:12px}
+.legende{font-size:12px;gap:3px}
+.foot3{font-size:11.5px}
+.kette .r{font-size:10px}
+.kette .t{font-size:13px;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+.kette .s{font-size:11px;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;line-height:1.3}
+.kv{flex-wrap:wrap;font-size:12px;row-gap:2px}
+.kv b{white-space:normal;text-align:right;margin-left:auto;overflow-wrap:anywhere}
+.ring .l{font-size:10px}
+table{font-size:11px}
+td,th{overflow-wrap:anywhere}
+.pie,.legend{font-size:11px}
+.stop div{font-size:12px}
+.stop div>*{min-width:0;overflow-wrap:anywhere}
+.pill{font-size:10px}
+@media (max-width:1150px){.wrap{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
