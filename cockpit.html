@@ -41,12 +41,12 @@ svg.ch{width:100%;height:90px;display:block}
 .kette h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .kette h4 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
 .st{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
-.st div{background:var(--card2);border-radius:12px;padding:10px 12px;border-top:3px solid var(--g);min-width:0}
+.st>div{background:var(--card2);border-radius:12px;padding:10px 12px;border-top:3px solid var(--g);min-width:0}
 .st .t{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2);font-weight:600}
 .st .n{font-size:24px;font-weight:600;margin:2px 0}
 .st .h{font-size:11.5px;color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.st .gelb{border-color:var(--y)}.st .gelb .n{color:var(--y)}
-.st .rot{border-color:var(--r)}.st .rot .n{color:var(--r)}
+.st>.gelb{border-color:var(--y)}.st>.gelb .n{color:var(--y)}
+.st>.rot{border-color:var(--r)}.st>.rot .n{color:var(--r)}
 .fuss{grid-column:1/-1;font-size:12px;color:var(--ink3);padding:0 4px}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}}
 @media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
@@ -137,11 +137,11 @@ function zeichnen(){
   $('iN').textContent=i.bei_ralph;
   balken('iCh',(i.riki_14t||[]).map(x=>Number(x.usd)),Number(i.riki_tagesbudget_usd));
   $('iQ').textContent='RIKI je Tag · 14 T · '+usd(i.riki_monat_usd)+' von '+usd(i.riki_budget_usd)+' im Monat · Linie = '+usd(i.riki_tagesbudget_usd)+'/Tag';
-  neben('iNeben',[['Warten auf Abnahme',de(i.abnahme)],['Scan-Eingang',de(i.eingang)+(i.autopilot_an?'':' · Autopilot aus'),i.autopilot_an?'':'gelb'],['blockiert',de(i.blockiert),i.blockiert>0?'rot':'']]);
+  neben('iNeben',[['Warten auf Abnahme',de(i.abnahme)],['Scan-Eingang'+(i.autopilot_an?'':' · Autopilot aus'),de(i.eingang),i.autopilot_an?'':'gelb'],['blockiert',de(i.blockiert),i.blockiert>0?'rot':'']]);
 
   // Kette
   const k=A.kette;
-  $('kStand').textContent=de(k.gemessen)+' gemessen · '+(k.stand?new Date(k.stand).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'')+' · Zahl = hängt hier';
+  $('kStand').textContent=de(k.gemessen)+' gemessen · Zahl = hängt hier';
   $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div><div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
 }
 function linie(id, vals, fehler){
