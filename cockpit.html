@@ -248,8 +248,13 @@ td:last-child{text-align:right;color:var(--ink)}
     <div class="rings3" id="rings3"></div>
   </div>
   <div class="card">
-    <div class="pair"><div><div class="l">Instagram</div><div class="v"><span class="srv">–</span></div></div><div><div class="l">Facebook</div><div class="v"><span class="srv">–</span></div></div></div>
-    <p>Work #787 – wartet auf Meta-App und Token.</p>
+    <h4>Social <span class="st" id="socStand">social_kennzahlen_taeglich</span></h4>
+    <div class="pair"><div><div class="l">Instagram</div><div class="v" id="socIg">–</div></div><div><div class="l">Facebook</div><div class="v" id="socFb">–</div></div></div>
+    <div class="kv"><span>Reichweite · Profilaufrufe (IG, 24 h)</span><b id="socIgR">–</b></div>
+    <div class="kv"><span>Beiträge · Interaktionen (IG)</span><b id="socIgB">–</b></div>
+    <div class="kv"><span>Reichweite · Aufrufe (FB, 24 h)</span><b id="socFbR">–</b></div>
+    <div class="vbars" id="socVerlauf" style="height:40px;gap:2px"></div>
+    <p id="socText">Follower je Tag, 28 Tage · täglicher Abruf 07:30</p>
   </div>
 </div>
 
@@ -409,6 +414,7 @@ async function lage(){
   const {data,error}=await client.rpc('cb_admin_cockpit_lage');
   if(error){ $('standLage').textContent='Lage: Fehler'; return; }
   L=data; lageZeichnen();
+  const soc=await client.rpc('cb_admin_cockpit_social'); if(!soc.error&&soc.data) socialZeichnen(soc.data);
   $('standLage').textContent='Lage '+new Date(L.stand).toLocaleTimeString('de-DE')+' · alle 5 min';
 }
 function lageZeichnen(){
@@ -461,6 +467,18 @@ function lageZeichnen(){
   $('quellen').innerHTML=q.map(x=>`<div><span><span class="lab">${esc(x.typ)}</span><i style="width:${Math.max(2,100*x.anzahl/maxQ)}%"></i></span><span class="n">${de(x.anzahl)}</span></div>`).join('');
   // Wächter-Namen nachziehen
   if(P)puls();
+}
+
+function socialZeichnen(S){
+  const ig=S.instagram, fb=S.facebook;
+  $('socIg').textContent=ig?de(ig.follower):'–'; $('socFb').textContent=fb?de(fb.follower):'–';
+  $('socIgR').textContent=ig?de(ig.reichweite)+' · '+de(ig.profilaufrufe):'–';
+  $('socIgB').textContent=ig?de(ig.beitraege)+' · '+de(ig.interaktionen):'–';
+  $('socFbR').textContent=fb?(fb.reichweite==null?'–':de(fb.reichweite))+' · '+(fb.profilaufrufe==null?'–':de(fb.profilaufrufe)):'–';
+  const v=(S.verlauf||[]).filter(x=>x.kanal==='instagram'), maxF=Math.max(1,...v.map(x=>x.follower||0));
+  $('socVerlauf').innerHTML=v.map(x=>`<i style="height:${Math.max(4,100*(x.follower||0)/maxF)}%" title="${tagK(x.tag)} · ${de(x.follower)} Follower"></i>`).join('');
+  $('socStand').textContent=S.letzter_lauf?'Stand '+new Date(S.letzter_lauf).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'noch kein Lauf';
+  $('socText').textContent=(ig?'root_index.de':'Instagram')+' · Follower je Tag, 28 Tage · Abruf täglich 07:30';
 }
 
 /* ===================== HERZSCHLAG (3 s) ===================== */
