@@ -1507,8 +1507,23 @@ window.__ADMIN_PAGE=true;</script>
 try{ var _st=document.createElement('style'); _st.textContent='#besucherKarte{display:none!important}'; document.head.appendChild(_st); }catch(e){}
 window.loadDashboard=function(){
   var box=document.getElementById('fgDash'); if(!box) return;
-  if(box.querySelector('iframe.cockpitFrame')) return;
-  box.innerHTML='<iframe class="cockpitFrame" src="cockpit.html?cb='+Date.now()+'" title="Cockpit" style="width:100%;height:calc(100vh - 90px);min-height:700px;border:0;border-radius:14px;background:#1a1714;display:block"></iframe>';
+  var f=box.querySelector('iframe.cockpitFrame');
+  if(!f){
+    /* Ralph 23.09.: "das cockpit soll die ganze seite sein, menü soll aber bleiben" -
+       der Rahmen liegt fest neben dem Menü und füllt den Rest des Fensters. */
+    f=document.createElement('iframe'); f.className='cockpitFrame'; f.title='Cockpit';
+    f.src='cockpit.html?cb='+Date.now();
+    f.style.cssText='position:fixed;right:0;bottom:0;border:0;background:#1a1714;z-index:5;display:block';
+    box.innerHTML=''; box.appendChild(f);
+    var lage=function(){
+      var n=document.getElementById('adminNav'); var r=n?n.getBoundingClientRect():{top:0,right:0,bottom:0};
+      var seite=document.body.classList.contains('navSeite');
+      f.style.top=Math.max(0,seite?r.top:r.bottom)+'px'; f.style.left=Math.max(0,seite?r.right:0)+'px';
+    };
+    lage(); window.addEventListener('resize',lage);
+    try{ new MutationObserver(lage).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
+    setTimeout(lage,300); setTimeout(lage,1200);
+  }
 };
 </script>
 <script src="produktliste.js?v=1.0.24"></script>
