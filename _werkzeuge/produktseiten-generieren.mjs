@@ -540,6 +540,12 @@ async function main() {
   writeFileSync(join(WEB, "robots.txt"),
     `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\n`);
 
+  // Stand fuer das Cockpit: wie viele Seiten stehen seit wann bei Google.
+  // Die Zahl der freigegebenen Produkte waechst den ganzen Tag, die Seiten
+  // entstehen nur im Lauf - die Luecke soll sichtbar sein.
+  writeFileSync(join(WEB, "produkt", "stand.json"),
+    JSON.stringify({ seiten: geschrieben, kategorien: kats.length, sitemap: urls.length, stand: new Date().toISOString() }) + "\n");
+
   console.log(`✅ Produktseiten: ${geschrieben} · Kategorien: ${kats.length} · Sitemap-URLs: ${urls.length}`);
   if (geschrieben < 100 && argDatei === -1) console.log("⚠️  Ungewoehnlich wenige Produkte – v_web_produkte pruefen.");
 }

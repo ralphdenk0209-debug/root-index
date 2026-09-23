@@ -242,6 +242,16 @@ function zeichnen(){
   const hbP=(rows,max)=>rows.map(([l,v,c])=>`<div><span class="lab">${l}</span><i class="${c||''}" style="width:${Math.max(3,100*(Number(v)||0)/max)}%"></i><span class="n">${de(v)}</span></div>`).join('');
   const mx=Math.max(1,Number(P.entwurf)||0,Number(P.blockiert_riki)||0,Number(P.import_offen)||0);
   $('produkte').innerHTML=hbP([['zu verifizieren (Entwurf, nicht verifiziert)',P.zu_verifizieren,'gelb'],['freigabebereit',P.freigabebereit,'gruen'],['von RIKI blockiert',P.blockiert_riki,'rot'],['Import offen',P.import_offen,'']],mx);
+  // Produktseiten bei Google: der Generator laeuft 04:40 und 16:40 und schreibt
+  // produkt/stand.json. Zwischen zwei Laeufen wachsen die Freigaben weiter -
+  // die Differenz ist die Zahl der Produkte, die noch keine Seite haben.
+  fetch('/produkt/stand.json?'+Date.now()).then(r=>r.json()).then(st=>{
+    const online=Number(st.seiten)||0, wartet=Math.max(0,(Number(P.aktiv)||0)-online), su=Math.max(1,online+wartet);
+    const zeit=st.stand?new Date(st.stand).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–';
+    $('produkte').insertAdjacentHTML('beforeend',
+      `<div><span class="lab">Seiten online (Stand ${zeit})</span><i class="gruen" style="width:${Math.max(3,100*online/su)}%"></i><span class="n">${de(online)}</span></div>`
+     +`<div><span class="lab">ohne Seite, wartet auf den naechsten Lauf</span><i class="gelb" style="width:${Math.max(3,100*wartet/su)}%"></i><span class="n">${de(wartet)}</span></div>`);
+  }).catch(()=>{});
 
   // Wächter – alle
   const w=M.waechter||{}; const alle=w.alle||[]; const gateMap={}; (w.liste||[]).forEach(x=>{ if(x.gate) gateMap[x.name]=x.n; });
