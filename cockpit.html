@@ -76,17 +76,25 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .legende2{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--ink3);margin-bottom:4px}
 .legende2 i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:middle}
 .wall{grid-column:1/-1;background:var(--card);border-radius:18px;box-shadow:var(--out);padding:16px 20px}
-.wall h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.wall h4{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .wall h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
-.wgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}
-.wgrid>div{background:var(--card2);border-radius:10px;padding:8px 10px;border-left:3px solid var(--g);display:flex;justify-content:space-between;align-items:center;gap:8px;min-width:0}
-.wgrid .t{font-size:12px;color:var(--ink2);overflow-wrap:anywhere}
+.wgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
+.wgrid>div{background:var(--card2);border-radius:8px;padding:6px 9px;border-left:3px solid var(--g);display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0;cursor:pointer}
+.wgrid>div:hover,.wgrid>div.auf{outline:1px solid var(--acc)}
+.wgrid .t{font-size:11.5px;color:var(--ink2);overflow-wrap:anywhere;line-height:1.25}
 .wgrid .t small{display:block;color:var(--ink3);font-size:10.5px}
-.wgrid .n{font-family:ui-monospace,Menlo,monospace;font-size:15px;font-weight:600;color:var(--ink);flex:0 0 auto}
+.wgrid .n{font-family:ui-monospace,Menlo,monospace;font-size:13.5px;font-weight:600;color:var(--ink);flex:0 0 auto}
 .wgrid>div.gelb{border-color:var(--y)}.wgrid>div.gelb .n{color:var(--y)}
 .wgrid>div.rot{border-color:var(--r)}.wgrid>div.rot .n{color:var(--r)}
 .wgrid>div.still{opacity:.6}
 @media(max-width:1200px){.wgrid{grid-template-columns:repeat(4,1fr)}}
+.wfaelle{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
+.wfaelle h5{margin:0 0 6px;font-size:12px;color:var(--ink);display:flex;justify-content:space-between;gap:10px}
+.wfaelle h5 a{color:var(--acc);cursor:pointer}
+.wfaelle table{width:100%;border-collapse:collapse;font-size:12px}
+.wfaelle th{text-align:left;color:var(--ink3);font-weight:500;padding:3px 8px 3px 0;border-bottom:1px solid var(--line);white-space:nowrap}
+.wfaelle td{padding:4px 8px 4px 0;border-bottom:1px solid var(--line);color:var(--ink2);vertical-align:top;overflow-wrap:anywhere;max-width:320px}
+.wfaelle td:first-child{color:var(--ink)}
 @media(max-width:700px){.wgrid{grid-template-columns:repeat(2,1fr)}}
 .hb{display:flex;flex-direction:column;gap:7px}
 .hb>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
@@ -108,17 +116,10 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 <div id="hinweis"></div>
 <div class="wrap">
 
- <a class="zone" href="maschine.html"><h4>Maschine <span class="s" id="aM"></span></h4>
-  <div class="lead"><span class="n" id="mN">–</span><span class="u" id="mU">von – Takten</span></div>
-  <div class="q">Läuft sie?</div>
-  <svg class="ch" id="mCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
-  <div class="q" id="mQ">Läufe je 5 Minuten · letzte 3 Stunden</div>
-  <div class="neben" id="mNeben"></div>
-  <div class="link">→ maschine.html</div>
- </a>
+ <div class="wall"><h4>Wächter <span class="st" id="wSt"></span></h4><div class="wgrid" id="wgrid"></div><div class="wfaelle" id="wFaelle" hidden></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
-  <div class="lead"><span class="n" id="sN">–</span><span class="u">Klicks 7 T</span><span class="d" id="sD"></span></div>
+  <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks 28 T</span><span class="d" id="sD"></span></div>
   <div class="q">Wächst sie?</div>
   <svg class="ch" id="sCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
   <div class="q" id="sQ">Google-Klicks je Tag · 28 Tage</div>
@@ -126,16 +127,18 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="link">→ Search Console</div>
  </a>
 
- <a class="zone" href="steuerung.html"><h4>Ich <span class="s" id="aI"></span></h4>
-  <div class="lead"><span class="n" id="iN">–</span><span class="u">Entscheidungen</span></div>
-  <div class="q">Was muss ich tun, was kostet es?</div>
-  <svg class="ch" id="iCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
-  <div class="q" id="iQ">RIKI je Tag · 14 T · Linie = Tagesbudget</div>
-  <div class="neben" id="iNeben"></div>
-  <div class="link">→ steuerung.html · admin.html</div>
- </a>
+ <a class="zone" href="admin.html"><h4>Produkte <span class="st" id="pSt"></span></h4>
+  <div class="lead"><span class="n" id="pN">–</span><span class="u" id="pU">aktiv</span></div>
+  <div class="stapel" id="pStapel"></div><div class="legende2" id="pLeg"></div>
+  <div class="hb" id="produkte"></div></a>
+
+ <a class="zone" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4>
+  <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
+  <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
+  <div class="hb" id="menschen"></div></a>
 
  <div class="kette"><h4>Kette <span id="kStand"></span></h4><div class="st" id="kette"></div></div>
+
  <div class="karte">
   <div>
    <h4><span>Wo</span>
@@ -148,22 +151,24 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   </div>
   <div class="kliste" id="kListe"></div>
  </div>
+
  <div class="reihe2">
-  <a class="klein" href="admin.html"><h4>Produkte <span class="st" id="pSt"></span></h4>
-   <div class="lead"><span class="n" id="pN">–</span><span class="u" id="pU">aktiv</span></div>
-   <div class="stapel" id="pStapel"></div><div class="legende2" id="pLeg"></div>
-   <div class="hb" id="produkte"></div></a>
-  <a class="klein" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4>
-   <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
-   <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
-   <div class="hb" id="menschen"></div></a>
+  <a class="klein" href="steuerung.html"><h4>Ich <span class="s" id="aI"></span></h4>
+   <div class="lead"><span class="n" id="iN">–</span><span class="u">Entscheidungen</span></div>
+   <svg class="ch" id="iCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg>
+   <div class="q" id="iQ">RIKI je Tag · 14 T</div>
+   <div class="neben" id="iNeben"></div></a>
+  <a class="klein" href="maschine.html"><h4>Maschine <span class="s" id="aM"></span></h4>
+   <div class="lead"><span class="n" id="mN">–</span><span class="u" id="mU">von – Takten</span></div>
+   <svg class="ch" id="mCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg>
+   <div class="q" id="mQ">Läufe je 5 Minuten · letzte 3 Stunden</div>
+   <div class="neben" id="mNeben"></div></a>
   <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog <span class="st" id="stSt"></span></h4>
    <div class="lead"><span class="n" id="stN">–</span><span class="u">Zutaten im Stamm</span></div>
    <div class="hb" id="stamm"></div></a>
   <a class="klein" href="steuerung.html"><h4>Projekte <span class="st">fertig / gesamt</span></h4><div class="hb" id="projekte"></div></a>
  </div>
- <div class="wall"><h4>Wächter <span class="st" id="wSt"></span></h4><div class="wgrid" id="wgrid"></div></div>
- <div class="fuss">Jede Zone ist ein Klick auf die Detailseite. Farbe nur für Status. Aktualisiert sich jede Minute.</div>
+ <div class="fuss">Jede Kachel ist ein Klick auf die Detailseite · Wächter-Kachel anklicken zeigt die Fälle · Farbe nur für Status · aktualisiert jede Minute.</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -206,11 +211,11 @@ function zeichnen(){
 
   // Seite
   const s=A.seite; $('aS').className='s '+s.ampel;
-  $('sN').textContent=de(s.klicks_7t);
-  const dp=s.delta_pct; $('sD').textContent=dp==null?'':(dp>=0?'▲ +':'▼ ')+de(dp)+' %'; $('sD').className='d '+(dp==null?'':dp>=0?'up':'dn');
+  $('sN').textContent=de((s.klicks_tage||[]).reduce((a,x)=>a+(Number(x.klicks)||0),0));
+  const dp=s.delta_pct; $('sD').textContent=dp==null?'':'7 T '+(dp>=0?'▲ +':'▼ ')+de(dp)+' %'; $('sD').className='d '+(dp==null?'':dp>=0?'up':'dn');
   balken('sCh',(s.klicks_tage||[]).map(x=>x.klicks),null,(s.klicks_tage||[]).length-7);
-  $('sQ').textContent='Google-Klicks je Tag · 28 Tage · Stand '+tagK(s.seo_stand||'');
-  neben('sNeben',[['Position',s.position!=null?Number(s.position).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'],['Indexiert',de(s.indexiert)+' / '+de(s.stichprobe)],['Besucher 14 T',de(s.besucher_14t)]]);
+  $('sQ').textContent='Google-Klicks je Tag · 28 Tage bis '+tagK(s.seo_stand||'')+' (Google liefert 2–3 Tage später – die Search Console zeigt bis heute, daher dort mehr)';
+  neben('sNeben',[['Klicks 7 T',de(s.klicks_7t)],['Position',s.position!=null?Number(s.position).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'],['Indexiert',de(s.indexiert)+' / '+de(s.stichprobe)]]);
 
   // Ich
   const i=A.ich; $('aI').className='s '+i.ampel;
@@ -238,7 +243,9 @@ function zeichnen(){
   const wsum=alle.filter(x=>x.k!=='wb_sperrebestand').reduce((a,x)=>a+Math.max(x.n,x.gate?(gateMap[x.name]||0):0),0);
   $('wSt').textContent=alle.length+' Wächter · '+(w.gate_offen?'Gate offen':'Gate zu')+' · '+de(wsum)+' Fälle · Stand '+(alle[0]&&alle[0].stand?new Date(alle[0].stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–');
   $('wgrid').innerHTML=alle.map(x=>{const n=Math.max(Number(x.n)||0,x.gate?(gateMap[x.name]||0):0); const bestand=x.k==='wb_sperrebestand'; const cls=n===0?'still':(x.gate?'rot':'gelb');
-    return `<div class="${cls}"><span class="t">${x.gate?'⛔ ':''}${esc(x.name)}<small>${esc(x.k)}${x.gate?' · Gate':''}${bestand?' · Bestand, zählt nicht':''}</small></span><span class="n">${de(n)}</span></div>`;}).join('');
+    return `<div class="${cls}" data-key="${esc(x.k)}" data-name="${esc(x.name)}" title="Fälle anzeigen"><span class="t">${x.gate?'⛔ ':''}${esc(x.name)}<small>${esc(x.k)}${x.gate?' · Gate':''}${bestand?' · Bestand':''}</small></span><span class="n">${de(n)}</span></div>`;}).join('');
+  document.querySelectorAll('#wgrid>div').forEach(el=>el.onclick=(ev)=>{ev.preventDefault(); waechterFaelle(el.dataset.key, el.dataset.name, el);});
+  if(wOffen){ const el=document.querySelector('#wgrid>div[data-key="'+wOffen+'"]'); if(el) el.classList.add('auf'); }
 
   const mn=M.menschen||{};
   $('mnSt').textContent=mn.social_stand?'Social '+tagK(mn.social_stand):'';
@@ -263,14 +270,30 @@ function zeichnen(){
   $('kStand').textContent=de(k.gemessen)+' gemessen · Zahl = hängt hier';
   $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div><div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
 }
+let wOffen=null;
+async function waechterFaelle(key, name, el){
+  const box=$('wFaelle');
+  if(wOffen===key){ wOffen=null; box.hidden=true; box.innerHTML=''; document.querySelectorAll('#wgrid>div').forEach(x=>x.classList.remove('auf')); return; }
+  wOffen=key; document.querySelectorAll('#wgrid>div').forEach(x=>x.classList.toggle('auf',x===el));
+  box.hidden=false; box.innerHTML='<h5><span>'+esc(name)+' · lädt …</span></h5>';
+  const {data,error}=await client.rpc('cb_admin_cockpit_waechter_faelle',{p_key:key,p_limit:50});
+  if(error||!data||!data.ok){ box.innerHTML='<h5><span>'+esc(name)+'</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5><div>Fehler: '+esc(error?error.message:(data&&data.fehler))+'</div>'; return; }
+  const rows=data.faelle||[];
+  if(!rows.length){ box.innerHTML='<h5><span>'+esc(name)+' · keine Fälle</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'; return; }
+  const cols=Object.keys(rows[0]).filter(c=>!/base64|hash|fingerprint/i.test(c)).slice(0,7);
+  const fmt=v=>v==null?'':typeof v==='object'?esc(JSON.stringify(v)).slice(0,120):esc(String(v)).slice(0,120);
+  box.innerHTML='<h5><span>'+esc(name)+' · '+rows.length+(rows.length>=50?'+':'')+' Fälle</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'
+    +'<div style="overflow:auto"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'
+    +rows.map(r=>'<tr>'+cols.map(c=>'<td>'+fmt(r[c])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
 function linie(id, vals, fehler){
-  const W=400,H=90,m=Math.max(1,...vals); if(!vals.length){$(id).innerHTML='';return;}
+  const W=400,H=($(id).viewBox&&$(id).viewBox.baseVal.height)||90,m=Math.max(1,...vals); if(!vals.length){$(id).innerHTML='';return;}
   const pts=vals.map((v,i)=>`${(i/(vals.length-1))*W},${(H-8-(v/m)*(H-18)).toFixed(1)}`);
   const f=(fehler||[]).map((v,i)=>v>0?`<circle cx="${(i/(vals.length-1))*W}" cy="${(H-8-(vals[i]/m)*(H-18)).toFixed(1)}" r="3" fill="var(--r)"/>`:'').join('');
   $(id).innerHTML=`<line x1="0" y1="${H-8}" x2="${W}" y2="${H-8}" stroke="var(--line)"/><polygon points="0,${H-8} ${pts.join(' ')} ${W},${H-8}" fill="var(--acc)" opacity=".12"/><polyline fill="none" stroke="var(--acc)" stroke-width="1.6" points="${pts.join(' ')}"/>${f}<circle cx="${W}" cy="${pts[pts.length-1].split(',')[1]}" r="3" fill="var(--acc)"/>`;
 }
 function balken(id, vals, limit, hellAb){
-  const W=400,H=90,m=Math.max(limit||0,...vals,1),bw=W/vals.length-2; if(!vals.length){$(id).innerHTML='';return;}
+  const W=400,H=($(id).viewBox&&$(id).viewBox.baseVal.height)||90,m=Math.max(limit||0,...vals,1),bw=W/vals.length-2; if(!vals.length){$(id).innerHTML='';return;}
   let s=vals.map((v,i)=>`<rect x="${i*(bw+2)}" y="${(H-4-(v/m)*(H-14)).toFixed(1)}" width="${bw}" height="${Math.max(1,(v/m)*(H-14)).toFixed(1)}" rx="2" fill="${limit&&v>limit?'var(--y)':'var(--acc)'}" opacity="${hellAb!=null&&i<hellAb?.45:1}"/>`).join('');
   if(limit){const y=(H-4-(limit/m)*(H-14)).toFixed(1); s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--r)" stroke-dasharray="4 4" stroke-width="1.2"/>`;}
   $(id).innerHTML=s;
