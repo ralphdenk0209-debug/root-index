@@ -67,7 +67,7 @@ function ausAppJs() {
    dann nur diese 200 aus, gleich am Anfang wie am Ende der Liste. Das ist
    zwangslaeufig der Reihe nach - rund zehn Minuten fuer den ganzen Bestand,
    einmal am Tag. */
-const STUFEN = [200, 80, 30, 10, 3];   // faellt eine Anfrage aus, wird sie kleiner
+const STUFEN = [200, 80, 30, 10, 3, 1];   // faellt eine Anfrage aus, wird sie kleiner
 
 async function holeAb(url, key, letzteId) {
   const nach = letzteId ? `&id=gt.${encodeURIComponent(letzteId)}` : "";
@@ -95,19 +95,48 @@ async function holeAb(url, key, letzteId) {
   throw new Error(`nach id ${letzteId} auch mit ${STUFEN[STUFEN.length - 1]} Zeilen nicht zu holen - ${fehler}`);
 }
 
+// Nur die id holen - dafuer rechnet die Sicht die Zutaten nicht nach, das geht
+// auch dann noch, wenn die Datenbank unter Last steht.
+async function naechsteId(url, key, letzteId) {
+  const nach = letzteId ? `&id=gt.${encodeURIComponent(letzteId)}` : "";
+  for (let versuch = 1; versuch <= 3; versuch++) {
+    try {
+      const r = await fetch(`${url}/rest/v1/v_web_produkte?select=id&order=id&limit=1${nach}`, { headers: { apikey: key } });
+      if (r.ok) { const j = await r.json(); return j.length ? j[0].id : null; }
+    } catch (e) { /* naechster Versuch */ }
+    await new Promise((f) => setTimeout(f, 2000 * versuch));
+  }
+  return null;
+}
+
 async function alleProdukte() {
   const { url, key } = ausAppJs();
   console.log("Lade am Schluessel entlang, Seitengroesse " + STUFEN.join("/") + " ...");
   const alle = [];
+  const uebersprungen = [];
   let letzteId = null;
   while (true) {
-    const teil = await holeAb(url, key, letzteId);
+    let teil;
+    try {
+      teil = await holeAb(url, key, letzteId);
+    } catch (e) {
+      // Einzelnes Produkt rechnet zu lange (Datenbank unter Last). Frueher stand
+      // hier der ganze Lauf still - jetzt wird diese eine Zeile uebersprungen,
+      // der naechste Lauf holt sie nach. Zu viele Ausfaelle brechen weiter ab.
+      const weiter = await naechsteId(url, key, letzteId);
+      if (!weiter) throw e;
+      uebersprungen.push(weiter);
+      console.log(`  ! ${weiter} uebersprungen (${e.message.slice(0, 80)})`);
+      if (uebersprungen.length > 300) throw new Error(`zu viele uebersprungene Produkte (${uebersprungen.length}) - Datenbank pruefen`);
+      letzteId = weiter;
+      continue;
+    }
     if (teil.length === 0) break;
     alle.push(...teil);
     letzteId = teil[teil.length - 1].id;
     if (alle.length % 2000 < STUFEN[0]) console.log(`  ... ${alle.length} Produkte (zuletzt ${letzteId})`);
   }
-  console.log(`Fertig geladen: ${alle.length} Produkte`);
+  console.log(`Fertig geladen: ${alle.length} Produkte` + (uebersprungen.length ? ` · ${uebersprungen.length} uebersprungen: ${uebersprungen.slice(0, 20).join(", ")}` : ""));
   return alle;
 }
 
