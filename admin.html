@@ -1503,6 +1503,8 @@ window.__ADMIN_PAGE=true;</script>
    eingebettet (gleiche Anmeldung, gleicher localStorage). Das alte Dashboard aus
    dashboard-ui.js wird nicht mehr gebaut; die Datei bleibt geladen, weil andere Werkzeuge
    (Steuerung, Arbeitsfläche-Helfer) Funktionen daraus nutzen. */
+/* Die Besucher-Karte (besucher-ui.js) sass VOR dem Dashboard - ihre Zahlen stehen jetzt im Cockpit (Seite / Menschen). */
+try{ var _st=document.createElement('style'); _st.textContent='#besucherKarte{display:none!important}'; document.head.appendChild(_st); }catch(e){}
 window.loadDashboard=function(){
   var box=document.getElementById('fgDash'); if(!box) return;
   if(box.querySelector('iframe.cockpitFrame')) return;
