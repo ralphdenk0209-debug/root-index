@@ -194,7 +194,8 @@ Deno.serve(async (req: Request) => {
       const { data: auftrag } = await sb.rpc("cb_riki_probe_holen");
       if (!auftrag) return response({ ok: true, probe: "kein offener Auftrag" });
       const opt = auftrag.optionen ?? {};
-      const varianten: boolean[] = Array.isArray(opt.varianten) ? opt.varianten.map((x: any) => x === true) : [true];
+      /* Variante: true = schlank, false = voll, "zeilen" = nur Zutatenzeilen (Tempo C) */
+      const varianten: any[] = Array.isArray(opt.varianten) ? opt.varianten : [true];
       const aufgaben: Promise<any>[] = [];
       for (const pj of (auftrag.jobs ?? [])) {
         const bilder = cleanImages(pj);
@@ -205,7 +206,7 @@ Deno.serve(async (req: Request) => {
               const r = await fetch(`${url}/functions/v1/riki-etikett`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank, gegenprobe: { antwort: "ja", marke: null } }),
+                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: schlank === true, nur_zeilen: schlank === "zeilen", gegenprobe: { antwort: "ja", marke: null } }),
               });
               const d = await r.json().catch(() => null);
               const v = d?.vorschlag ?? {};
@@ -213,6 +214,7 @@ Deno.serve(async (req: Request) => {
                 out_token: d?.meta?.out_token ?? null, in_token: d?.meta?.in_token ?? null, kosten_usd: d?.meta?.kosten_usd ?? null,
                 name: v.name ?? null, marke: v.marke ?? null, naehrwerte_100g: v.naehrwerte_100g ?? null,
                 zutaten: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.original_text ?? z?.name) : null,
+                namen: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.name) : null,
                 e_nummern: v.zusatzstoffe?.e_nummern ?? null, warnungen: d?.warnungen ?? null, fehler: d?.error ?? null };
             } catch (e) { return { job_id: pj.job_id, schlank, ms: Date.now() - t0, fehler: String(e) }; }
           })());
