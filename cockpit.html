@@ -202,7 +202,8 @@ function neben(id, arr){ $(id).innerHTML=arr.map(([l,v,c])=>`<div>${esc(l)}<b cl
 function zeichnen(){
   $('gesamt').className='dot '+A.gesamt;
   const d=A.delta, kd=(d.klicks_tag??0)-(d.klicks_vortag??0);
-  $('delta').innerHTML=`<span>heute</span><span>Frei <b>${de(d.frei_heute)}</b></span><span>Klicks <b class="${kd>0?'up':kd<0?'dn':''}">${de(d.klicks_tag)} ${kd>0?'▲':kd<0?'▼':''}</b></span><span>Fehler 24 h <b class="${d.fehler_24h>=20?'dn':''}">${de(d.fehler_24h)}</b></span>`;
+  const seoTag=tagK((A.seite&&A.seite.seo_stand)||'');
+  $('delta').innerHTML=`<span title="Produkte, die heute freigegeben wurden">Freigegeben heute <b>${de(d.frei_heute)}</b></span><span title="Google-Klicks am letzten Tag, den Google geliefert hat (${seoTag}), Pfeil = gegenüber dem Vortag">Google-Klicks ${seoTag} <b class="${kd>0?'up':kd<0?'dn':''}">${de(d.klicks_tag)} ${kd>0?'▲':kd<0?'▼':''}</b></span><span title="Fehlgeschlagene Takt-Läufe in den letzten 24 Stunden">Takt-Fehler 24 h <b class="${d.fehler_24h>=20?'dn':''}">${de(d.fehler_24h)}</b></span>`;
 
   // Maschine
   const m=A.maschine; $('aM').className='s '+m.ampel;
