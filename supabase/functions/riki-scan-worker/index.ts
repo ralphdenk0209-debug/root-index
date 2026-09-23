@@ -340,7 +340,7 @@ Deno.serve(async (req: Request) => {
       if (job.ean) {
         try {
           const { data: sc } = await sb.from("Scan_Cache").select("Marke").eq("EAN", String(job.ean)).maybeSingle();
-          const m = typeof sc?.Marke === "string" ? sc.Marke.trim() : "";
+          const m = typeof sc?.Marke === "string" ? sc.Marke.split(",")[0].trim() : ""; // OFF fuehrt Marken als Liste - die erste zaehlt
           if (m) offMarke = m;
         } catch (_) { /* ohne OFF weiter wie bisher */ }
       }
