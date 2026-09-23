@@ -76,7 +76,7 @@ const WORKER = "riki-scan-worker v11";
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
 //   (nur service_role kann Auftraege anlegen/holen) und schreibt Zeiten + Lesung zurueck. Kein Ingest, kein Job-Status.
-const SCHLANK = false;
+const SCHLANK = true; // 23.09.2026 nach Probe (13 Lesungen: Zutaten/Naehrwerte/Name/Marke gleich, -35 % Zeit)
 const CHECK_MODELL = "claude-haiku-4-5-20251001";
 
 /* v10, 23.09.2026 (Ralph A Foto-Tempo): SCHNELL-CHECK VOR DEM GROSSEN LESEN.
