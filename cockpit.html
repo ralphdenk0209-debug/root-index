@@ -78,7 +78,7 @@ svg.ch{width:100%;height:90px;display:block}
 .kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink2);padding:5px 0;border-top:1px solid var(--line)}
 .kv b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-weight:500;text-align:right}
 @media(max-width:900px){.reihe2{grid-template-columns:1fr}}
-@media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}.right .nav{display:none}.right{margin-left:0}}
 @media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
 <div class="bar">
@@ -242,7 +242,7 @@ function karteZeichnen(){
     if(!window.DE_KARTE){ fl.innerHTML='<div class="leer">Deutschlandkarte nicht geladen.</div>'; return; }
     const cnt={}; if(kWas==='app'){ (K.app_bundeslaender||[]).forEach(x=>cnt[x.land]=Number(x.anzahl)||0); }
     const max=Math.max(0,...Object.values(cnt)); let svg='';
-    Object.keys(DE_KARTE.p).forEach(l=>{const n=cnt[l]||0; svg+=`<path d="${DE_KARTE.p[l]}" fill="${n>0?farbe(n/max):'var(--card2)'}" stroke="var(--bg)" stroke-width="1.1" stroke-linejoin="round"><title>${esc(l)} · ${n}</title></path>`;});
+    Object.keys(DE_KARTE.p).forEach(l=>{const n=cnt[l]||0; svg+=`<path d="${DE_KARTE.p[l]}" fill="${n>0?farbe(n/max):'var(--card2)'}" stroke="rgba(255,255,255,.16)" stroke-width="1.1" stroke-linejoin="round"><title>${esc(l)} · ${n}</title></path>`;});
     Object.keys(DE_KARTE.p).forEach(l=>{const n=cnt[l]||0; if(!n) return; const c=DE_KARTE.c[l]||[0,0]; svg+=`<text x="${c[0]}" y="${c[1]+4}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--ink)">${n}</text>`;});
     fl.innerHTML=`<svg viewBox="0 0 ${DE_KARTE.w} ${DE_KARTE.h}" style="max-width:320px;margin:0 auto">${svg}</svg>`;
     if(kWas==='app'){ const rows=(K.app_bundeslaender||[]).slice().sort((a,b)=>b.anzahl-a.anzahl); li.innerHTML=rows.length?rows.map(x=>`<div class="kv"><span>${esc(x.land)}</span><b>${de(x.anzahl)}</b></div>`).join(''):'<div class="kv"><span>noch keine Angaben</span><b>–</b></div>'; fu.textContent=de(K.app_mit_angabe)+' Nutzer mit Bundesland-Angabe · freiwillig, anonym gezählt · Karte © GeoBasis-DE / BKG'; }
@@ -258,7 +258,7 @@ function karteZeichnen(){
   else { einheit='Nutzer'; cnt['deu']=(K.app_bundeslaender||[]).reduce((a,x)=>a+(Number(x.anzahl)||0),0); }
   const max=Math.max(0,...Object.values(cnt)); let svg='';
   WELT.features.forEach(f=>{ const a3=(window.LAENDER_NUM||{})[String(Number(f.id))]; const n=a3?cnt[a3]||0:0; const d=path(f); if(!d) return;
-    svg+=`<path d="${d}" fill="${n>0?farbe(n/max):'var(--card2)'}" stroke="var(--bg)" stroke-width=".6"><title>${esc(a3?lname(a3):f.properties.name)} · ${n} ${einheit}</title></path>`; });
+    svg+=`<path d="${d}" fill="${n>0?farbe(n/max):'var(--card2)'}" stroke="rgba(255,255,255,.14)" stroke-width=".7"><title>${esc(a3?lname(a3):f.properties.name)} · ${n} ${einheit}</title></path>`; });
   fl.innerHTML=`<svg viewBox="0 0 ${W} ${H}">${svg}</svg>`;
   const rows=Object.entries(cnt).filter(([,n])=>n>0).sort((a,b)=>b[1]-a[1]).slice(0,10); const top=rows[0]?rows[0][1]:1;
   li.innerHTML=rows.length?rows.map(([c,n])=>`<div class="kv"><span><i style="width:${Math.max(6,60*n/top)}px"></i>${esc(lname(c))}</span><b>${de(n)}</b></div>`).join(''):`<div class="kv"><span>${kWas==='google'?'noch keine Länderdaten – kommen mit dem nächsten Google-Abruf (täglich 07:15)':'noch keine Nutzer'}</span><b>–</b></div>`;
