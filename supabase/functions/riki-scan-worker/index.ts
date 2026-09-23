@@ -71,7 +71,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v12";
+const WORKER = "riki-scan-worker v13";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -278,7 +278,7 @@ Deno.serve(async (req: Request) => {
           },
           // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
           // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: null } : undefined }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
@@ -333,11 +333,22 @@ Deno.serve(async (req: Request) => {
       const rohtext = Array.isArray(v.zutaten)
         ? v.zutaten.map((z: any) => String(z?.original_text ?? z?.name ?? "").trim()).filter(Boolean).join(", ")
         : "";
+      /* 23.09.2026 (Ralph jaja A): Marke kommt zuerst aus OFF (Scan_Cache, beim Barcode-Scan geholt).
+         Nur wenn dort keine steht, gilt Rikis gelesene Marke. Die Marke aus dem Haiku-Schnell-Check
+         zaehlt nicht mehr als Widerspruch (oben: marke null) - sie verwechselte Marke und Produktname. */
+      let offMarke: string | null = null;
+      if (job.ean) {
+        try {
+          const { data: sc } = await sb.from("Scan_Cache").select("Marke").eq("EAN", String(job.ean)).maybeSingle();
+          const m = typeof sc?.Marke === "string" ? sc.Marke.trim() : "";
+          if (m) offMarke = m;
+        } catch (_) { /* ohne OFF weiter wie bisher */ }
+      }
       const payload: any = {
         produkt_id: job.produkt_id,
         ean: job.ean || null,
         name: v.name ?? null,
-        marke: v.marke ?? null,
+        marke: offMarke ?? v.marke ?? null,
         kategorie: v.kategorie_vorschlag ?? null,
         basis: v.bezug === "100ml" ? "100ml" : "100g",
         quelle: `Etikettfoto (RIKI-Hintergrundlauf), Job ${job.job_id}`,
