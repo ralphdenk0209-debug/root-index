@@ -341,12 +341,15 @@ Deno.serve(async (req: Request) => {
       if (job.ean) {
         try {
           const { data: sc } = await sb.from("Scan_Cache").select("Marke,Name").eq("EAN", String(job.ean)).maybeSingle();
-          const m = typeof sc?.Marke === "string" ? sc.Marke.split(",")[0].trim() : ""; // OFF fuehrt Marken als Liste - die erste zaehlt
-          if (m) offMarke = m;
+          // OFF fuehrt Marken als Liste. Ganze Liste weitergeben - der Trigger trg_marke_normalisieren waehlt
+          // die Eigenmarke vor dem Haendler und die feste Schreibweise (Ralph B, 23.09.2026).
+          const liste = typeof sc?.Marke === "string" ? sc.Marke.split(/[,;|]/).map((x: string) => x.trim()).filter(Boolean) : [];
+          if (liste.length) offMarke = liste.join(", ");
           /* 23.09.2026 (Ralph „ja"): auch der Name zuerst aus OFF. Steht die Marke vorn/hinten im Namen, faellt sie weg;
              bleibt weniger als 3 Zeichen uebrig oder ist der Name nur die Marke, gilt Rikis Name. */
           let nm = typeof sc?.Name === "string" ? sc.Name.replace(/\s+/g, " ").trim() : "";
-          if (nm && m) {
+          for (const m of liste) {
+            if (!nm) break;
             const esc = m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const ohne = nm.replace(new RegExp("^" + esc + "\\s*[-–:,]?\\s*", "i"), "").replace(new RegExp("\\s*[-–:,]?\\s*" + esc + "$", "i"), "").trim();
             nm = ohne.length >= 3 ? ohne : "";
