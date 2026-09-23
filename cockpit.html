@@ -24,6 +24,9 @@ a{color:var(--acc);text-decoration:none}
 .zone{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0;color:inherit;border:1px solid transparent;transition:border-color .15s}
 .zone:hover{border-color:var(--acc)}
 .zone h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.zone h4 .st,.klein h4 .st,.wall h4 .st,.kette h4 span,.karte h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;text-align:right}
+.zone h4,.klein h4,.wall h4,.kette h4{flex-wrap:nowrap;gap:10px}
+.zone h4>span:first-child,.klein h4>span:first-child{flex:0 0 auto}
 .s{width:10px;height:10px;border-radius:50%;background:var(--ink3)}
 .s.gruen{background:var(--g)}.s.gelb{background:var(--y)}.s.rot{background:var(--r)}
 .lead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -122,7 +125,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
  <div class="kette"><h4>Kette <span id="kStand"></span></h4><div class="st" id="kette"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
-  <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks 28 T</span><span class="d" id="sD"></span></div>
+  <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks in 28 Tagen</span><span class="d" id="sD"></span></div>
   <div class="q">Wächst sie?</div>
   <svg class="ch" id="sCh" viewBox="0 0 400 90" preserveAspectRatio="none"></svg>
   <div class="q" id="sQ">Google-Klicks je Tag · 28 Tage</div>
@@ -157,7 +160,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <a class="klein" href="steuerung.html"><h4>Ich <span class="s" id="aI"></span></h4>
    <div class="lead"><span class="n" id="iN">–</span><span class="u">Entscheidungen</span></div>
    <svg class="ch" id="iCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg>
-   <div class="q" id="iQ">RIKI je Tag · 14 T</div>
+   <div class="q" id="iQ">RIKI je Tag · 14 Tage</div>
    <div class="neben" id="iNeben"></div></a>
   <a class="klein" href="maschine.html"><h4>Maschine <span class="s" id="aM"></span></h4>
    <div class="lead"><span class="n" id="mN">–</span><span class="u" id="mU">von – Takten</span></div>
@@ -203,27 +206,27 @@ function zeichnen(){
   $('gesamt').className='dot '+A.gesamt;
   const d=A.delta, kd=(d.klicks_tag??0)-(d.klicks_vortag??0);
   const seoTag=tagK((A.seite&&A.seite.seo_stand)||'');
-  $('delta').innerHTML=`<span title="Produkte, die heute freigegeben wurden">Freigegeben heute <b>${de(d.frei_heute)}</b></span><span title="Google-Klicks am letzten Tag, den Google geliefert hat (${seoTag}), Pfeil = gegenüber dem Vortag">Google-Klicks ${seoTag} <b class="${kd>0?'up':kd<0?'dn':''}">${de(d.klicks_tag)} ${kd>0?'▲':kd<0?'▼':''}</b></span><span title="Fehlgeschlagene Takt-Läufe in den letzten 24 Stunden">Takt-Fehler 24 h <b class="${d.fehler_24h>=20?'dn':''}">${de(d.fehler_24h)}</b></span>`;
+  $('delta').innerHTML=`<span title="Produkte, die heute freigegeben wurden">Freigegeben heute <b>${de(d.frei_heute)}</b></span><span title="Google-Klicks am letzten Tag, den Google geliefert hat (${seoTag}), Pfeil = gegenüber dem Vortag">Google-Klicks ${seoTag} <b class="${kd>0?'up':kd<0?'dn':''}">${de(d.klicks_tag)} ${kd>0?'▲':kd<0?'▼':''}</b></span><span title="Fehlgeschlagene Takt-Läufe in den letzten 24 Stunden">Takt-Fehler 24 Stunden <b class="${d.fehler_24h>=20?'dn':''}">${de(d.fehler_24h)}</b></span>`;
 
   // Maschine
   const m=A.maschine; $('aM').className='s '+m.ampel;
   $('mN').textContent=m.aktiv; $('mU').textContent='von '+m.gesamt+' Takten'+(m.rot?' · '+m.rot+' rot':'');
   linie('mCh', (m.verlauf||[]).map(x=>x.n), (m.verlauf||[]).map(x=>x.f));
-  neben('mNeben',[['Fehler 24 h',de(m.fehler_24h),m.fehler_24h>=20?'gelb':''],['Gate-Fälle',de(m.gate),m.gate>0?'rot':''],['letzter Lauf',vor(m.letzter_lauf),m.still>0?'gelb':'']]);
+  neben('mNeben',[['Fehler 24 Stunden',de(m.fehler_24h),m.fehler_24h>=20?'gelb':''],['Gate-Fälle',de(m.gate),m.gate>0?'rot':''],['letzter Lauf',vor(m.letzter_lauf),m.still>0?'gelb':'']]);
 
   // Seite
   const s=A.seite; $('aS').className='s '+s.ampel;
   $('sN').textContent=de((s.klicks_tage||[]).reduce((a,x)=>a+(Number(x.klicks)||0),0));
-  const dp=s.delta_pct; $('sD').textContent=dp==null?'':'7 T '+(dp>=0?'▲ +':'▼ ')+de(dp)+' %'; $('sD').className='d '+(dp==null?'':dp>=0?'up':'dn');
+  const dp=s.delta_pct; $('sD').textContent=dp==null?'':'7 Tage '+(dp>=0?'▲ +':'▼ ')+de(dp)+' %'; $('sD').className='d '+(dp==null?'':dp>=0?'up':'dn');
   balken('sCh',(s.klicks_tage||[]).map(x=>x.klicks),null,(s.klicks_tage||[]).length-7);
   $('sQ').textContent='Google-Klicks je Tag · 28 Tage bis '+tagK(s.seo_stand||'')+' (Google liefert 2–3 Tage später – die Search Console zeigt bis heute, daher dort mehr)';
-  neben('sNeben',[['Klicks 7 T',de(s.klicks_7t)],['Position',s.position!=null?Number(s.position).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'],['Indexiert',de(s.indexiert)+' / '+de(s.stichprobe)]]);
+  neben('sNeben',[['Klicks 7 Tage',de(s.klicks_7t)],['Position',s.position!=null?Number(s.position).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'],['Indexiert',de(s.indexiert)+' / '+de(s.stichprobe)]]);
 
   // Ich
   const i=A.ich; $('aI').className='s '+i.ampel;
   $('iN').textContent=i.bei_ralph;
   balken('iCh',(i.riki_14t||[]).map(x=>Number(x.usd)),Number(i.riki_tagesbudget_usd));
-  $('iQ').textContent='RIKI je Tag · 14 T · '+usd(i.riki_monat_usd)+' von '+usd(i.riki_budget_usd)+' im Monat · Linie = '+usd(i.riki_tagesbudget_usd)+'/Tag';
+  $('iQ').textContent='RIKI je Tag · 14 Tage · '+usd(i.riki_monat_usd)+' von '+usd(i.riki_budget_usd)+' im Monat · Linie = '+usd(i.riki_tagesbudget_usd)+'/Tag';
   neben('iNeben',[['Warten auf Abnahme',de(i.abnahme)],['Scan-Eingang'+(i.autopilot_an?'':' · Autopilot aus'),de(i.eingang),i.autopilot_an?'':'gelb'],['blockiert',de(i.blockiert),i.blockiert>0?'rot':'']]);
 
   // Mehr
@@ -231,7 +234,7 @@ function zeichnen(){
   // Produkte
   const P=A.produkte||{};
   $('pN').textContent=de(P.aktiv); $('pU').textContent='aktiv von '+de(P.gesamt)+' · '+de(P.frei_heute)+' heute freigegeben';
-  $('pSt').textContent=de(P.frei_7t)+' Freigaben 7 T';
+  $('pSt').textContent=de(P.frei_7t)+' Freigaben in 7 Tagen';
   const teile=[['Aktiv',P.aktiv,'var(--g)'],['Entwurf',P.entwurf,'var(--y)'],['Nur EAN / EAN-Name',P.nur_ean,'var(--ink3)'],['Abgelehnt',P.abgelehnt,'var(--r)'],['Sonstige',P.sonstige,'var(--line2)']].map(([l,v,c])=>[l,Number(v)||0,c]);
   const ges=Math.max(1,teile.reduce((a,x)=>a+x[1],0));
   $('pStapel').innerHTML=teile.map(([l,v,c])=>`<i style="width:${100*v/ges}%;background:${c}" title="${l} ${de(v)}"></i>`).join('');
@@ -251,12 +254,12 @@ function zeichnen(){
   if(wOffen){ const el=document.querySelector('#wgrid>div[data-key="'+wOffen+'"]'); if(el) el.classList.add('auf'); }
 
   const mn=M.menschen||{};
-  $('mnSt').textContent=mn.social_stand?'Social '+tagK(mn.social_stand):'';
-  $('mnN').textContent=de(mn.nutzer); $('mnU').textContent='Nutzer · '+de(mn.aktiv_7t)+' aktiv 7 T · '+de(mn.premium)+' Premium';
+  $('mnSt').textContent=mn.social_stand?'Social-Stand '+tagK(mn.social_stand):'';
+  $('mnN').textContent=de(mn.nutzer); $('mnU').textContent='Nutzer · '+de(mn.aktiv_7t)+' aktiv in 7 Tagen · '+de(mn.premium)+' Premium';
   balken('mnCh',(A.seite.besucher||[]).map(x=>Number(x.gesamt)||0));
   const hb=(rows)=>{const m=Math.max(1,...rows.map(r=>r[1]));return rows.map(([l,v,c,txt])=>`<div><span class="lab">${l}</span><i class="${c||''}" style="width:${Math.max(3,100*v/m)}%"></i><span class="n">${txt||de(v)}</span></div>`).join('');};
   $('menschen').innerHTML=hb([['Scans im Cache',Number(mn.scans_cache)||0],['davon übernommen',Number(mn.scans_uebernommen)||0,'gruen'],['Scans in Warteschlange',Number(mn.scans_warteschlange)||0,'gelb']])
-    +hb([['Tagebuch-Einträge 7 T',Number(mn.tagebuch_7t)||0,'',de(mn.tagebuch_7t)+' von '+de(mn.tagebuch_gesamt)]])
+    +hb([['Tagebuch-Einträge 7 Tage',Number(mn.tagebuch_7t)||0,'',de(mn.tagebuch_7t)+' von '+de(mn.tagebuch_gesamt)]])
     +hb([['Instagram-Follower',Number(mn.ig_follower)||0],['Facebook-Follower',Number(mn.fb_follower)||0]]);
   const st=M.stamm||{};
   $('stN').textContent=de(st.zutaten); $('stSt').textContent='Score-Schnitt '+(st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–');
