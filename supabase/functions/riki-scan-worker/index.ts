@@ -71,11 +71,12 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v11";
+const WORKER = "riki-scan-worker v12";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
 //   (nur service_role kann Auftraege anlegen/holen) und schreibt Zeiten + Lesung zurueck. Kein Ingest, kein Job-Status.
+const NUR_ZEILEN = true; // 23.09.2026 Tempo C (Ralph jaja): Riki liefert je Zutat nur name + original_text; Probe 10 Jobs im Mittel 13 s statt 20 s
 const SCHLANK = true; // 23.09.2026 nach Probe (13 Lesungen: Zutaten/Naehrwerte/Name/Marke gleich, -35 % Zeit)
 const CHECK_MODELL = "claude-haiku-4-5-20251001";
 
@@ -277,7 +278,7 @@ Deno.serve(async (req: Request) => {
           },
           // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
           // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
