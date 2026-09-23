@@ -106,6 +106,26 @@ function datumIso(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
+// 1b) Klicks/Impressionen je Land und Tag (Cockpit-Karte, 23.09.2026)
+async function laenderHolen(token: string, siteUrl: string) {
+  const ende = new Date();
+  ende.setUTCDate(ende.getUTCDate() - 3);
+  const start = new Date(ende);
+  start.setUTCDate(start.getUTCDate() - 27);
+  const r = await fetch(
+    `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ startDate: datumIso(start), endDate: datumIso(ende), dimensions: ["date", "country"], rowLimit: 5000 }),
+    },
+  );
+  if (!r.ok) throw new Error(`searchAnalytics.query (country) fehlgeschlagen: ${r.status} ${await r.text()}`);
+  const daten = await r.json();
+  const zeilen: Array<{ keys: string[]; clicks: number; impressions: number }> = daten.rows || [];
+  return zeilen.map((z) => ({ tag: z.keys[0], land: String(z.keys[1] || "").toLowerCase(), klicks: Math.round(z.clicks || 0), impressionen: Math.round(z.impressions || 0) }));
+}
+
 async function suchdatenHolen(token: string, siteUrl: string) {
   const ende = new Date();
   ende.setUTCDate(ende.getUTCDate() - 3); // GSC-Daten sind ~2-3 Tage verzoegert
@@ -219,6 +239,18 @@ Deno.serve(async (req: Request) => {
       if (error) throw new Error(`Upsert seo_suchdaten_taeglich (${z.tag}): ${error.message}`);
     }
     ergebnis.tage_aktualisiert = zeilen.length;
+
+    // 1b) je Land
+    try {
+      const laender = await laenderHolen(token, siteUrl);
+      for (const z of laender) {
+        const { error } = await sb.from("seo_suchdaten_land").upsert({
+          tag: z.tag, land: z.land, klicks: z.klicks, impressionen: z.impressionen, aktualisiert_am: new Date().toISOString(),
+        });
+        if (error) throw new Error(`Upsert seo_suchdaten_land (${z.tag}/${z.land}): ${error.message}`);
+      }
+      ergebnis.laender_zeilen = laender.length;
+    } catch (e) { ergebnis.laender_fehler = (e as Error).message; }
 
     // 2) Stichprobe: welche Produktseiten kennt Google?
     const alleUrls = await sitemapProduktUrls();

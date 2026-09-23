@@ -47,7 +47,10 @@ function applyAdminMode(){
     const nav=document.createElement('div'); nav.id='adminNav';
     var _an=function(k,ico,lbl,oc,extra){ return '<button class="anBtn"'+(extra||'')+' data-k="'+k+'" onclick="'+oc+'"><span class="anIco">'+ico+'</span><span class="anLbl">'+lbl+'</span></button>'; };
     nav.innerHTML=
-       _an('dash','📊','Dashboard',"adminGo('dash')")
+       /* 23.09.2026, Ralph: "das dashboard durch das cockpit ersetzen" - der Menüpunkt
+          Dashboard öffnet jetzt das Cockpit (cockpit.html) im selben Fenster. Das alte
+          Dashboard bleibt per adminGo('dash') erreichbar, hat aber keinen Knopf mehr. */
+       _an('dash','📊','Dashboard',"location.href='cockpit.html?cb='+Date.now()")
       /* 🔴 31.08.2026, Ralph (E16): „die steuerung muss vom admin aus erreichbar
          sein, also ich will sie dort oeffnen koennen." Eigene Seite wie
          video-skript-01.html — eigenes Fenster mit Cache-Buster, damit nach einem
@@ -56,9 +59,6 @@ function applyAdminMode(){
       +_an('steuerung','🎛️','Steuerung',"window.open('steuerung.html?cb='+Date.now(),'_blank')")
       /* 07.09.2026 (#217, Ralph): die Maschine als Netzplan - eigene Seite, eigenes Fenster. */
       +_an('maschine','🚇','Maschine',"window.open('maschine.html?cb='+Date.now(),'_blank')")
-      /* 21.09.2026, Ralph (Dashboard-Umbau): das Cockpit - Vorlage 1:1 nachgebaut,
-         Wellen aus echten Takt- und Datenbankzahlen. Eigene Seite, eigenes Fenster. */
-      +_an('cockpit','🛸','Cockpit',"window.open('cockpit.html?cb='+Date.now(),'_blank')")
       /* 09.09.2026 (#217, Ralph): Riki-Kosten je Aufruf und Produkt - eigene Seite. */
       +_an('rikikosten','💸','Kosten',"window.open('riki-kosten.html?cb='+Date.now(),'_blank')")
       /* 16.09.2026, Ralph: "Benchmark im Menü löschen." Wie schon bei bewerten/

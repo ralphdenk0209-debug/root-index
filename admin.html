@@ -1748,8 +1748,9 @@ window.__ADMIN_PAGE=true;</script>
         if(!ME.is_admin){ document.body.innerHTML='<div style="max-width:340px;margin:14vh auto;text-align:center;font-family:sans-serif"><h2>Kein Admin-Zugang</h2><p>Dieser Bereich ist nur f\u00fcr Admins. F\u00fcr die App: <a href="https://root-index.de">root-index.de</a></p></div>'; return; }
         if(ME.is_admin && !routed){
           routed=true;
-          /* Dashboard als Start – über adminGo, damit der linke Menüpunkt markiert ist. */
-          setTimeout(function(){ try{ if(typeof adminGo==='function') adminGo('dash'); else navTo('freigabe'); }catch(e){} }, 250);
+          /* 23.09.2026, Ralph: Dashboard ist durch das Cockpit (cockpit.html) ersetzt.
+             admin.html startet deshalb im Posteingang/Freigabe, nicht mehr im alten Dashboard. */
+          setTimeout(function(){ try{ navTo('freigabe'); }catch(e){} }, 250);
         }
       }
     }catch(e){}
