@@ -14,7 +14,7 @@ name: Produktseiten und Sitemap
 
 on:
   schedule:
-    - cron: "40 2 * * *"      # taeglich 04:40 deutscher Sommerzeit
+    - cron: "40 2,14 * * *"   # zweimal taeglich: 04:40 und 16:40 deutscher Sommerzeit
   workflow_dispatch:
   push:
     # Aendert sich der Generator oder dieser Workflow, wird sofort neu gebaut -
