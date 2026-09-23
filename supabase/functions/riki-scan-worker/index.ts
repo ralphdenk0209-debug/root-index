@@ -337,17 +337,27 @@ Deno.serve(async (req: Request) => {
          Nur wenn dort keine steht, gilt Rikis gelesene Marke. Die Marke aus dem Haiku-Schnell-Check
          zaehlt nicht mehr als Widerspruch (oben: marke null) - sie verwechselte Marke und Produktname. */
       let offMarke: string | null = null;
+      let offName: string | null = null;
       if (job.ean) {
         try {
-          const { data: sc } = await sb.from("Scan_Cache").select("Marke").eq("EAN", String(job.ean)).maybeSingle();
+          const { data: sc } = await sb.from("Scan_Cache").select("Marke,Name").eq("EAN", String(job.ean)).maybeSingle();
           const m = typeof sc?.Marke === "string" ? sc.Marke.split(",")[0].trim() : ""; // OFF fuehrt Marken als Liste - die erste zaehlt
           if (m) offMarke = m;
+          /* 23.09.2026 (Ralph „ja"): auch der Name zuerst aus OFF. Steht die Marke vorn/hinten im Namen, faellt sie weg;
+             bleibt weniger als 3 Zeichen uebrig oder ist der Name nur die Marke, gilt Rikis Name. */
+          let nm = typeof sc?.Name === "string" ? sc.Name.replace(/\s+/g, " ").trim() : "";
+          if (nm && m) {
+            const esc = m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+            const ohne = nm.replace(new RegExp("^" + esc + "\\s*[-–:,]?\\s*", "i"), "").replace(new RegExp("\\s*[-–:,]?\\s*" + esc + "$", "i"), "").trim();
+            nm = ohne.length >= 3 ? ohne : "";
+          }
+          if (nm.length >= 3) offName = nm;
         } catch (_) { /* ohne OFF weiter wie bisher */ }
       }
       const payload: any = {
         produkt_id: job.produkt_id,
         ean: job.ean || null,
-        name: v.name ?? null,
+        name: offName ?? v.name ?? null,
         marke: offMarke ?? v.marke ?? null,
         kategorie: v.kategorie_vorschlag ?? null,
         basis: v.bezug === "100ml" ? "100ml" : "100g",

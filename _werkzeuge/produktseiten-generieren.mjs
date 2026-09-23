@@ -462,6 +462,13 @@ async function main() {
 
   mkdirSync(ZIEL, { recursive: true });
   // Vollstaendige Neuerzeugung: alte generierte Seiten entfernen (keine Waisen).
+  // 23.09.2026 (Marken-Bereinigung): alte Adressen merken. Aendert sich Marke oder Name, aendert sich die
+  // Adresse - die alte bekommt unten eine Weiterleitung, damit Google-Treffer nicht ins Leere laufen.
+  const alteAdressen = new Map();
+  for (const f of readdirSync(ZIEL)) {
+    const m = f.match(/-(p\d+)\.html$/i);
+    if (m) alteAdressen.set(f, m[1].toUpperCase());
+  }
   for (const f of readdirSync(ZIEL)) if (f.endsWith(".html")) unlinkSync(join(ZIEL, f));
 
   const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`];
@@ -533,6 +540,18 @@ async function main() {
     }
   }
 
+  // Weiterleitungen alter Adressen (Marke/Name geaendert). Nicht in der Sitemap, noindex.
+  const neueAdresse = new Map();
+  for (const [, { eintraege }] of proKat) for (const { p, datei } of eintraege) neueAdresse.set(String(p.id).toUpperCase(), datei);
+  let umgeleitet = 0;
+  for (const [f, pid] of alteAdressen) {
+    const ziel = neueAdresse.get(pid);
+    if (!ziel || ziel === f || vergeben.has(f)) continue;
+    const href = `/produkt/${ziel}`;
+    writeFileSync(join(ZIEL, f), `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Weitergeleitet</title><meta name="robots" content="noindex"><link rel="canonical" href="${DOMAIN}${href}"><meta http-equiv="refresh" content="0; url=${href}"></head><body><a href="${href}">Zur Produktseite</a></body></html>\n`);
+    umgeleitet++;
+  }
+
   // Kategorieseiten
   const kats = [...proKat.entries()].sort((a, b) => a[0].localeCompare(b[0], "de"));
   for (const [kat, { datei, eintraege }] of kats) {
@@ -575,6 +594,7 @@ async function main() {
   writeFileSync(join(WEB, "produkt", "stand.json"),
     JSON.stringify({ seiten: geschrieben, kategorien: kats.length, sitemap: urls.length, stand: new Date().toISOString() }) + "\n");
 
+  console.log(`↪️  Weiterleitungen alter Adressen: ${umgeleitet}`);
   console.log(`✅ Produktseiten: ${geschrieben} · Kategorien: ${kats.length} · Sitemap-URLs: ${urls.length}`);
   if (geschrieben < 100 && argDatei === -1) console.log("⚠️  Ungewoehnlich wenige Produkte – v_web_produkte pruefen.");
 }
