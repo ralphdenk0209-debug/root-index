@@ -1518,7 +1518,8 @@ window.loadDashboard=function(){
     var lage=function(){
       var n=document.getElementById('adminNav'); var r=n?n.getBoundingClientRect():{top:0,right:0,bottom:0};
       var seite=document.body.classList.contains('navSeite');
-      f.style.top=Math.max(0,seite?r.top:r.bottom)+'px'; f.style.left=Math.max(0,seite?r.right:0)+'px';
+      var top=Math.max(0,seite?r.top:r.bottom), left=Math.max(0,seite?r.right:0);
+      f.style.top=top+'px'; f.style.left=left+'px'; f.style.width=(window.innerWidth-left)+'px'; f.style.height=(window.innerHeight-top)+'px';
     };
     lage(); window.addEventListener('resize',lage);
     try{ new MutationObserver(lage).observe(document.body,{attributes:true,attributeFilter:['class']}); }catch(e){}
