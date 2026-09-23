@@ -71,7 +71,59 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v9";
+const WORKER = "riki-scan-worker v10";
+const CHECK_MODELL = "claude-haiku-4-5-20251001";
+
+/* v10, 23.09.2026 (Ralph A Foto-Tempo): SCHNELL-CHECK VOR DEM GROSSEN LESEN.
+   Frueher merkte man ein unscharfes Foto erst nach 20-60 s am Ende. Jetzt fragt ein
+   kleines Modell in 1-3 s: Gibt es ein Zutatenverzeichnis, ist es scharf lesbar, welche Marke?
+   Das Ergebnis liegt sofort am Auftrag (cb_riki_scan_job_zwischenstand), die App meldet
+   "bitte neu fotografieren", waehrend Riki trotzdem weiterliest (Naehrwerte, Name).
+   riki-etikett uebernimmt die Antwort als Gegenprobe und spart den zweiten Aufruf. */
+function findeKey(): string | null {
+  const env = Deno.env.toObject();
+  const off = env["ANTHROPIC_API_KEY"];
+  if (typeof off === "string" && off.trim().startsWith("sk-ant-")) return off.trim();
+  for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-")) return v.trim();
+  return null;
+}
+async function schnellCheck(images: string[]): Promise<any> {
+  const key = findeKey();
+  if (!key) return { antwort: "unklar", lesbar: null, marke: null, grund: "kein_key" };
+  const t0 = Date.now();
+  const inhalt: any[] = [];
+  for (const b of images.slice(0, 3)) {
+    const m = String(b).match(/^data:(image\/[a-z]+);base64,(.+)$/);
+    if (m) inhalt.push({ type: "image", source: { type: "base64", media_type: m[1], data: m[2] } });
+  }
+  inhalt.push({ type: "text", text:
+    "Beantworte drei Fragen zu diesen Verpackungsfotos, ohne zu raten.\n" +
+    "1. Steht auf einem Foto ein Zutatenverzeichnis (Aufzaehlung der Zutaten, meist nach dem Wort \"Zutaten\")? Eine Naehrwerttabelle ist KEIN Zutatenverzeichnis.\n" +
+    "2. Ist dieses Zutatenverzeichnis VOLLSTAENDIG im Bild und SCHARF genug, um jedes Wort sicher zu lesen?\n" +
+    "3. Welcher Markenname steht auf der Packung? Ein Siegel ist keine Marke. Nicht sicher: UNBEKANNT.\n" +
+    "Antworte in genau einer Zeile: JA|SCHARF|Marke oder JA|UNSCHARF|Marke oder NEIN|-|Marke" });
+  try {
+    const ai = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
+      body: JSON.stringify({ model: CHECK_MODELL, max_tokens: 30, messages: [{ role: "user", content: inhalt }] }),
+    });
+    const j = await ai.json();
+    if (!ai.ok) return { antwort: "unklar", lesbar: null, marke: null, grund: "http_" + ai.status, ms: Date.now() - t0 };
+    const roh = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
+    const [a1, a2, a3] = roh.split("|").map((x: string) => (x ?? "").trim());
+    const antwort = /^ja\b/i.test(a1 ?? "") ? "ja" : /^nein\b/i.test(a1 ?? "") ? "nein" : "unklar";
+    const lesbar = antwort === "ja" ? (/^scharf/i.test(a2 ?? "") ? true : /^unscharf/i.test(a2 ?? "") ? false : null) : (antwort === "nein" ? false : null);
+    let marke: string | null = (a3 ?? "").trim();
+    if (!marke || /^unbekannt$/i.test(marke) || marke.length > 60 || marke === "-") marke = null;
+    const u: any = j.usage ?? {};
+    const inTok = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
+    const outTok = u.output_tokens ?? 0;
+    return { antwort, lesbar, marke, roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * 1.0 + (outTok / 1e6) * 5.0).toFixed(6)), in: inTok, out: outTok };
+  } catch (e) {
+    return { antwort: "unklar", lesbar: null, marke: null, grund: String(e).slice(0, 120), ms: Date.now() - t0 };
+  }
+}
 
 // v9: GTIN-Pruefziffer (EAN-8/UPC-12/EAN-13/GTIN-14).
 function gtinGueltig(x: string): boolean {
@@ -168,6 +220,15 @@ Deno.serve(async (req: Request) => {
           lesungWiederverwendet = true;
         }
       } catch (_) { /* ohne Ablage wird normal gelesen */ }
+      // v10: Schnell-Check (nur bei neuer Lesung). Ergebnis sofort am Auftrag ablegen.
+      let schnell: any = null;
+      if (!lesungWiederverwendet) {
+        schnell = await schnellCheck(images);
+        try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
+        try {
+          if (schnell?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: schnell.in ?? 0, p_out: schnell.out ?? 0, p_kosten: schnell.kosten_usd, p_produkt_id: job.produkt_id ?? null, p_erfolg: true, p_fehler: null });
+        } catch (_) { /* Buchung ist nicht lebenswichtig */ }
+      }
       if (!lesungWiederverwendet) try {
         const r = await fetch(`${url}/functions/v1/riki-etikett`, {
           method: "POST",
@@ -177,7 +238,7 @@ Deno.serve(async (req: Request) => {
           },
           // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
           // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL }),
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
@@ -334,6 +395,7 @@ Deno.serve(async (req: Request) => {
           p_job_id: job.job_id,
           p_ok: false,
           p_ergebnis_meta: {
+            schnellcheck: schnell,
             worker: WORKER, ingest: ing, lesung_wiederverwendet: lesungWiederverwendet, dauer_ms: Date.now() - jobStarted,
             untaugliche_zeilen: untauglich,
           },
@@ -344,6 +406,7 @@ Deno.serve(async (req: Request) => {
       }
 
       const meta = {
+        schnellcheck: schnell,
         worker: WORKER,
         ean_pruefung: eanPruefung,
         lesung_wiederverwendet: lesungWiederverwendet,

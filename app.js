@@ -846,6 +846,58 @@ function rikiWartegrenzeStoppen(){
   var alt=document.getElementById("rikiWarteHinweis"); if(alt) alt.remove();
 }
 if(typeof window!=="undefined"){ window.rikiWartegrenzeStarten=rikiWartegrenzeStarten; window.rikiWartegrenzeStoppen=rikiWartegrenzeStoppen; }
+/* ============================================================================
+   23.09.2026 (Ralph A, Foto-Tempo) — NACHFASSEN NACH DEM LADENSCAN
+   Der Scan-Worker macht jetzt zuerst einen Schnell-Check (1-3 s): gibt es eine
+   Zutatenliste, ist sie scharf? Das Ergebnis liegt sofort am Auftrag
+   (cb_riki_scan_job_stand). Die App fragt 25 s lang nach:
+   - unscharf/keine Liste -> sofort "bitte neu fotografieren" (statt 20-60 s warten)
+   - fertig und freigegeben -> Name und Index anzeigen, Tippen oeffnet das Produkt
+   Der Riki-Lauf selbst wird NICHT abgebrochen (Name, Naehrwerte kommen trotzdem).
+   ============================================================================ */
+function rikiScanHinweis(html, onClick){
+  var id="rikiWarteHinweis"; var alt=document.getElementById(id); if(alt) alt.remove();
+  var d=document.createElement("div"); d.id=id;
+  d.style.cssText="position:fixed;left:12px;right:12px;bottom:76px;z-index:9993;padding:11px 13px;"
+    +"border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);"
+    +"font-size:13px;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.14);cursor:pointer";
+  d.innerHTML=html;
+  d.onclick=function(){ d.remove(); if(typeof onClick==="function"){ try{ onClick(); }catch(e){} } };
+  document.body.appendChild(d);
+}
+function rikiScanNachfassen(jobId, ean){
+  if(!jobId || typeof client==="undefined") return;
+  var start=Date.now(), schnellGemeldet=false;
+  try{ clearInterval(window._rikiNachfassUhr); }catch(e){}
+  window._rikiNachfassUhr=setInterval(async function(){
+    if(Date.now()-start>25000){ clearInterval(window._rikiNachfassUhr); return; }
+    var st=null;
+    try{ var r=await client.rpc("cb_riki_scan_job_stand",{p_job_id:jobId}); st=(typeof r.data==="string")?JSON.parse(r.data):r.data; }catch(e){ return; }
+    if(!st || !st.ok) return;
+    var sc=st.schnellcheck||null;
+    if(!schnellGemeldet && sc && (sc.antwort==="nein" || sc.lesbar===false)){
+      schnellGemeldet=true;
+      try{ rikiWartegrenzeStoppen(); }catch(e){}
+      try{ if(typeof rikiFabZustand==="function") rikiFabZustand("normal"); }catch(e){}
+      rikiScanHinweis('&#128247; <b>'+(sc.antwort==="nein"?'Keine Zutatenliste auf dem Foto.':'Die Zutatenliste ist nicht scharf lesbar.')+'</b> '
+        +'Bitte die Zutatenliste noch einmal <b>gerade, nah und komplett</b> fotografieren. '
+        +'<span style="color:var(--muted)">Tippen zum Neu-Fotografieren.</span>',
+        function(){ if(typeof etikettOpen==="function") etikettOpen(ean||null); });
+    }
+    if(st.status==="fertig" || st.status==="gehalten" || st.status==="fehler"){
+      clearInterval(window._rikiNachfassUhr);
+      if(st.freigegeben && st.produkt_id){
+        try{ rikiWartegrenzeStoppen(); }catch(e){}
+        try{ if(typeof rikiFabZustand==="function") rikiFabZustand("bereit"); }catch(e){}
+        rikiScanHinweis('&#10003; <b>'+esc(st.produktname||"Produkt")+'</b> ist fertig'
+          +(st.score!=null?' &middot; Index <b>'+esc(String(st.score))+'</b>':'')
+          +' <span style="color:var(--muted)">('+esc(String(st.sekunden))+' s) &middot; Tippen zum Öffnen.</span>',
+          function(){ if(typeof prodOeffnen==="function") prodOeffnen(st.produkt_id); });
+      }
+    }
+  }, 1500);
+}
+if(typeof window!=="undefined"){ window.rikiScanNachfassen=rikiScanNachfassen; }
 async function ladeBindungsLuecke(produktId){
   const box = _bindungBox(); if(!box) return;
   const pid = produktId || box.getAttribute('data-pid');
@@ -12931,6 +12983,7 @@ async function etikettSend(){
          sich, wenn es fertig ist. Deshalb darf das Fenster sofort zu. */
       try{ rikiFabZustand("denkt"); }catch(x){}
       try{ rikiWartegrenzeStarten(); }catch(x){}   /* Work #441: nach 10 s hoert das Warten auf, nicht der Lauf */
+      try{ rikiScanNachfassen(e.job_id, _eanZiffern); }catch(x){}   /* 23.09.2026: Schnell-Check/Ergebnis nachfassen */
       etikettClose();
       return;
     }catch(e){
