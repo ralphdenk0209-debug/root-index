@@ -78,16 +78,17 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .wall{grid-column:1/-1;background:var(--card);border-radius:18px;box-shadow:var(--out);padding:16px 20px}
 .wall h4{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 .wall h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
-.wgrid{display:grid;grid-template-columns:repeat(8,1fr);gap:6px}
-.wgrid>div{background:var(--card2);border-radius:8px;padding:6px 9px;border-left:3px solid var(--g);display:flex;justify-content:space-between;align-items:center;gap:6px;min-width:0;cursor:pointer}
-.wgrid>div:hover,.wgrid>div.auf{outline:1px solid var(--acc)}
-.wgrid .t{font-size:11.5px;color:var(--ink2);overflow-wrap:anywhere;line-height:1.25}
-.wgrid .t small{display:block;color:var(--ink3);font-size:10.5px}
-.wgrid .n{font-family:ui-monospace,Menlo,monospace;font-size:13.5px;font-weight:600;color:var(--ink);flex:0 0 auto}
-.wgrid>div.gelb{border-color:var(--y)}.wgrid>div.gelb .n{color:var(--y)}
-.wgrid>div.rot{border-color:var(--r)}.wgrid>div.rot .n{color:var(--r)}
-.wgrid>div.still{opacity:.6}
-@media(max-width:1200px){.wgrid{grid-template-columns:repeat(4,1fr)}}
+.wgrid{display:flex;flex-wrap:wrap;gap:6px 4px}
+.wgrid>div{flex:0 0 78px;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 2px 4px;border-radius:10px;cursor:pointer;color:var(--g);min-width:0;position:relative}
+.wgrid>div:hover,.wgrid>div.auf{background:var(--card2)}
+.wgrid>div.auf{outline:1px solid var(--acc)}
+.wgrid svg{width:44px;height:44px;display:block;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.wgrid .n{font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:600;color:currentColor;line-height:1}
+.wgrid .t{font-size:9.5px;color:var(--ink3);max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
+.wgrid>div.gelb{color:var(--y)}
+.wgrid>div.rot{color:var(--r)}
+.wgrid>div.still{color:var(--g);opacity:.55}
+.wgrid>div.bestand{color:var(--ink3)}
 .wfaelle{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
 .wfaelle h5{margin:0 0 6px;font-size:12px;color:var(--ink);display:flex;justify-content:space-between;gap:10px}
 .wfaelle h5 a{color:var(--acc);cursor:pointer}
@@ -243,7 +244,8 @@ function zeichnen(){
   const wsum=alle.filter(x=>x.k!=='wb_sperrebestand').reduce((a,x)=>a+Math.max(x.n,x.gate?(gateMap[x.name]||0):0),0);
   $('wSt').textContent=alle.length+' Wächter · '+(w.gate_offen?'Gate offen':'Gate zu')+' · '+de(wsum)+' Fälle · Stand '+(alle[0]&&alle[0].stand?new Date(alle[0].stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–');
   $('wgrid').innerHTML=alle.map(x=>{const n=Math.max(Number(x.n)||0,x.gate?(gateMap[x.name]||0):0); const bestand=x.k==='wb_sperrebestand'; const cls=n===0?'still':(x.gate?'rot':'gelb');
-    return `<div class="${cls}" data-key="${esc(x.k)}" data-name="${esc(x.name)}" title="Fälle anzeigen"><span class="t">${x.gate?'⛔ ':''}${esc(x.name)}<small>${esc(x.k)}${x.gate?' · Gate':''}${bestand?' · Bestand':''}</small></span><span class="n">${de(n)}</span></div>`;}).join('');
+    const tip=x.name+' ('+x.k+')'+(x.gate?' · Gate-Wächter: blockiert die Freigabe':' · Beobachtung')+(bestand?' · Bestand, zählt nicht fürs Gate':'')+' · '+de(n)+' Fälle · klicken = Fälle zeigen';
+    return `<div class="${bestand?'bestand':cls}" data-key="${esc(x.k)}" data-name="${esc(x.name)}" title="${esc(tip)}">${x.gate?W_SCHWERT:W_SCHILD}<span class="n">${de(n)}</span><span class="t">${esc(x.name)}</span></div>`;}).join('');
   document.querySelectorAll('#wgrid>div').forEach(el=>el.onclick=(ev)=>{ev.preventDefault(); waechterFaelle(el.dataset.key, el.dataset.name, el);});
   if(wOffen){ const el=document.querySelector('#wgrid>div[data-key="'+wOffen+'"]'); if(el) el.classList.add('auf'); }
 
@@ -270,6 +272,9 @@ function zeichnen(){
   $('kStand').textContent=de(k.gemessen)+' gemessen · Zahl = hängt hier';
   $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div><div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
 }
+/* Wächter-Symbole: Schild (Beobachtung) und Schild mit Schwert (Gate). Eigene Zeichnung, Umrissstil. */
+const W_SCHILD='<svg viewBox="0 0 48 48"><path d="M24 5 L8 11 v13 c0 9 7 15 16 19 c9-4 16-10 16-19 V11 Z"/><path d="M24 11 L14 15 v9 c0 6 4 10 10 13 c6-3 10-7 10-13 v-9 Z"/><path d="M24 11 v26"/></svg>';
+const W_SCHWERT='<svg viewBox="0 0 48 48"><path d="M20 9 L6 14 v12 c0 8 6 13 14 17 c8-4 14-9 14-17 V14 Z"/><path d="M20 14 L11 17.5 v8 c0 5 3.5 8.5 9 11.5 c5.5-3 9-6.5 9-11.5 v-8 Z"/><path d="M20 14 v23"/><path d="M28 20 L40 8"/><path d="M36.5 4.5 L43.5 11.5"/><circle cx="43" cy="5" r="2"/><path d="M26 22 l-2 2"/></svg>';
 let wOffen=null;
 async function waechterFaelle(key, name, el){
   const box=$('wFaelle');
