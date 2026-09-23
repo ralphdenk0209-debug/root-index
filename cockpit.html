@@ -48,6 +48,20 @@ svg.ch{width:100%;height:90px;display:block}
 .st>.gelb{border-color:var(--y)}.st>.gelb .n{color:var(--y)}
 .st>.rot{border-color:var(--r)}.st>.rot .n{color:var(--r)}
 .fuss{grid-column:1/-1;font-size:12px;color:var(--ink3);padding:0 4px}
+.reihe2{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.klein{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:14px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;color:inherit;border:1px solid transparent}
+.klein:hover{border-color:var(--acc)}
+.klein h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.klein h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
+.hb{display:flex;flex-direction:column;gap:7px}
+.hb>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
+.hb .lab{grid-column:1/-1;font-size:12px;color:var(--ink3);overflow-wrap:anywhere}
+.hb i{display:block;height:7px;border-radius:3px;background:var(--acc)}
+.hb i.gelb{background:var(--y)}.hb i.rot{background:var(--r)}.hb i.gruen{background:var(--g)}
+.hb .n{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;color:var(--ink2)}
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--ink2);padding:5px 0;border-top:1px solid var(--line)}
+.kv b{color:var(--ink);font-family:ui-monospace,Menlo,monospace;font-weight:500;text-align:right}
+@media(max-width:900px){.reihe2{grid-template-columns:1fr}}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}}
 @media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
 </style></head><body>
@@ -87,6 +101,12 @@ svg.ch{width:100%;height:90px;display:block}
  </a>
 
  <div class="kette"><h4>Kette <span id="kStand"></span></h4><div class="st" id="kette"></div></div>
+ <div class="reihe2">
+  <a class="klein" href="maschine.html"><h4>Wächter <span class="st" id="wSt"></span></h4><div class="hb" id="waechter"></div></a>
+  <a class="klein" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4><div id="menschen"></div></a>
+  <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog</h4><div id="stamm"></div></a>
+  <a class="klein" href="steuerung.html"><h4>Projekte <span class="st">fertig / gesamt</span></h4><div class="hb" id="projekte"></div></a>
+ </div>
  <div class="fuss">Jede Zone ist ein Klick auf die Detailseite. Farbe nur für Status. Aktualisiert sich jede Minute.</div>
 </div>
 
@@ -138,6 +158,19 @@ function zeichnen(){
   balken('iCh',(i.riki_14t||[]).map(x=>Number(x.usd)),Number(i.riki_tagesbudget_usd));
   $('iQ').textContent='RIKI je Tag · 14 T · '+usd(i.riki_monat_usd)+' von '+usd(i.riki_budget_usd)+' im Monat · Linie = '+usd(i.riki_tagesbudget_usd)+'/Tag';
   neben('iNeben',[['Warten auf Abnahme',de(i.abnahme)],['Scan-Eingang'+(i.autopilot_an?'':' · Autopilot aus'),de(i.eingang),i.autopilot_an?'':'gelb'],['blockiert',de(i.blockiert),i.blockiert>0?'rot':'']]);
+
+  // Mehr
+  const M=A.mehr||{};
+  const w=M.waechter||{}; const wl=w.liste||[]; const wmax=Math.max(1,...wl.map(x=>x.n));
+  $('wSt').textContent=(w.anzahl||0)+' aktiv · '+(w.gate_offen?'Gate offen':'Gate zu');
+  $('waechter').innerHTML=wl.length?wl.slice(0,5).map(x=>`<div><span class="lab">${x.gate?'⛔ ':''}${esc(x.name)}</span><i class="${x.gate?'rot':''}" style="width:${Math.max(4,100*x.n/wmax)}%"></i><span class="n">${de(x.n)}</span></div>`).join(''):'<div><span class="lab">alle still</span><i class="gruen" style="width:100%"></i><span class="n">0</span></div>';
+  const mn=M.menschen||{};
+  $('mnSt').textContent=mn.social_stand?'Social '+tagK(mn.social_stand):'';
+  $('menschen').innerHTML=[['Nutzer · aktiv 7 T',de(mn.nutzer)+' · '+de(mn.aktiv_7t)],['Tagebuch 7 T · gesamt',de(mn.tagebuch_7t)+' · '+de(mn.tagebuch_gesamt)],['Scans Warteschlange · Cache',de(mn.scans_warteschlange)+' · '+de(mn.scans_cache)],['Instagram · Facebook',de(mn.ig_follower)+' · '+de(mn.fb_follower)+' Follower']].map(([l,v])=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`).join('');
+  const st=M.stamm||{};
+  $('stamm').innerHTML=[['Zutaten · bewertet',de(st.zutaten)+' · '+de(st.bewertet)],['nie gebunden',de(st.nie_gebunden)],['Produkte aktiv · Entwürfe',de(st.produkte_aktiv)+' · '+de(st.entwuerfe)],['Schnitt-Score',st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–']].map(([l,v])=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`).join('');
+  const pr=M.projekte||[];
+  $('projekte').innerHTML=pr.slice(0,6).map(x=>{const g=x.ok+x.offen,q=g?x.ok/g:0;return `<div><span class="lab">${esc(x.p)}</span><i class="${q>=1?'gruen':q>=.5?'':'gelb'}" style="width:${Math.max(3,100*q)}%"></i><span class="n">${x.ok}/${g}</span></div>`}).join('');
 
   // Kette
   const k=A.kette;
