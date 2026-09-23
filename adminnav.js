@@ -47,10 +47,10 @@ function applyAdminMode(){
     const nav=document.createElement('div'); nav.id='adminNav';
     var _an=function(k,ico,lbl,oc,extra){ return '<button class="anBtn"'+(extra||'')+' data-k="'+k+'" onclick="'+oc+'"><span class="anIco">'+ico+'</span><span class="anLbl">'+lbl+'</span></button>'; };
     nav.innerHTML=
-       /* 23.09.2026, Ralph: "das dashboard durch das cockpit ersetzen" - der Menüpunkt
-          Dashboard öffnet jetzt das Cockpit (cockpit.html) im selben Fenster. Das alte
-          Dashboard bleibt per adminGo('dash') erreichbar, hat aber keinen Knopf mehr. */
-       _an('dash','📊','Dashboard',"location.href='cockpit.html?cb='+Date.now()")
+       /* 23.09.2026, Ralph: "das cockpit soll das dashboard ersetzen in admin.html" -
+          der Reiter Dashboard zeigt jetzt cockpit.html eingebettet (siehe loadDashboard-
+          Ersatz in admin.html). Das alte Dashboard (dashboard-ui.js) wird nicht mehr gerufen. */
+       _an('dash','📊','Dashboard',"adminGo('dash')")
       /* 🔴 31.08.2026, Ralph (E16): „die steuerung muss vom admin aus erreichbar
          sein, also ich will sie dort oeffnen koennen." Eigene Seite wie
          video-skript-01.html — eigenes Fenster mit Cache-Buster, damit nach einem

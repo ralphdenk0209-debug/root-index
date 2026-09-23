@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
-<title>Cockpit — Root Index</title>
+<title>Cockpit — Root Index</title><base target="_top">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 /* Cockpit neu (Konzept 22.09.2026) – warm. Drei Zonen: Maschine · Seite · Ich, darunter die Kette. */
@@ -48,6 +48,7 @@ svg.ch{width:100%;height:90px;display:block}
 .st>.gelb{border-color:var(--y)}.st>.gelb .n{color:var(--y)}
 .st>.rot{border-color:var(--r)}.st>.rot .n{color:var(--r)}
 .fuss{grid-column:1/-1;font-size:12px;color:var(--ink3);padding:0 4px}
+body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .right .nav{border:1px solid var(--line);color:var(--ink2);padding:5px 10px;border-radius:99px;font-size:12px}
 .right .nav:hover{border-color:var(--acc);color:var(--ink)}
 #tag{color:var(--ink);font-weight:600;font-size:13px}
@@ -69,6 +70,7 @@ svg.ch{width:100%;height:90px;display:block}
 .klein:hover{border-color:var(--acc)}
 .klein h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .klein h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
+.klein .lead .n{font-size:30px}
 .hb{display:flex;flex-direction:column;gap:7px}
 .hb>div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center}
 .hb .lab{grid-column:1/-1;font-size:12px;color:var(--ink3);overflow-wrap:anywhere}
@@ -131,8 +133,13 @@ svg.ch{width:100%;height:90px;display:block}
  </div>
  <div class="reihe2">
   <a class="klein" href="maschine.html"><h4>Wächter <span class="st" id="wSt"></span></h4><div class="hb" id="waechter"></div></a>
-  <a class="klein" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4><div id="menschen"></div></a>
-  <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog</h4><div id="stamm"></div></a>
+  <a class="klein" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4>
+   <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
+   <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
+   <div class="hb" id="menschen"></div></a>
+  <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog <span class="st" id="stSt"></span></h4>
+   <div class="lead"><span class="n" id="stN">–</span><span class="u">Zutaten im Stamm</span></div>
+   <div class="hb" id="stamm"></div></a>
   <a class="klein" href="steuerung.html"><h4>Projekte <span class="st">fertig / gesamt</span></h4><div class="hb" id="projekte"></div></a>
  </div>
  <div class="fuss">Jede Zone ist ein Klick auf die Detailseite. Farbe nur für Status. Aktualisiert sich jede Minute.</div>
@@ -198,9 +205,19 @@ function zeichnen(){
   $('waechter').innerHTML=wl.length?wl.slice(0,5).map(x=>`<div><span class="lab">${x.gate?'⛔ ':''}${esc(x.name)}</span><i class="${x.gate?'rot':''}" style="width:${Math.max(4,100*x.n/wmax)}%"></i><span class="n">${de(x.n)}</span></div>`).join(''):'<div><span class="lab">alle still</span><i class="gruen" style="width:100%"></i><span class="n">0</span></div>';
   const mn=M.menschen||{};
   $('mnSt').textContent=mn.social_stand?'Social '+tagK(mn.social_stand):'';
-  $('menschen').innerHTML=[['Nutzer · aktiv 7 T',de(mn.nutzer)+' · '+de(mn.aktiv_7t)],['Tagebuch 7 T · gesamt',de(mn.tagebuch_7t)+' · '+de(mn.tagebuch_gesamt)],['Scans Warteschlange · Cache',de(mn.scans_warteschlange)+' · '+de(mn.scans_cache)],['Instagram · Facebook',de(mn.ig_follower)+' · '+de(mn.fb_follower)+' Follower']].map(([l,v])=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`).join('');
+  $('mnN').textContent=de(mn.nutzer); $('mnU').textContent='Nutzer · '+de(mn.aktiv_7t)+' aktiv 7 T · '+de(mn.premium)+' Premium';
+  balken('mnCh',(A.seite.besucher||[]).map(x=>Number(x.gesamt)||0));
+  const hb=(rows)=>{const m=Math.max(1,...rows.map(r=>r[1]));return rows.map(([l,v,c,txt])=>`<div><span class="lab">${l}</span><i class="${c||''}" style="width:${Math.max(3,100*v/m)}%"></i><span class="n">${txt||de(v)}</span></div>`).join('');};
+  $('menschen').innerHTML=hb([['Scans im Cache',Number(mn.scans_cache)||0],['davon übernommen',Number(mn.scans_uebernommen)||0,'gruen'],['Scans in Warteschlange',Number(mn.scans_warteschlange)||0,'gelb']])
+    +hb([['Tagebuch-Einträge 7 T',Number(mn.tagebuch_7t)||0,'',de(mn.tagebuch_7t)+' von '+de(mn.tagebuch_gesamt)]])
+    +hb([['Instagram-Follower',Number(mn.ig_follower)||0],['Facebook-Follower',Number(mn.fb_follower)||0]]);
   const st=M.stamm||{};
-  $('stamm').innerHTML=[['Zutaten · bewertet',de(st.zutaten)+' · '+de(st.bewertet)],['nie gebunden',de(st.nie_gebunden)],['Produkte aktiv · Entwürfe',de(st.produkte_aktiv)+' · '+de(st.entwuerfe)],['Schnitt-Score',st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–']].map(([l,v])=>`<div class="kv"><span>${l}</span><b>${v}</b></div>`).join('');
+  $('stN').textContent=de(st.zutaten); $('stSt').textContent='Score-Schnitt '+(st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–');
+  const pz=(v,g)=>g?Math.round(100*v/g):0;
+  const prog=(rows)=>rows.map(([l,v,g,c])=>`<div><span class="lab">${l}</span><i class="${c||''}" style="width:${Math.max(3,pz(v,g))}%"></i><span class="n">${de(v)} / ${de(g)} · ${pz(v,g)} %</span></div>`).join('');
+  const zut=Number(st.zutaten)||0, geb=zut-(Number(st.nie_gebunden)||0), akt=Number(st.produkte_aktiv)||0, ent=Number(st.entwuerfe)||0;
+  $('stamm').innerHTML=prog([['Zutaten bewertet',Number(st.bewertet)||0,zut,'gruen'],['Zutaten in Produkten gebunden',geb,zut],['Produkte aktiv (Rest: Entwürfe)',akt,akt+ent,'gruen']])
+    +`<div><span class="lab">Schnitt-Score aller aktiven Produkte</span><i class="${st.schnitt_score>=60?'gruen':'gelb'}" style="width:${Math.max(3,Number(st.schnitt_score)||0)}%"></i><span class="n">${st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'} / 100</span></div>`;
   const pr=M.projekte||[];
   $('projekte').innerHTML=pr.slice(0,6).map(x=>{const g=x.ok+x.offen,q=g?x.ok/g:0;return `<div><span class="lab">${esc(x.p)}</span><i class="${q>=1?'gruen':q>=.5?'':'gelb'}" style="width:${Math.max(3,100*q)}%"></i><span class="n">${x.ok}/${g}</span></div>`}).join('');
 
@@ -221,6 +238,7 @@ function balken(id, vals, limit, hellAb){
   if(limit){const y=(H-4-(limit/m)*(H-14)).toFixed(1); s+=`<line x1="0" y1="${y}" x2="${W}" y2="${y}" stroke="var(--r)" stroke-dasharray="4 4" stroke-width="1.2"/>`;}
   $(id).innerHTML=s;
 }
+if(window.self!==window.top){ document.body.classList.add('eingebettet'); }
 /* Tageszähler seit Projektstart 25.06.2026 */
 (function(){ const start=new Date('2026-06-25T00:00:00'); const t=Math.floor((Date.now()-start)/86400000)+1; $('tag').textContent='Tag '+t; })();
 
