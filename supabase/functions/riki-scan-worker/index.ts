@@ -71,7 +71,12 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v10";
+const WORKER = "riki-scan-worker v11";
+// v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
+//   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
+//   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
+//   (nur service_role kann Auftraege anlegen/holen) und schreibt Zeiten + Lesung zurueck. Kein Ingest, kein Job-Status.
+const SCHLANK = false;
 const CHECK_MODELL = "claude-haiku-4-5-20251001";
 
 /* v10, 23.09.2026 (Ralph A Foto-Tempo): SCHNELL-CHECK VOR DEM GROSSEN LESEN.
@@ -185,6 +190,38 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    if (body?.probe === true) {
+      const { data: auftrag } = await sb.rpc("cb_riki_probe_holen");
+      if (!auftrag) return response({ ok: true, probe: "kein offener Auftrag" });
+      const opt = auftrag.optionen ?? {};
+      const varianten: boolean[] = Array.isArray(opt.varianten) ? opt.varianten.map((x: any) => x === true) : [true];
+      const aufgaben: Promise<any>[] = [];
+      for (const pj of (auftrag.jobs ?? [])) {
+        const bilder = cleanImages(pj);
+        for (const schlank of varianten) {
+          aufgaben.push((async () => {
+            const t0 = Date.now();
+            try {
+              const r = await fetch(`${url}/functions/v1/riki-etikett`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank, gegenprobe: { antwort: "ja", marke: null } }),
+              });
+              const d = await r.json().catch(() => null);
+              const v = d?.vorschlag ?? {};
+              return { job_id: pj.job_id, schlank, http: r.status, ms: Date.now() - t0, bild_kb: Math.round(bilder.join("").length / 1024),
+                out_token: d?.meta?.out_token ?? null, in_token: d?.meta?.in_token ?? null, kosten_usd: d?.meta?.kosten_usd ?? null,
+                name: v.name ?? null, marke: v.marke ?? null, naehrwerte_100g: v.naehrwerte_100g ?? null,
+                zutaten: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.original_text ?? z?.name) : null,
+                e_nummern: v.zusatzstoffe?.e_nummern ?? null, warnungen: d?.warnungen ?? null, fehler: d?.error ?? null };
+            } catch (e) { return { job_id: pj.job_id, schlank, ms: Date.now() - t0, fehler: String(e) }; }
+          })());
+        }
+      }
+      const ergebnis = await Promise.all(aufgaben);
+      await sb.rpc("cb_riki_probe_ablegen", { p_auftrag_id: auftrag.auftrag_id, p_ergebnis: ergebnis });
+      return response({ ok: true, probe: auftrag.auftrag_id, anzahl: ergebnis.length, ms: Date.now() - started });
+    }
     const maxJobs = Math.max(1, Math.min(Number(body?.max_jobs ?? 2), 4));
     const results: any[] = [];
 
@@ -238,7 +275,7 @@ Deno.serve(async (req: Request) => {
           },
           // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
           // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: schnell.marke } : undefined }),
         });
         readStatus = r.status;
         read = await r.json().catch(() => null);
