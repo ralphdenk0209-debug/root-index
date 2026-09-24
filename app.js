@@ -1310,7 +1310,7 @@ function premiumInfo(){
    +'</div>';
   document.body.appendChild(ov);
 }
-(function(){ try{ const p=new URLSearchParams(location.search); if(p.get('checkout')==='success'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ alert('Willkommen bei Premium! Deine 7 Tage gratis starten jetzt. 🌱'); },400); } }catch(_){} })();
+(function(){ try{ const p=new URLSearchParams(location.search); if(p.get('checkout')==='success'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ alert('Willkommen bei Premium! 🌱'); },400); } }catch(_){} })();
 /* Tiefer Link aus den statischen Produktseiten (Ralph 17.09.2026):
    /?p=P001 oeffnet genau dieses Produkt. Vorher landete der Knopf auf den
    38.000 Suchmaschinen-Seiten stumpf auf der Startseite - wer aus Google kam,
@@ -15477,7 +15477,7 @@ async function riWiderrufSenden(){
     msg.innerHTML='<b>Dein Widerruf ist eingegangen.</b><br>Eingang: '+t+' Uhr · Vorgang W-'+(d.id||'')+'<br>Die Eingangsbestätigung mit dem Inhalt deiner Erklärung kommt gleich per E-Mail. Bezahlte Beträge erstatten wir spätestens binnen 14 Tagen.<br><button onclick="document.getElementById(\'riWdrOv\').remove()" style="margin-top:12px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Schließen</button>';
   }catch(e){ if(go) go.disabled=false; msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e)+' – bitte schreib an kontakt@root-index.de.'; }
 }
-(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } }catch(_){} })();
+(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } else { ['agb','datenschutz','impressum','widerrufsbelehrung'].forEach(function(k){ if(p.has(k)) setTimeout(function(){ legalOpen(k==='widerrufsbelehrung'?'widerruf':k); },600); }); } }catch(_){} })();
 async function kontoLoeschenDo(){
   var msg=document.getElementById('delAccMsg'); if(msg){ msg.style.color='var(--muted)'; msg.textContent='Lösche…'; }
   try{
