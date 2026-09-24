@@ -12,7 +12,7 @@
 #  Braucht ein Geheimnis (Repo -> Settings -> Secrets -> Actions):
 #    WEBSPACE_PASS  Passwort des FTP-Kontos
 #  Vorgaben im Skript, per gleichnamigem Geheimnis ueberschreibbar:
-#    WEBSPACE_HOST  prod0.webspace.bz
+#    WEBSPACE_HOST  ftp.webspace.bz (SFTP, gemessen 24.09.2026)
 #    WEBSPACE_USER  kd253566
 #    WEBSPACE_DIR   /
 #  optional:
@@ -80,7 +80,7 @@ jobs:
           # Server, Benutzer und Ordner sind nicht geheim - Vorgaben aus dem INWX-Paket (kd253566, 24.09.2026),
           # ein gleichnamiges Geheimnis ueberschreibt sie.
           [ -n "$H" ] && WEBSPACE_HOST_GESETZT=1
-          H="${H:-prod0.webspace.bz}"; U="${U:-kd253566}"
+          H="${H:-ftp.webspace.bz}"; U="${U:-kd253566}"
           D="${D:-/}"; export LFTP_PASSWORD="$P"
           # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
           AUSSCHLUSS='^(\.git/|\.github/|_werkzeuge/|_to_delete/|supabase/|node_modules/|XXoxtEqm|README\.md$|Links\.md$|CNAME$|version\.sh$|.*\.zip$|\.DS_Store$|.*\.fuse_hidden.*|\.gitignore$)'
