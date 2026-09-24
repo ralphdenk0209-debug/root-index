@@ -11,10 +11,6 @@ RewriteCond %{HTTPS} !=on [OR]
 RewriteCond %{HTTP_HOST} ^www\. [NC]
 RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
 
-# Service Worker nie zwischenspeichern, sonst kommen Updates nicht an
-<Files "sw.js">
-  Header set Cache-Control "no-cache, no-store, must-revalidate"
-</Files>
 <FilesMatch "\.(html)$">
   Header set Cache-Control "no-cache"
 </FilesMatch>
@@ -24,6 +20,11 @@ RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
 <FilesMatch "\.(png|jpg|jpeg|webp|svg|woff2?|ico)$">
   Header set Cache-Control "public, max-age=2592000"
 </FilesMatch>
+# (steht NACH den allgemeinen Regeln, sonst ueberschreibt js|css ihn)
+# Service Worker nie zwischenspeichern, sonst kommen Updates nicht an
+<Files "sw.js">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</Files>
 <FilesMatch "^\.(deploy-sha|git)">
   Require all denied
 </FilesMatch>
