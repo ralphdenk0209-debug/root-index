@@ -9,11 +9,12 @@
 #  Ist er da, werden nur die seitdem geaenderten Dateien hochgeladen und die
 #  geloeschten entfernt. Fehlt er (erster Lauf), wird alles gespiegelt.
 #
-#  Braucht vier Geheimnisse (Repo -> Settings -> Secrets -> Actions):
-#    WEBSPACE_HOST  z. B. der SFTP-Server aus dem INWX-Kundenbereich
-#    WEBSPACE_USER  SFTP-Benutzer
-#    WEBSPACE_PASS  SFTP-Passwort
-#    WEBSPACE_DIR   Zielordner auf dem Webspace (z. B. /  oder /html)
+#  Braucht ein Geheimnis (Repo -> Settings -> Secrets -> Actions):
+#    WEBSPACE_PASS  Passwort des FTP-Kontos
+#  Vorgaben im Skript, per gleichnamigem Geheimnis ueberschreibbar:
+#    WEBSPACE_HOST  prod0.webspace.bz
+#    WEBSPACE_USER  kd253566
+#    WEBSPACE_DIR   /
 #  optional:
 #    WEBSPACE_PROTO sftp (Standard) oder ftp (FTP mit TLS, falls kein SFTP)
 #  Fehlen sie, tut der Lauf nichts und endet gruen.
@@ -51,7 +52,7 @@ jobs:
           U: ${{ secrets.WEBSPACE_USER }}
           P: ${{ secrets.WEBSPACE_PASS }}
         run: |
-          if [ -z "$H" ] || [ -z "$U" ] || [ -z "$P" ]; then
+          if [ -z "$P" ]; then
             echo "Webspace-Geheimnisse fehlen - nichts zu tun."; echo "ok=0" >> "$GITHUB_OUTPUT"
           else echo "ok=1" >> "$GITHUB_OUTPUT"; fi
 
@@ -76,11 +77,17 @@ jobs:
           VOLL: ${{ github.event.inputs.voll }}
         run: |
           set -euo pipefail
+          # Server, Benutzer und Ordner sind nicht geheim - Vorgaben aus dem INWX-Paket (kd253566, 24.09.2026),
+          # ein gleichnamiges Geheimnis ueberschreibt sie.
+          H="${H:-prod0.webspace.bz}"; U="${U:-kd253566}"
           D="${D:-/}"; export LFTP_PASSWORD="$P"
           # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
           AUSSCHLUSS='^(\.git/|\.github/|_werkzeuge/|_to_delete/|supabase/|node_modules/|XXoxtEqm|README\.md$|Links\.md$|CNAME$|version\.sh$|.*\.zip$|\.DS_Store$|.*\.fuse_hidden.*|\.gitignore$)'
           LF_SET="set sftp:auto-confirm yes; set net:max-retries 5; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
-          PROTO="${PROTO:-sftp}"          # sftp (Standard) oder ftp (dann erzwungen verschluesselt)
+          if [ -z "${PROTO:-}" ]; then        # nicht gesetzt: erst SFTP probieren, sonst FTP mit TLS
+            if lftp --env-password -u "$U" -e "set sftp:auto-confirm yes; set net:max-retries 1; set net:timeout 20; cls -1 $D >/dev/null; bye" "sftp://$H" >/dev/null 2>&1; then PROTO=sftp; else PROTO=ftp; fi
+          fi
+          echo "Verbindung: $PROTO://$H als $U, Ordner $D"
           ZIEL="$PROTO://$H"
           [ "$PROTO" = "ftp" ] && LF_SET="$LF_SET; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no"
           HEAD_SHA=$(git rev-parse HEAD)
