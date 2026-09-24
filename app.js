@@ -1293,14 +1293,14 @@ function premiumInfo(){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML='<div style="background:var(--card,var(--k-ffffff));color:var(--ink,var(--k-1d3c24));max-width:430px;width:100%;max-height:92vh;overflow:auto;border-radius:16px;padding:20px;box-shadow:0 12px 44px rgba(0,0,0,.32)">'
    +'<div style="font-size:18px;font-weight:800;margin-bottom:4px">Premium – 7 Tage gratis 🌱</div>'
-   +'<p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:.2em 0 10px">7 Tage kostenlos testen. Nach Ablauf der 7-tägigen Testphase wird automatisch der gewählte Tarif berechnet, sofern nicht vorher gekündigt wird. Jederzeit zum Ende des laufenden Abrechnungszeitraums kündbar.</p>'
-   +'<p style="font-size:11.5px;color:var(--muted);margin:0 0 12px">Alle Preise inklusive gesetzlicher Mehrwertsteuer.</p>'
+   +'<p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:.2em 0 10px">7 Tage kostenlos testen. Nach Ablauf der 7-tägigen Testphase wird automatisch der gewählte Tarif berechnet, sofern nicht vorher gekündigt wird. Kündbar zum Ende der ersten Laufzeit; danach läuft das Abo unbefristet weiter und ist jederzeit mit einer Frist von einem Monat kündbar (AGB § 7).</p>'
+   +'<p style="font-size:11.5px;color:var(--muted);margin:0 0 12px">Alle Preise sind Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.</p>'
    +_planRow('month','Monatlich','4,99 €/Monat','flexibel, monatlich kündbar','',true)
    +_planRow('quarter','Vierteljährlich','12,99 €','4,33 €/Monat','−13%',false)
    +_planRow('year','Jährlich','44,99 €','3,75 €/Monat · 2 Monate geschenkt','−25%',false)
    +'<label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;cursor:pointer;background:var(--greenlt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px">'
    +'<input type="checkbox" id="premConsent" onchange="var b=document.getElementById(\'premGo\');b.disabled=!this.checked;b.style.opacity=this.checked?\'1\':\'.5\'" style="margin-top:2px;flex:0 0 auto;width:18px;height:18px">'
-   +'<span>Ich verlange ausdrücklich, dass Root Index die digitale Leistung bereits <b>vor Ablauf der Widerrufsfrist</b> bereitstellt. Mir ist bekannt, dass ich mit Beginn der Vertragserfüllung mein <b>Widerrufsrecht verliere</b>.</span></label>'
+   +'<span>Ich verlange ausdrücklich, dass Root Index Premium bereits <b>vor Ablauf der Widerrufsfrist</b> bereitstellt. Ich bin <b>volljährig</b> oder habe die <b>Zustimmung meiner gesetzlichen Vertretung</b> (AGB § 2).</span></label>'
    +'<div style="display:flex;gap:8px;margin-top:14px">'
    +'<button onclick="document.getElementById(\'premOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font-size:14px">Abbrechen</button>'
    +'<button id="premGo" disabled onclick="var p=(document.querySelector(\'input[name=premPlan]:checked\')||{}).value||\'month\';var cb=document.getElementById(\'premConsent\');var consent={zugestimmt:!!(cb&&cb.checked),zeitpunkt:new Date().toISOString(),text:(cb?cb.parentNode.innerText.trim():\'\'),tarif:p};document.getElementById(\'premOv\').remove();_startCheckout(p,consent)" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:14px;opacity:.5">Jetzt kostenpflichtig testen</button>'
@@ -8852,28 +8852,95 @@ function legalOpen(which){
     +H("12. Amazon-Partnerlinks")+P("Mit „Anzeige“ gekennzeichnete Links führen zu Amazon. Erst <b>wenn du einen solchen Link anklickst</b>, wird eine Verbindung zu Amazon aufgebaut; Amazon kann dann Cookies setzen und deine IP-Adresse verarbeiten. Ohne Klick findet <b>keine</b> Datenübertragung an Amazon statt – wir binden keine Amazon-Skripte, Bilder oder Widgets ein. Es gilt die Datenschutzerklärung von Amazon. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO (wirtschaftlicher Betrieb des Angebots).")
     +H("13. Weitergabe")+P("Eine Weitergabe erfolgt nur an die genannten Auftragsverarbeiter (Supabase, Stripe, GitHub) oder bei gesetzlicher Verpflichtung. Wir verkaufen keine Daten und geben sie nicht zu Werbezwecken an Dritte.")
     +H("14. Speicherdauer")+P("Konto- und Tagebuchdaten: solange dein Konto besteht. Nach der Löschung deines Kontos werden sie innerhalb von <b>30 Tagen</b> entfernt. Etikettfotos: bis zur Prüfung, längstens 12 Monate. Rechnungsdaten: gesetzliche Aufbewahrungsfristen (bis zu 10 Jahre, § 147 AO).")
+    +H("Mindestalter")+P("Root Index richtet sich an Personen ab <b>16 Jahren</b>. Die Einwilligung in die Verarbeitung von Gesundheitsdaten kann nur abgeben, wer mindestens 16 Jahre alt ist.")
     +H("15. Deine Rechte")+P("Auskunft (Art. 15), Berichtigung (Art. 16), Löschung (Art. 17), Einschränkung (Art. 18), Datenübertragbarkeit (Art. 20), Widerspruch (Art. 21). Einwilligungen kannst du jederzeit für die Zukunft widerrufen: kontakt@root-index.de. Auf Wunsch erhältst du eine <b>Kopie all deiner Daten</b> (Konto, Tagebuch, Maße, Einkaufsliste, Etikettfotos) in einem maschinenlesbaren Format.")
     +H("16. Beschwerderecht")+P("Du kannst dich bei einer Aufsichtsbehörde beschweren, z. B. beim Bayerischen Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.")
     +P("<i>Stand: Juli 2026.</i>");
-  const agb = H("Allgemeine Geschäftsbedingungen (AGB) – Root Index Premium")
-    +H("§ 1 Geltungsbereich, Anbieter")+P("Diese AGB gelten für das kostenpflichtige Angebot „Root Index Premium“ unter root-index.de. Anbieter und Vertragspartner: <b>Ralph Denk, Auweg 23, 84103 Postau, Deutschland</b>, E-Mail: kontakt@root-index.de. Kleinunternehmerin gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
-    +H("§ 2 Leistungsgegenstand")+P("Root Index ist eine informations- und wissenschaftsbasierte Bewertungs- und Tagebuch-Anwendung. Bewertungen (0–100) dienen der Orientierung und sind <b>keine medizinische Beratung</b>. Der kostenlose Bereich (Free) ist ohne Zahlungspflicht nutzbar. Premium schaltet u. a. frei: detaillierte Aufschlüsselung der Bewertung, Bedarfsdeckung, volles Ernährungs- & Trainingstagebuch, Wochen-/Trainingsplaner, eigene Rezepte. Der aktuelle Funktionsumfang wird vor Vertragsschluss angezeigt. Premium ist eine digitale Dienstleistung (§§ 327 ff. BGB).")
-    +H("§ 3 Vertragsschluss")+P("Für die Nutzung ist ein Konto erforderlich (Anmeldung per E-Mail/Anmeldelink). Der kostenpflichtige Vertrag kommt zustande, indem du den Bestellvorgang über den Zahlungsdienstleister Stripe abschließt und die Zahlungspflicht mit „Jetzt kostenpflichtig testen“ bestätigst.")
-    +H("§ 4 Kostenloser Testzeitraum (7 Tage)")+P("Neukund:innen erhalten 7 Tage kostenlosen Test. Ohne Kündigung vor Ablauf geht der Test automatisch in ein kostenpflichtiges Abo über. Die Kündigung während des Tests ist jederzeit über das Stripe-Kundenportal möglich.")
-    +H("§ 5 Preise & Zahlung")+P("Premium kostet je nach Zeitraum: monatlich 4,99 €, vierteljährlich 12,99 € (4,33 €/Monat) oder jährlich 44,99 € (3,75 €/Monat). Als Kleinunternehmerin wird keine USt. ausgewiesen. Zahlung über Stripe; die Abrechnung erfolgt im Voraus.")
-    +H("§ 6 Laufzeit & Kündigung")+P("Das Abo verlängert sich automatisch um den gewählten Abrechnungszeitraum. Es ist <b>jederzeit zum Ende des laufenden Abrechnungszeitraums</b> kündbar – ohne Angabe von Gründen über „Abo verwalten / kündigen“ (Stripe-Kundenportal, § 312k BGB). Das Recht zur außerordentlichen Kündigung bleibt unberührt.")
-    +H("§ 7 Verfügbarkeit & Änderungen")+P("Wir bemühen uns um hohe Verfügbarkeit, schulden aber keine ununterbrochene Erreichbarkeit. Änderungen des Funktionsumfangs zur Weiterentwicklung sind zulässig, soweit der Kernnutzen nicht wesentlich eingeschränkt wird (§ 327r BGB).")
-    +H("§ 8 Haftung & Gesundheitshinweis")+P("Bewertungen dienen ausschließlich Informationszwecken und ersetzen keine ärztliche, pharmazeutische oder ernährungsmedizinische Beratung. Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie bei Schäden aus der Verletzung von Leben, Körper oder Gesundheit; bei einfacher Fahrlässigkeit nur bei Verletzung wesentlicher Vertragspflichten, begrenzt auf den vertragstypischen, vorhersehbaren Schaden.")
-    +H("§ 9 Affiliate-/Werbelinks")+P("Die App kann mit „Anzeige“ gekennzeichnete Werbe-/Affiliate-Links (z. B. Amazon PartnerNet) enthalten. Für darüber getätigte Käufe gelten die Bedingungen des jeweiligen Händlers.")
-    +H("§ 10 Schlussbestimmungen")+P("Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts; zwingende Verbraucherschutzvorschriften des Aufenthaltsstaats bleiben unberührt. Sollten einzelne Bestimmungen unwirksam sein, bleibt die Wirksamkeit der übrigen unberührt.")
-    +P("<i>Stand: Juli 2026.</i>");
+  const agb = H("Allgemeine Geschäftsbedingungen – Root Index Premium")
+    +P("<i>Stand: September 2026</i>")
+    +H("§ 1 Geltungsbereich und Anbieter")
+    +P("Diese Allgemeinen Geschäftsbedingungen gelten für den Abschluss und die Nutzung eines kostenpflichtigen Abonnements „Root Index Premium“ über root-index.de.")
+    +P("Anbieter und Vertragspartner ist:")
+    +P("<b>Ralph Denk</b><br>Root Index<br>Auweg 23<br>84103 Postau<br>Deutschland<br>E-Mail: kontakt@root-index.de")
+    +P("Das Angebot richtet sich an Verbraucher im Sinne des § 13 BGB, die Root Index für private Zwecke nutzen.")
+    +P("Diese AGB regeln den unmittelbaren Vertragsabschluss über unsere Website. Für einen gegebenenfalls angebotenen Kauf über einen App-Store werden die dafür geltenden Vertragsbedingungen gesondert angezeigt.")
+    +H("§ 2 Mindestalter und Nutzerkonto")
+    +P("Root Index richtet sich an Personen ab <b>16 Jahren</b>.")
+    +P("Personen, die das 18. Lebensjahr noch nicht vollendet haben, benötigen für den Abschluss eines Premium-Abonnements einschließlich einer kostenlosen Testphase mit anschließendem kostenpflichtigem Abonnement die vorherige Zustimmung ihrer gesetzlichen Vertretung.")
+    +P("Die Zustimmung muss den gewählten Tarif, die Zahlungspflicht nach der Testphase und die Laufzeit umfassen. Wir können einen geeigneten Nachweis verlangen. Die gesetzlichen Vorschriften über die Wirksamkeit von Verträgen Minderjähriger bleiben unberührt.")
+    +P("Für Premium ist ein persönliches Nutzerkonto erforderlich. Die jeweils verfügbaren Anmeldeverfahren werden bei der Registrierung angezeigt. Angaben zum Alter und zur Berechtigung zum Vertragsabschluss müssen wahrheitsgemäß sein.")
+    +H("§ 3 Leistungen von Root Index Premium")
+    +P("Root Index ist eine informations- und wissenschaftsbasierte Anwendung zur Bewertung von Lebensmitteln und anderen erfassten Produkten sowie zur Dokumentation und Planung von Ernährung und Training.")
+    +P("Der Root Index bewertet Produkte auf einer Skala von 0 bis 100 anhand der jeweils erläuterten Bewertungsmethode. Bewertungen dienen der Orientierung; sie sind keine individuelle Aussage darüber, ob ein Produkt für eine bestimmte Person gesundheitlich geeignet ist.")
+    +P("Der kostenlose Bereich ist ohne Zahlungspflicht nutzbar. Premium bietet zusätzliche Funktionen, insbesondere detaillierte Bewertungsinformationen, Auswertungen zur Nährstoffversorgung, erweiterte Tagebuchfunktionen, Ernährungs- und Trainingsplanung sowie eigene Rezepte.")
+    +P("Der für deinen Vertrag maßgebliche Funktionsumfang einschließlich etwaiger Nutzungsgrenzen wird vor der Bestellung angezeigt und mit der Vertragsbestätigung dokumentiert.")
+    +P("Premium ist eine digitale Dienstleistung im Sinne der §§ 327 ff. BGB. Zur Nutzung sind ein kompatibles Gerät und eine Internetverbindung erforderlich; weitere technische Voraussetzungen werden vor Vertragsschluss angegeben.")
+    +P("Ein bestimmter gesundheitlicher, sportlicher oder gewichtsbezogener Erfolg wird nicht geschuldet.")
+    +H("§ 4 Vertragsschluss")
+    +P("Die Darstellung von Premium auf unserer Website ist eine Aufforderung zur Abgabe einer Bestellung.")
+    +P("Vor der verbindlichen Bestellung werden dir die wesentlichen Leistungen, der gewählte Tarif, der Gesamtpreis je Abrechnungszeitraum, die Testphase sowie Laufzeit und Kündigungsbedingungen angezeigt. Du kannst deine Angaben vor dem Absenden prüfen und berichtigen.")
+    +P("Mit Betätigung der abschließenden, eindeutig auf die Zahlungspflicht hinweisenden Bestellschaltfläche gibst du ein verbindliches Vertragsangebot ab. Die Zahlungsabwicklung erfolgt über Stripe. Eine bloße Weiterleitung zu Stripe stellt noch keinen Vertragsschluss dar.")
+    +P("Wir nehmen dein Angebot durch eine ausdrückliche Vertragsbestätigung per E-Mail oder durch Freischaltung von Premium an. Du erhältst die Vertragsbestätigung einschließlich dieser AGB und der Widerrufsbelehrung per E-Mail spätestens vor Beginn der Leistung.")
+    +P("Vertragssprache ist Deutsch.")
+    +H("§ 5 Kostenlose Testphase")
+    +P("Bei erstmaligem Abschluss eines Premium-Abonnements erhältst du eine kostenlose Testphase von sieben Tagen. Sie beginnt mit der Freischaltung von Premium.")
+    +P("Der genaue Zeitpunkt des Testendes und der ersten kostenpflichtigen Abrechnung wird dir vor der verbindlichen Bestellung angezeigt und mit der Vertragsbestätigung mitgeteilt.")
+    +P("Du kannst das Abonnement bis zum Ende der Testphase kündigen. In diesem Fall endet Premium spätestens mit Ablauf der Testphase; es entstehen keine Abonnementkosten.")
+    +P("Ohne rechtzeitige Kündigung beginnt unmittelbar anschließend die erste kostenpflichtige Laufzeit des gewählten Tarifs.")
+    +P("Dein gesetzliches Widerrufsrecht besteht unabhängig von der Testphase und der Kündigungsmöglichkeit.")
+    +H("§ 6 Preise und Zahlung")
+    +P("Für Premium gelten folgende Preise:")
+    +'<table style="border-collapse:collapse;width:100%;font-size:13px;margin:.4em 0"><tr><th style="border:1px solid var(--line);padding:5px 7px;text-align:left">Tarif</th><th style="border:1px solid var(--line);padding:5px 7px;text-align:left">Erste kostenpflichtige Laufzeit</th><th style="border:1px solid var(--line);padding:5px 7px;text-align:left">Gesamtpreis je Abrechnungszeitraum</th></tr><tr><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Monatlich</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Ein Monat</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">4,99 €</td></tr><tr><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Vierteljährlich</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Drei Monate</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">12,99 €</td></tr><tr><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Jährlich</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">Zwölf Monate</td><td style="border:1px solid var(--line);padding:5px 7px;text-align:left">44,99 €</td></tr></table>'
+    +P("Alle genannten Preise sind Endpreise. Die Umsätze sind gemäß § 19 UStG von der Umsatzsteuer befreit; Umsatzsteuer wird nicht gesondert ausgewiesen.")
+    +P("Die Zahlung erfolgt über die im Bestellvorgang angebotenen Zahlungsmittel von Stripe. Der jeweilige Gesamtbetrag wird nach Ende der kostenlosen Testphase und anschließend zu Beginn jedes weiteren Abrechnungszeitraums im Voraus fällig.")
+    +P("Der bei Vertragsschluss vereinbarte Preis gilt auch während einer anschließenden unbefristeten Fortsetzung. Diese AGB begründen kein Recht zur einseitigen Preiserhöhung.")
+    +H("§ 7 Laufzeit und Kündigung")
+    +P("Während der kostenlosen Testphase gilt § 5.")
+    +P("Die erste kostenpflichtige Laufzeit beträgt je nach gewähltem Tarif einen, drei oder zwölf Monate. Du kannst das Abonnement jederzeit mit Wirkung zum Ende dieser ersten Laufzeit kündigen; eine zusätzliche Kündigungsfrist ist dafür nicht erforderlich.")
+    +P("Wird das Abonnement nicht gekündigt, läuft es anschließend <b>auf unbestimmte Zeit</b> weiter. Ab diesem Zeitpunkt kannst du es jederzeit <b>mit einer Frist von einem Monat</b> kündigen. Eine erneute Bindung für drei oder zwölf Monate entsteht nicht.")
+    +P("Der gewählte Abrechnungsrhythmus bleibt bestehen. Endet der Vertrag innerhalb eines bereits bezahlten Abrechnungszeitraums, erstatten wir den auf die Zeit nach Vertragsende entfallenden Betrag tagegenau innerhalb von 14 Tagen.")
+    +P("Die Kündigung ist über die auf unserer Website bereitgestellte Kündigungsfunktion oder per E-Mail an kontakt@root-index.de möglich. Zusätzlich kann die angebotene Abonnementverwaltung genutzt werden. Für eine ordentliche Kündigung ist keine Begründung erforderlich.")
+    +P("Bei Nutzung der Kündigungsfunktion erhältst du unverzüglich eine elektronische Bestätigung mit dem Inhalt deiner Erklärung und dem Beendigungszeitpunkt.")
+    +P("Das Recht zur außerordentlichen Kündigung aus wichtigem Grund bleibt für beide Seiten unberührt.")
+    +P("Mit dem Ende des Premium-Abonnements entfallen die kostenpflichtigen Funktionen. Dein kostenloses Nutzerkonto bleibt bestehen, sofern du es nicht gesondert löschst.")
+    +H("§ 8 Widerrufsrecht")
+    +P("Verbrauchern steht grundsätzlich ein gesetzliches Widerrufsrecht von 14 Tagen ab Vertragsschluss zu. Einzelheiten ergeben sich aus der gesonderten Widerrufsbelehrung und dem Muster-Widerrufsformular, die vor Vertragsschluss bereitgestellt werden.")
+    +P("Ein Widerruf kann insbesondere per E-Mail an kontakt@root-index.de oder über die elektronische Widerrufsfunktion auf unserer Website erklärt werden.")
+    +P("Die vorzeitige Freischaltung von Premium und die Nutzung der kostenlosen Testphase führen nicht allein zum Erlöschen des Widerrufsrechts.")
+    +P("Ein Leistungsbeginn vor Ablauf der Widerrufsfrist erfolgt auf dein ausdrückliches Verlangen. Ein etwaiger Wertersatz richtet sich ausschließlich nach den gesetzlichen Voraussetzungen; für die ausdrücklich kostenlose Testphase fällt kein Entgelt an.")
+    +H("§ 9 Bereitstellung, Mängelrechte und Änderungen")
+    +P("Wir stellen Premium während der Vertragslaufzeit im vereinbarten Umfang bereit. Die gesetzlich erforderlichen Aktualisierungen, einschließlich Sicherheitsaktualisierungen, werden bereitgestellt; über erforderliche Mitwirkung wirst du informiert.")
+    +P("Vorübergehende Unterbrechungen können insbesondere durch notwendige Wartung oder technische Störungen entstehen. Planbare Wartungen werden nach Möglichkeit angekündigt und so durchgeführt, dass Beeinträchtigungen gering bleiben. Deine gesetzlichen Rechte bei Leistungsstörungen bleiben unberührt.")
+    +P("Für Mängel gelten die gesetzlichen Vorschriften, insbesondere die §§ 327 ff. BGB.")
+    +P("Über die zur Erhaltung der Vertragsmäßigkeit erforderlichen Aktualisierungen hinaus dürfen wir Premium ändern, wenn dies erforderlich ist, um die Anwendung an geänderte technische Umgebungen, neue gesetzliche Anforderungen oder nachweisbare Sicherheitsrisiken anzupassen. Änderungen müssen auf das hierfür erforderliche Maß begrenzt sein und dürfen keine zusätzlichen Kosten verursachen.")
+    +P("Über solche Änderungen informieren wir dich klar und verständlich. Wird der Zugang oder die Nutzbarkeit mehr als nur unerheblich beeinträchtigt, informieren wir dich rechtzeitig vorab auf einem dauerhaften Datenträger, beispielsweise per E-Mail, über Inhalt, Zeitpunkt und deine Rechte.")
+    +P("In diesem Fall kannst du den Vertrag nach Maßgabe des § 327r BGB innerhalb von 30 Tagen kostenfrei beenden. Die Frist beginnt mit Zugang der Information, frühestens jedoch mit der Änderung. Dieses Beendigungsrecht entfällt, wenn dir die unveränderte Leistung ohne zusätzliche Kosten erhalten bleibt.")
+    +H("§ 10 Gesundheitshinweise und Haftung")
+    +P("Bewertungen, Bedarfsberechnungen sowie Ernährungs- und Trainingsinformationen dienen der allgemeinen Information und Orientierung. Sie ersetzen keine ärztliche, pharmazeutische oder ernährungstherapeutische Beratung, Diagnose oder Behandlung.")
+    +P("Berechnete Bedarfswerte beruhen auf Modellen und deinen Eingaben; der tatsächliche individuelle Bedarf kann davon abweichen. Bei Erkrankungen, Schwangerschaft, Unverträglichkeiten oder anderen besonderen gesundheitlichen Umständen sollten Änderungen an Ernährung, Supplementierung oder Training mit entsprechend qualifizierten Fachpersonen abgestimmt werden.")
+    +P("Bei Allergien oder Unverträglichkeiten beachte zusätzlich die aktuelle Produktverpackung, da Hersteller Zusammensetzungen ändern können. Diese Hinweise beschränken nicht unsere vertraglichen Pflichten oder deine gesetzlichen Rechte.")
+    +P("Wir haften unbeschränkt bei Vorsatz und grober Fahrlässigkeit sowie bei schuldhafter Verletzung von Leben, Körper oder Gesundheit.")
+    +P("Bei einfacher Fahrlässigkeit haften wir bei Verletzung wesentlicher Vertragspflichten. Das sind Pflichten, deren Erfüllung die ordnungsgemäße Durchführung des Vertrags erst ermöglicht und auf deren Einhaltung du regelmäßig vertrauen darfst. Die Haftung ist dabei auf den vertragstypischen, bei Vertragsschluss vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für einfache Fahrlässigkeit ausgeschlossen.")
+    +P("Die Haftung nach zwingenden gesetzlichen Vorschriften, insbesondere dem Produkthaftungsgesetz, sowie aufgrund ausdrücklich übernommener Garantien bleibt unberührt.")
+    +P("Diese Regelungen gelten entsprechend für unsere gesetzlichen Vertreter und Personen, die wir zur Vertragserfüllung einsetzen.")
+    +H("§ 11 Werbung und Partnerlinks")
+    +P("Root Index kann gekennzeichnete Werbung und Partnerlinks enthalten. Bei einem Kauf über einen Partnerlink können wir eine Vergütung erhalten.")
+    +P("Partnervergütungen haben keinen Einfluss auf die Produktbewertung. Eine positive Bewertung kann nicht gekauft werden.")
+    +P("Kaufverträge über verlinkte Produkte kommen mit dem jeweiligen Händler zustande. Für diese Käufe gelten dessen Vertragsbedingungen.")
+    +H("§ 12 Datenschutz")
+    +P("Informationen zur Verarbeitung personenbezogener Daten findest du in der gesonderten Datenschutzerklärung.")
+    +P("Soweit für die Verarbeitung bestimmter Daten, insbesondere Gesundheitsdaten, eine ausdrückliche Einwilligung erforderlich ist, wird diese gesondert eingeholt. Die Zustimmung zu diesen AGB ersetzt eine solche Einwilligung nicht.")
+    +H("§ 13 Schlussbestimmungen")
+    +P("Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts. Wenn du deinen gewöhnlichen Aufenthalt in einem anderen Staat hast, bleiben die zwingenden Verbraucherschutzvorschriften dieses Staates anwendbar, soweit sie dir Schutz gewähren, der dir durch die Rechtswahl nicht entzogen werden darf.")
+    +P("Die gesetzlichen Gerichtsstände bleiben unberührt.")
+    +P("Sollten einzelne Bestimmungen dieser AGB unwirksam sein, bleiben die übrigen Bestimmungen wirksam. An die Stelle unwirksamer Bestimmungen treten die gesetzlichen Regelungen.");
   const widerruf = H("Widerrufsbelehrung")
     +H("Widerrufsrecht")+P("Du hast das Recht, binnen <b>vierzehn Tagen</b> ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.")
     +P("Um dein Widerrufsrecht auszuüben, musst du uns – <b>Ralph Denk, Auweg 23, 84103 Postau, E-Mail: kontakt@root-index.de</b> – mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über deinen Entschluss, diesen Vertrag zu widerrufen, informieren. Zur Wahrung der Frist reicht die rechtzeitige Absendung.")
     +H("Folgen des Widerrufs")+P("Wenn du diesen Vertrag widerrufst, erstatten wir dir alle erhaltenen Zahlungen unverzüglich und spätestens binnen vierzehn Tagen ab Eingang deines Widerrufs, über dasselbe Zahlungsmittel wie bei der ursprünglichen Transaktion; Entgelte für die Rückzahlung entstehen dir nicht.")
-    +H("Vorzeitiges Erlöschen (digitale Dienstleistung)")+P("Das Widerrufsrecht <b>erlischt</b>, wenn du ausdrücklich zugestimmt hast, dass wir mit der Ausführung vor Ablauf der Widerrufsfrist beginnen, und du bestätigt hast, dass du dadurch dein Widerrufsrecht verlierst (§ 356 Abs. 5 BGB). Diese Zustimmung erteilst du über die Pflicht-Checkbox vor „Jetzt kostenpflichtig testen“.")
-    +H("Kündigung & Laufzeit")+P("Testphase (7 Tage): jederzeit kündbar; ohne Kündigung Übergang ins kostenpflichtige Abo. Danach jederzeit kündbar über das Stripe-Kundenportal; wirksam zum Ende des laufenden Abrechnungszeitraums.")
-    +P("<i>Stand: Juli 2026.</i>");
+    +H("Beginn der Leistung vor Ablauf der Widerrufsfrist")+P("Hast du verlangt, dass die Dienstleistung während der Widerrufsfrist beginnen soll, so hast du uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem du uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichtest, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht. Für die kostenlose Testphase fällt kein Betrag an.")
+    +H("Kündigung & Laufzeit")+P("Siehe § 5 (Testphase) und § 7 (Laufzeit und Kündigung) der AGB.")
+    +P("<i>Stand: September 2026.</i>");
   const body = which==='datenschutz'?ds : which==='agb'?agb : which==='widerruf'?widerruf : impressum;
   ov.innerHTML=`<div style="background:var(--card);max-width:640px;width:92%;margin:24px 0;border-radius:16px;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow)"><button onclick="document.getElementById('legalOv').remove()" style="float:right;border:0;background:var(--line);color:var(--ink);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>${body}</div>`;
   document.body.appendChild(ov);
@@ -15308,17 +15375,19 @@ async function riEinwilligungPruefen(){
   ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
     +'<div style="font-size:17px;font-weight:700;margin-bottom:10px">Einwilligung Gesundheitsdaten</div>'
     +'<div style="font-size:13.5px;line-height:1.55;margin-bottom:12px">'+RI_EINW_TEXT+'</div>'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwHaken" onchange="var b=document.getElementById(\'riEinwGo\');b.disabled=!this.checked;b.style.opacity=this.checked?\'1\':\'.5\'" style="margin-top:3px"> <span>Ich stimme zu. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwHaken" onchange="riEinwKnopf()" style="margin-top:3px"> <span>Ich stimme zu. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwAlter" onchange="riEinwKnopf()" style="margin-top:3px"> <span>Ich bin mindestens <b>16 Jahre</b> alt.</span></label>'
     +'<div style="display:flex;gap:8px">'
     +'<button onclick="riEinwilligungAbmelden()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abmelden</button>'
     +'<button id="riEinwGo" disabled onclick="riEinwilligungZustimmen()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer;opacity:.5">Weiter</button>'
     +'</div><div id="riEinwMsg" style="font-size:12.5px;margin-top:8px"></div></div>';
   document.body.appendChild(ov);
 }
+function riEinwKnopf(){ var a=document.getElementById('riEinwHaken'), b=document.getElementById('riEinwAlter'), g=document.getElementById('riEinwGo'); var ok=!!(a&&a.checked&&b&&b.checked); if(g){ g.disabled=!ok; g.style.opacity=ok?'1':'.5'; } }
 async function riEinwilligungZustimmen(){
   var msg=document.getElementById('riEinwMsg');
   try{
-    var r=await client.rpc('cb_consent_speichern',{p_consent:{zeitpunkt:new Date().toISOString(),tarif:'gesundheit',zugestimmt:true,text:RI_EINW_TEXT}});
+    var r=await client.rpc('cb_consent_speichern',{p_consent:{zeitpunkt:new Date().toISOString(),tarif:'gesundheit',zugestimmt:true,text:RI_EINW_TEXT+' | Ich bin mindestens 16 Jahre alt.'}});
     if(r&&r.error) throw new Error(r.error.message);
     var ov=document.getElementById('riEinwOv'); if(ov) ov.remove(); _riEinwOffen=false;
   }catch(e){ if(msg){ msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e); } }
