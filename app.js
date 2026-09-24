@@ -1451,6 +1451,7 @@ async function refreshMe(){
     ME=(data&&data[0])?data[0]:null;
     try{ betaBadge(); }catch(e){}   /* Version/Entwickler-Badge hängt an ME */
     if(ME&&ME.benutzer_id) TB_USER=ME.benutzer_id;
+    if(ME){ try{ riEinwilligungPruefen(); }catch(e){} }   /* GL-B7 24.09.2026 */
   }catch(e){ ME=null; }
   await refreshMyFeatures();   /* auch ohne Login: die Gast-Stufe */
 }
@@ -8598,7 +8599,8 @@ var MFAN_GRUPPEN=[
     ['Impressum','book','#8fa79a',function(){ legalOpen('impressum'); }],
     ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
-    ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }]
+    ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }],
+    ['Einwilligung widerrufen','book','#8fa79a',function(){ riEinwilligungWiderrufen(); }]
   ]]
 ];
 /* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
@@ -15289,6 +15291,50 @@ function kontoLoeschenOpen(){
     +'<button id="delAccGo" disabled onclick="kontoLoeschenDo()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-dc2626);color:#fff;font-weight:700;cursor:pointer;opacity:.5">Konto löschen</button>'
     +'</div><div id="delAccMsg" style="font-size:12.5px;margin-top:8px"></div></div>';
   document.body.appendChild(ov);
+}
+/* GL-B7/B8 (24.09.2026, Ralph: Pflicht-Haken). Gesundheitsdaten brauchen eine ausdrueckliche
+   Einwilligung (Art. 9 Abs. 2 lit. a DSGVO). Wer angemeldet ist und noch nicht zugestimmt hat,
+   sieht einmal diesen Dialog: Zustimmen oder Abmelden. Widerruf im Menue Rechtliches loescht
+   alle Gesundheitsdaten (Konto bleibt) und meldet ab. */
+var RI_EINW_TEXT='Ich willige ein, dass Root Index meine Gesundheitsdaten (z. B. Ernährungstagebuch, Gewicht, Körpermaße, Schlaf, Schritte, Supplemente, Zyklus, Training) speichert und verarbeitet, um mir die Funktionen der App bereitzustellen (Art. 9 Abs. 2 lit. a DSGVO). Ich kann die Einwilligung jederzeit im Menü unter Rechtliches → „Einwilligung widerrufen“ zurücknehmen; dann werden diese Daten gelöscht.';
+var _riEinwOffen=false;
+async function riEinwilligungPruefen(){
+  if(_riEinwOffen) return;
+  var r=await client.rpc('cb_einwilligung_stand');
+  if(!r||r.error||!r.data||!r.data.angemeldet||r.data.gesundheit) return;
+  _riEinwOffen=true;
+  var ov=document.createElement('div'); ov.id='riEinwOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:10px">Einwilligung Gesundheitsdaten</div>'
+    +'<div style="font-size:13.5px;line-height:1.55;margin-bottom:12px">'+RI_EINW_TEXT+'</div>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwHaken" onchange="var b=document.getElementById(\'riEinwGo\');b.disabled=!this.checked;b.style.opacity=this.checked?\'1\':\'.5\'" style="margin-top:3px"> <span>Ich stimme zu. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<div style="display:flex;gap:8px">'
+    +'<button onclick="riEinwilligungAbmelden()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abmelden</button>'
+    +'<button id="riEinwGo" disabled onclick="riEinwilligungZustimmen()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer;opacity:.5">Weiter</button>'
+    +'</div><div id="riEinwMsg" style="font-size:12.5px;margin-top:8px"></div></div>';
+  document.body.appendChild(ov);
+}
+async function riEinwilligungZustimmen(){
+  var msg=document.getElementById('riEinwMsg');
+  try{
+    var r=await client.rpc('cb_consent_speichern',{p_consent:{zeitpunkt:new Date().toISOString(),tarif:'gesundheit',zugestimmt:true,text:RI_EINW_TEXT}});
+    if(r&&r.error) throw new Error(r.error.message);
+    var ov=document.getElementById('riEinwOv'); if(ov) ov.remove(); _riEinwOffen=false;
+  }catch(e){ if(msg){ msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e); } }
+}
+async function riEinwilligungAbmelden(){
+  var ov=document.getElementById('riEinwOv'); if(ov) ov.remove(); _riEinwOffen=false;
+  try{ await doLogout(); }catch(e){}
+}
+async function riEinwilligungWiderrufen(){
+  if(!ME){ alert('Bitte zuerst anmelden.'); return; }
+  if(!confirm('Einwilligung widerrufen?\n\nAlle Gesundheitsdaten (Tagebuch, Gewicht, Körpermaße, Schlaf, Schritte, Supplemente, Zyklus, Training) werden sofort gelöscht. Dein Konto bleibt bestehen. Das lässt sich nicht rückgängig machen.')) return;
+  try{
+    var r=await client.rpc('cb_gesundheit_widerrufen'); if(r&&r.error) throw new Error(r.error.message);
+    alert('Einwilligung widerrufen. Deine Gesundheitsdaten wurden gelöscht.');
+    await doLogout();
+  }catch(e){ alert('Fehler: '+((e&&e.message)||e)+' – bitte kontakt@root-index.de.'); }
 }
 async function kontoLoeschenDo(){
   var msg=document.getElementById('delAccMsg'); if(msg){ msg.style.color='var(--muted)'; msg.textContent='Lösche…'; }
