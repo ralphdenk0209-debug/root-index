@@ -1299,11 +1299,12 @@ function premiumInfo(){
    +_planRow('quarter','Vierteljährlich','12,99 €','4,33 €/Monat','−13%',false)
    +_planRow('year','Jährlich','44,99 €','3,75 €/Monat · 2 Monate geschenkt','−25%',false)
    +'<label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;cursor:pointer;background:var(--greenlt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:4px">'
-   +'<input type="checkbox" id="premConsent" onchange="var b=document.getElementById(\'premGo\');b.disabled=!this.checked;b.style.opacity=this.checked?\'1\':\'.5\'" style="margin-top:2px;flex:0 0 auto;width:18px;height:18px">'
-   +'<span>Ich verlange ausdrücklich, dass Root Index Premium bereits <b>vor Ablauf der Widerrufsfrist</b> bereitstellt. Ich bin <b>volljährig</b> oder habe die <b>Zustimmung meiner gesetzlichen Vertretung</b> (AGB § 2).</span></label>'
+   +'<input type="checkbox" id="premConsent" onchange="riPremKnopf()" style="margin-top:2px;flex:0 0 auto;width:18px;height:18px">'
+   +'<span>Ich verlange ausdrücklich, dass Root Index Premium bereits vor Ablauf der vierzehntägigen Widerrufsfrist freigeschaltet wird. Mir ist bekannt, dass ich bei einem Widerruf unter den in der Widerrufsbelehrung beschriebenen gesetzlichen Voraussetzungen anteiligen Wertersatz leisten muss. Die siebentägige Testphase bleibt kostenlos.</span></label>'
+   +'<label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;line-height:1.45;cursor:pointer;background:var(--greenlt);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:6px">'+'<input type="checkbox" id="premVolljaehrig" onchange="riPremKnopf()" style="margin-top:2px;flex:0 0 auto;width:18px;height:18px">'+'<span>Ich bin <b>volljährig</b> oder habe die <b>Zustimmung meiner gesetzlichen Vertretung</b> (AGB § 2).</span></label>'
    +'<div style="display:flex;gap:8px;margin-top:14px">'
    +'<button onclick="document.getElementById(\'premOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font-size:14px">Abbrechen</button>'
-   +'<button id="premGo" disabled onclick="var p=(document.querySelector(\'input[name=premPlan]:checked\')||{}).value||\'month\';var cb=document.getElementById(\'premConsent\');var consent={zugestimmt:!!(cb&&cb.checked),zeitpunkt:new Date().toISOString(),text:(cb?cb.parentNode.innerText.trim():\'\'),tarif:p};document.getElementById(\'premOv\').remove();_startCheckout(p,consent)" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:14px;opacity:.5">Jetzt kostenpflichtig testen</button>'
+   +'<button id="premGo" disabled onclick="var p=(document.querySelector(\'input[name=premPlan]:checked\')||{}).value||\'month\';var cb=document.getElementById(\'premConsent\');var va=document.getElementById(\'premVolljaehrig\');var consent={zugestimmt:!!(cb&&cb.checked&&va&&va.checked),zeitpunkt:new Date().toISOString(),text:(cb?cb.parentNode.innerText.trim():\'\')+\' | \'+(va?va.parentNode.innerText.trim():\'\'),tarif:p};document.getElementById(\'premOv\').remove();_startCheckout(p,consent)" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:14px;opacity:.5">Jetzt kostenpflichtig testen</button>'
    +'</div>'
    +'<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.5">Mit Klick auf „Jetzt kostenpflichtig testen" akzeptierst du die <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a>, die <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a> und die <a onclick="legalOpen(\'widerruf\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</div>'
    +'</div>';
@@ -8600,6 +8601,7 @@ var MFAN_GRUPPEN=[
     ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
     ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }],
+    ['Vertrag widerrufen','book','#8fa79a',function(){ riWiderrufFormular(); }],
     ['Einwilligung widerrufen','book','#8fa79a',function(){ riEinwilligungWiderrufen(); }]
   ]]
 ];
@@ -8934,13 +8936,34 @@ function legalOpen(which){
     +P("Es gilt deutsches Recht unter Ausschluss des UN-Kaufrechts. Wenn du deinen gewöhnlichen Aufenthalt in einem anderen Staat hast, bleiben die zwingenden Verbraucherschutzvorschriften dieses Staates anwendbar, soweit sie dir Schutz gewähren, der dir durch die Rechtswahl nicht entzogen werden darf.")
     +P("Die gesetzlichen Gerichtsstände bleiben unberührt.")
     +P("Sollten einzelne Bestimmungen dieser AGB unwirksam sein, bleiben die übrigen Bestimmungen wirksam. An die Stelle unwirksamer Bestimmungen treten die gesetzlichen Regelungen.");
-  const widerruf = H("Widerrufsbelehrung")
-    +H("Widerrufsrecht")+P("Du hast das Recht, binnen <b>vierzehn Tagen</b> ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.")
-    +P("Um dein Widerrufsrecht auszuüben, musst du uns – <b>Ralph Denk, Auweg 23, 84103 Postau, E-Mail: kontakt@root-index.de</b> – mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über deinen Entschluss, diesen Vertrag zu widerrufen, informieren. Zur Wahrung der Frist reicht die rechtzeitige Absendung.")
-    +H("Folgen des Widerrufs")+P("Wenn du diesen Vertrag widerrufst, erstatten wir dir alle erhaltenen Zahlungen unverzüglich und spätestens binnen vierzehn Tagen ab Eingang deines Widerrufs, über dasselbe Zahlungsmittel wie bei der ursprünglichen Transaktion; Entgelte für die Rückzahlung entstehen dir nicht.")
-    +H("Beginn der Leistung vor Ablauf der Widerrufsfrist")+P("Hast du verlangt, dass die Dienstleistung während der Widerrufsfrist beginnen soll, so hast du uns einen angemessenen Betrag zu zahlen, der dem Anteil der bis zu dem Zeitpunkt, zu dem du uns von der Ausübung des Widerrufsrechts hinsichtlich dieses Vertrags unterrichtest, bereits erbrachten Dienstleistungen im Vergleich zum Gesamtumfang der im Vertrag vorgesehenen Dienstleistungen entspricht. Für die kostenlose Testphase fällt kein Betrag an.")
-    +H("Kündigung & Laufzeit")+P("Siehe § 5 (Testphase) und § 7 (Laufzeit und Kündigung) der AGB.")
-    +P("<i>Stand: September 2026.</i>");
+  const widerruf = H("Widerrufsbelehrung – Root Index Premium")
+    +P("<i>Stand: September 2026</i>")
+    +P("<button onclick=\"document.getElementById('legalOv').remove();riWiderrufFormular()\" style=\"margin:8px 0 4px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer\">Vertrag widerrufen</button>")
+    +H("Widerrufsrecht")
+    +P("Du hast das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen.")
+    +P("Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.")
+    +P("Um dein Widerrufsrecht auszuüben, musst du uns")
+    +P("Ralph Denk – Root Index<br>Auweg 23<br>84103 Postau<br>Deutschland<br>E-Mail: <a href=\"mailto:kontakt@root-index.de\" style=\"color:var(--greendk)\">kontakt@root-index.de</a><br>Telefon: +49 160 94974290")
+    +P("mittels einer eindeutigen Erklärung, beispielsweise per Brief oder E-Mail, über deinen Entschluss informieren, diesen Vertrag zu widerrufen.")
+    +P("Du kannst dafür das beigefügte Muster-Widerrufsformular verwenden; vorgeschrieben ist das nicht.")
+    +P("Du kannst dein Widerrufsrecht auch online über den Knopf <b>„Vertrag widerrufen“</b> ausüben – oben in dieser Widerrufsbelehrung, im Menü unter <b>Rechtliches → „Vertrag widerrufen“</b> oder direkt unter <b>root-index.de/?widerruf</b>. Wenn du diese Funktion nutzt, erhältst du unverzüglich eine Eingangsbestätigung per E-Mail mit dem Inhalt deiner Widerrufserklärung sowie dem Datum und der Uhrzeit ihres Eingangs.")
+    +P("Zur Wahrung der Widerrufsfrist reicht es aus, dass du die Erklärung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absendest.")
+    +H("Folgen des Widerrufs")
+    +P("Wenn du diesen Vertrag widerrufst, zahlen wir dir alle Zahlungen, die wir von dir erhalten haben, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurück, an dem deine Widerrufserklärung bei uns eingegangen ist.")
+    +P("Für die Rückzahlung verwenden wir dasselbe Zahlungsmittel, das du bei der ursprünglichen Zahlung eingesetzt hast, sofern mit dir nicht ausdrücklich etwas anderes vereinbart wurde. Wegen der Rückzahlung berechnen wir dir keine Entgelte.")
+    +P("Hast du ausdrücklich verlangt, dass wir mit der Dienstleistung bereits während der Widerrufsfrist beginnen, ist unter den gesetzlichen Voraussetzungen ein angemessener Betrag für die bis zu deinem Widerruf erbrachte Leistung zu zahlen. Dieser entspricht dem Anteil der bereits erbrachten Leistung am vertraglich vereinbarten Gesamtumfang.")
+    +P("Die vereinbarte siebentägige Testphase bleibt kostenlos. Für diesen Zeitraum berechnen wir auch im Fall eines Widerrufs keinen Wertersatz.")
+    +H("Ergänzende Hinweise zur Testphase")
+    +P("Die Widerrufsfrist beginnt mit dem Vertragsschluss, nicht erst mit der ersten kostenpflichtigen Abrechnung.")
+    +P("Die Freischaltung und Nutzung von Root Index Premium führen allein nicht zum Erlöschen deines Widerrufsrechts.")
+    +P("Die Kündigung während der kostenlosen Testphase und das gesetzliche Widerrufsrecht bestehen unabhängig voneinander. Laufzeit und Kündigung des Abonnements sind in den AGB geregelt.")
+    +H("Muster-Widerrufsformular")
+    +P("Wenn du den Vertrag widerrufen möchtest, kannst du dieses Formular ausfüllen und an uns senden. Die Verwendung ist freiwillig.")
+    +P("An:<br>Ralph Denk – Root Index<br>Auweg 23<br>84103 Postau<br>Deutschland<br>E-Mail: <a href=\"mailto:kontakt@root-index.de\" style=\"color:var(--greendk)\">kontakt@root-index.de</a>")
+    +P("Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über die Erbringung folgender Dienstleistung:<br><b>Root Index Premium</b>")
+    +P("Bestellt am: ______________________________<br>Name des/der Verbraucher(s): ______________________________<br>Anschrift des/der Verbraucher(s): ______________________________<br>Unterschrift des/der Verbraucher(s) – nur bei Mitteilung auf Papier: ______________________________<br>Datum: ______________________________")
+    +P("(*) Unzutreffendes streichen.")
+    +P("<button onclick=\"document.getElementById('legalOv').remove();riWiderrufFormular()\" style=\"margin:8px 0 4px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer\">Vertrag widerrufen</button>");
   const body = which==='datenschutz'?ds : which==='agb'?agb : which==='widerruf'?widerruf : impressum;
   ov.innerHTML=`<div style="background:var(--card);max-width:640px;width:92%;margin:24px 0;border-radius:16px;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow)"><button onclick="document.getElementById('legalOv').remove()" style="float:right;border:0;background:var(--line);color:var(--ink);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>${body}</div>`;
   document.body.appendChild(ov);
@@ -15405,6 +15428,56 @@ async function riEinwilligungWiderrufen(){
     await doLogout();
   }catch(e){ alert('Fehler: '+((e&&e.message)||e)+' – bitte kontakt@root-index.de.'); }
 }
+/* GL-M12 (24.09.2026): Kaufknopf erst mit beiden Haken (Wertersatz-Verlangen + Volljaehrigkeit). */
+function riPremKnopf(){ var a=document.getElementById('premConsent'), v=document.getElementById('premVolljaehrig'), g=document.getElementById('premGo'); var ok=!!(a&&a.checked&&v&&v.checked); if(g){ g.disabled=!ok; g.style.opacity=ok?'1':'.5'; } }
+/* GL-M12 (24.09.2026): Elektronische Widerrufsfunktion ("Vertrag widerrufen").
+   Zwei Schritte wie vom Gesetz verlangt: Formular -> "Widerruf bestaetigen".
+   Speichert in Widerruf_Log (cb_widerruf_einreichen, auch ohne Anmeldung);
+   ein Trigger schickt sofort die Eingangsbestaetigung per E-Mail. */
+function riWiderrufFormular(){
+  var alt=document.getElementById('riWdrOv'); if(alt) alt.remove();
+  var mail=(ME&&(ME.email||ME.Email))||'';
+  var name=(ME&&(ME.name||ME.Name))||'';
+  var ov=document.createElement('div'); ov.id='riWdrOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  var feld=function(id,label,typ,wert,pflicht){ return '<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">'+label+(pflicht?' *':'')+'</label><input id="'+id+'" type="'+typ+'" value="'+String(wert||'').replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:14px">'; };
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+    +'<div style="font-size:18px;font-weight:700;margin-bottom:6px">Vertrag widerrufen</div>'
+    +'<div id="riWdrSchritt1"><p style="font-size:13.5px;line-height:1.55;margin:0 0 6px">Hiermit widerrufe ich den von mir abgeschlossenen Vertrag über die Erbringung folgender Dienstleistung: <b>Root Index Premium</b>.</p>'
+    +feld('riWdrName','Name','text',name,true)+feld('riWdrMail','E-Mail (für die Eingangsbestätigung)','email',mail,true)
+    +feld('riWdrAnschrift','Anschrift','text','',false)+feld('riWdrBestellt','Bestellt am','date','',false)
+    +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riWdrOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
+    +'<button onclick="riWiderrufPruefen()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Weiter</button></div></div>'
+    +'<div id="riWdrSchritt2" style="display:none"><p id="riWdrZusammen" style="font-size:13.5px;line-height:1.6;margin:0 0 12px"></p>'
+    +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'riWdrSchritt2\').style.display=\'none\';document.getElementById(\'riWdrSchritt1\').style.display=\'block\'" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Zurück</button>'
+    +'<button id="riWdrGo" onclick="riWiderrufSenden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-dc2626);color:#fff;font-weight:700;cursor:pointer">Widerruf bestätigen</button></div></div>'
+    +'<div id="riWdrMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
+    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a onclick="legalOpen(\'widerruf\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</p></div>';
+  document.body.appendChild(ov);
+}
+function riWiderrufPruefen(){
+  var g=function(i){ return (document.getElementById(i)||{}).value||''; };
+  var msg=document.getElementById('riWdrMsg'); msg.textContent='';
+  if(!g('riWdrName').trim()){ msg.style.color='var(--k-dc2626)'; msg.textContent='Bitte deinen Namen angeben.'; return; }
+  if(!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(g('riWdrMail').trim())){ msg.style.color='var(--k-dc2626)'; msg.textContent='Bitte eine gültige E-Mail-Adresse angeben.'; return; }
+  var esc=function(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  document.getElementById('riWdrZusammen').innerHTML='Du widerrufst den Vertrag über <b>Root Index Premium</b>.<br>Name: '+esc(g('riWdrName'))+'<br>E-Mail: '+esc(g('riWdrMail'))+(g('riWdrAnschrift')?'<br>Anschrift: '+esc(g('riWdrAnschrift')):'')+(g('riWdrBestellt')?'<br>Bestellt am: '+esc(g('riWdrBestellt')):'');
+  document.getElementById('riWdrSchritt1').style.display='none'; document.getElementById('riWdrSchritt2').style.display='block';
+}
+async function riWiderrufSenden(){
+  var g=function(i){ return (document.getElementById(i)||{}).value||''; };
+  var msg=document.getElementById('riWdrMsg'), go=document.getElementById('riWdrGo'); if(go) go.disabled=true;
+  msg.style.color='var(--muted)'; msg.textContent='Wird gesendet …';
+  try{
+    var r=await client.rpc('cb_widerruf_einreichen',{p:{name:g('riWdrName'),email:g('riWdrMail'),anschrift:g('riWdrAnschrift'),bestellt_am:g('riWdrBestellt')}});
+    if(r&&r.error) throw new Error(r.error.message);
+    var d=r.data||{}; var t=d.eingang? new Date(d.eingang).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}):'';
+    document.getElementById('riWdrSchritt2').style.display='none';
+    msg.style.color='var(--ink)';
+    msg.innerHTML='<b>Dein Widerruf ist eingegangen.</b><br>Eingang: '+t+' Uhr · Vorgang W-'+(d.id||'')+'<br>Die Eingangsbestätigung mit dem Inhalt deiner Erklärung kommt gleich per E-Mail. Bezahlte Beträge erstatten wir spätestens binnen 14 Tagen.<br><button onclick="document.getElementById(\'riWdrOv\').remove()" style="margin-top:12px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Schließen</button>';
+  }catch(e){ if(go) go.disabled=false; msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e)+' – bitte schreib an kontakt@root-index.de.'; }
+}
+(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } }catch(_){} })();
 async function kontoLoeschenDo(){
   var msg=document.getElementById('delAccMsg'); if(msg){ msg.style.color='var(--muted)'; msg.textContent='Lösche…'; }
   try{
