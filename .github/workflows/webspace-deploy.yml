@@ -1,0 +1,120 @@
+# =============================================================================
+#  Webseite auf den INWX-Webspace hochladen   (Go-Live M6, 24.09.2026)
+# -----------------------------------------------------------------------------
+#  WARUM: GitHub Pages erlaubt max. 1 GB und keine gewerbliche Nutzung. Die
+#  Seite hat 945 MB (61.000 Produktseiten) und der Bezahlstart kommt. Das Repo
+#  bleibt die Wahrheit, nur der Ort, an dem die Seite ausgeliefert wird, zieht um.
+#
+#  WIE: Auf dem Webspace liegt .deploy-sha = der zuletzt hochgeladene Commit.
+#  Ist er da, werden nur die seitdem geaenderten Dateien hochgeladen und die
+#  geloeschten entfernt. Fehlt er (erster Lauf), wird alles gespiegelt.
+#
+#  Braucht vier Geheimnisse (Repo -> Settings -> Secrets -> Actions):
+#    WEBSPACE_HOST  z. B. der SFTP-Server aus dem INWX-Kundenbereich
+#    WEBSPACE_USER  SFTP-Benutzer
+#    WEBSPACE_PASS  SFTP-Passwort
+#    WEBSPACE_DIR   Zielordner auf dem Webspace (z. B. /  oder /html)
+#  Fehlen sie, tut der Lauf nichts und endet gruen.
+# =============================================================================
+name: Webspace hochladen
+
+on:
+  push:
+    branches: [main]
+  workflow_run:
+    # Die Commits des Produktseiten-Bots loesen kein push-Ereignis aus
+    # (GITHUB_TOKEN) - deshalb hier ausdruecklich hinterher laufen.
+    workflows: ["Produktseiten und Sitemap", "Social Meta", "SEO Search Console"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      voll:
+        description: "Alles neu hochladen (statt nur Aenderungen)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: webspace-deploy
+  cancel-in-progress: false
+
+jobs:
+  hochladen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Geheimnisse vorhanden?
+        id: pruef
+        env:
+          H: ${{ secrets.WEBSPACE_HOST }}
+          U: ${{ secrets.WEBSPACE_USER }}
+          P: ${{ secrets.WEBSPACE_PASS }}
+        run: |
+          if [ -z "$H" ] || [ -z "$U" ] || [ -z "$P" ]; then
+            echo "Webspace-Geheimnisse fehlen - nichts zu tun."; echo "ok=0" >> "$GITHUB_OUTPUT"
+          else echo "ok=1" >> "$GITHUB_OUTPUT"; fi
+
+      - uses: actions/checkout@v4
+        if: steps.pruef.outputs.ok == '1'
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: lftp installieren
+        if: steps.pruef.outputs.ok == '1'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
+
+      - name: Hochladen
+        if: steps.pruef.outputs.ok == '1'
+        env:
+          H: ${{ secrets.WEBSPACE_HOST }}
+          U: ${{ secrets.WEBSPACE_USER }}
+          P: ${{ secrets.WEBSPACE_PASS }}
+          D: ${{ secrets.WEBSPACE_DIR }}
+          VOLL: ${{ github.event.inputs.voll }}
+        run: |
+          set -euo pipefail
+          D="${D:-/}"; export LFTP_PASSWORD="$P"
+          # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
+          AUSSCHLUSS='^(\.git/|\.github/|_werkzeuge/|_to_delete/|supabase/|node_modules/|XXoxtEqm|README\.md$|Links\.md$|CNAME$|version\.sh$|.*\.zip$|\.DS_Store$|.*\.fuse_hidden.*|\.gitignore$)'
+          LF_SET="set sftp:auto-confirm yes; set net:max-retries 5; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
+          ZIEL="sftp://$H"
+          HEAD_SHA=$(git rev-parse HEAD)
+
+          ALT=""
+          if [ "${VOLL:-false}" != "true" ]; then
+            ALT=$(lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)
+          fi
+
+          if [ -n "$ALT" ] && git cat-file -e "$ALT^{commit}" 2>/dev/null && git merge-base --is-ancestor "$ALT" HEAD; then
+            echo "Letzter Stand auf dem Webspace: $ALT -> nur Aenderungen"
+            git diff --name-status --no-renames "$ALT" HEAD > aenderungen.txt
+            : > lftp.txt
+            echo "$LF_SET" >> lftp.txt
+            N_HOCH=0; N_WEG=0
+            while IFS=$'\t' read -r st pfad; do
+              echo "$pfad" | grep -Eq "$AUSSCHLUSS" && continue
+              if [ "$st" = "D" ]; then
+                echo "rm -f \"$D/$pfad\"" >> lftp.txt; N_WEG=$((N_WEG+1))
+              else
+                dir=$(dirname "$pfad")
+                [ "$dir" != "." ] && echo "mkdir -p -f \"$D/$dir\"" >> lftp.txt
+                echo "put -O \"$D/$dir\" \"$pfad\"" >> lftp.txt; N_HOCH=$((N_HOCH+1))
+              fi
+            done < aenderungen.txt
+            echo "Hochladen: $N_HOCH, Entfernen: $N_WEG"
+            if [ $((N_HOCH+N_WEG)) -gt 0 ]; then
+              echo "bye" >> lftp.txt
+              lftp --env-password -u "$U" -f lftp.txt "$ZIEL"
+            fi
+          else
+            echo "Kein gueltiger letzter Stand -> alles spiegeln"
+            EXCL=""
+            for m in '^\.git/' '^\.github/' '^_werkzeuge/' '^_to_delete/' '^supabase/' '^node_modules/' '^XXoxtEqm' '^README\.md$' '^Links\.md$' '^CNAME$' '^version\.sh$' '\.zip$' '\.DS_Store$' 'fuse_hidden' '^aenderungen\.txt$' '^lftp\.txt$'; do
+              EXCL="$EXCL --exclude $m"
+            done
+            lftp --env-password -u "$U" -e "$LF_SET; mirror -R --parallel=8 --no-perms $EXCL . $D; bye" "$ZIEL"
+          fi
+
+          echo "$HEAD_SHA" > .deploy-sha
+          lftp --env-password -u "$U" -e "$LF_SET; put -O $D .deploy-sha; bye" "$ZIEL"
+          echo "Fertig: $HEAD_SHA"

@@ -1,0 +1,27 @@
+# INWX-Webspace (Go-Live M6, 24.09.2026). Auf GitHub Pages ohne Wirkung.
+Options -Indexes
+DirectoryIndex index.html
+ErrorDocument 404 /index.html
+
+RewriteEngine On
+# immer https, immer ohne www
+RewriteCond %{HTTPS} !=on [OR]
+RewriteCond %{HTTP_HOST} ^www\. [NC]
+RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
+
+# Service Worker nie zwischenspeichern, sonst kommen Updates nicht an
+<Files "sw.js">
+  Header set Cache-Control "no-cache, no-store, must-revalidate"
+</Files>
+<FilesMatch "\.(html)$">
+  Header set Cache-Control "no-cache"
+</FilesMatch>
+<FilesMatch "\.(js|css)$">
+  Header set Cache-Control "public, max-age=600"
+</FilesMatch>
+<FilesMatch "\.(png|jpg|jpeg|webp|svg|woff2?|ico)$">
+  Header set Cache-Control "public, max-age=2592000"
+</FilesMatch>
+<FilesMatch "^\.(deploy-sha|git)">
+  Require all denied
+</FilesMatch>
