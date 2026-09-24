@@ -79,6 +79,7 @@ jobs:
           set -euo pipefail
           # Server, Benutzer und Ordner sind nicht geheim - Vorgaben aus dem INWX-Paket (kd253566, 24.09.2026),
           # ein gleichnamiges Geheimnis ueberschreibt sie.
+          [ -n "$H" ] && WEBSPACE_HOST_GESETZT=1
           H="${H:-prod0.webspace.bz}"; U="${U:-kd253566}"
           D="${D:-/}"; export LFTP_PASSWORD="$P"
           # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
@@ -90,11 +91,16 @@ jobs:
             timeout 60 lftp --env-password -u "$U" -e "$x; cls -1 $D | head -5; bye" "$1://$H" 2>&1
           }
           if [ -z "${PROTO:-}" ]; then
-            for kand in sftp ftp; do
-              echo "--- Probe $kand ---"
-              if out=$(probe $kand); then echo "$out"; PROTO=$kand; break; else echo "$out"; fi
+            # Server ist nicht sicher bekannt: der Reihe nach probieren (erster Treffer gewinnt)
+            HOSTS="$H"; [ -z "${WEBSPACE_HOST_GESETZT:-}" ] && HOSTS="$H kd253566.prod0.webspace.bz ftp.webspace.bz sftp.webspace.bz prod0.webspace.bz"
+            for hh in $HOSTS; do
+              for kand in sftp ftp; do
+                echo "--- Probe $kand://$hh ---"
+                H="$hh"
+                if out=$(probe $kand); then echo "$out"; PROTO=$kand; break 2; else echo "$out" | tail -2; fi
+              done
             done
-            [ -z "${PROTO:-}" ] && { echo "::error::Keine Verbindung zum Webspace (weder SFTP noch FTP). Benutzer/Passwort pruefen."; exit 1; }
+            [ -z "${PROTO:-}" ] && { echo "::error::Keine Verbindung zum Webspace. Server/Benutzer/Passwort pruefen."; exit 1; }
           fi
           echo "Verbindung: $PROTO://$H als $U, Ordner $D"
           ZIEL="$PROTO://$H"
