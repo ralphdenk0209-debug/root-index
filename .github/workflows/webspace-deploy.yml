@@ -107,7 +107,7 @@ jobs:
           [ "$PROTO" = "ftp" ] && LF_SET="$LF_SET; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no"
           HEAD_SHA=$(git rev-parse HEAD)
 
-          ALT=""
+          ALT=""; MODUS=""
           if [ "${VOLL:-false}" != "true" ]; then
             ALT=$(timeout 90 lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)
           fi
@@ -117,6 +117,7 @@ jobs:
             git diff --name-status --no-renames "$ALT" HEAD > aenderungen.txt
             : > lftp.txt
             echo "$LF_SET" >> lftp.txt
+            echo "open --env-password -u \"$U\" $ZIEL" >> lftp.txt
             N_HOCH=0; N_WEG=0
             while IFS=$'\t' read -r st pfad; do
               echo "$pfad" | grep -Eq "$AUSSCHLUSS" && continue
@@ -129,12 +130,17 @@ jobs:
               fi
             done < aenderungen.txt
             echo "Hochladen: $N_HOCH, Entfernen: $N_WEG"
-            if [ $((N_HOCH+N_WEG)) -gt 0 ]; then
+            if [ $((N_HOCH+N_WEG)) -gt 3000 ]; then
+              echo "Sehr viele Aenderungen -> spiegeln statt Einzeldateien"; MODUS=spiegeln
+            elif [ $((N_HOCH+N_WEG)) -gt 0 ]; then
               echo "bye" >> lftp.txt
-              lftp --env-password -u "$U" -f lftp.txt "$ZIEL"
+              lftp -f lftp.txt
             fi
           else
-            echo "Kein gueltiger letzter Stand -> alles spiegeln"
+            MODUS=spiegeln
+          fi
+          if [ "${MODUS:-}" = "spiegeln" ]; then
+            echo "Alles spiegeln (nur geaenderte Groesse/Zeit)"
             EXCL=""
             for m in '^\.git/' '^\.github/' '^_werkzeuge/' '^_to_delete/' '^supabase/' '^node_modules/' '^XXoxtEqm' '^README\.md$' '^Links\.md$' '^CNAME$' '^version\.sh$' '\.zip$' '\.DS_Store$' 'fuse_hidden' '^aenderungen\.txt$' '^lftp\.txt$'; do
               EXCL="$EXCL --exclude $m"
