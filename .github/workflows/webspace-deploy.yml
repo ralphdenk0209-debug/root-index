@@ -83,9 +83,18 @@ jobs:
           D="${D:-/}"; export LFTP_PASSWORD="$P"
           # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
           AUSSCHLUSS='^(\.git/|\.github/|_werkzeuge/|_to_delete/|supabase/|node_modules/|XXoxtEqm|README\.md$|Links\.md$|CNAME$|version\.sh$|.*\.zip$|\.DS_Store$|.*\.fuse_hidden.*|\.gitignore$)'
-          LF_SET="set sftp:auto-confirm yes; set net:max-retries 5; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
-          if [ -z "${PROTO:-}" ]; then        # nicht gesetzt: erst SFTP probieren, sonst FTP mit TLS
-            if lftp --env-password -u "$U" -e "set sftp:auto-confirm yes; set net:max-retries 1; set net:timeout 20; cls -1 $D >/dev/null; bye" "sftp://$H" >/dev/null 2>&1; then PROTO=sftp; else PROTO=ftp; fi
+          LF_SET="set sftp:auto-confirm yes; set net:max-retries 3; set net:timeout 30; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
+          probe(){ # $1 = sftp|ftp ; gibt die Fehlermeldung von lftp aus (ohne Passwort)
+            local x="set net:max-retries 1; set net:timeout 20; set net:reconnect-interval-base 2; set sftp:auto-confirm yes"
+            [ "$1" = "ftp" ] && x="$x; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no"
+            timeout 60 lftp --env-password -u "$U" -e "$x; cls -1 $D | head -5; bye" "$1://$H" 2>&1
+          }
+          if [ -z "${PROTO:-}" ]; then
+            for kand in sftp ftp; do
+              echo "--- Probe $kand ---"
+              if out=$(probe $kand); then echo "$out"; PROTO=$kand; break; else echo "$out"; fi
+            done
+            [ -z "${PROTO:-}" ] && { echo "::error::Keine Verbindung zum Webspace (weder SFTP noch FTP). Benutzer/Passwort pruefen."; exit 1; }
           fi
           echo "Verbindung: $PROTO://$H als $U, Ordner $D"
           ZIEL="$PROTO://$H"
@@ -94,7 +103,7 @@ jobs:
 
           ALT=""
           if [ "${VOLL:-false}" != "true" ]; then
-            ALT=$(lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)
+            ALT=$(timeout 90 lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)
           fi
 
           if [ -n "$ALT" ] && git cat-file -e "$ALT^{commit}" 2>/dev/null && git merge-base --is-ancestor "$ALT" HEAD; then
