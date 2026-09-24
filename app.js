@@ -8825,10 +8825,10 @@ function legalOpen(which){
   const H=t=>`<h3 style="font-size:15px;color:var(--green);margin:16px 0 4px">${t}</h3>`;
   const P=t=>`<p style="font-size:13.5px;line-height:1.55;color:var(--ink);margin:.2em 0">${t}</p>`;
   const impressum = H("Impressum")+`<p style="font-size:12px;color:var(--muted)">Angaben gemäß § 5 DDG</p>`
-    +P("<b>Sandra Denk</b><br>Root Index (Einzelunternehmen)<br>Auweg 23<br>84103 Postau<br>Deutschland")
+    +P("<b>Ralph Denk</b><br>Root Index (Einzelunternehmen)<br>Auweg 23<br>84103 Postau<br>Deutschland")
     +H("Kontakt")+P("E-Mail: kontakt@root-index.de<br>Alternativ über das Kontaktformular in der App (Menü „Mehr“ → Kontakt). Wir antworten in der Regel innerhalb von 48 Stunden.")
     +H("Umsatzsteuer")+P("Kleinunternehmerin gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
-    +H("Verantwortlich i.S.d. § 18 Abs. 2 MStV")+P("Sandra Denk, Anschrift wie oben.")
+    +H("Verantwortlich i.S.d. § 18 Abs. 2 MStV")+P("Ralph Denk, Anschrift wie oben.")
     +H("Werbung &amp; Partnerlinks")+P("Root Index ist Teilnehmer des Amazon-Partnerprogramms. <b>Als Amazon-Partner verdienen wir an qualifizierten Verkäufen.</b> Mit „Anzeige“ gekennzeichnete Links sind Partnerlinks – der Preis ändert sich für dich dadurch nicht. <b>Partnerlinks haben keinerlei Einfluss auf den Root Index.</b> Ein Produkt wird bewertet, bevor überhaupt geprüft wird, ob es einen Partnerlink gibt; kein Hersteller kann eine Bewertung kaufen oder beeinflussen.")
     +H("Datenquellen &amp; Lizenzen")+P("Nährwerte generischer Lebensmittel stammen aus dem <b>Bundeslebensmittelschlüssel (BLS 4.0)</b>, © Max Rubner-Institut, Bundesforschungsinstitut für Ernährung und Lebensmittel, lizenziert unter <b>CC BY 4.0</b> (creativecommons.org/licenses/by/4.0). Ergänzend nutzen wir Daten von <b>Open Food Facts</b> (Datenbank lizenziert unter <b>ODbL 1.0</b>, Inhalte unter CC BY-SA 3.0) sowie Herstellerangaben und Etikettfotos unserer Nutzerinnen und Nutzer. Die Quelle steht bei jedem Produkt unter dem Index. Wissenschaftliche Grundlagen: EFSA, WHO, EU-VO 1333/2008 und 432/2012, IARC, DGE.")
     +H("Verbraucherstreitbeilegung")+P("Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.")
@@ -8836,7 +8836,7 @@ function legalOpen(which){
     +H("Haftung für Links")+P("Unser Angebot enthält ggf. Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Dafür ist stets der jeweilige Anbieter verantwortlich.")
     +H("Urheberrecht")+P("Die erstellten Inhalte unterliegen dem deutschen Urheberrecht.");
   const ds = H("Datenschutzerklärung")
-    +H("1. Verantwortlicher")+P("Sandra Denk, Root Index, Auweg 23, 84103 Postau, Deutschland. E-Mail: kontakt@root-index.de.")
+    +H("1. Verantwortlicher")+P("Ralph Denk, Root Index, Auweg 23, 84103 Postau, Deutschland. E-Mail: kontakt@root-index.de.")
     +H("2. Überblick")+P("Wir verarbeiten personenbezogene Daten nur, soweit es für den Betrieb der Anwendung nötig ist. Für die meisten Funktionen ist ein Nutzerkonto erforderlich.")
     +H("3. Hosting (GitHub Pages)")+P("Diese Website wird über GitHub Pages (GitHub, Inc., San Francisco, CA, USA) bereitgestellt. Dabei werden technisch notwendige Server-Logdaten (u. a. IP-Adresse, Datum/Uhrzeit, abgerufene Ressource) verarbeitet. Rechtsgrundlage: Art. 6 Abs. 1 lit. f DSGVO. Da GitHub in den USA sitzt, kann eine Übermittlung in ein Drittland erfolgen; sie wird durch geeignete Garantien (EU-Standardvertragsklauseln / Data Privacy Framework) abgesichert.")
     +H("4. Datenbank / Backend (Supabase)")+P("Konto- und Nutzungsdaten werden bei unserem Auftragsverarbeiter Supabase in einem Rechenzentrum in der EU (Frankfurt am Main, eu-central-1) gespeichert. Es besteht ein Auftragsverarbeitungsvertrag (Art. 28 DSGVO).")
@@ -8854,7 +8854,7 @@ function legalOpen(which){
     +H("16. Beschwerderecht")+P("Du kannst dich bei einer Aufsichtsbehörde beschweren, z. B. beim Bayerischen Landesamt für Datenschutzaufsicht (BayLDA), Promenade 18, 91522 Ansbach.")
     +P("<i>Stand: Juli 2026.</i>");
   const agb = H("Allgemeine Geschäftsbedingungen (AGB) – Root Index Premium")
-    +H("§ 1 Geltungsbereich, Anbieter")+P("Diese AGB gelten für das kostenpflichtige Angebot „Root Index Premium“ unter root-index.de. Anbieter und Vertragspartner: <b>Sandra Denk, Auweg 23, 84103 Postau, Deutschland</b>, E-Mail: kontakt@root-index.de. Kleinunternehmerin gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
+    +H("§ 1 Geltungsbereich, Anbieter")+P("Diese AGB gelten für das kostenpflichtige Angebot „Root Index Premium“ unter root-index.de. Anbieter und Vertragspartner: <b>Ralph Denk, Auweg 23, 84103 Postau, Deutschland</b>, E-Mail: kontakt@root-index.de. Kleinunternehmerin gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
     +H("§ 2 Leistungsgegenstand")+P("Root Index ist eine informations- und wissenschaftsbasierte Bewertungs- und Tagebuch-Anwendung. Bewertungen (0–100) dienen der Orientierung und sind <b>keine medizinische Beratung</b>. Der kostenlose Bereich (Free) ist ohne Zahlungspflicht nutzbar. Premium schaltet u. a. frei: detaillierte Aufschlüsselung der Bewertung, Bedarfsdeckung, volles Ernährungs- & Trainingstagebuch, Wochen-/Trainingsplaner, eigene Rezepte. Der aktuelle Funktionsumfang wird vor Vertragsschluss angezeigt. Premium ist eine digitale Dienstleistung (§§ 327 ff. BGB).")
     +H("§ 3 Vertragsschluss")+P("Für die Nutzung ist ein Konto erforderlich (Anmeldung per E-Mail/Anmeldelink). Der kostenpflichtige Vertrag kommt zustande, indem du den Bestellvorgang über den Zahlungsdienstleister Stripe abschließt und die Zahlungspflicht mit „Jetzt kostenpflichtig testen“ bestätigst.")
     +H("§ 4 Kostenloser Testzeitraum (7 Tage)")+P("Neukund:innen erhalten 7 Tage kostenlosen Test. Ohne Kündigung vor Ablauf geht der Test automatisch in ein kostenpflichtiges Abo über. Die Kündigung während des Tests ist jederzeit über das Stripe-Kundenportal möglich.")
@@ -8867,7 +8867,7 @@ function legalOpen(which){
     +P("<i>Stand: Juli 2026.</i>");
   const widerruf = H("Widerrufsbelehrung")
     +H("Widerrufsrecht")+P("Du hast das Recht, binnen <b>vierzehn Tagen</b> ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.")
-    +P("Um dein Widerrufsrecht auszuüben, musst du uns – <b>Sandra Denk, Auweg 23, 84103 Postau, E-Mail: kontakt@root-index.de</b> – mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über deinen Entschluss, diesen Vertrag zu widerrufen, informieren. Zur Wahrung der Frist reicht die rechtzeitige Absendung.")
+    +P("Um dein Widerrufsrecht auszuüben, musst du uns – <b>Ralph Denk, Auweg 23, 84103 Postau, E-Mail: kontakt@root-index.de</b> – mittels einer eindeutigen Erklärung (z. B. eine E-Mail) über deinen Entschluss, diesen Vertrag zu widerrufen, informieren. Zur Wahrung der Frist reicht die rechtzeitige Absendung.")
     +H("Folgen des Widerrufs")+P("Wenn du diesen Vertrag widerrufst, erstatten wir dir alle erhaltenen Zahlungen unverzüglich und spätestens binnen vierzehn Tagen ab Eingang deines Widerrufs, über dasselbe Zahlungsmittel wie bei der ursprünglichen Transaktion; Entgelte für die Rückzahlung entstehen dir nicht.")
     +H("Vorzeitiges Erlöschen (digitale Dienstleistung)")+P("Das Widerrufsrecht <b>erlischt</b>, wenn du ausdrücklich zugestimmt hast, dass wir mit der Ausführung vor Ablauf der Widerrufsfrist beginnen, und du bestätigt hast, dass du dadurch dein Widerrufsrecht verlierst (§ 356 Abs. 5 BGB). Diese Zustimmung erteilst du über die Pflicht-Checkbox vor „Jetzt kostenpflichtig testen“.")
     +H("Kündigung & Laufzeit")+P("Testphase (7 Tage): jederzeit kündbar; ohne Kündigung Übergang ins kostenpflichtige Abo. Danach jederzeit kündbar über das Stripe-Kundenportal; wirksam zum Ende des laufenden Abrechnungszeitraums.")
