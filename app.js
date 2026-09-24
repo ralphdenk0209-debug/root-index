@@ -8579,7 +8579,8 @@ var MFAN_GRUPPEN=[
      was kostet es und wie komme ich wieder raus. */
   ['abo','Abo & Konto','heart','#ffc24b',[
     ['Premium','heart','#ffc24b',function(){ premiumInfo(); }],
-    ['Abo verwalten / kündigen','book','#8fa79a',function(){ startPortal(); }],
+    ['Verträge hier kündigen','book','#8fa79a',function(){ riKuendigenFormular(); }],
+    ['Zahlungsdaten & Rechnungen','book','#8fa79a',function(){ startPortal(); }],
     ['Abmelden','drop','#8fa79a',function(){ doLogout(); }],
     ['Konto löschen','leaf','#ff6fa8',function(){ kontoLoeschenOpen(); }]
   ]],
@@ -8601,6 +8602,7 @@ var MFAN_GRUPPEN=[
     ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
     ['Widerrufsbelehrung','book','#8fa79a',function(){ legalOpen('widerruf'); }],
+    ['Verträge hier kündigen','book','#8fa79a',function(){ riKuendigenFormular(); }],
     ['Vertrag widerrufen','book','#8fa79a',function(){ riWiderrufFormular(); }],
     ['Einwilligung widerrufen','book','#8fa79a',function(){ riEinwilligungWiderrufen(); }]
   ]]
@@ -15577,7 +15579,70 @@ async function riWiderrufSenden(){
     msg.innerHTML='<b>Dein Widerruf ist eingegangen.</b><br>Eingang: '+t+' Uhr · Vorgang W-'+(d.id||'')+'<br>Die Eingangsbestätigung mit dem Inhalt deiner Erklärung kommt gleich per E-Mail. Bezahlte Beträge erstatten wir spätestens binnen 14 Tagen.<br><button onclick="document.getElementById(\'riWdrOv\').remove()" style="margin-top:12px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Schließen</button>';
   }catch(e){ if(go) go.disabled=false; msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e)+' – bitte schreib an kontakt@root-index.de.'; }
 }
-(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } else { ['agb','datenschutz','impressum','widerrufsbelehrung'].forEach(function(k){ if(p.has(k)) setTimeout(function(){ legalOpen(k==='widerrufsbelehrung'?'widerruf':k); },600); }); } }catch(_){} })();
+/* ===== Kündigungsfunktion (AGB § 7, § 312k BGB) – 24.09.2026 =====
+   Knopf „Verträge hier kündigen“ (Menü + root-index.de/?kuendigen), Bestätigungsseite
+   mit „jetzt kündigen“. Ausgeführt in der Edge-Funktion abo-verwaltung (modus kuendigen):
+   berechnet den Beendigungszeitpunkt, setzt ihn in Stripe und schickt sofort die
+   Bestätigung per E-Mail. Funktioniert auch ohne Anmeldung (Name + E-Mail). */
+function riKuendigenFormular(){
+  var alt=document.getElementById('riKdgOv'); if(alt) alt.remove();
+  var mail=(ME&&(ME.email||ME.Email))||'';
+  var name=(ME&&(ME.name||ME.Name))||'';
+  var ov=document.createElement('div'); ov.id='riKdgOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  var feld=function(id,label,typ,wert,pflicht){ return '<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">'+label+(pflicht?' *':'')+'</label><input id="'+id+'" type="'+typ+'" value="'+String(wert||'').replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:14px">'; };
+  var radio=function(wert,text,an){ return '<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin:6px 0;cursor:pointer"><input type="radio" name="riKdgArt" value="'+wert+'"'+(an?' checked':'')+' onchange="document.getElementById(\'riKdgGrundBox\').style.display=(this.value===\'ausserordentlich\'?\'block\':\'none\')" style="margin-top:3px"> <span>'+text+'</span></label>'; };
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:460px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+    +'<div style="font-size:18px;font-weight:700;margin-bottom:6px">Verträge hier kündigen</div>'
+    +'<div id="riKdgSchritt1"><p style="font-size:13.5px;line-height:1.55;margin:0 0 6px">Vertrag: <b>Root Index Premium</b></p>'
+    +radio('ordentlich','Ordentliche Kündigung zum nächstmöglichen Zeitpunkt',true)
+    +radio('ausserordentlich','Außerordentliche Kündigung aus wichtigem Grund',false)
+    +'<div id="riKdgGrundBox" style="display:none"><label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">Grund *</label><textarea id="riKdgGrund" rows="3" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:14px"></textarea></div>'
+    +feld('riKdgName','Name','text',name,true)+feld('riKdgMail','E-Mail (für die Kündigungsbestätigung)','email',mail,true)
+    +(ME?'':'<p style="font-size:12px;color:var(--muted);margin:8px 0 0">Bitte die E-Mail-Adresse deines Root-Index-Kontos angeben, damit wir dein Abonnement zuordnen können.</p>')
+    +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riKdgOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
+    +'<button onclick="riKuendigenPruefen()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Weiter</button></div></div>'
+    +'<div id="riKdgSchritt2" style="display:none"><p id="riKdgZusammen" style="font-size:13.5px;line-height:1.6;margin:0 0 12px"></p>'
+    +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'riKdgSchritt2\').style.display=\'none\';document.getElementById(\'riKdgSchritt1\').style.display=\'block\'" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Zurück</button>'
+    +'<button id="riKdgGo" onclick="riKuendigenSenden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-dc2626);color:#fff;font-weight:700;cursor:pointer">jetzt kündigen</button></div></div>'
+    +'<div id="riKdgMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
+    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB § 7</a>.</p></div>';
+  document.body.appendChild(ov);
+}
+function riKuendigenPruefen(){
+  var g=function(i){ return (document.getElementById(i)||{}).value||''; };
+  var art=(document.querySelector('input[name="riKdgArt"]:checked')||{}).value||'ordentlich';
+  var msg=document.getElementById('riKdgMsg'); msg.textContent='';
+  if(!g('riKdgName').trim()){ msg.style.color='var(--k-dc2626)'; msg.textContent='Bitte deinen Namen angeben.'; return; }
+  if(!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(g('riKdgMail').trim())){ msg.style.color='var(--k-dc2626)'; msg.textContent='Bitte eine gültige E-Mail-Adresse angeben.'; return; }
+  if(art==='ausserordentlich' && !g('riKdgGrund').trim()){ msg.style.color='var(--k-dc2626)'; msg.textContent='Bitte den Grund angeben.'; return; }
+  var esc=function(t){ return String(t).replace(/[&<>"]/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+  document.getElementById('riKdgZusammen').innerHTML='Du kündigst deinen Vertrag über <b>Root Index Premium</b> '+(art==='ausserordentlich'?'<b>außerordentlich</b> aus wichtigem Grund':'<b>ordentlich zum nächstmöglichen Zeitpunkt</b>')+'.<br>Name: '+esc(g('riKdgName'))+'<br>E-Mail: '+esc(g('riKdgMail'))+(art==='ausserordentlich'?'<br>Grund: '+esc(g('riKdgGrund')):'');
+  document.getElementById('riKdgSchritt1').style.display='none'; document.getElementById('riKdgSchritt2').style.display='block';
+}
+async function riKuendigenSenden(){
+  var g=function(i){ return (document.getElementById(i)||{}).value||''; };
+  var art=(document.querySelector('input[name="riKdgArt"]:checked')||{}).value||'ordentlich';
+  var msg=document.getElementById('riKdgMsg'), go=document.getElementById('riKdgGo'); if(go) go.disabled=true;
+  msg.style.color='var(--muted)'; msg.textContent='Wird gesendet …';
+  try{
+    var r=await client.functions.invoke('abo-verwaltung',{body:{modus:'kuendigen',name:g('riKdgName'),email:g('riKdgMail'),art:art,grund:g('riKdgGrund')}});
+    var d=(r&&r.data)||{};
+    if(r&&r.error){ var t=''; try{ t=(await r.error.context.json()).error; }catch(_){} throw new Error(t||r.error.message); }
+    if(d.error) throw new Error(d.error);
+    var f=function(x){ return new Date(x).toLocaleString('de-DE',{timeZone:'Europe/Berlin'}); };
+    document.getElementById('riKdgSchritt2').style.display='none';
+    msg.style.color='var(--ink)';
+    msg.innerHTML='<b>Deine Kündigung ist eingegangen.</b><br>Eingang: '+f(d.eingang)+' Uhr · Vorgang '+(d.nr||'')
+      +'<br>Beendigung: <b>'+(d.beendigung? new Date(d.beendigung).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'}) : 'wird geprüft')+'</b>'
+      +'<br>'+(d.hinweis||'')
+      +'<br>'+(d.mail?'Die Bestätigung kommt gleich per E-Mail.':'Die E-Mail-Bestätigung konnte gerade nicht gesendet werden – wir holen das nach.')
+      +'<br><button onclick="document.getElementById(\'riKdgOv\').remove();try{refreshMe&&refreshMe();}catch(_){}" style="margin-top:12px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Schließen</button>';
+  }catch(e){ if(go) go.disabled=false; msg.style.color='var(--k-dc2626)'; msg.textContent='Fehler: '+((e&&e.message)||e)+' – bitte schreib an kontakt@root-index.de.'; }
+}
+if(typeof window!=='undefined'){ window.riKuendigenFormular=riKuendigenFormular; window.riKuendigenPruefen=riKuendigenPruefen; window.riKuendigenSenden=riKuendigenSenden; }
+
+(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('kuendigen')){ setTimeout(function(){ riKuendigenFormular(); },600); } else if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } else { ['agb','datenschutz','impressum','widerrufsbelehrung'].forEach(function(k){ if(p.has(k)) setTimeout(function(){ legalOpen(k==='widerrufsbelehrung'?'widerruf':k); },600); }); } }catch(_){} })();
 async function kontoLoeschenDo(){
   var msg=document.getElementById('delAccMsg'); if(msg){ msg.style.color='var(--muted)'; msg.textContent='Lösche…'; }
   try{
