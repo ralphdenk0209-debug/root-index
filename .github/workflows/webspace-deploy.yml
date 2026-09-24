@@ -14,6 +14,8 @@
 #    WEBSPACE_USER  SFTP-Benutzer
 #    WEBSPACE_PASS  SFTP-Passwort
 #    WEBSPACE_DIR   Zielordner auf dem Webspace (z. B. /  oder /html)
+#  optional:
+#    WEBSPACE_PROTO sftp (Standard) oder ftp (FTP mit TLS, falls kein SFTP)
 #  Fehlen sie, tut der Lauf nichts und endet gruen.
 # =============================================================================
 name: Webspace hochladen
@@ -70,6 +72,7 @@ jobs:
           U: ${{ secrets.WEBSPACE_USER }}
           P: ${{ secrets.WEBSPACE_PASS }}
           D: ${{ secrets.WEBSPACE_DIR }}
+          PROTO: ${{ secrets.WEBSPACE_PROTO }}
           VOLL: ${{ github.event.inputs.voll }}
         run: |
           set -euo pipefail
@@ -77,7 +80,9 @@ jobs:
           # Was NICHT auf den Webspace gehoert (Werkzeuge, Quellcode der Server-Funktionen, Altlasten)
           AUSSCHLUSS='^(\.git/|\.github/|_werkzeuge/|_to_delete/|supabase/|node_modules/|XXoxtEqm|README\.md$|Links\.md$|CNAME$|version\.sh$|.*\.zip$|\.DS_Store$|.*\.fuse_hidden.*|\.gitignore$)'
           LF_SET="set sftp:auto-confirm yes; set net:max-retries 5; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
-          ZIEL="sftp://$H"
+          PROTO="${PROTO:-sftp}"          # sftp (Standard) oder ftp (dann erzwungen verschluesselt)
+          ZIEL="$PROTO://$H"
+          [ "$PROTO" = "ftp" ] && LF_SET="$LF_SET; set ftp:ssl-force true; set ftp:ssl-protect-data true; set ssl:verify-certificate no"
           HEAD_SHA=$(git rev-parse HEAD)
 
           ALT=""
