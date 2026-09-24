@@ -1292,8 +1292,8 @@ function premiumInfo(){
   const ov=document.createElement('div'); ov.id='premOv';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
   ov.innerHTML='<div style="background:var(--card,var(--k-ffffff));color:var(--ink,var(--k-1d3c24));max-width:430px;width:100%;max-height:92vh;overflow:auto;border-radius:16px;padding:20px;box-shadow:0 12px 44px rgba(0,0,0,.32)">'
-   +'<div style="font-size:18px;font-weight:800;margin-bottom:4px">Premium – 7 Tage gratis 🌱</div>'
-   +'<p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:.2em 0 10px">7 Tage kostenlos testen. Nach Ablauf der 7-tägigen Testphase wird automatisch der gewählte Tarif berechnet, sofern nicht vorher gekündigt wird. Kündbar zum Ende der ersten Laufzeit; danach läuft das Abo unbefristet weiter und ist jederzeit mit einer Frist von einem Monat kündbar (AGB § 7).</p>'
+   +'<div style="font-size:18px;font-weight:800;margin-bottom:4px">Premium – 7 Tage gratis beim ersten Abo 🌱</div>'
+   +'<p style="font-size:13.5px;color:var(--muted);line-height:1.5;margin:.2em 0 10px">Beim ersten Abo 7 Tage kostenlos testen. Nach Ablauf der 7-tägigen Testphase wird automatisch der gewählte Tarif berechnet, sofern nicht vorher gekündigt wird. Kündbar zum Ende der ersten Laufzeit; danach läuft das Abo unbefristet weiter und ist jederzeit mit einer Frist von einem Monat kündbar (AGB § 7).</p>'
    +'<p style="font-size:11.5px;color:var(--muted);margin:0 0 12px">Alle Preise sind Endpreise. Gemäß § 19 UStG wird keine Umsatzsteuer ausgewiesen.</p>'
    +_planRow('month','Monatlich','4,99 €/Monat','flexibel, monatlich kündbar','',true)
    +_planRow('quarter','Vierteljährlich','12,99 €','4,33 €/Monat','−13%',false)
@@ -7997,6 +7997,63 @@ function unterstuetzenHtml(){
     +'<a href="'+UNTERSTUETZEN_URL+'" target="_blank" rel="noopener" style="display:inline-block;padding:11px 22px;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:700;font-size:14.5px;text-decoration:none">Jetzt unterstützen ↗</a>'
     +'</div>';
 }
+/* ===== Startseite: Premium-Block + Über uns (Ralph 24.09.2026) =====
+   „da sollten wir schon anzeigen und auch die vorteile – über uns einbauen,
+   mit sandra“. Der Kaufknopf öffnet premiumInfo() – den einen Kaufdialog mit
+   beiden Haken und den Rechtstexten. Kein zweiter Kaufweg.
+   In der iPhone-App nicht (Apple: digitale Abos nur über Apples Kauf). */
+function premiumBlockHtml(){
+  if(typeof riNativeApp==="function" && riNativeApp()) return "";
+  if(ME && ME.is_premium) return "";
+  var vorteil=function(sym,t,d){ return '<div style="display:flex;gap:10px;align-items:flex-start;margin:8px 0"><div style="font-size:18px;line-height:1.2">'+sym+'</div><div><div style="font-weight:600;font-size:14px">'+t+'</div><div style="font-size:12.5px;color:var(--muted);line-height:1.45">'+d+'</div></div></div>'; };
+  var preis=function(t,p,z){ return '<div style="flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;padding:10px 6px;text-align:center"><div style="font-size:12px;color:var(--muted)">'+t+'</div><div style="font-weight:800;font-size:16px;margin:2px 0">'+p+'</div><div style="font-size:11px;color:var(--muted)">'+z+'</div></div>'; };
+  return '<div style="background:var(--card);border:2px solid var(--green);border-radius:16px;padding:18px 16px;margin-top:12px;box-shadow:var(--shadow)">'
+    +'<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex-wrap:wrap"><div style="font-weight:800;font-size:17px">Root Index Premium</div><div style="font-size:12.5px;font-weight:700;color:var(--greendk)">7 Tage gratis testen</div></div>'
+    +'<div style="font-size:13px;color:var(--muted);line-height:1.5;margin:4px 0 6px">Die Bewertung bleibt für alle kostenlos. Premium begleitet dich im Alltag:</div>'
+    +vorteil('🔎','Alle Details zur Bewertung','Warum ein Produkt seine Zahl bekommt – Zutat für Zutat, mit Quelle.')
+    +vorteil('📊','Deine Nährstoffversorgung','Was dir fehlt und was zu viel ist – aus deinem Tagebuch berechnet.')
+    +vorteil('📆','Tagebuch ohne Grenzen','Alle Tage, Verlauf, Statistik und Zielerreichung.')
+    +vorteil('🗓️','Ernährung &amp; Training planen','Wochenplan, Einkaufsliste aus dem Plan, Trainingsplan mit Fortschritt.')
+    +vorteil('🍲','Eigene Rezepte','Rezepte anlegen, bewerten lassen und skalieren.')
+    +'<div style="display:flex;gap:6px;margin:12px 0 6px">'+preis('Monatlich','4,99 €','pro Monat')+preis('3 Monate','12,99 €','4,33 €/Monat')+preis('Jährlich','44,99 €','3,75 €/Monat')+'</div>'
+    +'<div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:12px">Endpreise, gemäß § 19 UStG ohne Umsatzsteuer. 7 Tage kostenlos beim ersten Abo, danach der gewählte Tarif. Kündbar zum Ende der ersten Laufzeit, danach monatlich. <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a></div>'
+    +'<button onclick="premiumInfo()" style="width:100%;padding:12px;border:0;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:800;font-size:15px;cursor:pointer">Premium 7 Tage gratis testen</button>'
+    +'</div>';
+}
+function ueberUnsKurzHtml(){
+  return '<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-top:12px;box-shadow:var(--shadow)">'
+    +'<div style="font-weight:700;font-size:15.5px;margin-bottom:4px">Über uns</div>'
+    +'<div style="font-size:13px;color:var(--muted);line-height:1.55">Hinter Root Index stehen Sandra und Ralph Denk aus Postau in Niederbayern. Die Vorderseite verkauft – wir lesen die Rückseite. Unabhängig, ohne Sponsoren, nach einem offenen Regelwerk.</div>'
+    +'<button onclick="ueberUnsOpen()" style="margin-top:10px;padding:9px 14px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-weight:600;cursor:pointer">Mehr über uns</button>'
+    +'</div>';
+}
+function ueberUnsOpen(){
+  var alt=document.getElementById('riUeberOv'); if(alt) alt.remove();
+  var ov=document.createElement('div'); ov.id='riUeberOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  var H=function(t){ return '<h3 style="font-size:15px;color:var(--green);margin:16px 0 4px">'+t+'</h3>'; };
+  var P=function(t){ return '<p style="font-size:13.5px;line-height:1.6;color:var(--ink);margin:.2em 0">'+t+'</p>'; };
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:520px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-size:19px;font-weight:800">Über uns</div><button onclick="document.getElementById(\'riUeberOv\').remove()" aria-label="Schließen" style="border:0;background:none;font-size:22px;color:var(--muted);cursor:pointer">×</button></div>'
+    +H('Wer wir sind')
+    +P('Wir sind <b>Sandra und Ralph Denk</b> aus Postau in Niederbayern. Root Index ist unser gemeinsames Projekt: eine App, die Lebensmittel und Supplements ehrlich bewertet und dich im Alltag begleitet – beim Einkaufen, beim Essen, beim Training.')
+    +H('Die Vorderseite verkauft – wir lesen die Rückseite')
+    +P('Auf der Verpackung vorne steht, was verkaufen soll. Was wirklich drin ist, steht hinten: in der Zutatenliste und der Nährwerttabelle. Genau dort setzt Root Index an. Jedes Produkt bekommt eine Zahl von 0 bis 100 – den Root Index.')
+    +H('Was wir versprechen')
+    +P('• <b>Unabhängig:</b> Keine Sponsoren, keine bezahlten Bewertungen. Hersteller können sich keine gute Zahl kaufen.<br>• <b>Nachvollziehbar:</b> Alle Produkte werden nach demselben offenen Regelwerk bewertet. Zu jeder Zutat siehst du, warum sie so eingestuft ist.<br>• <b>Wissenschaftsbasiert:</b> Die Einstufungen folgen der aktuellen wissenschaftlichen Erkenntnislage – und werden angepasst, wenn sie sich ändert.<br>• <b>Deine Daten gehören dir:</b> Kein Verkauf von Daten, keine Werbe-Tracker.')
+    +H('Wie wir uns finanzieren')
+    +P('Die Bewertung ist für alle kostenlos. Finanziert wird Root Index über <b>Premium</b> und über <b>freiwillige Unterstützung</b> – nicht über Hersteller oder Händler.')
+    +H('Kontakt')
+    +P('Fragen, Hinweise, ein Produkt fehlt? Schreib uns an <a href="mailto:kontakt@root-index.de" style="color:var(--greendk)">kontakt@root-index.de</a>.')
+    +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px">'
+    +'<button onclick="document.getElementById(\'riUeberOv\').remove();try{wikiOpen();}catch(_){}" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">So funktioniert Root Index</button>'
+    +(typeof riNativeApp==="function" && riNativeApp() ? '' : '<button onclick="document.getElementById(\'riUeberOv\').remove();premiumInfo()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:700;cursor:pointer">Premium testen</button>')
+    +'</div></div>';
+  document.body.appendChild(ov);
+}
+if(typeof window!=='undefined'){ window.premiumBlockHtml=premiumBlockHtml; window.ueberUnsOpen=ueberUnsOpen; }
+
 async function renderStart(){
   const body=document.getElementById("startBody"); if(!body) return;
   if(!(ALL&&ALL.length)){ try{ const data=await fetchAlleProdukte(); if(data) ALL=data.map(d=>({...d, clean_score:num(d.clean_score)})); }catch(e){} }
@@ -8028,6 +8085,8 @@ async function renderStart(){
       +riGlowTile('training','figure','Training','Plan &amp; Fortschritt','violet')
       +'</div>'
       +'<div style="'+card+';margin-top:12px"><div style="font-weight:600;margin-bottom:6px">📲 Root Index als App speichern</div><div style="font-size:13px;color:var(--muted);line-height:1.6">Kein Store nötig – direkt aus dem Browser installieren:<br><b>iPhone (Safari):</b> unten auf das Teilen-Symbol tippen → „Zum Home-Bildschirm".<br><b>Android (Chrome):</b> Menü <span style="font-family:monospace">⋮</span> → „App installieren" bzw. „Zum Startbildschirm hinzufügen".</div></div>'
+      +premiumBlockHtml()
+      +ueberUnsKurzHtml()
       +unterstuetzenHtml()
       +'</div>';
     return;
@@ -8082,6 +8141,7 @@ async function renderStart(){
        "als saubere seite oder direkt seite oeffnen mit eingabe und diagramme."
        Die Startseite zeigt nur noch die Zahl auf der Kachel; die Karte mit
        Eingabe und Verlauf steht unter navTo('vital'). */
+    +premiumBlockHtml()
     +unterstuetzenHtml();
   try{ startWerteLaden(); }catch(e){}
 }
@@ -8594,6 +8654,7 @@ var MFAN_GRUPPEN=[
     ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }]
   ]],
   ['rootindex','Root Index','book','#5ef2a0',[
+    ['Über uns','heart','#5ef2a0',function(){ ueberUnsOpen(); }],
     ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
     ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }]
   ]],
@@ -15642,7 +15703,7 @@ async function riKuendigenSenden(){
 }
 if(typeof window!=='undefined'){ window.riKuendigenFormular=riKuendigenFormular; window.riKuendigenPruefen=riKuendigenPruefen; window.riKuendigenSenden=riKuendigenSenden; }
 
-(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('kuendigen')){ setTimeout(function(){ riKuendigenFormular(); },600); } else if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } else { ['agb','datenschutz','impressum','widerrufsbelehrung'].forEach(function(k){ if(p.has(k)) setTimeout(function(){ legalOpen(k==='widerrufsbelehrung'?'widerruf':k); },600); }); } }catch(_){} })();
+(function(){ try{ var p=new URLSearchParams(location.search); if(p.has('kuendigen')){ setTimeout(function(){ riKuendigenFormular(); },600); } else if(p.has('ueberuns')){ setTimeout(function(){ ueberUnsOpen(); },600); } else if(p.has('widerruf')){ setTimeout(function(){ riWiderrufFormular(); },600); } else { ['agb','datenschutz','impressum','widerrufsbelehrung'].forEach(function(k){ if(p.has(k)) setTimeout(function(){ legalOpen(k==='widerrufsbelehrung'?'widerruf':k); },600); }); } }catch(_){} })();
 async function kontoLoeschenDo(){
   var msg=document.getElementById('delAccMsg'); if(msg){ msg.style.color='var(--muted)'; msg.textContent='Lösche…'; }
   try{
