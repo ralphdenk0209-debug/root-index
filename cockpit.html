@@ -115,7 +115,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 <div class="bar">
  <div class="ampel"><span class="dot" id="gesamt"></span>Root Index</div>
  <div class="delta" id="delta"></div>
- <div class="right"><span id="tag" title="Projektstart 25.06.2026"></span><span id="stand">lädt …</span><button onclick="laden()">Aktualisieren</button><a class="nav" href="admin.html">Admin</a><a class="nav" href="steuerung.html">Steuerung</a><a class="nav" href="maschine.html">Maschine</a><a class="nav" href="riki-kosten.html">Kosten</a></div>
+ <div class="right"><span id="tag" title="Projektstart 25.06.2026"></span><span id="stand">lädt …</span><button onclick="allesLaden()" title="Die Seite aktualisiert sich nicht von selbst – die Abfrage ist zu schwer für einen Takt.">Aktualisieren</button><a class="nav" href="admin.html">Admin</a><a class="nav" href="steuerung.html">Steuerung</a><a class="nav" href="maschine.html">Maschine</a><a class="nav" href="riki-kosten.html">Kosten</a></div>
 </div>
 <div id="hinweis"></div>
 <div class="wrap">
@@ -250,7 +250,7 @@ function zeichnen(){
     const zeit=st.stand?new Date(st.stand).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'–';
     $('produkte').insertAdjacentHTML('beforeend',
       `<div><span class="lab">Seiten online (Stand ${zeit})</span><i class="gruen" style="width:${Math.max(3,100*online/su)}%"></i><span class="n">${de(online)}</span></div>`
-     +`<div><span class="lab">ohne Seite, wartet auf den naechsten Lauf</span><i class="gelb" style="width:${Math.max(3,100*wartet/su)}%"></i><span class="n">${de(wartet)}</span></div>`);
+     +`<div><span class="lab">ohne Seite, wartet auf den nächsten Lauf</span><i class="gelb" style="width:${Math.max(3,100*wartet/su)}%"></i><span class="n">${de(wartet)}</span></div>`);
   }).catch(()=>{});
 
   // Wächter – alle
@@ -361,6 +361,14 @@ function karteZeichnen(){
   li.innerHTML=rows.length?rows.map(([c,n])=>`<div class="kv"><span><i style="width:${Math.max(6,60*n/top)}px"></i>${esc(lname(c))}</span><b>${de(n)}</b></div>`).join(''):`<div class="kv"><span>${kWas==='google'?'noch keine Länderdaten – kommen mit dem nächsten Google-Abruf (täglich 07:15)':'noch keine Nutzer'}</span><b>–</b></div>`;
   fu.textContent=kWas==='google'?('Google-Klicks je Land · 28 Tage'+(K.google_stand?' · Stand '+tagK(K.google_stand):'')):'App-Nutzer: nur Deutschland bekannt (Bundesland freiwillig im Profil)';
 }
-laden(); setInterval(laden, 60000); karteLaden(); setInterval(karteLaden, 600000);
+/* 25.09.2026 (Ralph: „aktualisieren nur beim neuladen oder button aktualisieren.")
+
+   GEMESSEN: cb_admin_cockpit_ampel braucht im Schnitt 9,6 s, in der Spitze
+   19,9 s Datenbankzeit. Im Minutentakt belegte ein einziger offener
+   Cockpit-Tab damit rund zehn von sechzig Sekunden durchgehend - und alles
+   andere, App wie Webseite, wartete mit. Deshalb kein setInterval mehr:
+   geladen wird beim Oeffnen der Seite und wenn jemand „Aktualisieren" drueckt. */
+function allesLaden(){ laden(); karteLaden(); }
+allesLaden();
 </script>
 </body></html>
