@@ -173,7 +173,42 @@ fetch("${url}/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,header
   return _zaehlerJs;
 }
 
-function seite({ titel, beschreibung, kanonisch, inhalt, jsonld }) {
+/* ---------- Rueckmeldung (Ralph 25.09.2026) ----------
+   Zwei Fragen am Seitenende: War die Seite hilfreich, und stimmt etwas nicht.
+   Wie beim Zaehler ohne Cookie und ohne Kennung - gespeichert werden Seite,
+   Tag, Urteil und der freiwillige Text (cb_seite_rueckmeldung prueft beides
+   und wirft Links weg). Der Knopf merkt sich im Browser, dass schon gesendet
+   wurde, damit niemand aus Versehen zehnmal klickt. */
+let _rmJs = null;
+function rueckmeldungJs() {
+  if (_rmJs) return _rmJs;
+  const { url, key } = ausAppJs();
+  _rmJs = `<script>(function(){try{
+var w=document.getElementById("rmBox");if(!w)return;
+function senden(u,t){return fetch("${url}/rest/v1/rpc/cb_seite_rueckmeldung",{method:"POST",keepalive:true,headers:{"apikey":"${key}","Content-Type":"application/json"},body:JSON.stringify({p_seite:location.pathname,p_urteil:u,p_text:t||null})}).catch(function(){})}
+function danke(x){w.innerHTML='<span class="dank">Danke f\u00fcr die R\u00fcckmeldung.</span>'+(x||"")}
+function schon(){try{return localStorage.getItem("ri_rm_"+location.pathname)==="1"}catch(e){return false}}
+function merken(){try{localStorage.setItem("ri_rm_"+location.pathname,"1")}catch(e){}}
+if(schon()){danke("");return}
+var f=document.getElementById("rmForm"),ta=document.getElementById("rmText"),art="nein";
+document.getElementById("rmJa").onclick=function(){senden("ja");merken();danke("")};
+function auf(a,txt){art=a;f.classList.add("auf");document.getElementById("rmFrage").textContent=txt;ta.focus()}
+document.getElementById("rmNein").onclick=function(){auf("nein","Was hat gefehlt?")};
+document.getElementById("rmMeld").onclick=function(){auf("meldung","Was stimmt nicht? (Zutaten, N\u00e4hrwerte, Marke ...)")};
+document.getElementById("rmSend").onclick=function(e){e.preventDefault();senden(art,(ta.value||"").slice(0,500));merken();danke("")};
+}catch(e){}})();</script>`;
+  return _rmJs;
+}
+
+const RM_BLOCK = `<div class="rm" id="rmBox">
+<b>War diese Seite hilfreich?</b><span class="kn"><button type="button" id="rmJa">Ja</button><button type="button" id="rmNein">Nein</button></span>
+<span class="kn"><button type="button" id="rmMeld">Angabe melden</button></span>
+<form id="rmForm"><label for="rmText" id="rmFrage">Was hat gefehlt?</label>
+<textarea id="rmText" maxlength="500" rows="3"></textarea>
+<div class="send"><button type="submit" id="rmSend">Absenden</button></div></form>
+</div>`;
+
+function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung }) {
   return `<!doctype html>
 <html lang="de">
 <head>
@@ -251,16 +286,27 @@ h2{font-size:1rem;margin-top:24px}
 .quelle{font-size:.78rem;color:var(--mut);margin-top:26px;line-height:1.7}
 .krit{color:#ff8a7a}
 .fuss{margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
+.rm{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:.86rem;color:var(--mut)}
+.rm b{color:var(--cream);font-weight:600}
+.rm .kn{display:inline-flex;gap:8px;margin-left:8px;vertical-align:middle}
+.rm button{font:inherit;color:var(--cream);background:rgba(243,238,220,.06);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
+.rm button:hover{border-color:var(--acc);color:var(--acc)}
+.rm form{display:none;margin-top:12px}
+.rm form.auf{display:block}
+.rm textarea{width:100%;max-width:520px;min-height:74px;font:inherit;color:var(--cream);background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+.rm .send{margin-top:8px}
+.rm .dank{color:var(--acc)}
 </style>
 </head>
 <body>
 <header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
 <main>
 ${inhalt}
+${rueckmeldung ? RM_BLOCK : ""}
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
-${zaehlerJs()}
+${zaehlerJs()}${rueckmeldung ? rueckmeldungJs() : ""}
 </body>
 </html>`;
 }
@@ -430,7 +476,7 @@ ${alternativen && alternativen.length ? `<span class="lab">Besser bewertet${kat 
 }</div>` : ""}
 <div class="quelle">Quelle: ${esc(p.quelle || "nicht angegeben")}${p.ean && !String(p.quelle||"").includes(String(p.ean)) ? ` · EAN ${esc(p.ean)}` : ""}${p.verifiziert_am ? ` · geprüft am ${esc(String(p.verifiziert_am).slice(0, 10))}` : ""}${p.warum ? `<br>${esc(p.warum)}` : ""}</div>`;
 
-  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld });
+  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung: true });
 }
 
 /* Produktnamen tragen im Stamm manchmal den Kassenbon mit - "Tortilla Chips
