@@ -1586,6 +1586,14 @@ async function loadProfil(){
      die Spalte kommt also ohne zweiten Leseweg mit (§22 - kein neuer Ladeweg noetig).
      NULL wird zu "" und trifft damit die Option "Keine Angabe". */
   _selVal("pfDiab", b.Diabetes_Typ);
+  /* 25.09.2026 (Ralph: "ja, du kannst beides bauen"): Schwangerschaft/Stillzeit.
+     Bestimmt zusammen mit Geschlecht und Alter die Naehrstoff-Sollwerte
+     (D-A-CH/DGE). Das Feld steht in index.html - die darf ich nicht anfassen;
+     bis Ralph den Schnipsel einsetzt, greift hier schlicht nichts (§1.7: kein
+     stiller Pfad, aber auch kein Fehler wegen eines Feldes, das es noch nicht
+     gibt). Nur fuer weiblich sichtbar - pfZustandToggle. */
+  _selVal("pfZustand", b.Zustand);
+  pfZustandToggle();
   _selVal("pfKcal",b.Kalorienziel_kcal); _selVal("pfEiw",b.Eiweiss_ziel_g); _selVal("pfKh",b.KH_ziel_g); _selVal("pfFett",b.Fett_ziel_g);
   _selVal("pfAnFr",b.Anteil_Fr); _selVal("pfAnMi",b.Anteil_Mi); _selVal("pfAnAb",b.Anteil_Ab); _selVal("pfAnSn",b.Anteil_Sn);
   renderTrainTage(b.Trainingstage, b.Trainingstag_Plus);
@@ -1646,6 +1654,17 @@ async function saveProfil(){
      Leere Auswahl geht als NULL raus, nicht als Leerstring - sonst schlaegt der CHECK auf
      Benutzer.Diabetes_Typ zu (§3.4: leer heisst "keine Angabe", nicht "sonstiger").
      Fehler wird BENANNT, nicht verschluckt (§1.7, §11.4). */
+  /* Schwangerschaft/Stillzeit ueber den EIGENEN Schreibweg - wie beim
+     Diabetestyp gehoert eine solche Angabe nicht in denselben Aufruf wie
+     Groesse und Gewicht. Wer nicht weiblich ist, schickt NULL: die Angabe
+     wuerde sonst nach einem Wechsel still weiterwirken. */
+  const _zEl=document.getElementById("pfZustand");
+  if(_zEl){
+    const g=(document.getElementById("pfGeschlecht")||{}).value||"";
+    const z=(g==="weiblich" && (_zEl.value||"").trim()) ? _zEl.value.trim() : null;
+    const {error:eZ}=await client.rpc("cb_profil_zustand",{p_zustand:z});
+    if(eZ){ msg.style.color="var(--k-dc2626)"; msg.textContent="Profil gespeichert – Schwangerschaft/Stillzeit nicht: "+eZ.message; loadProfil(); return; }
+  }
   const _dEl=document.getElementById("pfDiab");
   if(_dEl){
     const dia=(_dEl.value||"").trim()||null;
@@ -1658,9 +1677,21 @@ async function saveProfil(){
 }
 /* ---- Zyklus (EN-12) ---- */
 function pfZyklusToggle(){
+  /* haengt am onchange von pfGeschlecht in index.html - die darf ich nicht
+     anfassen, also zieht der Zustand hier mit, statt einen zweiten Handler
+     zu verlangen. */
+  try{ pfZustandToggle(); }catch(e){}
   const box=document.getElementById("pfZyklusBox"); if(!box) return;
   const g=(document.getElementById("pfGeschlecht")||{}).value||"";
   box.style.display = (g==="weiblich") ? "" : "none";
+}
+/* Eine Frage nach Schwangerschaft im Profil eines Mannes waere Unfug -
+   deshalb dieselbe Regel wie beim Zyklus. */
+function pfZustandToggle(){
+  const el=document.getElementById("pfZustand"); if(!el) return;
+  const lbl=document.getElementById("pfZustandLbl")||el.closest("label")||el;
+  const g=(document.getElementById("pfGeschlecht")||{}).value||"";
+  lbl.style.display = (g==="weiblich") ? "" : "none";
 }
 async function loadZyklus(){
   pfZyklusToggle();
@@ -16302,7 +16333,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-25-1";
+const APP_BUILD = "2026-09-25-2";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
