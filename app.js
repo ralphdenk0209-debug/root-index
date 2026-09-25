@@ -8469,7 +8469,7 @@ function startKennzahlen(sum, prof){
     'Wie vollwertig deine Zutaten heute im Schnitt sind – 10 = roh/Vollwert, niedrig = stark verarbeitet.',
     '100 % = keine bedenklichen Zusatzstoffe. Bewertet wird die Bedenklichkeit (EU-VO 1333/2008), nicht die Verarbeitung.',
     'Wie unverarbeitet deine Lebensmittel heute sind – je stärker verarbeitet, desto weniger Punkte.',
-    'Makro-Profil pro 100 g: Plus für Eiweiß & Ballaststoffe, Abzug für Zucker, gesättigtes Fett und Salz.'
+    'Makro-Profil pro 100 g: Plus für Eiweiß & Ballaststoffe, Abzug für Zucker, gesättigtes Fett und Salz – und dafür, wenn viele Kohlenhydrate auf wenig Ballaststoffe kommen (Blutzucker).'
   ];
   var rueck = '<div class="fxBack" style="padding:14px 14px">'
     +'<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px">Warum <b style="color:#7cff9b">'+kernTxt+'</b>? Schnitt deiner heutigen Einträge</div>'
@@ -16333,7 +16333,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-25-2";
+const APP_BUILD = "2026-09-25-3";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
