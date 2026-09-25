@@ -75,6 +75,16 @@ h2{font-size:1rem;margin-top:24px}
 .quelle{font-size:.78rem;color:var(--mut);margin-top:26px;line-height:1.7}
 .krit{color:#ff8a7a}
 .fuss{margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
+.rm{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:.86rem;color:var(--mut)}
+.rm b{color:var(--cream);font-weight:600}
+.rm .kn{display:inline-flex;gap:8px;margin-left:8px;vertical-align:middle}
+.rm button{font:inherit;color:var(--cream);background:rgba(243,238,220,.06);border:1px solid var(--line);border-radius:999px;padding:5px 14px;cursor:pointer}
+.rm button:hover{border-color:var(--acc);color:var(--acc)}
+.rm form{display:none;margin-top:12px}
+.rm form.auf{display:block}
+.rm textarea{width:100%;max-width:520px;min-height:74px;font:inherit;color:var(--cream);background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
+.rm .send{margin-top:8px}
+.rm .dank{color:var(--acc)}
 </style>
 </head>
 <body>
@@ -91,7 +101,7 @@ h2{font-size:1rem;margin-top:24px}
   <div class="ri"><small>ROOT INDEX</small><strong style="color:#FFC24B">72/100</strong><em style="color:#FFC24B">MITTEL</em></div></div>
   <div class="achsen"><div class="achse"><div class="l">Zutaten</div><div class="bar"><i style="width:50%;background:#16a34a"></i></div><div class="v">15<span style="color:var(--mut);font-weight:600">/30</span></div></div><div class="achse"><div class="l">Zusatzstoffe</div><div class="bar"><i style="width:100%;background:#3987e5"></i></div><div class="v">15<span style="color:var(--mut);font-weight:600">/15</span></div></div><div class="achse"><div class="l">Verarbeitung</div><div class="bar"><i style="width:60%;background:#7c6fe0"></i></div><div class="v">9<span style="color:var(--mut);font-weight:600">/15</span></div></div><div class="achse"><div class="l">Nährwerte</div><div class="bar"><i style="width:83%;background:#d97706"></i></div><div class="v">33<span style="color:var(--mut);font-weight:600">/40</span></div></div></div>
 </div>
-<p class="rang">🏆 <b>Platz 376 von 1514</b> in „Tofu &amp; Fleischalternativen" – verglichen wird innerhalb der Kategorie, nicht Öl mit Brot.</p>
+<p class="rang">🏆 <b>Platz 378 von 1519</b> in „Tofu &amp; Fleischalternativen" – verglichen wird innerhalb der Kategorie, nicht Öl mit Brot.</p>
 <span class="lab">In der Zutatenliste · 1</span>
 <div class="zt"><span>Natürliches Aroma<sup>5</sup></span></div>
 <div class="legende">Kleine Zahl = Note der Zutat von 0 bis 10 · <span style="color:var(--gelb)">Gelb</span> = Note 3 oder schlechter</div>
@@ -100,6 +110,13 @@ h2{font-size:1rem;margin-top:24px}
 <a class="appbtn" href="/?p=P10462">In der App öffnen<span>mit Tagebuch, Einkaufsliste und besseren Alternativen</span></a>
 <span class="lab">Besser bewertet in Tofu &amp; Fleischalternativen</span><div class="liste"><a href="/produkt/soto-falafel-traditionell-p28927.html"><span>Falafel traditionell <span style="color:var(--mut)">· Soto</span></span><b>88/100</b></a><a href="/produkt/tofu-lee-p30126.html"><span>Tofu Lee</span><b>100/100</b></a><a href="/produkt/k-take-it-veggie-tempeh-natur-p49646.html"><span>Tempeh natur <span style="color:var(--mut)">· K-take it veggie</span></span><b>97/100</b></a></div>
 <div class="quelle">Quelle: OpenFoodFacts, Abruf 2026-07-31, EAN 13130596</div>
+<div class="rm" id="rmBox">
+<b>War diese Seite hilfreich?</b><span class="kn"><button type="button" id="rmJa">Ja</button><button type="button" id="rmNein">Nein</button></span>
+<span class="kn"><button type="button" id="rmMeld">Angabe melden</button></span>
+<form id="rmForm"><label for="rmText" id="rmFrage">Was hat gefehlt?</label>
+<textarea id="rmText" maxlength="500" rows="3"></textarea>
+<div class="send"><button type="submit" id="rmSend">Absenden</button></div></form>
+</div>
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
@@ -109,6 +126,19 @@ var r=document.referrer,q="direkt";
 if(r){var h="";try{h=new URL(r).hostname}catch(e){}
 q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere";}
 fetch("https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,headers:{"apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw","Content-Type":"application/json"},body:JSON.stringify({p_seite:location.pathname,p_quelle:q})}).catch(function(){});
+}catch(e){}})();</script><script>(function(){try{
+var w=document.getElementById("rmBox");if(!w)return;
+function senden(u,t){return fetch("https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/cb_seite_rueckmeldung",{method:"POST",keepalive:true,headers:{"apikey":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw","Content-Type":"application/json"},body:JSON.stringify({p_seite:location.pathname,p_urteil:u,p_text:t||null})}).catch(function(){})}
+function danke(x){w.innerHTML='<span class="dank">Danke für die Rückmeldung.</span>'+(x||"")}
+function schon(){try{return localStorage.getItem("ri_rm_"+location.pathname)==="1"}catch(e){return false}}
+function merken(){try{localStorage.setItem("ri_rm_"+location.pathname,"1")}catch(e){}}
+if(schon()){danke("");return}
+var f=document.getElementById("rmForm"),ta=document.getElementById("rmText"),art="nein";
+document.getElementById("rmJa").onclick=function(){senden("ja");merken();danke("")};
+function auf(a,txt){art=a;f.classList.add("auf");document.getElementById("rmFrage").textContent=txt;ta.focus()}
+document.getElementById("rmNein").onclick=function(){auf("nein","Was hat gefehlt?")};
+document.getElementById("rmMeld").onclick=function(){auf("meldung","Was stimmt nicht? (Zutaten, Nährwerte, Marke ...)")};
+document.getElementById("rmSend").onclick=function(e){e.preventDefault();senden(art,(ta.value||"").slice(0,500));merken();danke("")};
 }catch(e){}})();</script>
 </body>
 </html>
