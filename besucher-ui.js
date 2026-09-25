@@ -91,64 +91,6 @@
     });
   }
 
-  /* ---- Rueckmeldungen der Besucher (Ralph 25.09.2026) ----
-     cb_admin_rueckmeldungen liefert die Zaehlung und die offenen Texte.
-     "Erledigt" blendet einen Eintrag aus (cb_admin_rueckmeldung_erledigt),
-     geloescht wird nichts. */
-  function rmBox(){
-    var b=document.getElementById('rueckmeldungKarte'); if(b) return b;
-    var vor=document.getElementById('besucherKarte')||document.getElementById('fgDash');
-    if(!vor||!vor.parentNode) return null;
-    b=document.createElement('div'); b.id='rueckmeldungKarte';
-    b.style.cssText='background:#fff;border:1px solid '+F.line+';border-radius:14px;padding:14px 16px;margin:0 0 14px;color:'+F.ink+';font-size:14px;line-height:1.5';
-    vor.parentNode.insertBefore(b, vor.nextSibling);
-    return b;
-  }
-
-  function rmZeichnen(d){
-    var b=rmBox(); if(!b) return;
-    var texte=(d.texte||[]).map(function(t){
-      var name=String(t.seite).replace(/^\/produkt\//,'').replace(/-p\d+\.html$/,'').replace(/-/g,' ');
-      var art=t.urteil==='meldung'?'Angabe gemeldet':'nicht hilfreich';
-      return '<div data-id="'+t.id+'" style="padding:7px 0;border-bottom:1px solid '+F.line+'">'
-        +'<div style="display:flex;gap:8px;align-items:baseline"><a href="'+esc(t.seite)+'" target="_blank" rel="noopener" style="color:'+F.ink+';font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(name)+'</a>'
-        +'<span style="font-size:11.5px;color:'+F.mut+';white-space:nowrap">'+esc(art)+' · '+esc(String(t.tag))+'</span>'
-        +'<button data-fertig="'+t.id+'" style="margin-left:auto;background:#fff;border:1px solid '+F.line+';border-radius:8px;font-size:11.5px;padding:2px 9px;cursor:pointer;color:'+F.mut+'">erledigt</button></div>'
-        +(t.hinweis?'<div style="font-size:12.5px;margin-top:2px">'+esc(t.hinweis)+'</div>':'')
-        +'</div>';
-    }).join('');
-    var top=(d.top_nein||[]).slice(0,5).map(function(t){
-      var name=String(t.seite).replace(/^\/produkt\//,'').replace(/-p\d+\.html$/,'').replace(/-/g,' ');
-      return '<a href="'+esc(t.seite)+'" target="_blank" rel="noopener" style="display:flex;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid '+F.line+';color:'+F.ink+';text-decoration:none"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(name)+'</span><b>'+zahl(t.anzahl)+'</b></a>';
-    }).join('');
-    b.innerHTML='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px"><b style="font-size:17px">💬 Rückmeldungen</b>'
-      +'<span style="font-size:11.5px;color:'+F.mut+';margin-left:auto">letzte '+esc(String(d.tage))+' Tage</span></div>'
-      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px">'
-      + kachel('hilfreich', zahl(d.ja))
-      + kachel('nicht hilfreich', zahl(d.nein))
-      + kachel('Angaben gemeldet', zahl(d.meldung))
-      + kachel('offen', zahl(d.offen))
-      +'</div>'
-      +(texte?'<div style="font-size:12.5px"><div style="color:'+F.mut+';margin-bottom:2px">Offene Rückmeldungen</div>'+texte+'</div>'
-             :'<div style="font-size:12.5px;color:'+F.mut+'">Keine offenen Rückmeldungen.</div>')
-      +(top?'<div style="font-size:12.5px;margin-top:10px"><div style="color:'+F.mut+';margin-bottom:2px">Seiten mit den meisten Einwänden</div>'+top+'</div>':'')
-      +'<div style="font-size:11px;color:'+F.mut+';margin-top:10px">Freiwillige Angaben von Besuchern, ohne Anmeldung und ohne Kennung. Texte mit Links werden verworfen.</div>';
-    b.querySelectorAll('button[data-fertig]').forEach(function(btn){
-      btn.onclick=function(){
-        var id=+btn.getAttribute('data-fertig');
-        client.rpc('cb_admin_rueckmeldung_erledigt',{p_id:id}).then(function(){ rmLaden(); });
-      };
-    });
-  }
-
-  function rmLaden(){
-    if(typeof client==='undefined' || !client || !client.rpc) return;
-    client.rpc('cb_admin_rueckmeldungen',{p_tage:30}).then(function(r){
-      if(r.error){ return; }
-      rmZeichnen(r.data||{});
-    }, function(){});
-  }
-
   function fehler(msg){
     var b=box(); if(!b) return;
     b.innerHTML='<b>👥 Besucher</b><div style="color:#dc3a3a;font-size:12.5px;margin-top:6px">Zahlen nicht abrufbar: '+esc(msg)+'</div>';
@@ -168,7 +110,7 @@
     versuche++;
     var istAdmin = typeof ME!=='undefined' && ME && ME.is_admin;
     if(istAdmin && document.getElementById('fgDash') && typeof client!=='undefined'){
-      clearInterval(t); laden(); rmLaden(); setInterval(function(){ laden(); rmLaden(); }, 5*60*1000);
+      clearInterval(t); laden(); setInterval(laden, 5*60*1000);
     } else if(versuche>150){ clearInterval(t); }
   }, 400);
 })();

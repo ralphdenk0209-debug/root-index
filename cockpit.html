@@ -111,6 +111,13 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 @media(max-width:900px){.reihe2{grid-template-columns:1fr}}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}.right .nav{display:none}.right{margin-left:0}}
 @media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
+.liste2{margin-top:8px;font-size:.8rem}
+.liste2 .z{padding:6px 0;border-bottom:1px solid var(--line)}
+.liste2 .k{display:flex;gap:8px;align-items:baseline}
+.liste2 .k b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.liste2 .k span{color:var(--mut);font-size:.72rem;white-space:nowrap}
+.liste2 .t{color:var(--ink2,inherit);margin-top:2px}
+.liste2 .leer{color:var(--mut)}
 </style></head><body>
 <div class="bar">
  <div class="ampel"><span class="dot" id="gesamt"></span>Root Index</div>
@@ -142,6 +149,11 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
   <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
   <div class="hb" id="menschen"></div></a>
+
+ <a class="zone" href="admin.html"><h4>Rückmeldungen <span class="st" id="rmSt"></span></h4>
+  <div class="lead"><span class="n" id="rmN">–</span><span class="u" id="rmU">offen</span></div>
+  <div class="hb" id="rmZahlen"></div>
+  <div class="liste2" id="rmListe"></div></a>
 
  <div class="karte">
   <div>
@@ -199,6 +211,7 @@ async function laden(){
   const {data,error}=await client.rpc('cb_admin_cockpit_ampel');
   if(error){ $('stand').textContent='Fehler'; $('hinweis').innerHTML='Kein Zugriff: '+esc(error.message)+' – <a href="admin.html">im Admin anmelden</a>, dann hier neu laden.'; return; }
   $('hinweis').textContent=''; A=data; zeichnen();
+  rmLaden();
   $('stand').textContent='aktualisiert '+new Date(A.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 }
 function neben(id, arr){ $(id).innerHTML=arr.map(([l,v,c])=>`<div>${esc(l)}<b class="${c||''}">${v}</b></div>`).join(''); }
@@ -320,6 +333,27 @@ function balken(id, vals, limit, hellAb){
 if(window.self!==window.top){ document.body.classList.add('eingebettet'); }
 /* Tageszähler seit Projektstart 25.06.2026 */
 (function(){ const start=new Date('2026-06-25T00:00:00'); const t=Math.floor((Date.now()-start)/86400000)+1; $('tag').textContent='Tag '+t; })();
+
+/* ===== Rückmeldungen der Besucher (Ralph 25.09.2026) =====
+   Quelle: cb_admin_rueckmeldungen (nur Admins). Gezeigt werden die offenen
+   Einwände und Meldungen im Klartext - die Zahl allein sagt nichts. */
+async function rmLaden(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_rueckmeldungen',{p_tage:30});
+    if(error||!data) return;
+    const d=data;
+    $('rmN').textContent=de(d.offen);
+    $('rmU').textContent='offen · '+de(d.ja)+' hilfreich, '+de(d.nein)+' nicht';
+    $('rmSt').textContent=de(Number(d.ja||0)+Number(d.nein||0)+Number(d.meldung||0))+' in 30 Tagen';
+    const mx=Math.max(1,Number(d.ja)||0,Number(d.nein)||0,Number(d.meldung)||0);
+    $('rmZahlen').innerHTML=[['hilfreich',d.ja,'gruen'],['nicht hilfreich',d.nein,'gelb'],['Angabe gemeldet',d.meldung,'rot']]
+      .map(([l,v,c])=>`<div><span class="lab">${l}</span><i class="${c}" style="width:${Math.max(3,100*(Number(v)||0)/mx)}%"></i><span class="n">${de(v)}</span></div>`).join('');
+    const kurz=(t)=>String(t).replace(/^\/produkt\//,'').replace(/-p\d+\.html$/,'').replace(/-/g,' ');
+    $('rmListe').innerHTML=(d.texte||[]).length
+      ? (d.texte||[]).slice(0,8).map(t=>`<div class="z"><div class="k"><b>${esc(kurz(t.seite))}</b><span>${t.urteil==='meldung'?'Angabe gemeldet':'nicht hilfreich'} · ${esc(String(t.tag))}</span></div>${t.hinweis?`<div class="t">${esc(t.hinweis)}</div>`:''}</div>`).join('')
+      : '<div class="leer">Keine offenen Rückmeldungen.</div>';
+  }catch(e){}
+}
 
 /* ===== Karte: Welt / Europa / Deutschland × Google-Suchende / App-Nutzer ===== */
 let K=null, WELT=null, kWas='google', kWo='europa';
