@@ -366,8 +366,12 @@ function karteZeichnen(){
    GEMESSEN: cb_admin_cockpit_ampel braucht im Schnitt 9,6 s, in der Spitze
    19,9 s Datenbankzeit. Im Minutentakt belegte ein einziger offener
    Cockpit-Tab damit rund zehn von sechzig Sekunden durchgehend - und alles
-   andere, App wie Webseite, wartete mit. Deshalb kein setInterval mehr:
-   geladen wird beim Oeffnen der Seite und wenn jemand „Aktualisieren" drueckt. */
+   andere, App wie Webseite, wartete mit.
+
+   Deshalb KEIN Takt und KEINE Zeitsteuerung in dieser Datei. Geladen wird
+   genau zweimal: beim Oeffnen der Seite und wenn jemand „Aktualisieren"
+   drueckt. Wer hier je wieder einen Zeitgeber einbaut, nimmt der ganzen
+   Seite und der App das Tempo weg. */
 function allesLaden(){ laden(); karteLaden(); }
 allesLaden();
 </script>
