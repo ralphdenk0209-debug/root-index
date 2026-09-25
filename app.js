@@ -2644,8 +2644,8 @@ const SCORE_REGELN = {
   },
   "Nährwert": {
     farbe:ACHS_FARBE.naehr,
-    regel:"Zucker, gesättigte Fettsäuren, Salz, Ballaststoffe und Eiweiß – jeweils auf 100 g normiert, damit Produkte vergleichbar bleiben.",
-    quelle:"DGE-Referenzwerte · EU-Verordnung 1169/2011. Bei reinen Nahrungsergänzungsmitteln entfällt diese Achse (dort ist ein Makro-Profil pro 100 g nicht sinnvoll)."
+    regel:"Zucker, gesättigte Fettsäuren, Salz, Ballaststoffe, Eiweiß und <b>Blutzucker</b> – jeweils auf 100 g normiert, damit Produkte vergleichbar bleiben. Blutzucker heißt: Wie viele Kohlenhydrate kommen auf ein Gramm Ballaststoffe? Höchstens 5 g = volle Punkte, höchstens 10 g = halbe, mehr = keine. Eiweißreiche Produkte rücken eine Stufe besser, bei sehr wenig Kohlenhydraten (höchstens 5 g) zählt der Teil nicht.",
+    quelle:"DGE-Referenzwerte · EU-Verordnung 1169/2011 · Blutzucker: Verhältnis Kohlenhydrate zu Ballaststoffen (Mozaffarian et al. 2013), glykämischer Index von Hülsenfrüchten (Atkinson et al. 2021). Bei reinen Nahrungsergänzungsmitteln entfällt diese Achse (dort ist ein Makro-Profil pro 100 g nicht sinnvoll)."
   }
 };
 function sfToggle(id){ const e=document.getElementById(id); if(!e) return; e.style.display = (e.style.display==="none"||!e.style.display) ? "block" : "none"; }
@@ -4943,7 +4943,7 @@ async function detail(d){
   };
   const rows = mkRings(SCORE_TEIL);
   const mkAbzug = arr => {
-    const REASON={Zutaten:"Zutaten nicht durchweg als Vollwert bewertet",Zusatzstoffe:"enthält Zusatzstoffe",Verarbeitung:"höherer Verarbeitungsgrad","Nährwert":"Nährwertprofil pro 100 g (Zucker, Fett, Salz, Ballaststoffe, Eiweiß)"};
+    const REASON={Zutaten:"Zutaten nicht durchweg als Vollwert bewertet",Zusatzstoffe:"enthält Zusatzstoffe",Verarbeitung:"höherer Verarbeitungsgrad","Nährwert":"Nährwertprofil pro 100 g (Zucker, Fett, Salz, Ballaststoffe, Eiweiß, Blutzucker)"};
     const items=arr.map(([k,label,max,mult,short])=>{const m=mult||1;const raw=num(d[k]);const v=raw===null?null:raw*m;return {short:short||label,max,v};}).filter(it=>it.v!==null && it.v < it.max-0.01);
     if(!items.length) return "";
     const lines=items.map(it=>{
@@ -5983,6 +5983,7 @@ function fgTab(t){ if(t==='scans') t='zuverif'; window._fgTab=t;
 const RW_BEREICHE=[
   {k:'achsen',t:'Die vier Achsen',d:'Woraus der Index von 100 Punkten besteht.'},
   {k:'prinzipien',t:'Grundprinzipien',d:'Die Leitplanken hinter jeder Einzelentscheidung.'},
+  {k:'naehrwert',t:'Nährwert-Achse im Detail',d:'Die Teile der 40 Nährwertpunkte (u. a. Blutzucker).'},
   {k:'staffel',t:'Verarbeitungs-Staffel (§2.1)',d:'Die Zutaten-Achse misst nur den Verarbeitungsgrad: 10 = roh … 2 = isoliert.'},
   {k:'staffel7',t:'Extrakte & isolierte Mikronährstoffe (§7)',d:'Ordnung belegt über NOVA, Stufenzahlen gesetzt.'},
   {k:'zusatzstoffe',t:'Zusatzstoffe',d:'Die E-Nummern-Achse (15 Punkte).'},
@@ -9149,7 +9150,7 @@ function wikiOpen(){
         • <b>Zutatenqualität</b> (max 30) – Ø der Bewertungen aller Zutaten, nach Gewicht.<br>
         • <b>Zusatzstoffe</b> (max 15) – keine = beste Wertung; künstliche Süßstoffe/Zusätze mindern.<br>
         • <b>Verarbeitung</b> (max 15) – wie stark ein Lebensmittel verarbeitet ist (nach der NOVA-Klassifikation); unverarbeitet/Vollwert am besten.<br>
-        • <b>Nährwertqualität</b> (max 40) – gutes Makro-Profil pro 100 g (Eiweiß/Ballaststoffe hoch, Zucker/gesättigtes Fett niedrig).<br>
+        • <b>Nährwertqualität</b> (max 40) – gutes Makro-Profil pro 100 g (Eiweiß/Ballaststoffe hoch, Zucker/gesättigtes Fett/Salz niedrig, Kohlenhydrate, die den Blutzucker nur langsam steigen lassen).<br>
         <b>Einstufung:</b> ≥ 90 Sehr gut · ≥ 75 Gut · ≥ 60 Mittel · sonst Schwach.<br>
         <b>Alkohol</b> (Ethanol, IARC-Gruppe 1) deckelt die Wertung auf höchstens „Gut".`)}
 
@@ -9166,6 +9167,13 @@ function wikiOpen(){
         • <b>Zuckeralkohole</b> (Erythrit, Xylit) liegen darüber: Sie erhöhen den Blutzucker kaum und sind zahnfreundlich – ein Lebensmittel sind sie trotzdem nicht.`)}
       ${box(`<b>Der versteckte Schnellzucker.</b> Manche Zutaten treiben den Blutzucker <b>so stark wie Zucker oder stärker</b>, tauchen auf dem Etikett aber nicht als „Zucker“ auf, sondern als Stärke: <b>Maltodextrin, Traubenzucker (Dextrose), Glukose- und Reissirup</b>. Wir bewerten sie deshalb <b>auf Zucker-Niveau</b>.<br><br>
         Ganze Lebensmittel strafen wir dafür <b>nicht</b> ab: <b>Datteln</b> und <b>Honig</b> enthalten zwar Zucker, verlaufen durch Ballaststoffe bzw. geringe Verarbeitung aber deutlich sanfter als reiner Traubenzucker – das bilden schon der Verarbeitungs- und der Nährwert-Teil ab.`)}
+
+      ${box(`<b>Blutzucker (seit 25.09.2026).</b> Nicht nur Zucker lässt den Blutzucker steigen – auch Stärke aus Reis, Mais oder Weißmehl geht schnell ins Blut. Wir schauen deshalb, <b>wie viele Kohlenhydrate auf ein Gramm Ballaststoffe</b> kommen:<br>
+        • höchstens <b>5 g</b> → volle Punkte (z. B. Kichererbsen, Knäckebrot)<br>
+        • höchstens <b>10 g</b> → halbe Punkte (z. B. Haferflocken, Vollkornbrot)<br>
+        • mehr → keine Punkte (z. B. Reiswaffeln, Cornflakes, weißer Reis)<br>
+        <b>Eiweißreiche</b> Produkte (ab 6 g Eiweiß je 100 kcal, z. B. Linsen) rücken eine Stufe besser – Eiweiß bremst den Anstieg. Bei sehr wenig Kohlenhydraten (höchstens 5 g je 100 g, z. B. Käse, Fleisch, Milch) zählt dieser Teil nicht. Er ist einer von sechs Teilen der Nährwertqualität; die Achse bleibt bei 40 Punkten.<br>
+        <i>Grenze: Ob Getreide gepufft oder gemahlen ist, steht nicht auf dem Etikett – den echten glykämischen Index gibt es nur aus Messtabellen, und den nutzen wir bewusst nicht.</i>`)}
 
       ${H("Zusatzstoffe – wissenschaftlich bewertet")}
       ${box(`Die Zusatzstoff-Wertung misst die <b>gesundheitliche Bedenklichkeit</b> – nicht den Verarbeitungsgrad (den zeigt die Achse „Verarbeitung“). Grundlage: <b>EU-Verordnung (EG) Nr. 1333/2008</b> und <b>EFSA</b>-Bewertungen. Wir prüfen die Studienlage regelmäßig.<br><br>
@@ -16294,7 +16302,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-19-14";
+const APP_BUILD = "2026-09-25-1";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
