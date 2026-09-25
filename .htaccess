@@ -6,9 +6,12 @@ ErrorDocument 404 /index.html
 RewriteEngine On
 # immer https, immer ohne www - nur fuer root-index.de
 # (root-index.com dient waehrend des Umzugs als Testadresse und wird nicht umgeleitet)
-RewriteCond %{HTTP_HOST} ^(www\.)?root-index\.de$ [NC]
-RewriteCond %{HTTPS} !=on [OR]
-RewriteCond %{HTTP_HOST} ^www\. [NC]
+# INWX beendet SSL vor dem Server: %{HTTPS} ist dort immer "off" -> Endlosschleife
+# (25.09.2026). Deshalb https nur ueber X-Forwarded-Proto erzwingen, www immer weg.
+RewriteCond %{HTTP_HOST} ^www\.root-index\.de$ [NC]
+RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
+RewriteCond %{HTTP_HOST} ^root-index\.de$ [NC]
+RewriteCond %{HTTP:X-Forwarded-Proto} =http [NC]
 RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
 
 <FilesMatch "\.(html)$">
