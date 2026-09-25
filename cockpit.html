@@ -50,6 +50,7 @@ svg.ch{width:100%;height:90px;display:block}
 .st .h{font-size:11.5px;color:var(--ink3);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .st>.gelb{border-color:var(--y)}.st>.gelb .n{color:var(--y)}
 .st>.rot{border-color:var(--r)}.st>.rot .n{color:var(--r)}
+.st .tr{font-size:11px;font-family:ui-monospace,Menlo,monospace;color:var(--ink3);display:flex;align-items:center;gap:6px;margin:0 0 4px}.st .tr.ab{color:var(--g)}.st .tr.auf{color:var(--r)}.st .tr svg{width:54px;height:14px;flex:0 0 auto}
 .fuss{grid-column:1/-1;font-size:12px;color:var(--ink3);padding:0 4px}
 body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .right .nav{border:1px solid var(--line);color:var(--ink2);padding:5px 10px;border-radius:99px;font-size:12px}
@@ -296,8 +297,12 @@ function zeichnen(){
 
   // Kette
   const k=A.kette;
-  $('kStand').textContent=de(k.gemessen)+' gemessen · Zahl = hängt hier';
-  $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div><div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
+  /* 25.09.2026 (Ralph jaja): Trend je Station (Stand vor 24 h + Linie 7 Tage) und Alter der Messung */
+  const vorMin=k.gemessen_am?Math.max(0,Math.round((Date.now()-new Date(k.gemessen_am))/60000)):null;
+  $('kStand').textContent=de(k.gemessen)+' gemessen'+(vorMin!=null?' · vor '+(vorMin<60?vorMin+' Min':Math.round(vorMin/60)+' Std'):'')+' · Zahl = hängt hier';
+  const spark=(v)=>{if(!v||v.length<2)return '';const mx=Math.max(...v),mn=Math.min(...v),r=Math.max(1,mx-mn);return `<svg viewBox="0 0 54 14" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${v.map((y,i)=>(i*54/(v.length-1)).toFixed(1)+','+(12-10*(y-mn)/r+1).toFixed(1)).join(' ')}"/></svg>`;};
+  const trend=(x)=>{if(x.vor24==null)return `<div class="tr">Trend ab morgen</div>`;const d=Number(x.haengt)-Number(x.vor24);const c=d<0?'ab':d>0?'auf':'';return `<div class="tr ${c}">${d<0?'▼ '+de(d):d>0?'▲ +'+de(d):'= gleich'} seit gestern ${spark(x.verlauf)}</div>`;};
+  $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div>${trend(x)}<div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
 }
 /* Wächter-Symbole: Schild (Beobachtung) und Schild mit Schwert (Gate). Eigene Zeichnung, Umrissstil. */
 const W_SCHILD='<svg viewBox="0 0 48 52"><defs><linearGradient id="wgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="currentColor" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient><linearGradient id="wgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="currentColor"/><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="url(#wgA)"/><path d="M24 7 L9 12 v11 c0 10 6.5 17 15 22 c8.5-5 15-12 15-22 V12 Z" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.2"/><path d="M9 12 L24 7 L39 12 v6 c-5 3-10 4-15 4 s-10-1-15-4 Z" fill="url(#wgB)"/></svg>';
