@@ -6,7 +6,7 @@
    nie verworfen. Zusammen mit einer offen gelassenen App fuehrte das dazu,
    dass Nutzer weiter mit altem Code arbeiteten.
    BEI JEDEM DEPLOY DIESE ZAHL HOCHZAEHLEN – dann wirft activate den alten Cache weg. */
-const CACHE = 'rootindex-2026-09-25-ds-inwx';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
+const CACHE = 'rootindex-2026-09-25-m8-offline';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
 /* 🔴 DIESE ZEILE WIRD VOM DEPLOY-SKRIPT NEU GESCHRIEBEN (Work #144, 20.08.2026).
    Sie war bis heute von Hand gepflegt — und `./ui.css` fehlte darin, seit es die
    Datei gibt. Sobald app.js in Module zerfällt, hätte dort jedes neue Modul

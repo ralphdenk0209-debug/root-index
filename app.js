@@ -2408,7 +2408,7 @@ async function render(){
   }catch(err){
     /* Kein leerer Fangblock (§1.13i): ein stiller Fehler kostet Monate. */
     console.error("cb_produkte_suchen:",err);
-    document.getElementById("stats").textContent="Suche nicht verfügbar: "+(err.message||err);
+    document.getElementById("stats").textContent=tbIstNetzFehler(err)?"Keine Internetverbindung – bitte gleich noch einmal suchen.":"Suche nicht verfügbar: "+(err.message||err);
     grid.innerHTML=bioFilterChipHtml();
     return;
   }
@@ -13937,7 +13937,7 @@ async function _startScan(targetId, cb){
      Alle uebrigen (vorReader, einkReader, ktReader, rnReader, der Scannen-Tab)
      sind KEIN Tagebuch - dort faellt das Angebot ab sofort weg. */
   etiKontextSetzen(targetId === "tbReader" || targetId === "tbAddReader");
-  if(!window.Quagga){ alert("Scanner lädt noch – gleich nochmal versuchen."); return; }
+  if(!window.Quagga){ alert(navigator.onLine===false?"Ohne Internetverbindung kann der Scanner nicht starten.":"Scanner lädt noch – gleich nochmal versuchen."); return; }
   const tgt=document.getElementById(targetId); if(!tgt) return;
   /* Laeuft noch ein Scanner oder ein Teardown? Beenden - und ABWARTEN.
      Das Abwarten ist der eigentliche Fix: frueher wurde sofort neu initialisiert. */
@@ -13967,7 +13967,7 @@ async function _startScan(targetId, cb){
     /* Zwischenzeitlich abgebrochen? Dann das gerade Gestartete sofort wieder einsammeln. */
     if(lauf !== _scanLauf){ try{ Quagga.stop(); }catch(e){} _killStreams(); return; }
     const m=document.getElementById("qboxMsg");
-    if(err){ if(m){ m.style.color="var(--k-dc2626)"; m.textContent="Kamera nicht verfügbar: "+(err.message||err); } _scanning=false; _scanCb=null; return; }
+    if(err){ if(m){ m.style.color="var(--k-dc2626)"; m.textContent=scanKameraText(err); } _scanning=false; _scanCb=null; return; }
     _scanning=true;
     Quagga.onDetected(_onDetected);   // ERST bei Erfolg anhaengen - nicht auf Verdacht
     Quagga.start();
@@ -16638,3 +16638,43 @@ async function lmSonnet(btn){
   }finally{ if(btn) btn.disabled=false; }
 }
 if(typeof window!=='undefined'){ window.lmStudioRender=lmStudioRender; window.lmKopieren=lmKopieren; window.lmSpeichern=lmSpeichern; window.lmSonnet=lmSonnet; }
+
+
+/* ===== M8 Fehlerverhalten ohne Netz / ohne Kamera (25.09.2026) =====
+   Gemessen: Ohne Verbindung stuerzt nichts ab, aber die Meldungen waren Technik
+   („TypeError: Failed to fetch“). Jetzt: ein Hinweisbalken, solange keine
+   Verbindung besteht, und Klartext beim Scanner. Der Balken reagiert nur auf
+   eigene Aufrufe (Supabase + root-index.de), nicht auf fremde Bilder/Dienste. */
+function scanKameraText(e){
+  var n=(e&&e.name)||"";
+  if(n==="NotAllowedError"||n==="SecurityError") return "Kamera nicht erlaubt. Erlaube den Zugriff (Schloss-Symbol in der Adressleiste → Kamera) und starte den Scanner neu.";
+  if(n==="NotFoundError"||n==="OverconstrainedError") return "Keine Kamera gefunden. Du kannst die Barcode-Nummer auch in die Suche tippen.";
+  if(n==="NotReadableError"||n==="AbortError") return "Die Kamera wird gerade von einem anderen Programm benutzt.";
+  return "Die Kamera ließ sich nicht öffnen.";
+}
+(function(){
+  if(typeof window==='undefined' || window.__riOffline) return; window.__riOffline=true;
+  function zeigen(an){
+    var b=document.getElementById('riOffline');
+    if(!an){ if(b) b.remove(); return; }
+    if(b || !document.body) return;
+    b=document.createElement('div'); b.id='riOffline'; b.setAttribute('role','status');
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 8px);z-index:100000;background:#b45309;color:#fff;padding:8px 14px;border-radius:10px;font-size:13px;font-weight:600;line-height:1.35;box-shadow:0 4px 16px rgba(0,0,0,.3);max-width:calc(100% - 32px);text-align:center';
+    b.textContent='Keine Internetverbindung – Produkte und Tagebuch laden, sobald du wieder online bist.';
+    document.body.appendChild(b);
+  }
+  window.riOfflineHinweis=zeigen;
+  window.addEventListener('offline',function(){ zeigen(true); });
+  window.addEventListener('online',function(){ zeigen(false); });
+  var start=function(){ if(navigator.onLine===false) zeigen(true); };
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',start); else start();
+  var orig=window.fetch;
+  if(typeof orig==='function'){
+    var eigen=function(u){ try{ var s=String((u&&u.url)||u); return /supabase\.co|^\/|^\.\/|root-index\.de/.test(s) || s.indexOf(location.origin)===0; }catch(_){ return false; } };
+    window.fetch=function(u,o){
+      var mein=eigen(u);
+      return orig.apply(this,arguments).then(function(r){ if(mein) zeigen(false); return r; },
+        function(e){ if(mein && !(e&&e.name==='AbortError')) zeigen(true); throw e; });
+    };
+  }
+})();
