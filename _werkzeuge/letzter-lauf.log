@@ -1,52 +1,42 @@
-Lauf: 37 · Commit: b1a39127faf85c9baa9cb766cc5926221119f421 · 2026-09-25 19:06 UTC
+Lauf: 38 · Commit: 1ec5939b093cdd06845163cea9c989a001b1ca7a · 2026-09-26 08:12 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
-  ... 2000 Produkte (zuletzt P11932)
-  ... 4000 Produkte (zuletzt P13967)
-  ... 6000 Produkte (zuletzt P16018)
-  ... 8000 Produkte (zuletzt P17993)
-  ... 10000 Produkte (zuletzt P19983)
-  ... 12000 Produkte (zuletzt P22059)
-  ... 14000 Produkte (zuletzt P24133)
-  ... 16000 Produkte (zuletzt P26238)
-  ... 18000 Produkte (zuletzt P28315)
-  ... 20000 Produkte (zuletzt P30468)
-  ... 22000 Produkte (zuletzt P32603)
-  ... 24000 Produkte (zuletzt P34768)
-  ... 26000 Produkte (zuletzt P36893)
-  ... 28000 Produkte (zuletzt P41974)
-  ... 30000 Produkte (zuletzt P44116)
-  ... 32000 Produkte (zuletzt P46186)
-  ... 34000 Produkte (zuletzt P48342)
-  ... 36000 Produkte (zuletzt P50483)
-  ... 38000 Produkte (zuletzt P52600)
-  ... 40000 Produkte (zuletzt P54711)
-  ... 42000 Produkte (zuletzt P56849)
-  ... 44000 Produkte (zuletzt P58922)
-  ! nach id P59537: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P59537: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P59537: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P59537: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P59540: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P60029: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P60312: 200 Zeilen gingen nicht, versuche kleiner
-  ... 46043 Produkte (zuletzt P61011)
-  ... 48043 Produkte (zuletzt P63350)
-  ... 50043 Produkte (zuletzt P65558)
-  ! nach id P65795: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66552: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66645: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66645: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66676: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66773: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66856: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P66947: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P67034: 200 Zeilen gingen nicht, versuche kleiner
-  ... 52033 Produkte (zuletzt P67781)
-  ... 54033 Produkte (zuletzt P69942)
-  ! nach id P69942: 200 Zeilen gingen nicht, versuche kleiner
-  ... 54113 Produkte (zuletzt P70035)
-  ... 56113 Produkte (zuletzt P72324)
-Fertig geladen: 57135 Produkte
+  ... 2000 Produkte (zuletzt P11868)
+  ... 4000 Produkte (zuletzt P13855)
+  ... 6000 Produkte (zuletzt P15851)
+  ... 8000 Produkte (zuletzt P17768)
+  ... 10000 Produkte (zuletzt P19693)
+  ... 12000 Produkte (zuletzt P21715)
+  ... 14000 Produkte (zuletzt P23724)
+  ! nach id P25154: 200 Zeilen gingen nicht, versuche kleiner
+  ... 16080 Produkte (zuletzt P25839)
+  ... 18080 Produkte (zuletzt P27864)
+  ... 20080 Produkte (zuletzt P29902)
+  ... 22080 Produkte (zuletzt P31934)
+  ... 24080 Produkte (zuletzt P33998)
+  ... 26080 Produkte (zuletzt P36023)
+  ... 28080 Produkte (zuletzt P41006)
+  ... 30080 Produkte (zuletzt P43050)
+  ... 32080 Produkte (zuletzt P45064)
+  ... 34080 Produkte (zuletzt P47107)
+  ... 36080 Produkte (zuletzt P49152)
+  ... 38080 Produkte (zuletzt P51196)
+  ... 40080 Produkte (zuletzt P53248)
+  ! nach id P54465: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P54465: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P54465: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P54475: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P54555: 200 Zeilen gingen nicht, versuche kleiner
+  ... 42050 Produkte (zuletzt P55249)
+  ... 44050 Produkte (zuletzt P57295)
+  ! nach id P57900: 200 Zeilen gingen nicht, versuche kleiner
+  ... 46130 Produkte (zuletzt P59388)
+  ... 48130 Produkte (zuletzt P61417)
+  ... 50130 Produkte (zuletzt P63572)
+  ... 52130 Produkte (zuletzt P65649)
+  ... 54130 Produkte (zuletzt P67721)
+  ... 56130 Produkte (zuletzt P69773)
+  ... 58130 Produkte (zuletzt P71863)
+Fertig geladen: 59654 Produkte
 ↪️  Weiterleitungen alter Adressen: 5265
-✅ Produktseiten: 57135 · Kategorien: 25 · Sitemap-URLs: 57162
+✅ Produktseiten: 59654 · Kategorien: 25 · Sitemap-URLs: 59681
