@@ -9932,7 +9932,45 @@ function planAdd(ds,slot){
   document.getElementById("planProd").value=""; document.getElementById("planMenge").value=""; document.getElementById("planPickMsg").textContent="";
   document.getElementById("planPickWhen").textContent=new Date(ds+"T00:00:00").toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})+" · "+slot;
   document.getElementById("planPick").style.display="flex";
+  planZuletztLaden(ds,slot);
 }
+/* 26.09.2026 (Ralph: „in rezepte im planer fehlt die historie wie im tagebuch"):
+   oben im Auswahlfenster „Zuletzt gegessen" - Rezepte und Produkte aus Tagebuch und
+   Plan, passende Mahlzeit zuerst (cb_plan_zuletzt). Ein Tipp plant direkt ein.
+   index.html bleibt unberuehrt: der Kasten wird hier erzeugt. */
+async function planZuletztLaden(ds,slot){
+  var wann=document.getElementById("planPickWhen"); if(!wann) return;
+  var box=document.getElementById("planZuletzt");
+  if(!box){ box=document.createElement("div"); box.id="planZuletzt"; wann.parentNode.insertBefore(box, wann.nextSibling); }
+  box.innerHTML='<div style="font-size:12px;color:var(--muted);margin:0 0 10px">Zuletzt gegessen wird geladen …</div>';
+  var rows=[]; try{ var r=await client.rpc("cb_plan_zuletzt",{p_slot:slot,p_limit:30}); rows=(r&&r.data)||[]; }catch(e){}
+  if(!_planTarget || _planTarget.ds!==ds || _planTarget.slot!==slot) return;
+  window._planZuletzt=rows;
+  if(!rows.length){ box.innerHTML=''; return; }
+  var chip=function(x,i){
+    return '<button onclick="planZuletztWaehlen('+i+',this)" style="display:flex;align-items:center;gap:6px;width:100%;text-align:left;padding:8px 10px;margin-bottom:5px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer;font-size:13px">'
+      +'<span style="flex:0 0 auto">'+(x.typ==='rezept'?'🍲':'•')+'</span>'
+      +'<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(x.titel||'')+'</span>'
+      +(x.typ!=='rezept'&&x.menge_g?'<span style="flex:0 0 auto;color:var(--muted);font-size:12px">'+Math.round(x.menge_g)+' g</span>':'')
+      +'<span style="flex:0 0 auto;color:var(--k-2e7d32);font-weight:700">+</span></button>';
+  };
+  var rez=[], prod=[];
+  rows.forEach(function(x,i){ (x.typ==='rezept'?rez:prod).push([x,i]); });
+  var h='<div style="font-size:13px;font-weight:600;margin-bottom:6px">Zuletzt gegessen</div><div style="max-height:220px;overflow:auto;margin-bottom:10px">';
+  rez.slice(0,6).forEach(function(p){ h+=chip(p[0],p[1]); });
+  prod.slice(0,6).forEach(function(p){ h+=chip(p[0],p[1]); });
+  h+='</div>';
+  box.innerHTML=h;
+}
+async function planZuletztWaehlen(i,btn){
+  var x=(window._planZuletzt||[])[i]; if(!x||!_planTarget) return;
+  if(btn){ if(btn.disabled) return; btn.disabled=true; }
+  var msg=document.getElementById("planPickMsg");
+  var {error}=await client.rpc("cb_plan_add",{p_datum:_planTarget.ds,p_slot:_planTarget.slot,p_typ:x.typ,p_rezept:x.rezept_id||null,p_produkt:x.produkt_id||null,p_menge:x.typ==='rezept'?null:(x.menge_g||null),p_titel:x.titel||null});
+  if(error){ if(btn) btn.disabled=false; if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent=tbIstNetzFehler(error)?"Keine Verbindung – bitte noch einmal tippen.":"Fehler: "+error.message; } return; }
+  document.getElementById("planPick").style.display="none"; renderPlaner();
+}
+if(typeof window!=='undefined'){ window.planZuletztWaehlen=planZuletztWaehlen; }
 async function planSave(){
   if(!_planTarget) return; const msg=document.getElementById("planPickMsg"); msg.style.color="var(--k-dc2626)";
   const rezId=document.getElementById("planRez").value;
@@ -9950,7 +9988,7 @@ async function planDel(id){ await client.rpc("cb_plan_del",{p_eintrag:id}); rend
 async function planToTb(id,quiet){
   const it=(_planCache||[]).find(e=>e.eintrag_id===id); if(!it) return;
   try{
-    if(it.typ==='rezept' && it.rezept_id){ await client.rpc("cb_tb_rezept",{p_mahlzeit:it.slot,p_rezept:it.rezept_id,p_datum:it.datum}); }
+    if(it.typ==='rezept' && it.rezept_id){ const {data:rm}=await client.rpc("cb_tb_rezept",{p_mahlzeit:it.slot,p_rezept:it.rezept_id,p_datum:it.datum}); if(/Nicht eingetragen/.test(rm||"")){ alert(rm); return; } }
     else if(it.produkt_id){ const p=(ALL||[]).find(x=>x.id===it.produkt_id); const g=it.menge_g||(p?tbDefaultPortion(p):100); await client.rpc("cb_tb_eintragen",{p_mahlzeit:it.slot,p_produkt:it.produkt_id,p_menge_g:g,p_datum:it.datum}); }
     else { if(!quiet) alert("Nur Rezepte/Produkte können übernommen werden."); return; }
     if(!quiet) alert("✓ ins Tagebuch übernommen ("+it.datum+")");
@@ -12378,7 +12416,8 @@ async function addRezeptMahlzeit(){
   if(!rid){ msg.style.color="var(--k-dc2626)"; msg.textContent="Bitte ein Rezept wählen."; return; }
   const {data,error}=await client.rpc("cb_tb_rezept",{p_mahlzeit:mahl,p_rezept:rid,p_datum:datum});
   if(error){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+error.message; return; }
-  msg.style.color="var(--k-16a34a)"; msg.textContent=data; loadTagebuch();
+  /* 26.09.2026: fehlen Zutaten, steht das jetzt rot da - vorher gruen und leicht zu uebersehen. */
+  msg.style.color=/Nicht eingetragen/.test(data||"")?"var(--k-dc2626)":"var(--k-16a34a)"; msg.textContent=data; loadTagebuch();
 }
 async function addManuell(){
   const name=(document.getElementById("mName").value||"").trim(), menge=parseFloat(document.getElementById("mMenge").value)||0,
@@ -16299,7 +16338,7 @@ async function addRezeptToTb(){
   const faktor=(fK*n)/P0;   // Rezept-Zutatenmengen gelten für P0 Portionen
   const {data,error}=await client.rpc("cb_tb_rezept",{p_mahlzeit:meal,p_rezept:r.id,p_datum:tbToday(),p_faktor:faktor});
   if(error){ if(msg){msg.style.color="var(--k-dc2626)";msg.textContent="Fehler: "+error.message;} return; }
-  if(msg){ msg.style.color="var(--k-16a34a)"; msg.textContent="✓ "+(data||("Zutaten in "+meal+" übernommen")); }
+  if(msg){ var fehlt=/Nicht eingetragen/.test(data||""); msg.style.color=fehlt?"var(--k-dc2626)":"var(--k-16a34a)"; msg.textContent=(fehlt?"⚠️ ":"✓ ")+(data||("Zutaten in "+meal+" übernommen")); }
   loadRezeptBudget();
 }
 (function(){
