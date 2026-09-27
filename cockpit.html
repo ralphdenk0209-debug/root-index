@@ -104,6 +104,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .wgrid .t{font-size:9.5px;color:var(--ink3);max-width:76px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
 .wgrid>div.gelb{color:var(--y)}
 .wgrid>div.rot{color:var(--r)}
+.wgrid>div.blau{color:#4f8fe8} /* 27.09.2026 Ralph: „Etikett unlesbar“ blau – eigene Art, kein Warnfall */
 .wgrid>div.still{color:var(--g);opacity:.75}
 .wgrid>div.bestand{color:var(--ink3)}
 .wfaelle{margin-top:12px;border-top:1px solid var(--line);padding-top:10px;font-size:12.5px}
@@ -299,7 +300,7 @@ function zeichnen(){
   const w=M.waechter||{}; const alle=w.alle||[]; const gateMap={}; (w.liste||[]).forEach(x=>{ if(x.gate) gateMap[x.name]=x.n; });
   const wsum=alle.filter(x=>x.k!=='wb_sperrebestand').reduce((a,x)=>a+Math.max(x.n,x.gate?(gateMap[x.name]||0):0),0);
   $('wSt').textContent=alle.length+' Wächter · '+(w.gate_offen?'Gate offen':'Gate zu')+' · '+de(wsum)+' Fälle · Stand '+(alle[0]&&alle[0].stand?new Date(alle[0].stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}):'–');
-  $('wgrid').innerHTML=alle.map(x=>{const n=Math.max(Number(x.n)||0,x.gate?(gateMap[x.name]||0):0); const bestand=x.k==='wb_sperrebestand'; const cls=n===0?'still':(x.gate?'rot':'gelb');
+  $('wgrid').innerHTML=alle.map(x=>{const n=Math.max(Number(x.n)||0,x.gate?(gateMap[x.name]||0):0); const bestand=x.k==='wb_sperrebestand'; const cls=n===0?'still':(x.gate?'rot':(x.k==='w_etikett'?'blau':'gelb'));
     const tip=x.name+' ('+x.k+')'+(x.gate?' · Gate-Wächter: blockiert die Freigabe':' · Beobachtung')+(bestand?' · Bestand, zählt nicht fürs Gate':'')+' · '+de(n)+' Fälle · klicken = Fälle zeigen';
     return `<div class="${bestand?'bestand':cls}" data-key="${esc(x.k)}" data-name="${esc(x.name)}" title="${esc(tip)}">${x.gate?W_SCHWERT:W_SCHILD}<span class="n">${de(n)}</span></div>`;}).join('');
   document.querySelectorAll('#wgrid>div').forEach(el=>el.onclick=(ev)=>{ev.preventDefault(); waechterFaelle(el.dataset.key, el.dataset.name, el);});
