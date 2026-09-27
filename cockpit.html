@@ -500,7 +500,7 @@ async function qiLaden(){
       const st=p.stationen||[]; if(p.status!=='Aktiv') laeuft=true;
       const rot=st.find(x=>x.farbe==='rot');
       const fr=(p.schritte||[]).find(x=>x.s==='freigabe'&&!x.ok);
-      const grund=p.status==='Aktiv'?'':(rot&&rot.grund)||(fr&&fr.t)||'';
+      const grund=p.status==='Aktiv'?'':(fr&&fr.t)||(rot&&rot.grund)||'';  /* die Meldung der Freigabe sagt genau, was klemmt */
       return `<div class="qiP"><div class="nm"><a href="admin.html#${esc(p.pid)}" style="color:inherit;text-decoration:none">${esc(p.name||p.pid)}</a> <span style="color:var(--ink3);font-weight:400">${esc(p.pid)}${p.ean?' · '+esc(p.ean):''}${p.neu?' · neu':' · ergänzt'}</span></div><div class="sc">${p.status==='Aktiv'?'🟢 '+(p.score??'–'):'🔴 '+(p.score??'–')}</div>
         <div class="qiPkt">${qiKurz.map((t,k)=>{const x=st[k]||{};return `<span class="${x.farbe||''}" title="${esc(x.titel||t)}${x.grund?': '+esc(x.grund):''}">${k+1} ${t}</span>`;}).join('')}</div>
         ${grund?`<div class="gr">${esc(grund)}</div>`:''}</div>`;
