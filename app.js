@@ -8948,7 +8948,7 @@ function legalOpen(which){
     +P("Diese Datenschutzerklärung betrifft das Webangebot unter root-index.de. Zusätzliche Datenverarbeitungen einer nativen Smartphone-App werden vor deren Nutzung gesondert erläutert.")
     +H("2. Welche Daten wir verarbeiten")
     +P("Je nach Nutzung verarbeiten wir insbesondere:")
-    +P("• <b>Kontodaten:</b> E-Mail-Adresse, Nutzerkennung, Anmelde- und Sicherheitseinstellungen sowie gegebenenfalls deinen Namen.<br>• <b>Profil- und Nutzungsdaten:</b> beispielsweise Geburtsdatum, Ernährungsform, Favoriten, Einkaufslisten, eigene Rezepte und Pläne.<br>• <b>Gesundheitsbezogene Daten:</b> beispielsweise Ernährungstagebuch, Gewicht, Körpermaße, Training, Schlaf, Schritte, Supplemente, Zyklus und freiwillige Angaben zu Erkrankungen.<br>• <b>Beiträge und Anfragen:</b> hochgeladene Fotos, Produktangaben, Fragen an RIKI, Kontaktanfragen und zugehörige Verarbeitungsergebnisse.<br>• <b>Vertragsdaten:</b> gewählter Tarif, Abonnementstatus, Zahlungs- und Rechnungsinformationen sowie Kündigungs- und Widerrufserklärungen.<br>• <b>Technische Daten:</b> beispielsweise IP-Adresse, Zeitpunkt und Ziel eines Zugriffs, Browserinformationen und Fehlermeldungen.<br>• <b>Einwilligungsnachweise:</b> Inhalt, Zeitpunkt und Zuordnung erteilter oder widerrufener Einwilligungen.")
+    +P("• <b>Kontodaten:</b> E-Mail-Adresse, Nutzerkennung, Anmelde- und Sicherheitseinstellungen sowie gegebenenfalls deinen Namen.<br>• <b>Profil- und Nutzungsdaten:</b> beispielsweise Geburtsdatum, Ernährungsform, Favoriten, Einkaufslisten, gespeicherte Kundenkarten, eigene Rezepte und Pläne.<br>• <b>Gesundheitsbezogene Daten:</b> beispielsweise Ernährungstagebuch, Gewicht, Körpermaße, Training, Schlaf, Schritte, Supplemente, Zyklus und freiwillige Angaben zu Erkrankungen.<br>• <b>Beiträge und Anfragen:</b> hochgeladene Fotos, Produktangaben, Fragen an RIKI, Kontaktanfragen und zugehörige Verarbeitungsergebnisse.<br>• <b>Vertragsdaten:</b> gewählter Tarif, Abonnementstatus, Zahlungs- und Rechnungsinformationen sowie Kündigungs- und Widerrufserklärungen.<br>• <b>Technische Daten:</b> beispielsweise IP-Adresse, Zeitpunkt und Ziel eines Zugriffs, Browserinformationen und Fehlermeldungen.<br>• <b>Einwilligungsnachweise:</b> Inhalt, Zeitpunkt und Zuordnung erteilter oder widerrufener Einwilligungen.")
     +P("Nicht jede dieser Datenarten fällt bei jedem Besuch an.")
     +H("3. Zwecke und Rechtsgrundlagen")
     +P("Wir verarbeiten personenbezogene Daten für folgende Zwecke:")
@@ -10025,6 +10025,7 @@ async function renderEinkaufSeite(){
   gate.style.display="none"; gate.innerHTML="";
   _einkTarget="einkaufPageBox";
   loadEinkauf();
+  kkLaden();
 }
 let _einkTarget="einkaufBox";
 async function toggleEinkauf(target){
@@ -10255,6 +10256,123 @@ async function hhVerlassen(){
    IN die Einkaufsliste (startProdScan). Im Tagebuch-Aufklapper tut er das nicht -
    dort wird der kleine Barcode-Knopf oben weiter gebraucht. */
 function _einkScanUnten(){ return _einkTarget==='einkaufPageBox'; }
+/* ===== Kundenkarten (Ralph 28.09.2026): Payback & Co. in der Einkaufsliste =====
+   Erfassen (Scan oder Nummer tippen) und an der Kasse als Barcode zeigen.
+   Privat je Nutzer (Tabelle "Kundenkarten", RPC cb_kundenkarten_list /
+   cb_kundenkarte_speichern / cb_kundenkarte_loeschen). Den Barcode zeichnet die
+   Seite selbst als SVG - keine fremde Bibliothek, nichts verlaesst das Geraet. */
+var KK_EAN_L=['0001101','0011001','0010011','0111101','0100011','0110001','0101111','0111011','0110111','0001011'];
+var KK_EAN_G=['0100111','0110011','0011011','0100001','0011101','0111001','0000101','0010001','0001001','0010111'];
+var KK_EAN_R=['1110010','1100110','1101100','1000010','1011100','1001110','1010000','1000100','1001000','1110100'];
+var KK_EAN_P=['LLLLLL','LLGLGG','LLGGLG','LLGGGL','LGLLGG','LGGLLG','LGGGLL','LGLGLG','LGLGGL','LGGLGL'];
+var KK_C128='212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 123122 123221 223211 221132 221231 213212 223112 312131 311222 321122 321221 312212 322112 322211 212123 212321 232121 111323 131123 131321 112313 132113 132311 211313 231113 231311 112133 112331 132131 113123 113321 133121 313121 211331 231131 213113 213311 213131 311123 311321 331121 312113 312311 332111 314111 221411 431111 111224 111422 121124 121421 141122 141221 112214 112412 122114 122411 142112 142211 241211 221114 413111 241112 134111 111242 121142 121241 114212 124112 124211 411212 421112 421211 212141 214121 412121 111143 111341 131141 114113 114311 411113 411311 113141 114131 311141 411131 211412 211214 211232 2331112'.split(' ');
+/* Liefert eine Folge aus 1 (Strich) und 0 (Luecke), ohne Ruhezone. */
+function kkModule(code,format){
+  code=String(code||'');
+  if(format==='ean13'&&/^\d{13}$/.test(code)){
+    var p=KK_EAN_P[+code[0]], s='101';
+    for(var i=1;i<=6;i++) s+=(p[i-1]==='L'?KK_EAN_L:KK_EAN_G)[+code[i]];
+    s+='01010';
+    for(i=7;i<=12;i++) s+=KK_EAN_R[+code[i]];
+    return s+'101';
+  }
+  if(format==='ean8'&&/^\d{8}$/.test(code)){
+    var t='101';
+    for(i=0;i<4;i++) t+=KK_EAN_L[+code[i]];
+    t+='01010';
+    for(i=4;i<8;i++) t+=KK_EAN_R[+code[i]];
+    return t+'101';
+  }
+  /* Code 128: reine Ziffernfolgen gerader Laenge dicht als Satz C, sonst Satz B. */
+  var w=[], c;
+  if(/^\d+$/.test(code)&&code.length%2===0&&code.length>=4){
+    w.push(105); for(i=0;i<code.length;i+=2) w.push(+code.substr(i,2));
+  } else {
+    w.push(104); for(i=0;i<code.length;i++){ c=code.charCodeAt(i); if(c<32||c>126) c=63; w.push(c-32); }
+  }
+  var sum=w[0]; for(i=1;i<w.length;i++) sum+=w[i]*i;
+  w.push(sum%103); w.push(106);
+  var m='';
+  w.forEach(function(v){ var pat=KK_C128[v]; for(var j=0;j<pat.length;j++) m+=(j%2===0?'1':'0').repeat(+pat[j]); });
+  return m;
+}
+function kkSvg(code,format){
+  var m=kkModule(code,format), q=10, W=m.length+2*q, H=Math.max(50,Math.round(W*0.32)), r='';
+  for(var i=0;i<m.length;){ if(m[i]==='1'){ var j=i; while(j<m.length&&m[j]==='1') j++; r+='<rect x="'+(i+q)+'" y="0" width="'+(j-i)+'" height="'+H+'"/>'; i=j; } else i++; }
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" shape-rendering="crispEdges" style="width:100%;height:auto;aspect-ratio:'+W+'/'+H+';display:block;background:#fff" fill="#000">'+r+'</svg>';
+}
+var _KK=[];
+async function kkLaden(){
+  if(!ME){ _KK=[]; kkRender(); return; }
+  try{ var res=await client.rpc('cb_kundenkarten_list'); if(res&&!res.error) _KK=res.data||[]; }catch(e){}
+  kkRender();
+}
+/* Zeichnet die Kartenleiste aus dem Zwischenstand - loadEinkauf baut die Seite
+   bei jedem Abhaken neu, dafuer soll nicht jedes Mal der Server gefragt werden. */
+function kkRender(){
+  var box=document.getElementById('einkKarten'); if(!box) return;
+  if(!ME){ box.innerHTML=''; return; }
+  var chip='padding:8px 13px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;';
+  var h='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:10px;-webkit-overflow-scrolling:touch">';
+  _KK.forEach(function(k,i){
+    h+='<button onclick="kkZeigen('+i+')" style="'+chip+'border:1px solid var(--line);background:var(--card);color:inherit">💳 '+esc(k.name)+'</button>';
+  });
+  h+='<button onclick="kkForm()" style="'+chip+'border:1px dashed var(--green);background:transparent;color:var(--greendk,var(--green))">＋ Kundenkarte</button></div>';
+  box.innerHTML=h;
+}
+function kkOv(inner){
+  kkZu();
+  var ov=document.createElement('div'); ov.id='kkOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){ if(e.target===ov) kkZu(); };
+  ov.innerHTML='<div style="width:100%;max-width:440px;background:#fff;color:#111;border-radius:16px;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.4)">'+inner+'</div>';
+  document.body.appendChild(ov);
+}
+function kkZu(){ try{ stopScan(); }catch(e){} var o=document.getElementById('kkOv'); if(o) o.remove(); }
+function kkZeigen(i){
+  var k=_KK[i]; if(!k) return;
+  kkOv('<div style="background:#2e7d46;color:#fff;padding:16px 18px;display:flex;align-items:center"><b style="flex:1;font-size:19px;text-align:center">'+esc(k.name)+'</b><button onclick="kkZu()" aria-label="Schließen" style="border:0;background:transparent;color:#fff;font-size:22px;cursor:pointer">&#10005;</button></div>'
+    +'<div style="padding:22px 18px 10px">'+kkSvg(k.code,k.format)+'</div>'
+    +'<div style="text-align:center;font:600 20px/1.3 ui-monospace,Menlo,monospace;letter-spacing:2px;padding:0 12px 14px;word-break:break-all">'+esc(k.code)+'</div>'
+    +'<div style="text-align:center;font-size:12px;color:#666;padding:0 16px 12px">Display hell stellen und an den Scanner halten.</div>'
+    +'<div style="display:flex;gap:8px;justify-content:center;padding:0 16px 18px"><button onclick="kkForm('+i+')" style="padding:8px 14px;border:1px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:13px">Bearbeiten</button><button id="kkDel" onclick="kkLoeschen('+i+',this)" style="padding:8px 14px;border:1px solid #fca5a5;border-radius:8px;background:#fff;color:#dc2626;cursor:pointer;font-size:13px">Löschen</button></div>');
+}
+function kkForm(i){
+  var k=(i!=null)?_KK[i]:null;
+  var inp='width:100%;box-sizing:border-box;padding:11px;border:1px solid #ccc;border-radius:10px;font-size:15px;margin-bottom:10px;background:#fff;color:#111';
+  kkOv('<div style="padding:16px 18px"><div style="display:flex;align-items:center;margin-bottom:12px"><b style="flex:1;font-size:17px">'+(k?'Karte bearbeiten':'Kundenkarte hinzufügen')+'</b><button onclick="kkZu()" aria-label="Schließen" style="border:0;background:transparent;font-size:20px;cursor:pointer;color:#111">&#10005;</button></div>'
+    +'<input id="kkName" maxlength="40" placeholder="Name, z. B. Payback" value="'+(k?esc(k.name):'')+'" style="'+inp+'">'
+    +'<input id="kkCode" maxlength="60" inputmode="text" autocomplete="off" placeholder="Kartennummer" value="'+(k?esc(k.code):'')+'" style="'+inp+'">'
+    +'<button onclick="kkScan()" style="width:100%;padding:10px;border:1px solid #2e7d46;border-radius:10px;background:#eaf5ee;color:#166534;font-weight:600;cursor:pointer;margin-bottom:8px">📷 Barcode der Karte scannen</button>'
+    +'<div id="kkReader" style="margin-bottom:8px"></div>'
+    +'<div id="kkMsg" style="font-size:12.5px;color:#dc2626;min-height:1em;margin-bottom:8px"></div>'
+    +'<button onclick="kkSpeichern('+(k?k.karte_id:'null')+')" style="width:100%;padding:12px;border:0;border-radius:10px;background:#2e7d46;color:#fff;font-weight:700;font-size:15px;cursor:pointer">Speichern</button>'
+    +'<div style="font-size:11.5px;color:#666;margin-top:10px;line-height:1.4">Die Karte siehst nur du. Sie wird mit deinem Konto gespeichert, damit sie auch in der App da ist.</div></div>');
+}
+function kkScan(){
+  var msg=document.getElementById('kkMsg'); if(msg) msg.textContent='';
+  _startScan('kkReader',function(code){
+    try{ stopScan(); }catch(e){}
+    var f=document.getElementById('kkCode'); if(f) f.value=code;
+    var m=document.getElementById('kkMsg'); if(m){ m.style.color='#16a34a'; m.textContent='✓ Nummer erkannt: '+code; }
+  },["ean_reader","ean_8_reader","code_128_reader","code_39_reader","upc_reader"]);
+}
+async function kkSpeichern(id){
+  var n=(document.getElementById('kkName').value||'').trim(), c=(document.getElementById('kkCode').value||'').trim();
+  var m=document.getElementById('kkMsg');
+  if(!n||!c){ m.style.color='#dc2626'; m.textContent='Bitte Name und Nummer angeben.'; return; }
+  var res=await client.rpc('cb_kundenkarte_speichern',{p_name:n,p_code:c,p_format:null,p_karte:id});
+  if(res.error){ m.style.color='#dc2626'; m.textContent=res.error.message; return; }
+  kkZu(); await kkLaden();
+  var i=_KK.findIndex(function(k){ return k.karte_id===res.data; }); if(i>=0) kkZeigen(i);
+}
+async function kkLoeschen(i,btn){
+  var k=_KK[i]; if(!k) return;
+  if(btn.dataset.sicher!=='1'){ btn.dataset.sicher='1'; btn.textContent='Wirklich löschen?'; return; }
+  var res=await client.rpc('cb_kundenkarte_loeschen',{p_karte:k.karte_id});
+  if(res.error){ alert('Fehler: '+res.error.message); return; }
+  kkZu(); kkLaden();
+}
 async function loadEinkauf(){
   const box=document.getElementById(_einkTarget); if(!box) return;
   /* Position merken und den Platzhalter NUR beim ersten Aufbau zeigen. Sonst schrumpft
@@ -10264,6 +10382,7 @@ async function loadEinkauf(){
   if(!_hatte) box.innerHTML='<div style="color:var(--muted);font-size:13px">Lade…</div>';
   const _fertig = function(html){
     box.innerHTML = html;
+    try{ kkRender(); }catch(e){}
     if(_hatte){ try{ window.scrollTo(0,_y); }catch(e){
       try{ console.warn('Einkaufsliste: Position konnte nicht gehalten werden',e); }catch(_){} } }
   };
@@ -10275,6 +10394,8 @@ async function loadEinkauf(){
   }
   const offen=rows.filter(r=>!r.erledigt), erl=rows.filter(r=>r.erledigt);
   let h=(ME && typeof feat==='function' && feat('haushalt'))?hhMiniZeile(hh):'';   /* 28z29: Balken -> Mini-Zeile */
+  /* Kundenkarten (Ralph 28.09.2026) - nur auf der Einkaufsseite, oben, damit sie an der Kasse sofort da sind */
+  if(_einkScanUnten()) h='<div id="einkKarten"></div>'+h;
   /* 28z29 (Ralph): am Handy war die Zeile gequetscht - Input volle Breite, Knoepfe darunter */
   h+='<div style="margin-bottom:8px">'
     +'<input id="einkInput" autocomplete="off" placeholder="Ich brauche… (Produkt aus dem Katalog suchen)" oninput="einkSuggest(this.value)" onkeydown="if(event.key===\'Enter\')einkaufAdd()" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:10px">'
@@ -14015,7 +14136,7 @@ function rikiKnopf(){ return document.getElementById("rikiFab"); }
 var _etiAusTagebuch = false;
 function etiKontextSetzen(ausTagebuch){ _etiAusTagebuch = (ausTagebuch === true); }
 function etiImTagebuch(){ return _etiAusTagebuch === true; }
-async function _startScan(targetId, cb){
+async function _startScan(targetId, cb, readers){
   /* tbReader = Tagebuch-Schnellscan · tbAddReader = Tagebuch "hinzufuegen".
      Alle uebrigen (vorReader, einkReader, ktReader, rnReader, der Scannen-Tab)
      sind KEIN Tagebuch - dort faellt das Angebot ab sofort weg. */
@@ -14045,7 +14166,7 @@ async function _startScan(targetId, cb){
       constraints:{ facingMode:{ideal:"environment"}, width:{ideal:1280}, height:{ideal:720} } },
     locator:{ patchSize:"medium", halfSample:true },
     numOfWorkers:(navigator.hardwareConcurrency||4), frequency:10,
-    decoder:{ readers:["ean_reader","ean_8_reader","upc_reader","upc_e_reader"] }, locate:true
+    decoder:{ readers:(readers||["ean_reader","ean_8_reader","upc_reader","upc_e_reader"]) }, locate:true
   }, function(err){
     /* Zwischenzeitlich abgebrochen? Dann das gerade Gestartete sofort wieder einsammeln. */
     if(lauf !== _scanLauf){ try{ Quagga.stop(); }catch(e){} _killStreams(); return; }
