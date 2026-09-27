@@ -1166,6 +1166,10 @@ function stkOf(pid){ const g=pid?num(STK[pid]):null; return (g&&g>0)?g:null; }
 /* Work #325: Stueck je Tagesdosis eines echten Stueckprodukts (Kapsel, Tropfen,
    Pressling). Nur gesetzt, wenn das Produkt in Stueck gebucht werden soll. */
 function stkDosisOf(pid){ const d=pid?num(STKD[pid]):null; return (d&&d>0)?d:null; }
+/* Laenderwahl (27.09.2026, Ralph jaja, I6): gewaehltes Land (Geraet). Die Datenbank (cb_sicht_markt)
+   nimmt: Profil-Einstellung 'markt' > mitgegebenes p_markt > DE. Bewusst KEINE globale Kopfzeile:
+   die Riki-Edge-Funktionen lassen fremde Kopfzeilen im CORS nicht zu. */
+const RI_MARKT = (function(){ try{ var m=String(localStorage.getItem('ri_markt')||'').toUpperCase(); return /^(DE|UK|US|FR)$/.test(m)?m:'DE'; }catch(e){ return 'DE'; } })();
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
 });
@@ -1174,6 +1178,8 @@ const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
    also VOR dem ersten rpc-Aufruf der Seite. Was sie tut und was ausdruecklich
    nicht, steht im Kopf von ladestelle.js. Fehlt die Datei, laeuft alles
    unveraendert weiter; sie ist eine Sparmassnahme, keine Voraussetzung. */
+/* I6: Produktsuche bekommt das gewaehlte Land mit (nur diese RPC). */
+(function(){ var _rpc=client.rpc.bind(client); client.rpc=function(fn,args,opts){ if(fn==='cb_produkte_suchen'){ args=Object.assign({},args||{},{p_markt:RI_MARKT}); } return _rpc(fn,args,opts); }; })();
 try{ if(window.riLadestelle) window.riLadestelle.anschliessen(client); }
 catch(e){ try{ console.warn('[Ladestelle] nicht angeschlossen:',e); }catch(_){} }
 
@@ -1388,7 +1394,7 @@ function gateHtml(feat){
 /* 28z19 (Ralph: "das anmeldefenster soll auch mit passwort gehen, weil wir das eh in den
    App Store umstellen") - das Passwort-Feld war fertig gebaut, aber fuer normale Nutzer
    VERSTECKT (nur der Admin-Login zeigte es). Jetzt sehen es alle; der Code-Weg bleibt. */
-function openLogin(){ const pw=document.getElementById("pwLogin"); if(pw) pw.style.display=""; const cb=document.getElementById("codeBtn"); if(cb) cb.style.display=""; const box=document.getElementById("codeBox"); if(box) box.style.display="none"; const intro=document.getElementById("loginIntro"); if(intro) intro.innerHTML='Mit <b>E-Mail und Passwort</b> anmelden – oder unten ohne Passwort per <b>6-stelligem Code</b>.'; document.getElementById("loginOverlay").classList.add("open"); const e=document.getElementById("loginEmail"); if(e) setTimeout(()=>e.focus(),60); }
+function openLogin(){ const lw=document.getElementById("landWahl"); if(lw) lw.value=RI_MARKT; const pw=document.getElementById("pwLogin"); if(pw) pw.style.display=""; const cb=document.getElementById("codeBtn"); if(cb) cb.style.display=""; const box=document.getElementById("codeBox"); if(box) box.style.display="none"; const intro=document.getElementById("loginIntro"); if(intro) intro.innerHTML='Mit <b>E-Mail und Passwort</b> anmelden – oder unten ohne Passwort per <b>6-stelligem Code</b>.'; document.getElementById("loginOverlay").classList.add("open"); const e=document.getElementById("loginEmail"); if(e) setTimeout(()=>e.focus(),60); }
 async function pwVergessen(){
   const email=(document.getElementById("loginEmail").value||"").trim();
   const msg=document.getElementById("loginMsg");
@@ -1413,6 +1419,13 @@ async function pwRegistrieren(){
 }
 function openAdminLogin(){ openLogin(); const intro=document.getElementById("loginIntro"); if(intro) intro.innerHTML='<b>Team-/Admin-Login</b> · mit E-Mail und Passwort.'; }
 function closeLogin(){ document.getElementById("loginOverlay").classList.remove("open"); }
+/* Laenderwahl (27.09.2026, I6): speichern (Geraet + bei Anmeldung im Profil) und neu laden,
+   damit Suche und Listen die Produkte des gewaehlten Landes zeigen. */
+function landWaehlen(m){ m=String(m||'DE').toUpperCase(); if(!/^(DE|UK|US|FR)$/.test(m)) m='DE';
+  try{ localStorage.setItem('ri_markt',m); }catch(e){}
+  var fertig=function(){ if(m!==RI_MARKT) location.reload(); };
+  client.auth.getSession().then(function(r){ if(r&&r.data&&r.data.session){ client.rpc('cb_einstellung_setzen',{p_key:'markt',p_wert:m}).then(fertig,fertig); } else fertig(); }, fertig);
+}
 async function loginPassword(){
   const email=(document.getElementById("loginEmail").value||"").trim();
   const pass=document.getElementById("loginPass").value||"";

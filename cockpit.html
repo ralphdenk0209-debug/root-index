@@ -416,18 +416,20 @@ async function aufSetzen(art,id,aktion,btn){
 const W_SCHILD='<svg viewBox="0 0 48 52"><defs><linearGradient id="wgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="currentColor" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient><linearGradient id="wgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="currentColor"/><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="url(#wgA)"/><path d="M24 7 L9 12 v11 c0 10 6.5 17 15 22 c8.5-5 15-12 15-22 V12 Z" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.2"/><path d="M9 12 L24 7 L39 12 v6 c-5 3-10 4-15 4 s-10-1-15-4 Z" fill="url(#wgB)"/></svg>';
 const W_SCHWERT=W_SCHILD;
 let wOffen=null;
+let wLand=''; /* 27.09.2026 (I7): Faelle nach Land filtern, leer = alle */
+function wLandSel(key,name){ return ' <select title="Land" onchange="wLand=this.value;wOffen=null;waechterFaelle(\''+key+'\',\''+esc(name).replace(/\x27/g,'')+'\',document.querySelector(\'#wgrid>div.auf\'))" style="font-size:12px;margin-left:6px">'+[['','alle Länder'],['DE','DE'],['UK','UK'],['US','US'],['FR','FR']].map(([v,l])=>'<option value="'+v+'"'+(v===wLand?' selected':'')+'>'+l+'</option>').join('')+'</select>'; }
 async function waechterFaelle(key, name, el){
   const box=$('wFaelle');
   if(wOffen===key){ wOffen=null; box.hidden=true; box.innerHTML=''; document.querySelectorAll('#wgrid>div').forEach(x=>x.classList.remove('auf')); return; }
   wOffen=key; document.querySelectorAll('#wgrid>div').forEach(x=>x.classList.toggle('auf',x===el));
   box.hidden=false; box.innerHTML='<h5><span>'+esc(name)+' · lädt …</span></h5>';
-  const {data,error}=await client.rpc('cb_admin_cockpit_waechter_faelle',{p_key:key,p_limit:50});
+  const {data,error}=await client.rpc('cb_admin_cockpit_waechter_faelle',{p_key:key,p_limit:50,p_land:wLand||null});
   if(error||!data||!data.ok){ box.innerHTML='<h5><span>'+esc(name)+'</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5><div>Fehler: '+esc(error?error.message:(data&&data.fehler))+'</div>'; return; }
   const rows=data.faelle||[];
-  if(!rows.length){ box.innerHTML='<h5><span>'+esc(name)+' · keine Fälle</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'; return; }
+  if(!rows.length){ box.innerHTML='<h5><span>'+esc(name)+' · keine Fälle'+wLandSel(key,name)+'</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'; return; }
   const cols=Object.keys(rows[0]).filter(c=>!/base64|hash|fingerprint/i.test(c)).slice(0,7);
   const fmt=v=>v==null?'':typeof v==='object'?esc(JSON.stringify(v)).slice(0,120):esc(String(v)).slice(0,120);
-  box.innerHTML='<h5><span>'+esc(name)+' · '+rows.length+(rows.length>=50?'+':'')+' Fälle</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'
+  box.innerHTML='<h5><span>'+esc(name)+' · '+rows.length+(rows.length>=50?'+':'')+' Fälle'+wLandSel(key,name)+'</span><a onclick="waechterFaelle(\''+key+'\')">schließen</a></h5>'
     +'<div style="overflow:auto"><table><thead><tr>'+cols.map(c=>'<th>'+esc(c)+'</th>').join('')+'</tr></thead><tbody>'
     +rows.map(r=>'<tr>'+cols.map(c=>'<td>'+fmt(r[c])+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
 }
