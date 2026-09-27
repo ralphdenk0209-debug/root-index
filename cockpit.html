@@ -353,7 +353,7 @@ function zeichnen(){
 /* ===== 27.09.2026 (Ralph): alle Aufgaben im Fenster – Projektaufgaben und Work Items
    aus allen Chats, ohne das Buch. ✓ = erledigt (verified), 🗑 = löschen (weich: cancelled,
    bleibt in der Steuerung nachvollziehbar). Zweimal tippen zum Löschen, kein Browser-Dialog. */
-let AUF=[], aufNurRalph=false, aufMitPruefen=false;
+let AUF=[], aufNurRalph=false, aufMitPruefen=false, AUF_PROJ=null;
 async function aufgabenZaehler(){
   try{ const {data}=await client.rpc('cb_admin_aufgaben',{p_mit_pruefen:false});
     const l=data||[], r=l.filter(x=>x.wer==='ralph').length;
@@ -365,7 +365,9 @@ async function aufgabenAuf(){
   ov.innerHTML='<div class="box"><div class="kopf"><h3>Aufgaben</h3><span class="m" style="color:var(--ink3)">lädt …</span></div></div>';
   const {data,error}=await client.rpc('cb_admin_aufgaben',{p_mit_pruefen:aufMitPruefen});
   if(error){ ov.querySelector('.box').innerHTML='<div class="kopf"><h3>Aufgaben</h3><button class="chip" onclick="$(\'aufOv\').remove()">schließen</button></div><div>Fehler: '+esc(error.message)+'</div>'; return; }
-  AUF=data||[]; aufZeichnen();
+  AUF=data||[];
+  if(!AUF_PROJ){ try{ const r=await client.rpc('cb_admin_projekte_liste'); AUF_PROJ=r.data||[]; }catch(e){ AUF_PROJ=[]; } }
+  aufZeichnen();
 }
 function aufZeichnen(){
   const ov=$('aufOv'); if(!ov) return;
@@ -375,7 +377,13 @@ function aufZeichnen(){
     +'<button class="chip'+(aufNurRalph?' an':'')+'" onclick="aufNurRalph=!aufNurRalph;aufZeichnen()">nur Ralph</button>'
     +'<button class="chip'+(aufMitPruefen?' an':'')+'" onclick="aufMitPruefen=!aufMitPruefen;aufgabenAuf()">+ fertig zu prüfen</button>'
     +'<a class="chip" href="steuerung.html">Steuerung ›</a>'
-    +'<button class="chip" onclick="$(\'aufOv\').remove()">schließen</button></div>';
+    +'<button class="chip" onclick="$(\'aufOv\').remove()">schließen</button></div>'
+    /* Neue Aufgabe: Projekt, Text, wer – landet in der Steuerung (Nummer C1, C2 …) */
+    +'<div class="neu" style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 6px">'
+    +'<input id="aufNeuT" placeholder="Neue Aufgabe …" style="flex:1 1 240px;min-width:0;background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:7px 10px;font:inherit;font-size:13px" onkeydown="if(event.key===\'Enter\')aufNeu()">'
+    +'<select id="aufNeuP" style="background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:6px 8px;font:inherit;font-size:12.5px">'+(AUF_PROJ||[]).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+'</option>').join('')+'</select>'
+    +'<select id="aufNeuW" style="background:var(--card2);border:1px solid var(--line);color:var(--ink);border-radius:9px;padding:6px 8px;font:inherit;font-size:12.5px"><option value="ralph">Ralph</option><option value="claude">Claude</option></select>'
+    +'<button class="chip an" onclick="aufNeu()">+ anlegen</button><span id="aufNeuMsg" class="m" style="align-self:center;color:var(--ink3)"></span></div>';
   let grp=null;
   liste.forEach(x=>{
     if(x.projekt!==grp){ grp=x.projekt; h+='<div class="grp">'+esc(grp||'ohne Projekt')+'</div>'; }
@@ -388,6 +396,14 @@ function aufZeichnen(){
   });
   if(!liste.length) h+='<div style="padding:12px 0;color:var(--ink3)">Keine offenen Aufgaben.</div>';
   ov.innerHTML='<div class="box">'+h+'</div>';
+}
+async function aufNeu(){
+  const t=($('aufNeuT')||{}).value||'', p=($('aufNeuP')||{}).value, w=($('aufNeuW')||{}).value||'ralph', m=$('aufNeuMsg');
+  if(t.trim().length<3){ if(m) m.textContent='Bitte Text eingeben.'; return; }
+  if(m) m.textContent='speichert …';
+  const {data,error}=await client.rpc('cb_admin_aufgabe_anlegen',{p_projekt:p,p_titel:t.trim(),p_wer:w,p_notiz:null});
+  if(error||!data||!data.ok){ if(m) m.textContent='Fehler: '+(error?error.message:'nicht gespeichert'); return; }
+  await aufgabenAuf(); aufgabenZaehler();
 }
 async function aufSetzen(art,id,aktion,btn){
   if(aktion==='loeschen' && !btn.classList.contains('sicher')){ btn.classList.add('sicher'); btn.textContent='sicher?'; setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('sicher'); btn.textContent='🗑'; } },3000); return; }
