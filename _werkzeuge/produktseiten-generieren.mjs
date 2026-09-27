@@ -29,6 +29,7 @@
    berechnet nichts nach.
    ============================================================================= */
 
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -229,26 +230,17 @@ const UNT_BLOCK = `<div class="unt">
 <a class="btn" href="${UNT_URL}" target="_blank" rel="noopener nofollow">Jetzt unterstützen ↗</a>
 </div></div>`;
 
-function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung }) {
-  return `<!doctype html>
-<html lang="de">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>${esc(titel)}</title>
-<meta name="description" content="${esc(beschreibung)}">
-<link rel="canonical" href="${kanonisch}">
-<link rel="icon" href="/icon-192.png">
-<meta name="theme-color" content="#263e27">
-<meta property="og:title" content="${esc(titel)}">
-<meta property="og:description" content="${esc(beschreibung)}">
-<meta property="og:url" content="${kanonisch}">
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Root Index">
-<link rel="preload" href="/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
-${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
-<style>
-/* Stil der Instagram-Vorlage (instagram/STIL.md, Ralph 20.09.2026) und der
+/* ---------- Stil und Skript als eigene Dateien (Ralph 27.09.2026) ----------
+   Bis heute standen CSS (6,6 kB) und JavaScript (2,7 kB) WORTGLEICH in jeder
+   einzelnen Seite. Bei 60.608 Seiten sind das rund 560 MB, die 60.608 mal
+   dasselbe sagen - der Ordner produkt/ war damit 1,2 GB gross und GitHub
+   Pages veroeffentlicht nur bis 1 GB: seit dem 27.09. 08:44 UTC wurde
+   stillschweigend der alte Stand weiter ausgeliefert, ohne Fehlermeldung.
+   Jetzt stehen beide einmal unter /produkt/ und werden verlinkt. Sichtbar
+   aendert sich nichts; der Browser laedt sie einmal und hat sie danach im
+   Zwischenspeicher. Der Versionsstempel ?v= ist der Inhalts-Fingerabdruck -
+   aendert sich der Stil, aendert sich die Adresse, sonst nicht. */
+const CSS = `/* Stil der Instagram-Vorlage (instagram/STIL.md, Ralph 20.09.2026) und der
    Startseite der App: dunkles Gruen, Creme, Akzent #7CFF9B, Schrift Inter,
    Untertitel "Die Vorderseite verkauft. Wir lesen die Rueckseite."
    Wer aus der Suche kommt, soll sofort sehen, dass er bei Root Index ist. */
@@ -323,8 +315,31 @@ h2{font-size:1rem;margin-top:24px}
 .unt .kasten b{display:block;font-weight:600;font-size:.95rem;color:var(--cream)}
 .unt .kasten p{margin:.4em auto .9em;max-width:440px;font-size:.82rem;color:var(--mut)}
 .unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
-.unt .btn:hover{background:rgba(124,255,155,.1)}
-</style>
+.unt .btn:hover{background:rgba(124,255,155,.1)}`;
+const SEITE_JS = [zaehlerJs(), rueckmeldungJs()]
+  .map((s) => s.replace(/^<script>/, "").replace(/<\/script>$/, ""))
+  .join("\n");
+const AKTIVA_V = createHash("sha1").update(CSS + SEITE_JS).digest("hex").slice(0, 10);
+
+function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung }) {
+  return `<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${esc(titel)}</title>
+<meta name="description" content="${esc(beschreibung)}">
+<link rel="canonical" href="${kanonisch}">
+<link rel="icon" href="/icon-192.png">
+<meta name="theme-color" content="#263e27">
+<meta property="og:title" content="${esc(titel)}">
+<meta property="og:description" content="${esc(beschreibung)}">
+<meta property="og:url" content="${kanonisch}">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Root Index">
+<link rel="preload" href="/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
+<link rel="stylesheet" href="/produkt/stil.css?v=${AKTIVA_V}">
 </head>
 <body>
 <header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
@@ -334,7 +349,7 @@ ${rueckmeldung ? RM_BLOCK + UNT_BLOCK : ""}
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
-${zaehlerJs()}${rueckmeldung ? rueckmeldungJs() : ""}
+<script src="/produkt/seite.js?v=${AKTIVA_V}" defer></script>
 </body>
 </html>`;
 }
@@ -535,6 +550,10 @@ async function main() {
   for (const p of produkte) if (p && p.name) p.name = sauberName(p.name);
 
   mkdirSync(ZIEL, { recursive: true });
+  // Stil und Skript einmal schreiben - die Loeschschleife unten fasst nur .html an.
+  writeFileSync(join(ZIEL, "stil.css"), CSS + "\n");
+  writeFileSync(join(ZIEL, "seite.js"), SEITE_JS + "\n");
+
   // Vollstaendige Neuerzeugung: alte generierte Seiten entfernen (keine Waisen).
   // 23.09.2026 (Marken-Bereinigung): alte Adressen merken. Aendert sich Marke oder Name, aendert sich die
   // Adresse - die alte bekommt unten eine Weiterleitung, damit Google-Treffer nicht ins Leere laufen.
