@@ -85,6 +85,22 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .reihe2{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
 .klein{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:14px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;color:inherit;border:1px solid transparent}
 .klein:hover{border-color:var(--acc)}
+/* 27.09.2026 (Ralph): Aufgaben-Fenster aus der Projekte-Karte */
+#aufOv{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:center;padding:4vh 12px;overflow:auto}
+#aufOv .box{background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:var(--out);width:min(820px,100%);padding:16px 18px}
+#aufOv .kopf{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+#aufOv .kopf h3{margin:0;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2);flex:1}
+#aufOv .chip{background:transparent;border:1px solid var(--line);color:var(--ink2);padding:4px 10px;border-radius:99px;cursor:pointer;font:inherit;font-size:12px}
+#aufOv .chip.an{border-color:var(--acc);color:var(--acc)}
+#aufOv .grp{margin:14px 0 4px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
+#aufOv .z{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--line)}
+#aufOv .z .t{flex:1;min-width:0;font-size:13.5px;color:var(--ink)}
+#aufOv .z .m{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--ink3)}
+#aufOv .z .i{font-size:11.5px;color:var(--ink3);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#aufOv .z button{flex:0 0 auto;background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:8px;padding:3px 8px;cursor:pointer;font:inherit;font-size:12px}
+#aufOv .z button.ok:hover{border-color:var(--g);color:var(--g)}
+#aufOv .z button.weg:hover,#aufOv .z button.sicher{border-color:var(--r);color:var(--r)}
+#aufOv .rot .m b{color:var(--r)}
 .klein h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .klein h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400}
 .klein .lead .n{font-size:30px}
@@ -211,7 +227,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog <span class="st" id="stSt"></span></h4>
    <div class="lead"><span class="n" id="stN">–</span><span class="u">Zutaten im Stamm</span></div>
    <div class="hb" id="stamm"></div></a>
-  <a class="klein" href="steuerung.html"><h4>Projekte <span class="st">fertig / gesamt</span></h4><div class="hb" id="projekte"></div></a>
+  <div class="klein" id="projKarte" style="cursor:pointer" onclick="aufgabenAuf()" title="Alle offenen Aufgaben anzeigen"><h4>Projekte <span class="st" id="projSt">fertig / gesamt</span></h4><div class="hb" id="projekte"></div><div style="font-size:12px;color:var(--acc)" id="projHinweis">Alle Aufgaben anzeigen ›</div></div>
  </div>
  <div class="fuss">Jede Kachel ist ein Klick auf die Detailseite · Wächter-Kachel anklicken zeigt die Fälle · Farbe nur für Status · aktualisiert jede Minute.</div>
 </div>
@@ -322,6 +338,7 @@ function zeichnen(){
   $('stamm').innerHTML=prog([['Zutaten bewertet',Number(st.bewertet)||0,zut,'gruen'],['Zutaten in Produkten gebunden',geb,zut],['Produkte aktiv (Rest: Entwürfe)',akt,akt+ent,'gruen']])
     +`<div><span class="lab">Schnitt-Score aller aktiven Produkte</span><i class="${st.schnitt_score>=60?'gruen':'gelb'}" style="width:${Math.max(3,Number(st.schnitt_score)||0)}%"></i><span class="n">${st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'} / 100</span></div>`;
   const pr=M.projekte||[];
+  aufgabenZaehler();
   $('projekte').innerHTML=pr.slice(0,6).map(x=>{const g=x.ok+x.offen,q=g?x.ok/g:0;return `<div><span class="lab">${esc(x.p)}</span><i class="${q>=1?'gruen':q>=.5?'':'gelb'}" style="width:${Math.max(3,100*q)}%"></i><span class="n">${x.ok}/${g}</span></div>`}).join('');
 
   // Kette
@@ -332,6 +349,52 @@ function zeichnen(){
   const spark=(v)=>{if(!v||v.length<2)return '';const mx=Math.max(...v),mn=Math.min(...v),r=Math.max(1,mx-mn);return `<svg viewBox="0 0 54 14" preserveAspectRatio="none"><polyline fill="none" stroke="currentColor" stroke-width="1.5" points="${v.map((y,i)=>(i*54/(v.length-1)).toFixed(1)+','+(12-10*(y-mn)/r+1).toFixed(1)).join(' ')}"/></svg>`;};
   const trend=(x)=>{if(x.vor24==null)return `<div class="tr">Trend ab morgen</div>`;const d=Number(x.haengt)-Number(x.vor24);const c=d<0?'ab':d>0?'auf':'';return `<div class="tr ${c}">${d<0?'▼ '+de(d):d>0?'▲ +'+de(d):'= gleich'} seit gestern ${spark(x.verlauf)}</div>`;};
   $('kette').innerHTML=(k.stationen||[]).map(x=>`<div class="${x.ampel}"><div class="t">${x.rang} ${esc(x.titel)}</div><div class="n">${de(x.haengt)}</div>${trend(x)}<div class="h">${x.prozent!=null?Number(x.prozent).toLocaleString('de-DE',{maximumFractionDigits:1})+' %':''}${x.ampel!=='gruen'&&x.grund?' · '+esc(x.grund):''}</div></div>`).join('');
+}
+/* ===== 27.09.2026 (Ralph): alle Aufgaben im Fenster – Projektaufgaben und Work Items
+   aus allen Chats, ohne das Buch. ✓ = erledigt (verified), 🗑 = löschen (weich: cancelled,
+   bleibt in der Steuerung nachvollziehbar). Zweimal tippen zum Löschen, kein Browser-Dialog. */
+let AUF=[], aufNurRalph=false, aufMitPruefen=false;
+async function aufgabenZaehler(){
+  try{ const {data}=await client.rpc('cb_admin_aufgaben',{p_mit_pruefen:false});
+    const l=data||[], r=l.filter(x=>x.wer==='ralph').length;
+    const h=$('projHinweis'); if(h) h.textContent=l.length+' offene Aufgaben'+(r?' · '+r+' bei Ralph':'')+' – alle anzeigen ›';
+  }catch(e){}
+}
+async function aufgabenAuf(){
+  let ov=$('aufOv'); if(!ov){ ov=document.createElement('div'); ov.id='aufOv'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); }; document.body.appendChild(ov); }
+  ov.innerHTML='<div class="box"><div class="kopf"><h3>Aufgaben</h3><span class="m" style="color:var(--ink3)">lädt …</span></div></div>';
+  const {data,error}=await client.rpc('cb_admin_aufgaben',{p_mit_pruefen:aufMitPruefen});
+  if(error){ ov.querySelector('.box').innerHTML='<div class="kopf"><h3>Aufgaben</h3><button class="chip" onclick="$(\'aufOv\').remove()">schließen</button></div><div>Fehler: '+esc(error.message)+'</div>'; return; }
+  AUF=data||[]; aufZeichnen();
+}
+function aufZeichnen(){
+  const ov=$('aufOv'); if(!ov) return;
+  const liste=AUF.filter(x=>!aufNurRalph||x.wer==='ralph');
+  const st={open:'offen',in_progress:'in Arbeit',ready_for_verification:'fertig, prüfen',blocked:'blockiert',decision_ralph:'Entscheidung Ralph'};
+  let h='<div class="kopf"><h3>Aufgaben · '+liste.length+'</h3>'
+    +'<button class="chip'+(aufNurRalph?' an':'')+'" onclick="aufNurRalph=!aufNurRalph;aufZeichnen()">nur Ralph</button>'
+    +'<button class="chip'+(aufMitPruefen?' an':'')+'" onclick="aufMitPruefen=!aufMitPruefen;aufgabenAuf()">+ fertig zu prüfen</button>'
+    +'<a class="chip" href="steuerung.html">Steuerung ›</a>'
+    +'<button class="chip" onclick="$(\'aufOv\').remove()">schließen</button></div>';
+  let grp=null;
+  liste.forEach(x=>{
+    if(x.projekt!==grp){ grp=x.projekt; h+='<div class="grp">'+esc(grp||'ohne Projekt')+'</div>'; }
+    const key=x.art+':'+x.id;
+    h+='<div class="z '+(x.ampel==='rot'?'rot':'')+'" data-k="'+esc(key)+'"><div class="t">'+esc(x.titel||'')
+      +'<div class="m">'+esc(x.nummer||'')+' · <b>'+esc(st[x.status]||x.status)+'</b>'+(x.wer?' · '+esc(x.wer):'')+'</div>'
+      +(x.info?'<div class="i" title="'+esc(x.info)+'">'+esc(x.info)+'</div>':'')+'</div>'
+      +'<button class="ok" title="erledigt" onclick="aufSetzen(\''+x.art+'\',\''+esc(x.id)+'\',\'erledigt\',this)">✓</button>'
+      +'<button class="weg" title="löschen (zweimal tippen)" onclick="aufSetzen(\''+x.art+'\',\''+esc(x.id)+'\',\'loeschen\',this)">🗑</button></div>';
+  });
+  if(!liste.length) h+='<div style="padding:12px 0;color:var(--ink3)">Keine offenen Aufgaben.</div>';
+  ov.innerHTML='<div class="box">'+h+'</div>';
+}
+async function aufSetzen(art,id,aktion,btn){
+  if(aktion==='loeschen' && !btn.classList.contains('sicher')){ btn.classList.add('sicher'); btn.textContent='sicher?'; setTimeout(()=>{ if(btn.isConnected){ btn.classList.remove('sicher'); btn.textContent='🗑'; } },3000); return; }
+  btn.disabled=true;
+  const {data,error}=await client.rpc('cb_admin_aufgabe_setzen',{p_art:art,p_id:String(id),p_aktion:aktion});
+  if(error||!data||!data.ok){ btn.disabled=false; alert('Nicht gespeichert: '+(error?error.message:'Eintrag nicht gefunden')); return; }
+  AUF=AUF.filter(x=>!(x.art===art && String(x.id)===String(id))); aufZeichnen(); aufgabenZaehler();
 }
 /* Wächter-Symbole: Schild (Beobachtung) und Schild mit Schwert (Gate). Eigene Zeichnung, Umrissstil. */
 const W_SCHILD='<svg viewBox="0 0 48 52"><defs><linearGradient id="wgA" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".45" stop-color="currentColor" stop-opacity="1"/><stop offset="1" stop-color="#000" stop-opacity=".35"/></linearGradient><linearGradient id="wgB" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".6"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient></defs><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="currentColor"/><path d="M24 3 L5 9 v14 c0 12 8 20 19 26 c11-6 19-14 19-26 V9 Z" fill="url(#wgA)"/><path d="M24 7 L9 12 v11 c0 10 6.5 17 15 22 c8.5-5 15-12 15-22 V12 Z" fill="none" stroke="#fff" stroke-opacity=".45" stroke-width="1.2"/><path d="M9 12 L24 7 L39 12 v6 c-5 3-10 4-15 4 s-10-1-15-4 Z" fill="url(#wgB)"/></svg>';
