@@ -156,6 +156,12 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="hb" id="rmZahlen"></div>
   <div class="liste2" id="rmListe"></div></a>
 
+ <a class="zone" href="admin.html"><h4>Produkte nach Land <span class="st" id="plSt"></span></h4>
+  <div class="lead"><span class="n" id="plN">–</span><span class="u" id="plU">aus dem Ausland</span></div>
+  <div class="hb" id="plZahlen"></div>
+  <div class="q" id="plImport"></div>
+  <div class="q">Land = Firmensitz laut Barcode, nicht Verkaufsland.</div></a>
+
  <div class="karte">
   <div>
    <h4><span>Wo</span>
@@ -213,6 +219,7 @@ async function laden(){
   if(error){ $('stand').textContent='Fehler'; $('hinweis').innerHTML='Kein Zugriff: '+esc(error.message)+' – <a href="admin.html">im Admin anmelden</a>, dann hier neu laden.'; return; }
   $('hinweis').textContent=''; A=data; zeichnen();
   rmLaden();
+  plLaden();
   $('stand').textContent='aktualisiert '+new Date(A.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
 }
 function neben(id, arr){ $(id).innerHTML=arr.map(([l,v,c])=>`<div>${esc(l)}<b class="${c||''}">${v}</b></div>`).join(''); }
@@ -357,6 +364,29 @@ async function rmLaden(){
     $('rmListe').innerHTML=(d.texte||[]).length
       ? (d.texte||[]).slice(0,8).map(t=>`<div class="z"><div class="k"><b>${esc(kurz(t.seite))}</b><span>${t.urteil==='meldung'?'Angabe gemeldet':'nicht hilfreich'} · ${esc(String(t.tag))}</span></div>${t.hinweis?`<div class="t">${esc(t.hinweis)}</div>`:''}</div>`).join('')
       : '<div class="leer">Keine offenen Rückmeldungen.</div>';
+  }catch(e){}
+}
+
+/* ===== Produkte nach Land (Ralph 27.09.2026) =====
+   Quelle: cb_admin_produkte_nach_land (nur Admins). Land = Barcode-Praefix (GS1),
+   dazu der Stand des EU-Imports Oesterreich/Schweiz. */
+async function plLaden(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_produkte_nach_land');
+    if(error||!data) return;
+    const d=data, akt=Number(d.aktiv)||0, aus=Number(d.ausland_aktiv)||0;
+    $('plN').textContent=de(aus);
+    $('plU').textContent='aus dem Ausland · '+(akt?Math.round(100*aus/akt):0)+' % von '+de(akt)+' aktiv';
+    $('plSt').textContent=de(d.laender)+' Länder';
+    const liste=(d.liste||[]).filter(x=>Number(x.aktiv)>0);
+    const oben=liste.slice(0,8), rest=liste.slice(8).reduce((s,x)=>s+(Number(x.aktiv)||0),0);
+    const zeilen=oben.map(x=>[x.land,Number(x.aktiv)||0]); if(rest>0) zeilen.push(['weitere Länder',rest]);
+    const mx=Math.max(1,...zeilen.map(z=>z[1]));
+    $('plZahlen').innerHTML=zeilen.map(([l,v])=>`<div><span class="lab">${esc(l)}</span><i style="width:${Math.max(3,100*v/mx)}%"></i><span class="n">${de(v)}</span></div>`).join('');
+    const nm={austria:'Österreich',switzerland_de:'Schweiz (deutsch)'};
+    $('plImport').innerHTML=(d.import||[]).length
+      ? 'Import läuft: '+(d.import||[]).map(i=>`${esc(nm[i.land]||i.land)} ${de(i.neu)} neu, ${de(i.frei)} frei${i.fertig?' · fertig':(i.seiten?` · Seite ${de(i.seite)}/${de(i.seiten)}`:'')}`).join(' · ')
+      : '';
   }catch(e){}
 }
 
