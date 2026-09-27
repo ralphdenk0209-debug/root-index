@@ -113,6 +113,9 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 @media(max-width:900px){.wrap{grid-template-columns:1fr}.st{grid-template-columns:repeat(4,1fr)}.delta{display:none}.right .nav{display:none}.right{margin-left:0}}
 @media(max-width:520px){.st{grid-template-columns:repeat(2,1fr)}}
 .liste2{margin-top:8px;font-size:.8rem}
+.plAuf{align-self:flex-start;background:none;border:0;padding:2px 0;color:var(--acc);font:inherit;font-size:12.5px;cursor:pointer}
+#plRest{max-height:320px;overflow:auto;padding-right:4px}
+#plRest[hidden],.plAuf[hidden]{display:none}
 .liste2 .z{padding:6px 0;border-bottom:1px solid var(--line)}
 .liste2 .k{display:flex;gap:8px;align-items:baseline}
 .liste2 .k b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -159,6 +162,8 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
  <a class="zone" href="admin.html"><h4>Produkte nach Land <span class="st" id="plSt"></span></h4>
   <div class="lead"><span class="n" id="plN">–</span><span class="u" id="plU">aus dem Ausland</span></div>
   <div class="hb" id="plZahlen"></div>
+  <button type="button" class="plAuf" id="plAuf" hidden></button>
+  <div class="hb" id="plRest" hidden></div>
   <div class="q" id="plImport"></div>
   <div class="q">Land = Firmensitz laut Barcode, nicht Verkaufsland.</div></a>
 
@@ -379,10 +384,22 @@ async function plLaden(){
     $('plU').textContent='aus dem Ausland · '+(akt?Math.round(100*aus/akt):0)+' % von '+de(akt)+' aktiv';
     $('plSt').textContent=de(d.laender)+' Länder';
     const liste=(d.liste||[]).filter(x=>Number(x.aktiv)>0);
-    const oben=liste.slice(0,8), rest=liste.slice(8).reduce((s,x)=>s+(Number(x.aktiv)||0),0);
+    const oben=liste.slice(0,8), weitere=liste.slice(8), rest=weitere.reduce((s,x)=>s+(Number(x.aktiv)||0),0);
     const zeilen=oben.map(x=>[x.land,Number(x.aktiv)||0]); if(rest>0) zeilen.push(['weitere Länder',rest]);
     const mx=Math.max(1,...zeilen.map(z=>z[1]));
-    $('plZahlen').innerHTML=zeilen.map(([l,v])=>`<div><span class="lab">${esc(l)}</span><i style="width:${Math.max(3,100*v/mx)}%"></i><span class="n">${de(v)}</span></div>`).join('');
+    const zeile=([l,v],m)=>`<div><span class="lab">${esc(l)}</span><i style="width:${Math.max(3,100*v/m)}%"></i><span class="n">${de(v)}</span></div>`;
+    $('plZahlen').innerHTML=zeilen.map(z=>zeile(z,mx)).join('');
+    /* Aufklappen: alle weiteren Laender einzeln (Ralph 27.09.) */
+    const auf=$('plAuf'), box=$('plRest');
+    if(weitere.length){
+      const mx2=Math.max(1,...weitere.map(x=>Number(x.aktiv)||0));
+      const up=(d.unbekannte_praefixe||[]);
+      box.innerHTML=weitere.map(x=>zeile([x.land==='Kein GS1-Land'&&up.length?x.land+' (Präfix '+up.join(', ')+')':x.land,Number(x.aktiv)||0],mx2)).join('');
+      const txt=()=>(box.hidden?'▸ alle ':'▾ ')+weitere.length+' weiteren Länder'+(box.hidden?' anzeigen':' ausblenden');
+      auf.hidden=false; auf.textContent=txt();
+      auf.onclick=(ev)=>{ev.preventDefault(); ev.stopPropagation(); box.hidden=!box.hidden; auf.textContent=txt();};
+      box.onclick=(ev)=>{ev.preventDefault(); ev.stopPropagation();};
+    }
     const nm={austria:'Österreich',switzerland_de:'Schweiz (deutsch)'};
     $('plImport').innerHTML=(d.import||[]).length
       ? 'Import läuft: '+(d.import||[]).map(i=>`${esc(nm[i.land]||i.land)} ${de(i.neu)} neu, ${de(i.frei)} frei${i.fertig?' · fertig':(i.seiten?` · Seite ${de(i.seite)}/${de(i.seiten)}`:'')}`).join(' · ')
