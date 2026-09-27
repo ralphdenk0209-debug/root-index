@@ -1,4 +1,4 @@
-Lauf: 45 · Commit: 388ca4fa747e4a4f45f3b912d366fdbb2db330fd · 2026-09-27 17:28 UTC
+Lauf: 46 · Commit: 1f9441a6f6c2498bbc2de5b09b89c0fd32e43ca9 · 2026-09-27 18:50 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 2000 Produkte (zuletzt P11862)
@@ -17,21 +17,27 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 28000 Produkte (zuletzt P40834)
   ... 30000 Produkte (zuletzt P42860)
   ... 32000 Produkte (zuletzt P44874)
-  ... 34000 Produkte (zuletzt P469)
-  ... 36000 Produkte (zuletzt P48930)
-  ... 38000 Produkte (zuletzt P50960)
-  ... 40000 Produkte (zuletzt P52977)
-  ... 42000 Produkte (zuletzt P54991)
-  ! nach id P55797: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P46493: 200 Zeilen gingen nicht, versuche kleiner
+  ... 34080 Produkte (zuletzt P46983)
+  ... 36080 Produkte (zuletzt P49011)
+  ... 38080 Produkte (zuletzt P51039)
+  ... 40080 Produkte (zuletzt P53060)
+  ... 42080 Produkte (zuletzt P55075)
   ... 44080 Produkte (zuletzt P57095)
   ... 46080 Produkte (zuletzt P59105)
-  ... 48080 Produkte (zuletzt P61119)
-  ... 50080 Produkte (zuletzt P63230)
-  ... 52080 Produkte (zuletzt P65263)
-  ... 54080 Produkte (zuletzt P67336)
-  ... 56080 Produkte (zuletzt P69371)
-  ... 58080 Produkte (zuletzt P71448)
-  ... 60080 Produkte (zuletzt P74024)
-Fertig geladen: 60622 Produkte
+  ! nach id P59307: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P59307: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P59338: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P59338: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P59338: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P59338: 10 Zeilen gingen nicht, versuche kleiner
+  ... 48113 Produkte (zuletzt P61153)
+  ... 50113 Produkte (zuletzt P63264)
+  ... 52113 Produkte (zuletzt P65298)
+  ... 54113 Produkte (zuletzt P67370)
+  ... 56113 Produkte (zuletzt P69404)
+  ... 58113 Produkte (zuletzt P71481)
+  ... 60113 Produkte (zuletzt P74061)
+Fertig geladen: 60625 Produkte
 ↪️  Weiterleitungen alter Adressen: 5260
-✅ Produktseiten: 60622 · Kategorien: 25 · Sitemap-URLs: 60651
+✅ Produktseiten: 60625 · Kategorien: 25 · Sitemap-URLs: 60654
