@@ -212,6 +212,23 @@ const RM_BLOCK = `<div class="rm" id="rmBox">
 <div class="send"><button type="submit" id="rmSend">Absenden</button></div></form>
 </div>`;
 
+/* ---------- Unterstuetzen (Ralph 27.09.2026) ----------
+   Bewusst GANZ UNTEN, nach der Rueckmeldung: wer aus der Suche kommt, will
+   erst die Sache sehen. Und bewusst leiser als auf der Startseite - ein
+   Aufruf ueber den Zutaten waere auf einer Seite, die "nicht kaeuflich"
+   verspricht, ein Werbebanner. Der erste Satz fuehrt in die App; daraus wird
+   eher ein Nutzer als aus einem Knopf ein Spender. Der Stripe-Link traegt
+   client_reference_id=produktseite, damit in Stripe nachweisbar ist, ob von
+   hier je etwas kam - statt darueber zu spekulieren. */
+const UNT_URL = "https://buy.stripe.com/bJedR88cq2V26jCbxB1gs00?client_reference_id=produktseite";
+const UNT_BLOCK = `<div class="unt">
+<p class="mehr"><a href="/produkt/">Alle bewerteten Produkte ansehen</a> · <a href="/">Root Index als App</a></p>
+<div class="kasten">
+<b>Root Index unterstützen</b>
+<p>Freiwilliger Beitrag – hilf uns, unabhängig und werbefrei zu bleiben. Kein Abo, keine Gegenleistung.</p>
+<a class="btn" href="${UNT_URL}" target="_blank" rel="noopener nofollow">Jetzt unterstützen ↗</a>
+</div></div>`;
+
 function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung }) {
   return `<!doctype html>
 <html lang="de">
@@ -300,13 +317,20 @@ h2{font-size:1rem;margin-top:24px}
 .rm textarea{width:100%;max-width:520px;min-height:74px;font:inherit;color:var(--cream);background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:10px;padding:10px;resize:vertical}
 .rm .send{margin-top:8px}
 .rm .dank{color:var(--acc)}
+.unt{margin-top:26px}
+.unt .mehr{font-size:.84rem;color:var(--mut);margin:0 0 14px}
+.unt .kasten{border:1px solid var(--line);border-radius:14px;padding:16px 18px;text-align:center;background:var(--panel)}
+.unt .kasten b{display:block;font-weight:600;font-size:.95rem;color:var(--cream)}
+.unt .kasten p{margin:.4em auto .9em;max-width:440px;font-size:.82rem;color:var(--mut)}
+.unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
+.unt .btn:hover{background:rgba(124,255,155,.1)}
 </style>
 </head>
 <body>
 <header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
 <main>
 ${inhalt}
-${rueckmeldung ? RM_BLOCK : ""}
+${rueckmeldung ? RM_BLOCK + UNT_BLOCK : ""}
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
 </main>
