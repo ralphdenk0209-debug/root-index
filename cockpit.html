@@ -554,7 +554,9 @@ async function qiLos(){
 /* Index je Produkt: Lebensmittel -> Clean-Score (farbig), Supplement -> Reinheits-Index (Ampel + Titel). */
 function qiWert(p){
   if(p.reinheit){ const f={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚪'}[p.reinheit.ampel]||'⚪';
-    return `<span title="Reinheits-Index (Supplement)">Reinheit ${f} <span style="font-weight:400;color:var(--ink3)">${esc(p.reinheit.titel||'')}</span></span>`; }
+    const ri=Number(p.reinheit.index); const rz=(p.reinheit.index!=null&&isFinite(ri))?Math.round(ri):null;
+    const rc=rz==null?'var(--ink3)':rz>=80?'var(--g)':rz>=60?'var(--y)':'var(--r)';
+    return `<span title="Reinheits-Index (Supplement, von 100) – nicht der Root Index">Reinheit <b style="color:${rc};font-size:15px">${rz==null?'–':rz}</b> ${f} <span style="font-weight:400;color:var(--ink3)">${esc(p.reinheit.titel||'')}</span></span>`; }
   if(p.score==null||p.score==='') return `<span style="color:var(--ink3)">${p.status==='Aktiv'?'Index –':'noch kein Index'}</span>`;
   const n=Number(p.score); const c=n>=70?'var(--g)':n>=50?'var(--y)':'var(--r)';
   return `<span title="Root-Index">Index <b style="color:${c};font-size:15px">${n}</b></span>`;
