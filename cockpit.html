@@ -53,6 +53,7 @@ svg.ch{width:100%;height:90px;display:block}
 .qiPkt{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
 .qiPkt span{font-size:10.5px;text-align:center;padding:4px 2px;border-radius:7px;background:rgba(255,255,255,.05);color:var(--ink3);border-top:3px solid rgba(255,255,255,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .qiPkt .gruen{border-color:var(--g);color:var(--ink2)}.qiPkt .rot{border-color:var(--r);color:var(--r)}.qiPkt .gelb{border-color:var(--y);color:var(--y)}
+.qiX{margin-left:10px;border:1px solid rgba(255,255,255,.14);background:transparent;color:var(--ink2);border-radius:8px;padding:2px 9px;font-size:11.5px;cursor:pointer}.qiX:hover{border-color:var(--g);color:var(--g)}
 .qiP .gr{grid-column:1/-1;font-size:11.5px;color:var(--r)}
 .kette h4 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
 .st{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
@@ -486,6 +487,19 @@ async function qiLos(){
   $('qiUrl').value=''; m.textContent=(data&&data.hinweis)||'Eingereiht – Riki liest die Seite innerhalb einer Minute, danach läuft jede Sorte durch die Maschine.';
   qiBis=Date.now()+12*60*1000; qiLaden();
 }
+/* Index je Produkt: Lebensmittel -> Clean-Score (farbig), Supplement -> Reinheits-Index (Ampel + Titel). */
+function qiWert(p){
+  if(p.reinheit){ const f={gruen:'🟢',gelb:'🟡',rot:'🔴',grau:'⚪'}[p.reinheit.ampel]||'⚪';
+    return `<span title="Reinheits-Index (Supplement)">Reinheit ${f} <span style="font-weight:400;color:var(--ink3)">${esc(p.reinheit.titel||'')}</span></span>`; }
+  if(p.score==null||p.score==='') return `<span style="color:var(--ink3)">${p.status==='Aktiv'?'Index –':'noch kein Index'}</span>`;
+  const n=Number(p.score); const c=n>=70?'var(--g)':n>=50?'var(--y)':'var(--r)';
+  return `<span title="Root-Index">Index <b style="color:${c};font-size:15px">${n}</b></span>`;
+}
+async function qiWeg(id){
+  const {error}=await client.rpc('cb_quick_import_ausblenden',{p_id:id});
+  if(error){ $('qiMsg').textContent='Entfernen ging nicht: '+error.message; return; }
+  qiLaden();
+}
 async function qiLaden(){
   clearTimeout(qiT);
   const {data,error}=await client.rpc('cb_quick_import_stand',{p_limit:5});
@@ -494,14 +508,14 @@ async function qiLaden(){
   let laeuft=false;
   $('qiListe').innerHTML=(data.importe||[]).map(i=>{
     if(i.status==='wartet'||i.status==='liest') laeuft=true;
-    const kopf=`<div class="kopf"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url.replace(/^https?:\/\//,''))}</a><span>${i.status==='wartet'?'⏳ wartet':i.status==='liest'?'🔎 Riki liest …':i.status==='fehler'?'🔴 Fehler':'✓ '+(i.produkte||[]).length+' Sorten'}${i.kosten_usd!=null?' · '+Number(i.kosten_usd).toLocaleString('de-DE',{maximumFractionDigits:3})+' $':''}</span></div>`;
+    const kopf=`<div class="kopf"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url.replace(/^https?:\/\//,''))}</a><span>${i.status==='wartet'?'⏳ wartet':i.status==='liest'?'🔎 Riki liest …':i.status==='fehler'?'🔴 Fehler':'✓ '+(i.produkte||[]).length+' Sorten'}${i.kosten_usd!=null?' · '+Number(i.kosten_usd).toLocaleString('de-DE',{maximumFractionDigits:3})+' $':''}${(i.status!=='wartet'&&i.status!=='liest')?` <button class="qiX" title="Gelesen – aus der Liste nehmen" onclick="qiWeg(${i.id})">✕ gelesen</button>`:''}</span></div>`;
     const fe=i.fehler?`<div class="qiP"><div class="gr">${esc(i.fehler)}</div></div>`:'';
     const ps=(i.produkte||[]).map(p=>{
       const st=p.stationen||[]; if(p.status!=='Aktiv') laeuft=true;
       const rot=st.find(x=>x.farbe==='rot');
       const fr=(p.schritte||[]).find(x=>x.s==='freigabe'&&!x.ok);
       const grund=p.status==='Aktiv'?'':(fr&&fr.t)||(rot&&rot.grund)||'';  /* die Meldung der Freigabe sagt genau, was klemmt */
-      return `<div class="qiP"><div class="nm"><a href="admin.html#${esc(p.pid)}" style="color:inherit;text-decoration:none">${esc(p.name||p.pid)}</a> <span style="color:var(--ink3);font-weight:400">${esc(p.pid)}${p.ean?' · '+esc(p.ean):''}${p.neu?' · neu':' · ergänzt'}</span></div><div class="sc">${p.status==='Aktiv'?'🟢 '+(p.score??'–'):'🔴 '+(p.score??'–')}</div>
+      return `<div class="qiP"><div class="nm"><a href="admin.html#${esc(p.pid)}" style="color:inherit;text-decoration:none">${esc(p.name||p.pid)}</a> <span style="color:var(--ink3);font-weight:400">${esc(p.pid)}${p.ean?' · '+esc(p.ean):''}${p.neu?' · neu':' · ergänzt'}</span></div><div class="sc">${qiWert(p)}</div>
         <div class="qiPkt">${qiKurz.map((t,k)=>{const x=st[k]||{};return `<span class="${x.farbe||''}" title="${esc(x.titel||t)}${x.grund?': '+esc(x.grund):''}">${k+1} ${t}</span>`;}).join('')}</div>
         ${grund?`<div class="gr">${esc(grund)}</div>`:''}</div>`;
     }).join('');
