@@ -319,6 +319,22 @@ Setze "bezug" darauf, was auf dem Etikett ueber der Naehrwertspalte steht:
 RATE NICHT nach Produktart. Ein Getraenk kann "je 100 g" deklariert sein.
 Nur was dort steht, zaehlt. Im Zweifel null.
 
+=== AUSNAHME USA: "Nutrition Facts" (Ralph-Freigabe 27.09.2026) ===
+US-Etiketten haben KEINE 100-g-Spalte, sondern nur Werte je Portion. Ohne diese
+Ausnahme kaeme fuer jedes US-Produkt gar kein Naehrwert zurueck - und das sind
+40 der 100 Punkte.
+Zeigt das Bild ein US-Naehrwertfeld ("Nutrition Facts") UND gibt es dort keine
+Spalte je 100 g / 100 ml, dann rechne von der Portion auf 100 g um - aber NUR,
+wenn die Portionsgroesse in Gramm oder Millilitern deklariert ist, wie es in den
+USA seit 2016 Pflicht ist: "Serving size 2/3 cup (55g)".
+  Wert je 100 g = Wert je Portion x 100 / Portionsgroesse in g
+Setze dann "bezug":"100g" (bei ml entsprechend "100ml") und schreibe in
+"warnungen" den Satz: "aus Portion <x> g umgerechnet (US-Etikett)".
+Steht die Portionsgroesse NUR in Bechern, Stueck, Loeffeln oder aehnlich ohne
+Gramm- oder Milliliterangabe: nichts umrechnen, Feld leer lassen. Nicht raten.
+Fuer jedes Etikett OHNE "Nutrition Facts" gilt unveraendert: niemals von der
+Portion hochrechnen.
+
 === KATEGORIE: NUR AUS DIESER LISTE ===
 "kategorie_vorschlag" MUSS exakt einer dieser 24 Werte sein - Schreibweise genau so:
 Backen | Brot & Backwaren | Brotaufstrich | Desserts & Süßspeisen | Energy-Gel | Fertigprodukte | Fleisch & Fisch |

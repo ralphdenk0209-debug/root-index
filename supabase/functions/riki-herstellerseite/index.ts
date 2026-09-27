@@ -119,6 +119,10 @@ Manche Seiten fuehren eine eigene Tabelle "Vitamine und Mineralstoffe" mit Spalt
 "pro 100 g" und "pro Portion (2 g)", z. B.: Jod 2 000 µg (1 333 %) | Fluorid 31 mg | Folsäure 10 000 µg.
 -> Gib diese Werte im Feld "mikronaehrstoffe_100g" zurueck - AUSSCHLIESSLICH aus der 100-g/100-ml-Spalte.
 -> Gibt es NUR Portionswerte: leeres Array []. Rechne NIEMALS von der Portion auf 100 g hoch.
+-> AUSNAHME USA (Ralph 27.09.2026): Zeigt die Quelle ein US-Naehrwertfeld ("Nutrition Facts")
+   ohne 100-g-Spalte und ist die Portionsgroesse in Gramm oder Millilitern deklariert
+   ("Serving size 2/3 cup (55g)"), dann rechne um: Wert je 100 g = Wert je Portion x 100 /
+   Portionsgroesse in g. Nur dann. Ohne Gramm-/Milliliterangabe bleibt es leer.
 -> Je Eintrag: deutscher Naehrstoffname ("Jod", "Fluorid", "Folsäure", "Selen", "Vitamin C", "Magnesium", "Calcium" ...),
    Menge als Zahl, Einheit exakt "mg" | "µg" | "g". Prozentangaben (%NRV, Referenzmenge) NICHT uebernehmen.
 -> Das ist NICHT die Naehrwerttabelle: kcal/Fett/Eiweiss/Salz gehoeren weiter nach naehrwerte_100g.
