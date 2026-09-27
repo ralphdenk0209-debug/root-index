@@ -102,10 +102,10 @@ OBERSTE REGEL: NICHTS ERFINDEN. Was fuer eine Sorte nicht klar dasteht, ist null
 - Kategorie NUR aus: Backen | Brot & Backwaren | Brotaufstrich | Desserts & Süßspeisen | Energy-Gel | Fertigprodukte | Fleisch & Fisch | Getränk | Getreide & Beilagen | Milchprodukte & Eier | Nüsse & Hülsenfrüchte | Obst & Gemüse | Öle & Fette | Proteinpulver | Riegel | Snacks | Supplement | Süßungsmittel | Süßwaren | Tofu & Fleischalternativen | Würzen & Saucen | Salze | Lebensmittel | Sonstiges. Sonst null.
 - Bio nur true bei ausdruecklicher Bio-/Öko-Auslobung, sonst null.
 - EAN nur, wenn die Seite eine Ziffernfolge ausdruecklich als EAN/GTIN/Barcode bezeichnet.
-- WIRKSTOFFE (nur bei Supplements / Nahrungsergaenzung): die Tabelle "pro Tagesdosis / pro Portion" mit Vitaminen, Mineralstoffen und dem Hauptwirkstoff (z. B. Kollagenhydrolysat, Kreatin, Omega-3, EPA, DHA). Je Zeile Name, Menge, Einheit exakt "g" | "mg" | "µg", und nrv_prozent nur wenn angegeben. Werte je TAGESDOSIS laut Verzehrempfehlung, nicht je 100 g. Aminosaeurenprofile NICHT uebernehmen. Keine Tabelle: [].
+- WIRKSTOFFE (nur bei Supplements / Nahrungsergaenzung): die Tabelle "pro Tagesdosis / pro Portion" mit Vitaminen, Mineralstoffen und dem Hauptwirkstoff (z. B. Kollagenhydrolysat, Kreatin, Omega-3, EPA, DHA). Je Zeile Name, Menge, Einheit exakt "g" | "mg" | "µg" | "Mrd KBE" | "Mio KBE", und nrv_prozent nur wenn angegeben. KEIMZAHLEN (Probiotika, KBE/CFU/koloniebildende Einheiten) NIE als mg: z. B. "16 Milliarden KBE" -> menge 16, einheit "Mrd KBE"; "200 Mio KBE" -> menge 200, einheit "Mio KBE". Werte je TAGESDOSIS laut Verzehrempfehlung, nicht je 100 g. Aminosaeurenprofile NICHT uebernehmen. Keine Tabelle: [].
 - Gibt es KEINE Sortenliste, nenne selbst die Sorten, die die Seite als eigene Produkte fuehrt (Geschmacksrichtungen). Proben/Muster/Sets weglassen.
 ANTWORTE NUR MIT JSON:
-{"marke":string|null,"produkte":[{"sorte_key":string|null,"name":string,"kategorie":string|null,"zutaten":string|null,"naehrwerte_100g":{"kcal":number|null,"fett":number|null,"ges_fett":number|null,"kh":number|null,"zucker":number|null,"ballaststoffe":number|null,"protein":number|null,"salz":number|null}|null,"bezug":"100g"|"100ml"|null,"verzehrempfehlung":string|null,"form":string|null,"bio":true|null,"ean":string|null,"wirkstoffe":[{"name":string,"menge":number,"einheit":"g"|"mg"|"µg","nrv_prozent":number|null}],"hinweis":string|null}]}
+{"marke":string|null,"produkte":[{"sorte_key":string|null,"name":string,"kategorie":string|null,"zutaten":string|null,"naehrwerte_100g":{"kcal":number|null,"fett":number|null,"ges_fett":number|null,"kh":number|null,"zucker":number|null,"ballaststoffe":number|null,"protein":number|null,"salz":number|null}|null,"bezug":"100g"|"100ml"|null,"verzehrempfehlung":string|null,"form":string|null,"bio":true|null,"ean":string|null,"wirkstoffe":[{"name":string,"menge":number,"einheit":"g"|"mg"|"µg"|"Mrd KBE"|"Mio KBE","nrv_prozent":number|null}],"hinweis":string|null}]}
 "name" = Produktname OHNE Marke, mit Sorte (z. B. "Kollagen Pfirsich"). "sorte_key" = der Schluessel aus der mitgegebenen Sortenliste (unveraendert), sonst null.`;
 
 Deno.serve(async (req) => {
@@ -182,8 +182,12 @@ Deno.serve(async (req) => {
     const s = sorten.find((x) => x.sorte_key === String(p.sorte_key ?? "")) ?? null;
     const wirk = (Array.isArray(p.wirkstoffe) ? p.wirkstoffe : []).map((w: any) => {
       let e = String(w?.einheit ?? "").trim().toLowerCase(); if (e === "ug" || e === "mcg") e = "µg";
-      const m = Number(w?.menge); const n = Number(w?.nrv_prozent);
-      return (String(w?.name ?? "").trim() && isFinite(m) && m > 0 && ["g", "mg", "µg"].includes(e))
+      // 27.09.2026 (Ralph jaja): Keimzahlen als KBE, nie als mg (Braineffect: 16 Mrd KBE kam als 16.000.000.000 mg)
+      if (/^(mrd|milliarden?)\s*(kbe|cfu)$/.test(e)) e = "Mrd KBE"; else if (/^(mio|millionen?)\s*(kbe|cfu)$/.test(e)) e = "Mio KBE";
+      let m = Number(w?.menge); const n = Number(w?.nrv_prozent);
+      const keim = /(bacter|bakter|lacto|bifido|probiot|kultur|kbe|cfu|streptococ|saccharomyc)/i.test(String(w?.name ?? ""));
+      if ((e === "kbe" || e === "cfu" || (keim && ["mg", "g", "µg"].includes(e))) && isFinite(m) && m >= 1e6) { m = Math.round(m / 1e7) / 100; e = "Mrd KBE"; }
+      return (String(w?.name ?? "").trim() && isFinite(m) && m > 0 && ["g", "mg", "µg", "Mrd KBE", "Mio KBE"].includes(e))
         ? { name: String(w.name).trim(), menge: m, einheit: e, nrv_prozent: isFinite(n) && n >= 0 ? n : null } : null;
     }).filter(Boolean);
     return { ...p, wirkstoffe: wirk, marke: erg.marke || shopMarke || null, ean: s?.ean ?? eanOk(p.ean), bild: s?.bild ?? shopBild, preis: s?.preis ?? null,
