@@ -1351,6 +1351,11 @@ function premiumInfo(){
     var r=document.referrer, q="direkt";
     if(r){ var h=""; try{ h=new URL(r).hostname; }catch(e){}
       q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere"; }
+    /* ueber root-index.com gekommen: die Weiterleitung haengt ?von=com an. Der
+       Merker haelt den ganzen Besuch, damit auch die danach geoeffneten Seiten
+       als "com" zaehlen (27.09.2026). */
+    try{ if(/(^|[?&])von=com([&#]|$)/.test(location.search)) sessionStorage.setItem("ri_von","com");
+      if(sessionStorage.getItem("ri_von")==="com") q="com"; }catch(e){}
     fetch(SUPABASE_URL+"/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,
       headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({p_seite:"app",p_quelle:q})}).catch(function(){});
