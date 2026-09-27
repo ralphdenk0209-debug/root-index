@@ -25,3 +25,6 @@ verify_jwt = true
 # Postfach_Agent_Schluessel), darum hier bewusst aus.
 [functions.mail-agent]
 verify_jwt = false
+
+[functions.quick-import]
+verify_jwt = true

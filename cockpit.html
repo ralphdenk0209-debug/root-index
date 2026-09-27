@@ -42,6 +42,18 @@ svg.ch{width:100%;height:90px;display:block}
 .link{font-size:12px;color:var(--acc);margin-top:auto}
 .kette{grid-column:1/-1;background:var(--card);border-radius:18px;box-shadow:var(--out);padding:16px 20px}
 .kette h4{margin:0 0 12px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+/* 27.09.2026 Quick-Import-Kachel (Ralph jaja A): Link rein -> alle Sorten -> Maschine -> 8 Punkte wie die Kette */
+.qi{margin-top:14px}.qiEin{display:flex;gap:8px}.qiEin input{flex:1;min-width:0;height:38px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:var(--card2);color:var(--ink);padding:0 12px;font-size:14px}
+.qiEin button{height:38px;padding:0 18px;border-radius:10px;border:0;background:var(--g);color:#10150f;font-weight:700;cursor:pointer}
+.qiMsg{font-size:12.5px;color:var(--ink3);margin:8px 0 4px;min-height:1em}
+.qiImp{margin-top:10px;background:var(--card2);border-radius:12px;padding:10px 12px}.qiImp .kopf{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--ink3);font-family:ui-monospace,Menlo,monospace}
+.qiImp .kopf a{color:var(--ink2);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qiP{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 0;border-top:1px solid rgba(255,255,255,.06)}
+.qiP .nm{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qiP .sc{font-size:13px;font-weight:700}
+.qiPkt{grid-column:1/-1;display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.qiPkt span{font-size:10.5px;text-align:center;padding:4px 2px;border-radius:7px;background:rgba(255,255,255,.05);color:var(--ink3);border-top:3px solid rgba(255,255,255,.15);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qiPkt .gruen{border-color:var(--g);color:var(--ink2)}.qiPkt .rot{border-color:var(--r);color:var(--r)}.qiPkt .gelb{border-color:var(--y);color:var(--y)}
+.qiP .gr{grid-column:1/-1;font-size:11.5px;color:var(--r)}
 .kette h4 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
 .st{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
 .st>div{background:var(--card2);border-radius:12px;padding:10px 12px;border-top:3px solid var(--g);min-width:0}
@@ -134,6 +146,9 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
  <div class="wall"><h4>Wächter <span class="st" id="wSt"></span></h4><div class="wgrid" id="wgrid"></div><div class="wfaelle" id="wFaelle" hidden></div></div>
 
  <div class="kette"><h4>Kette <span id="kStand"></span></h4><div class="st" id="kette"></div></div>
+ <div class="kette qi"><h4>Quick-Import <span id="qiKosten"></span></h4>
+  <div class="qiEin"><input id="qiUrl" type="url" placeholder="Link zur Produktseite einfügen – alle Sorten werden angelegt und durch die Maschine geschickt" onkeydown="if(event.key==='Enter')qiLos()"><button onclick="qiLos()">Los</button></div>
+  <div id="qiMsg" class="qiMsg"></div><div id="qiListe"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
   <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks in 28 Tagen</span><span class="d" id="sD"></span></div>
@@ -458,7 +473,43 @@ function karteZeichnen(){
    genau zweimal: beim Oeffnen der Seite und wenn jemand „Aktualisieren"
    drueckt. Wer hier je wieder einen Zeitgeber einbaut, nimmt der ganzen
    Seite und der App das Tempo weg. */
-function allesLaden(){ laden(); karteLaden(); }
+/* 27.09.2026 Quick-Import (Ralph jaja A). Eigener, leichter Abruf cb_quick_import_stand - NICHT die grosse Ampel.
+   Nachgeladen wird nur, solange ein Import laeuft oder ein Produkt noch nicht durch ist, alle 15 s, hoechstens 12 Minuten. */
+let qiT=null, qiBis=0;
+const qiKurz=['Eingang','Gelesen','Herkunft','Zerlegt','Gebunden','Bewertet','Wächter','Frei'];
+async function qiLos(){
+  const u=($('qiUrl').value||'').trim(); const m=$('qiMsg');
+  if(!/^https?:\/\//i.test(u)){ m.textContent='Bitte einen vollständigen Link mit https:// einfügen.'; return; }
+  m.textContent='Wird eingereiht …';
+  const {data,error}=await client.rpc('cb_quick_import_anlegen',{p_url:u});
+  if(error){ m.textContent='Fehler: '+error.message; return; }
+  $('qiUrl').value=''; m.textContent=(data&&data.hinweis)||'Eingereiht – Riki liest die Seite innerhalb einer Minute, danach läuft jede Sorte durch die Maschine.';
+  qiBis=Date.now()+12*60*1000; qiLaden();
+}
+async function qiLaden(){
+  clearTimeout(qiT);
+  const {data,error}=await client.rpc('cb_quick_import_stand',{p_limit:5});
+  if(error){ $('qiMsg').textContent='Stand nicht lesbar: '+error.message; return; }
+  $('qiKosten').textContent='heute '+Number(data.heute_usd||0).toLocaleString('de-DE',{maximumFractionDigits:2})+' $ von '+data.deckel_usd+' $';
+  let laeuft=false;
+  $('qiListe').innerHTML=(data.importe||[]).map(i=>{
+    if(i.status==='wartet'||i.status==='liest') laeuft=true;
+    const kopf=`<div class="kopf"><a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.url.replace(/^https?:\/\//,''))}</a><span>${i.status==='wartet'?'⏳ wartet':i.status==='liest'?'🔎 Riki liest …':i.status==='fehler'?'🔴 Fehler':'✓ '+(i.produkte||[]).length+' Sorten'}${i.kosten_usd!=null?' · '+Number(i.kosten_usd).toLocaleString('de-DE',{maximumFractionDigits:3})+' $':''}</span></div>`;
+    const fe=i.fehler?`<div class="qiP"><div class="gr">${esc(i.fehler)}</div></div>`:'';
+    const ps=(i.produkte||[]).map(p=>{
+      const st=p.stationen||[]; if(p.status!=='Aktiv') laeuft=true;
+      const rot=st.find(x=>x.farbe==='rot');
+      const fr=(p.schritte||[]).find(x=>x.s==='freigabe'&&!x.ok);
+      const grund=p.status==='Aktiv'?'':(rot&&rot.grund)||(fr&&fr.t)||'';
+      return `<div class="qiP"><div class="nm"><a href="admin.html#${esc(p.pid)}" style="color:inherit;text-decoration:none">${esc(p.name||p.pid)}</a> <span style="color:var(--ink3);font-weight:400">${esc(p.pid)}${p.ean?' · '+esc(p.ean):''}${p.neu?' · neu':' · ergänzt'}</span></div><div class="sc">${p.status==='Aktiv'?'🟢 '+(p.score??'–'):'🔴 '+(p.score??'–')}</div>
+        <div class="qiPkt">${qiKurz.map((t,k)=>{const x=st[k]||{};return `<span class="${x.farbe||''}" title="${esc(x.titel||t)}${x.grund?': '+esc(x.grund):''}">${k+1} ${t}</span>`;}).join('')}</div>
+        ${grund?`<div class="gr">${esc(grund)}</div>`:''}</div>`;
+    }).join('');
+    return `<div class="qiImp">${kopf}${fe}${ps}</div>`;
+  }).join('');
+  if(laeuft && Date.now()<qiBis) qiT=setTimeout(qiLaden,15000);
+}
+function allesLaden(){ laden(); karteLaden(); qiLaden(); }
 allesLaden();
 </script>
 </body></html>
