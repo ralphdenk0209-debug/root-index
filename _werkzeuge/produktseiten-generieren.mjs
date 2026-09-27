@@ -517,7 +517,8 @@ async function main() {
   }
   for (const f of readdirSync(ZIEL)) if (f.endsWith(".html")) unlinkSync(join(ZIEL, f));
 
-  const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`];
+  // Die englischen Seiten sind von Hand gepflegt (en/), stehen aber in der Sitemap.
+  const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`, `${DOMAIN}/en/`, `${DOMAIN}/en/how-we-rate.html`];
   const proKat = new Map();
   const vergeben = new Set();
 
