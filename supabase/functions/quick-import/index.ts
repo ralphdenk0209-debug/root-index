@@ -1,5 +1,6 @@
 // quick-import — Link rein -> alle Sorten einer Herstellerseite mit Zutaten, Naehrwerten, EAN auslesen.
 // 27.09.2026 (Ralph jaja "A"): Cockpit-Kachel Quick-Import. Aufruf NUR serverseitig aus dem Takt
+// Erstauslieferung 27.09.2026: zweiter Commit, weil der erste Push zwei Commits hatte (fetch-depth 2 sah die Aenderung nicht).
 // public.cb_quick_import_takt (service_role) oder von einem Admin. Diese Funktion LIEST NUR und schreibt
 // nichts in die Datenbank - anlegen, binden, freigeben macht der Takt in SQL (derselbe Weg wie von Hand).
 // GRUNDSATZ wie riki-herstellerseite: NICHTS ERFINDEN. Was nicht dasteht, bleibt null.
