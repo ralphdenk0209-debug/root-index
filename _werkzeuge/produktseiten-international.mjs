@@ -262,7 +262,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
 <link rel="stylesheet" href="/produkt/stil.css?v=${V}">
 </head>
 <body>
-<header class="kopf"><a class="logo" href="/?markt=${T.maerkte[0]}"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">${T.claim}</div></header>
+<header class="kopf"><a class="logo" href="/?markt=${T.maerkte[0]}"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index<sup style="font-size:.55em">™</sup></a><div class="claim">${T.claim}</div></header>
 <main>
 ${inhalt}
 ${rm}

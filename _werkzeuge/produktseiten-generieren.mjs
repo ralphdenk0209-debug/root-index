@@ -342,7 +342,7 @@ ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script
 <link rel="stylesheet" href="/produkt/stil.css?v=${AKTIVA_V}">
 </head>
 <body>
-<header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index</a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
+<header class="kopf"><a class="logo" href="/"><img src="/logo-mark.png" alt="" onerror="this.style.display='none'">Root Index<sup style="font-size:.55em">™</sup></a><div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div></header>
 <main>
 ${inhalt}
 ${rueckmeldung ? RM_BLOCK + UNT_BLOCK : ""}

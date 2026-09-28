@@ -8967,6 +8967,7 @@ function legalOpen(which){
     +H("Kontakt")+P("E-Mail: kontakt@root-index.de<br>Alternativ über das Kontaktformular in der App (Menü „Mehr“ → Kontakt). Wir antworten in der Regel innerhalb von 48 Stunden.")
     +H("Umsatzsteuer")+P("Kleinunternehmer gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
     +H("Verantwortlich i.S.d. § 18 Abs. 2 MStV")+P("Ralph Denk, Anschrift wie oben.")
+    +H("Marke")+P("Root Index™ ist eine beim Deutschen Patent- und Markenamt (DPMA) angemeldete Wortmarke, Aktenzeichen 30 2026 253 989.0.")
     +H("Unabhängigkeit")+P("Root Index enthält keine Werbung und keine Partnerlinks. Kein Hersteller und kein Händler kann eine Bewertung kaufen oder beeinflussen.")
 
     +H("Datenquellen &amp; Lizenzen")+P("Nährwerte generischer Lebensmittel stammen aus dem <b>Bundeslebensmittelschlüssel (BLS 4.0)</b>, © Max Rubner-Institut, Bundesforschungsinstitut für Ernährung und Lebensmittel, lizenziert unter <b>CC BY 4.0</b> (creativecommons.org/licenses/by/4.0). Ergänzend nutzen wir Daten von <b>Open Food Facts</b> (Datenbank lizenziert unter <b>ODbL 1.0</b>, Inhalte unter CC BY-SA 3.0) sowie Herstellerangaben und Etikettfotos unserer Nutzerinnen und Nutzer. Die Quelle steht bei jedem Produkt unter dem Index. Wissenschaftliche Grundlagen: EFSA, WHO, EU-VO 1333/2008 und 432/2012, IARC, DGE.")
