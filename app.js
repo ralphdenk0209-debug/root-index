@@ -2155,28 +2155,12 @@ async function adminDeleteProdukt(id,name){
   if(error){ alert("Fehler: "+error.message); return; }
   closeP(); ALL=(ALL||[]).filter(x=>x.id!==id); render();
 }
-/* ---- Amazon-Partnerprogramm (StoreID rootindex-21) ----
-   NUR Deep-Links auf die Produkt-Detailseite. Amazon schreibt in den „Anforderungen für Links" vor:
-   „Links, die für ein bestimmtes Produkt werben, müssen direkt auf die Detailseite für dieses
-   Produkt auf der Amazon-Website geleitet werden."
-   → Ein EAN-Suchlink ist damit NICHT zulässig, auch wenn er Provision brächte. Und eine ASIN wird
-   nicht geraten. Ohne hinterlegten Amazon-Produktlink erscheint schlicht kein Button. */
-const AMZ_TAG="rootindex-21";
-function amazonUrl(d){
-  if(!d) return "";
-  const pl=String(d.produktlink||"");
-  if(!/amazon\.[a-z.]+/i.test(pl)) return "";
-  if(!/\/dp\/|\/gp\/product\//i.test(pl)) return "";
-  try{ const u=new URL(pl); u.searchParams.set("tag",AMZ_TAG); return u.toString(); }catch(e){ return ""; }
-}
-function amazonBtn(d,klein){
-  const u=amazonUrl(d); if(!u) return "";
-  const pad=klein?"5px 9px":"7px 12px", fs=klein?"12px":"13px";
-  return '<a href="'+u+'" target="_blank" rel="sponsored nofollow noopener" title="Anzeige · Amazon-Partnerlink"'
-    +' style="display:inline-flex;align-items:center;gap:5px;padding:'+pad+';border:1px solid var(--k-e4a343);border-radius:8px;background:var(--k-fff7ea);color:var(--k-8a5a0b);text-decoration:none;font-size:'+fs+';font-weight:600;white-space:nowrap">'
-    +'<span style="font-size:10px;font-weight:700;letter-spacing:.4px;opacity:.75">ANZEIGE</span> Bei Amazon</a>';
-}
-const AMZ_HINWEIS='<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:8px">Anzeige: Als Amazon-Partner verdient Root&nbsp;Index an qualifizierten Verkäufen. Für dich ändert sich der Preis nicht – und der Root&nbsp;Index wird davon <b>nicht</b> beeinflusst.</div>';
+/* 28.09.2026 (Ralph): KEINE Amazon-Partnerlinks – "ist gegen unsere Unabhaengigkeit".
+   Nur der Buchvertrieb laeuft ueber Amazon. Die Funktionen bleiben als leere Huelle,
+   damit alte Aufrufe nichts anzeigen. Nicht wieder einbauen. */
+function amazonUrl(){ return ""; }
+function amazonBtn(){ return ""; }
+const AMZ_HINWEIS='';
 /* Woher die Daten stammen – gehört sichtbar ins Produkt, sonst ist „Transparenz" eine Behauptung. */
 function quellenBlock(d){
   const q=String(d.quelle||"").trim();
@@ -7808,7 +7792,7 @@ let BILD={};
 /* Produktbilder aktuell ausgeblendet (eigene Bilder in Arbeit). Wieder einschalten: SHOW_PRODUKTBILDER=true */
 var SHOW_PRODUKTBILDER=false;
 async function loadBilder(){ if(!SHOW_PRODUKTBILDER){ BILD={}; return; } try{ const {data}=await client.rpc("cb_produkt_bilder"); BILD={}; (data||[]).forEach(x=>{ if(x.id&&x.bild_url) BILD[x.id]=x.bild_url; }); }catch(e){} }
-const BUNDLE_ASIN={P928:'B0FMS51PCG',P934:'B07NS14648',P935:'B0F32TYHXY',P929:'B0BRSWXP6N',P930:'B0FMS1Q53F',P931:'B07PZZ8J5T',P932:'B01MTZBUQ2',P939:'B0876D2FNT'};
+const BUNDLE_ASIN={}; /* 28.09.2026: keine Amazon-Partnerlinks */
 /* Hinweistexte = ausschließlich nach EU-VO 432/2012 ZUGELASSENE Angaben.
    Keine krankheits- oder beschwerdebezogenen Aussagen (HCVO Art. 10, LMIV Art. 7 Abs. 3, § 12 LFGB). */
 const ZYKLUS_CATS=[
@@ -7822,7 +7806,7 @@ const DARM_CATS=[
   {t:'Probiotika', hint:'lebende Kulturen – keine zugelassene EU-Aussage', dosis:'20 Mrd. KbE/Tag (nach Produktangabe)', ids:['P1061']},
   {t:'Präbiotika (Inulin/Akazienfaser)', hint:'nicht verdaulicher Ballaststoff – keine zugelassene EU-Aussage', dosis:'langsam einschleichen', ids:['P1046']}
 ];
-function amzUrl(id){ return BUNDLE_ASIN[id]?('https://www.amazon.de/dp/'+BUNDLE_ASIN[id]+'?tag=rootindex-21'):''; }
+function amzUrl(){ return ''; } /* 28.09.2026: keine Amazon-Partnerlinks */
 /* Eine Rangfolge setzt voraus, dass ALLE Kandidaten bewertet sind.
    Seit Supplements keinen Lebensmittel-Score mehr bekommen (Clean_Score = NULL),
    ergibt "num(b)-num(a)" fuer zwei leere Werte 0 -> die Sortierung passiert nicht,
@@ -7889,9 +7873,9 @@ function darmBundleHtml(){
   if(!blocks) return '<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;box-shadow:var(--shadow);color:var(--muted);font-size:13px">Passende Produkte folgen in Kürze.</div>';
   return '<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)">'
     +'<div style="font-weight:800;font-size:16px">Darmgesundheit – saubere Basics</div>'
-    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 6px">Ballaststoffe, Probiotika &amp; Präbiotika – je Kategorie unsere handverlesenen Produkte. <span style="color:var(--k-8a8072)">· Anzeige</span></div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 6px">Ballaststoffe, Probiotika &amp; Präbiotika – je Kategorie unsere handverlesenen Produkte. <span style="color:var(--k-8a8072)"></span></div>'
     +blocks
-    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Anzeige · Partner-Links möglich · unsere Bewertung bleibt unabhängig. Keine medizinische Beratung.</div>'
+    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Unabhängig · keine Werbung, keine Partner-Links. Keine medizinische Beratung.</div>'
     +'</div>';
 }
 function zyklusBundleHtml(){
@@ -7910,10 +7894,10 @@ function zyklusBundleHtml(){
   if(!blocks) return '';
   return '<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)">'
     +'<div style="font-weight:800;font-size:16px">Zyklus-Nährstoffe – sauber statt Kombi-Pulver</div>'
-    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 6px">Nährstoffe mit zugelassenen EU-Aussagen (u. a. Vitamin B6 – Hormontätigkeit, Magnesium – Muskelfunktion) – je Kategorie unsere <b>handverlesenen</b> Produkte. <span style="color:var(--k-8a8072)">· Anzeige</span></div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 6px">Nährstoffe mit zugelassenen EU-Aussagen (u. a. Vitamin B6 – Hormontätigkeit, Magnesium – Muskelfunktion) – je Kategorie unsere <b>handverlesenen</b> Produkte. <span style="color:var(--k-8a8072)"></span></div>'
     +'<div style="font-size:11.5px;color:var(--ink);background:var(--greenlt);border-radius:8px;padding:7px 9px">So nutzt du es: <b>Magnesium + 1 Omega-3</b> (Fisch <i>oder</i> vegan). Vitex &amp; B1 nur bei Bedarf.</div>'
     +blocks
-    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Anzeige · Partner-Links: Preis für dich unverändert · unsere Bewertung bleibt unabhängig. Keine medizinische Beratung.</div>'
+    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Unabhängig · keine Werbung, keine Partner-Links. Keine medizinische Beratung.</div>'
     +'</div>';
 }
 function _zkDeckung(p){
@@ -7940,9 +7924,9 @@ function zyklusKomplexeHtml(){
   };
   return '<div style="background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)">'
     +'<div style="font-weight:800;font-size:16px">Zyklus-Komplexe im Vergleich</div>'
-    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 8px">Häufig enthalten: <b>Magnesium · Omega-3 · Vitamin B1 · Mönchspfeffer</b>. Fertige Komplexe decken das oft nur <b>teilweise</b> ab – hier siehst du, was wirklich drin ist. Vollständig abgedeckt bekommst du es mit den sauberen Einzelprodukten oben. <span style="color:var(--k-8a8072)">· Anzeige</span></div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:3px 0 8px">Häufig enthalten: <b>Magnesium · Omega-3 · Vitamin B1 · Mönchspfeffer</b>. Fertige Komplexe decken das oft nur <b>teilweise</b> ab – hier siehst du, was wirklich drin ist. Vollständig abgedeckt bekommst du es mit den sauberen Einzelprodukten oben. <span style="color:var(--k-8a8072)"></span></div>'
     +list.map(row).join('')
-    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Anzeige · Amazon-Partner-Links: Preis für dich unverändert · Bewertung bleibt unabhängig. Keine medizinische Beratung.</div>'
+    +'<div style="font-size:10.5px;color:var(--k-8a8072);margin-top:10px">Unabhängig · keine Werbung, keine Partner-Links. Keine medizinische Beratung.</div>'
     +'</div>';
 }
 function startRezSucheHtml(){
@@ -8983,7 +8967,8 @@ function legalOpen(which){
     +H("Kontakt")+P("E-Mail: kontakt@root-index.de<br>Alternativ über das Kontaktformular in der App (Menü „Mehr“ → Kontakt). Wir antworten in der Regel innerhalb von 48 Stunden.")
     +H("Umsatzsteuer")+P("Kleinunternehmer gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
     +H("Verantwortlich i.S.d. § 18 Abs. 2 MStV")+P("Ralph Denk, Anschrift wie oben.")
-    +H("Werbung &amp; Partnerlinks")+P("Root Index ist Teilnehmer des Amazon-Partnerprogramms. <b>Als Amazon-Partner verdienen wir an qualifizierten Verkäufen.</b> Mit „Anzeige“ gekennzeichnete Links sind Partnerlinks – der Preis ändert sich für dich dadurch nicht. <b>Partnerlinks haben keinerlei Einfluss auf den Root Index.</b> Ein Produkt wird bewertet, bevor überhaupt geprüft wird, ob es einen Partnerlink gibt; kein Hersteller kann eine Bewertung kaufen oder beeinflussen.")
+    +H("Unabhängigkeit")+P("Root Index enthält keine Werbung und keine Partnerlinks. Kein Hersteller und kein Händler kann eine Bewertung kaufen oder beeinflussen.")
+
     +H("Datenquellen &amp; Lizenzen")+P("Nährwerte generischer Lebensmittel stammen aus dem <b>Bundeslebensmittelschlüssel (BLS 4.0)</b>, © Max Rubner-Institut, Bundesforschungsinstitut für Ernährung und Lebensmittel, lizenziert unter <b>CC BY 4.0</b> (creativecommons.org/licenses/by/4.0). Ergänzend nutzen wir Daten von <b>Open Food Facts</b> (Datenbank lizenziert unter <b>ODbL 1.0</b>, Inhalte unter CC BY-SA 3.0) sowie Herstellerangaben und Etikettfotos unserer Nutzerinnen und Nutzer. Die Quelle steht bei jedem Produkt unter dem Index. Wissenschaftliche Grundlagen: EFSA, WHO, EU-VO 1333/2008 und 432/2012, IARC, DGE.")
     +H("Verbraucherstreitbeilegung")+P("Wir sind nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.")
     +H("Haftung für Inhalte")+P("Die Inhalte wurden mit größter Sorgfalt erstellt. Für Richtigkeit, Vollständigkeit und Aktualität übernehmen wir keine Gewähr. Bewertungen und Informationen dienen der Orientierung und stellen keine medizinische oder ernährungstherapeutische Beratung dar.")
@@ -9080,10 +9065,8 @@ function legalOpen(which){
     +P("Root Index enthält eine Funktion zur Zählung von Seitenaufrufen und zur zusammengefassten Zuordnung von Zugriffsquellen, beispielsweise Suchmaschinen oder direkten Aufrufen.")
     +P("Gespeichert werden dabei ausschließlich Summen je Tag, Seitenart und Zugriffsquelle. Es werden weder IP-Adressen noch Cookies, Gerätekennungen oder Nutzerkennungen gespeichert; ein Rückschluss auf einzelne Personen ist nicht möglich. Die Tageswerte bewahren wir bis zu 24 Monate auf. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; unser berechtigtes Interesse ist es, die Nutzung unseres Angebots in anonymer Form zu verstehen. Eine Einwilligung ist nicht erforderlich, da nichts auf deinem Gerät gespeichert oder ausgelesen wird.")
     +P("Zusätzlich speichert unser Hoster INWX technische Server-Protokolle (unter anderem IP-Adresse, Zeitpunkt, abgerufene Adresse) zur Sicherheit und Fehlerbehebung. Wir werten diese nicht zu Statistikzwecken aus; sie werden vom Hoster nach kurzer Zeit automatisch gelöscht.")
-    +H("16. Werbung und Partnerlinks")
-    +P("Root Index enthält gekennzeichnete Partnerlinks, beispielsweise zu Amazon. Über solche Links kann dem jeweiligen Partner die Vermittlung eines Kaufs zugeordnet werden.")
-    +P("Beim Aufruf einer externen Händlerseite verarbeitet deren Betreiber Daten in eigener Verantwortung nach seiner Datenschutzerklärung.")
-    +P("Vor einem Klick werden keine Bilder, Skripte oder sonstigen Inhalte von Amazon oder anderen Händlern geladen. Eine Verbindung entsteht erst, wenn du den Link anklickst. Dasselbe gilt für Links zur Google-Suche.")
+    +H("16. Keine Werbung und keine Partnerlinks")
+    +P("Root Index enthält keine Werbung und keine Partnerlinks. Links zu externen Seiten, etwa zu Herstellerseiten oder zur Google-Suche, laden vor einem Klick keine Inhalte; eine Verbindung entsteht erst, wenn du den Link anklickst. Der jeweilige Betreiber verarbeitet Daten dann in eigener Verantwortung.")
     +H("17. Empfänger und Verarbeitung außerhalb des Europäischen Wirtschaftsraums")
     +P("Personenbezogene Daten können an die in dieser Erklärung beschriebenen technischen Dienstleister, Zahlungsanbieter und Kommunikationsdienste übermittelt werden. Nicht jeder Empfänger handelt ausschließlich als Auftragsverarbeiter.")
     +P("Weitere Übermittlungen können erforderlich sein, um gesetzliche Verpflichtungen zu erfüllen oder Rechtsansprüche geltend zu machen, auszuüben oder zu verteidigen.")
@@ -9175,10 +9158,8 @@ function legalOpen(which){
     +P("Bei einfacher Fahrlässigkeit haften wir bei Verletzung wesentlicher Vertragspflichten. Das sind Pflichten, deren Erfüllung die ordnungsgemäße Durchführung des Vertrags erst ermöglicht und auf deren Einhaltung du regelmäßig vertrauen darfst. Die Haftung ist dabei auf den vertragstypischen, bei Vertragsschluss vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für einfache Fahrlässigkeit ausgeschlossen.")
     +P("Die Haftung nach zwingenden gesetzlichen Vorschriften, insbesondere dem Produkthaftungsgesetz, sowie aufgrund ausdrücklich übernommener Garantien bleibt unberührt.")
     +P("Diese Regelungen gelten entsprechend für unsere gesetzlichen Vertreter und Personen, die wir zur Vertragserfüllung einsetzen.")
-    +H("§ 11 Werbung und Partnerlinks")
-    +P("Root Index kann gekennzeichnete Werbung und Partnerlinks enthalten. Bei einem Kauf über einen Partnerlink können wir eine Vergütung erhalten.")
-    +P("Partnervergütungen haben keinen Einfluss auf die Produktbewertung. Eine positive Bewertung kann nicht gekauft werden.")
-    +P("Kaufverträge über verlinkte Produkte kommen mit dem jeweiligen Händler zustande. Für diese Käufe gelten dessen Vertragsbedingungen.")
+    +H("§ 11 Unabhängigkeit")
+    +P("Root Index enthält keine Werbung und keine Partnerlinks und erhält keine Vergütung von Herstellern oder Händlern für Bewertungen. Eine positive Bewertung kann nicht gekauft werden.")
     +H("§ 12 Datenschutz")
     +P("Informationen zur Verarbeitung personenbezogener Daten findest du in der gesonderten Datenschutzerklärung.")
     +P("Soweit für die Verarbeitung bestimmter Daten, insbesondere Gesundheitsdaten, eine ausdrückliche Einwilligung erforderlich ist, wird diese gesondert eingeholt. Die Zustimmung zu diesen AGB ersetzt eine solche Einwilligung nicht.")
@@ -10097,14 +10078,8 @@ const EINK_MENGEN=['1','2','3','4','5','250 g','500 g','1 kg','1 Pkg.','1 Fl.','
    Dunkel genug, dass die weisse Schrift traegt (Kontrast ~5:1), gleich in hell
    und dunkel. Erledigtes bleibt grau + durchgestrichen - Farbe = "noch zu holen". */
 const EINK_C = { bg:'var(--greendk)', bd:'#035c44', tx:'var(--greenlt)', tx2:'#a7f3d0' };
-/* Amazon-Kaufbutton am Artikel – nur wenn das Produkt verknüpft ist und einen Link/EAN hat. */
-function einkAmzBtn(pid){
-  if(!pid) return '';
-  const p=(ALL||[]).find(function(x){ return x.id===pid; });
-  const u=p?amazonUrl(p):''; if(!u) return '';
-  return '<a href="'+u+'" target="_blank" rel="sponsored nofollow noopener" title="Anzeige · bei Amazon kaufen" onclick="event.stopPropagation()"'
-    +' style="flex:0 0 auto;display:inline-flex;align-items:center;padding:5px 9px;border-radius:999px;background:var(--k-w22);color:var(--k-fff7ea);text-decoration:none;font-size:11.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap">Amazon</a>';
-}
+/* 28.09.2026: keine Amazon-Partnerlinks (Unabhaengigkeit) – leere Huelle. */
+function einkAmzBtn(){ return ''; }
 /* Angebote-Suche zum Artikel: rechtssauberer Deep-Link auf eine offene Angebots-Suche
    (marktguru/kaufDA/Haendler tauchen dort auf). KEINE fremde Privat-API eingebettet. */
 function einkAngebotBtn(titel){
