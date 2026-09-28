@@ -14269,8 +14269,14 @@ function prodScan(readerId, msgId){
       const r = await scanKette(code);
 
       if(r.stufe==="katalog"){
-        const p=(ALL||[]).find(x=>x.id===r.produkt_id);
+        /* 28.09. Ralph: Scan bekannter Produkte zeigte nur "Gescannt" ohne Inhalt.
+           Grund: Katalog (ALL) war noch nicht geladen -> p fehlte -> leeres Fenster.
+           Jetzt: Produkt direkt nachladen statt auf ALL zu warten. */
+        let p=(ALL||[]).find(x=>x.id===r.produkt_id);
+        if(!p){ try{ p=await prodVoll(r.produkt_id); }catch(e){ p=null; } }
         if(p){ scanOvClose(); if(st) st.textContent="✅ Gefunden: "+esc(code); detail(p); return; }
+        scanOv('<div style="padding:12px 0;color:var(--k-b45309)">Produkt ist im Katalog, konnte aber gerade nicht geladen werden. Bitte nochmal scannen.</div>', code);
+        return;
       }
       try{ await client.rpc("ean_vormerken",{p_ean:code,p_quelle:"Barcode-Scan",p_akteur:"Web"}); }catch(e){}
       scanOv(r.html||"", code);
