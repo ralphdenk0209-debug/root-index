@@ -1113,7 +1113,7 @@ function fetchAlleProdukte(){
 /* Work #187, Ralph 22.08.2026: zutaten und enthaelt_alkohol kosten Faktor 7
    (1000 Zeilen 2263 ms mit, 300 ms ohne). Die Liste braucht sie nicht - beide
    Felder kommen beim Oeffnen eines Produkts ueber cb_web_produkt_detail. */
-const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand,salmiak_stufe,salmiak_beleg";
+const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand,salmiak_stufe,salmiak_beleg,spuren_hinweis";
 const PROD_LISTE_NICHT = ["zutaten","enthaelt_alkohol"];
 let _fapWaechterLief = false;
 /* Eine Liste, die von Hand gepflegt wird, veraltet still (§10). Der Waechter
@@ -5167,6 +5167,7 @@ async function detail(d){
        : (mRows?`<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:18px 0 6px">Nährwerte pro 100 ${prodEinheit(d)}</div>${mRows}`:"")}
     ${warumBlock}
     ${_sd ? zutatenBlock : ""}
+    ${d.spuren_hinweis?`<div style="margin-top:10px;font-size:12.5px;line-height:1.45;padding:8px 11px;background:var(--k-fff7e6);border:1px solid var(--line);border-radius:9px;color:var(--ink)"><b>⚠︎ Allergiker-Hinweis vom Etikett:</b> ${esc(d.spuren_hinweis)}<div style="font-size:11px;color:var(--muted);margin-top:3px">Spuren sind keine Zutat und fließen nicht in den Root Index ein.</div></div>`:""}
     ${_sd ? naehrstoffHtml(d) : ""}
     ${bzBlock}
     ${_sd ? "" : upsellBlock}

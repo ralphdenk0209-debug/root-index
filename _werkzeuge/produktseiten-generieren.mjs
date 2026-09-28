@@ -41,7 +41,7 @@ const WEB  = process.env.RI_WEB || dirname(HIER);        // .../webseite
 const ZIEL = join(WEB, "produkt");
 const DOMAIN = "https://root-index.de";
 
-const FELDER = "id,name,marke,kategorie,unterkategorie,clean_score,bewertung,score_vollstaendig,zutaten,p_zutaten,p_zusatzstoffe,p_nova,p_naehrwert,ernaehrungsform,quelle,warum,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ean,bio,inhalt_menge,inhalt_einheit,mengen_einheit,verifiziert_am,form";
+const FELDER = "id,name,marke,kategorie,unterkategorie,clean_score,bewertung,score_vollstaendig,zutaten,p_zutaten,p_zusatzstoffe,p_nova,p_naehrwert,ernaehrungsform,quelle,warum,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ean,bio,inhalt_menge,inhalt_einheit,mengen_einheit,verifiziert_am,form,spuren_hinweis";
 
 /* ---------- Zugangsdaten aus app.js (nicht duplizieren) ---------- */
 function ausAppJs() {
@@ -511,6 +511,7 @@ ${rang ? `<p class="rang">🏆 <b>Platz ${rang.platz} von ${rang.gesamt}</b> in 
 ${zutaten.length ? `<span class="lab">In der Zutatenliste · ${zutaten.length}</span>
 <div class="zt">${zutatenHtml}</div>
 <div class="legende">Kleine Zahl = Note der Zutat von 0 bis 10 · <span style="color:var(--gelb)">Gelb</span> = Note 3 oder schlechter${kritische ? " · ⚠ = als kritisch gekennzeichnet" : ""}</div>` : ""}
+${p.spuren_hinweis ? `<p class="legende"><b>Allergiker-Hinweis vom Etikett:</b> ${esc(p.spuren_hinweis)} – Spuren sind keine Zutat und zählen nicht in den Root Index.</p>` : ""}
 ${nwHtml ? `<span class="lab">Nährwerte je ${basis}</span><div class="nw">${nwHtml}</div>` : ""}
 ${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
 <a class="appbtn" href="/?p=${encodeURIComponent(p.id)}">In der App öffnen<span>mit Tagebuch, Einkaufsliste und besseren Alternativen</span></a>
