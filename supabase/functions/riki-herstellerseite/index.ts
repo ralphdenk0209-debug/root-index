@@ -1,3 +1,4 @@
+// v22 28.09.2026: Service-Aufruf aus cb_scan_hersteller_takt erlaubt (ohne Login/Nutzerlimit).
 // riki-herstellerseite — Nährwerte + Zutaten + VERZEHREMPFEHLUNG + EAN von einer Produktseite lesen.
 // URL rein -> Server holt die Seite (Browser-Kennung) -> Text extrahieren -> Riki liest.
 // GRUNDSATZ: NICHTS ERFINDEN. Was nicht dasteht, bleibt null. Riki schlägt vor, Mensch prüft.
@@ -332,10 +333,22 @@ function eanOk(roh: unknown): string | null {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   const authHeader = req.headers.get("Authorization") ?? "";
-  const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
+  /* v22 (28.09.2026, Ralph jaja „nach 2. Fehlfoto Websuche, schneller"): Aufruf aus dem
+     Server-Takt cb_scan_hersteller_takt mit Service-Schluessel. Dann kein Nutzer-Login und
+     kein Nutzer-Tageslimit - der Takt hat seinen eigenen Tagesdeckel (Riki_Nutzung). */
+  const svcKey = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  /* Das Gateway prueft die JWT-Signatur vor dem Aufruf (verify_jwt); hier nur die Rolle lesen. */
+  let jwtRolle = "";
+  try { const teil = authHeader.replace(/^Bearer\s+/i, "").split(".")[1] ?? ""; jwtRolle = JSON.parse(atob(teil.replace(/-/g, "+").replace(/_/g, "/")))?.role ?? ""; } catch (_e) { jwtRolle = ""; }
+  const istDienst = svcKey.length > 20 && (authHeader.trim() === ("Bearer " + svcKey) || jwtRolle === "service_role");
+  const sb = istDienst
+    ? createClient(Deno.env.get("SUPABASE_URL")!, svcKey)
+    : createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: authHeader } } });
   try {
-    const { data: u } = await sb.auth.getUser();
-    if (!u?.user) return new Response(JSON.stringify({ error: "Bitte anmelden." }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
+    if (!istDienst) {
+      const { data: u } = await sb.auth.getUser();
+      if (!u?.user) return new Response(JSON.stringify({ error: "Bitte anmelden." }), { status: 401, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
 
     let body: any = {}; try { body = await req.json(); } catch {}
     const url = String(body.url ?? "").trim();
@@ -385,10 +398,12 @@ Deno.serve(async (req) => {
       try { await sb.rpc("cb_riki_buchen", { p_modus: "herstellerseite", p_modell: "claude-haiku-4-5-20251001", p_in: 0, p_out: 0, p_kosten: 0, p_produkt_id: productId, p_erfolg: false, p_fehler: ("leer: " + host + " — " + grund).slice(0, 400) }); } catch (_e) {}
     };
 
-    const { data: limitRaw, error: limitErr } = await sb.rpc("cb_riki_etikett_limit_check");
-    if (limitErr) return new Response(JSON.stringify({ error: "Limit-Prüfung fehlgeschlagen: " + limitErr.message }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
-    const limit: any = Array.isArray(limitRaw) ? limitRaw[0] : limitRaw;
-    if (limit?.erlaubt !== true) return new Response(JSON.stringify({ error: limit?.grund ?? "Limit erreicht." }), { status: 429, headers: { ...CORS, "Content-Type": "application/json" } });
+    if (!istDienst) {
+      const { data: limitRaw, error: limitErr } = await sb.rpc("cb_riki_etikett_limit_check");
+      if (limitErr) return new Response(JSON.stringify({ error: "Limit-Prüfung fehlgeschlagen: " + limitErr.message }), { status: 500, headers: { ...CORS, "Content-Type": "application/json" } });
+      const limit: any = Array.isArray(limitRaw) ? limitRaw[0] : limitRaw;
+      if (limit?.erlaubt !== true) return new Response(JSON.stringify({ error: limit?.grund ?? "Limit erreicht." }), { status: 429, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
 
     let html = "";
     try {

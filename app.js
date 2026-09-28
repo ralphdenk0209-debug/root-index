@@ -881,8 +881,10 @@ function rikiScanNachfassen(jobId, ean){
       try{ if(typeof rikiFabZustand==="function") rikiFabZustand("normal"); }catch(e){}
       rikiScanHinweis('&#128247; <b>'+(sc.antwort==="nein"?'Keine Zutatenliste auf dem Foto.':'Die Zutatenliste ist nicht scharf lesbar.')+'</b> '
         +'Bitte die Zutatenliste noch einmal <b>gerade, nah und komplett</b> fotografieren. '
+        +'<br>&#128269; Riki sucht parallel auf der <b>Herstellerseite</b>. '
         +'<span style="color:var(--muted)">Tippen zum Neu-Fotografieren.</span>',
         function(){ if(typeof etikettOpen==="function") etikettOpen(ean||null); });
+      try{ rikiWebNachfassen(ean); }catch(e){}
     }
     if(st.status==="fertig" || st.status==="gehalten" || st.status==="fehler"){
       clearInterval(window._rikiNachfassUhr);
@@ -898,6 +900,29 @@ function rikiScanNachfassen(jobId, ean){
   }, 1500);
 }
 if(typeof window!=="undefined"){ window.rikiScanNachfassen=rikiScanNachfassen; }
+/* 28.09.2026 (Ralph jaja: "nach dem 2. Versuch Websuche, damit man im Geschaeft eine Zahl bekommt",
+   "muss schneller gehen"): Ist das Etikettfoto unbrauchbar, sucht der Server sofort die
+   Herstellerseite (cb_scan_hersteller_takt, alle 5 s) und liest sie mit Riki. Die App fragt
+   90 s lang alle 3 s nach und zeigt die Zahl, sobald sie da ist - als VORLAEUFIG markiert,
+   weil sie von der Webseite stammt und nicht vom Etikett in der Hand. */
+function rikiWebNachfassen(ean){
+  if(!ean || typeof client==="undefined") return;
+  var start=Date.now();
+  try{ clearInterval(window._rikiWebUhr); }catch(e){}
+  window._rikiWebUhr=setInterval(async function(){
+    if(Date.now()-start>90000){ clearInterval(window._rikiWebUhr); return; }
+    var res=null;
+    try{ var r=await client.rpc("cb_scan_lookup",{p_ean:String(ean)}); res=r.data; }catch(e){ return; }
+    if(!res || res.score==null || !res.produkt_id) return;
+    clearInterval(window._rikiWebUhr);
+    var vorl = (res.stufe!=="katalog" || res.guete!=="geprueft");
+    rikiScanHinweis('&#10003; <b>'+esc(res.name||"Produkt")+'</b> &middot; Index <b>'+esc(String(res.score))+'</b>'
+      +(vorl?' <span style="color:var(--k-b45309)">vorläufig – aus der Herstellerseite, Etikett noch nicht bestätigt</span>':'')
+      +' <span style="color:var(--muted)">&middot; Tippen zum Öffnen.</span>',
+      function(){ if(typeof prodOeffnen==="function") prodOeffnen(res.produkt_id); });
+  }, 3000);
+}
+if(typeof window!=="undefined"){ window.rikiWebNachfassen=rikiWebNachfassen; }
 async function ladeBindungsLuecke(produktId){
   const box = _bindungBox(); if(!box) return;
   const pid = produktId || box.getAttribute('data-pid');
