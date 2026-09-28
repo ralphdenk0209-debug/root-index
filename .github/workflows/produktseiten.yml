@@ -23,6 +23,7 @@ on:
     # hier nichts aus.
     paths:
       - "_werkzeuge/produktseiten-generieren.mjs"
+      - "_werkzeuge/produktseiten-international.mjs"
       - ".github/workflows/produktseiten.yml"
 
 permissions:
@@ -47,6 +48,11 @@ jobs:
         run: |
           set -o pipefail
           node _werkzeuge/produktseiten-generieren.mjs 2>&1 | tee /tmp/gen.log
+          # 28.09.2026 (Ralph "ja auf jeden fall"): englische/franzoesische Seiten
+          # fuer die Maerkte UK/US/FR (en/product/, fr/produit/, sitemap-int.xml).
+          # Eigener Lauf NACH dem deutschen: schlaegt er fehl, bleiben die
+          # deutschen Seiten trotzdem vollstaendig und werden veroeffentlicht.
+          node _werkzeuge/produktseiten-international.mjs 2>&1 | tee -a /tmp/gen.log || echo "International fehlgeschlagen - deutsche Seiten laufen weiter."
 
       # Die Actions-Logs sieht nur, wer bei GitHub angemeldet ist, und die
       # Job-Zusammenfassung ebenso. Damit ein Fehlschlag von aussen ueberhaupt
@@ -141,6 +147,8 @@ jobs:
           }
 
           git add -A produkt sitemap.xml robots.txt
+          # International (28.09.2026): fehlt der Ordner nach einem Fehlschlag, darf das den Commit nicht stoppen.
+          git add -A en/product fr/produit sitemap-int.xml 2>/dev/null || true
           if git diff --cached --quiet; then
             echo "Nichts geaendert - kein Commit."
           else

@@ -681,7 +681,7 @@ async function main() {
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     urls.map((u) => `<url><loc>${u}</loc></url>`).join("\n") + `\n</urlset>\n`);
   writeFileSync(join(WEB, "robots.txt"),
-    `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\n`);
+    `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\nSitemap: ${DOMAIN}/sitemap-int.xml\n`);
 
   // Stand fuer das Cockpit: wie viele Seiten stehen seit wann bei Google.
   // Die Zahl der freigegebenen Produkte waechst den ganzen Tag, die Seiten

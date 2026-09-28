@@ -1169,7 +1169,8 @@ function stkDosisOf(pid){ const d=pid?num(STKD[pid]):null; return (d&&d>0)?d:nul
 /* Laenderwahl (27.09.2026, Ralph jaja, I6): gewaehltes Land (Geraet). Die Datenbank (cb_sicht_markt)
    nimmt: Profil-Einstellung 'markt' > mitgegebenes p_markt > DE. Bewusst KEINE globale Kopfzeile:
    die Riki-Edge-Funktionen lassen fremde Kopfzeilen im CORS nicht zu. */
-const RI_MARKT = (function(){ try{ var m=String(localStorage.getItem('ri_markt')||'').toUpperCase(); return /^(DE|UK|US|FR)$/.test(m)?m:'DE'; }catch(e){ return 'DE'; } })();
+/* 28.09.2026: ?markt=UK|US|FR (Link von den englischen/franzoesischen Produktseiten) setzt das Land gleich mit. */
+const RI_MARKT = (function(){ try{ var u=String(new URLSearchParams(location.search).get('markt')||'').toUpperCase(); if(/^(DE|UK|US|FR)$/.test(u)) localStorage.setItem('ri_markt',u); }catch(e){} try{ var m=String(localStorage.getItem('ri_markt')||'').toUpperCase(); return /^(DE|UK|US|FR)$/.test(m)?m:'DE'; }catch(e){ return 'DE'; } })();
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
 });
