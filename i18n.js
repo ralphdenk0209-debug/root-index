@@ -9,6 +9,47 @@
   try { m = String(localStorage.getItem('ri_markt') || 'DE').toUpperCase(); } catch (e) {}
   var L = (m === 'UK' || m === 'US') ? 'en' : (m === 'FR' ? 'fr' : 'de');
   window.RI_LANG = L;
+
+  /* Sprachschalter NUR fuer Ralph (28.09.2026, Ralph: „direkt darunter nur fuer admins die sprache zum umschalten,
+     diesen ausschnitt nur bei mir“): erscheint genau dann, wenn app.js den Entwickler-Schalter „Ansehen als“
+     (#tierOvChip, nur bei ME.entwickler) einblendet – direkt darunter. Der Schalter selbst bleibt deutsch. */
+  (function sprachSchalter(){
+    function bauen(){
+      var t = document.getElementById('tierOvChip');
+      if (!t || document.getElementById('riSprachChip')) return !!t;
+      var w = document.createElement('div');
+      w.setAttribute('data-kein-i18n', '1');
+      w.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:6px;flex:0 0 auto;margin-left:14px';
+      t.parentNode.insertBefore(w, t);
+      t.style.marginLeft = '0';
+      w.appendChild(t);
+      var s = document.createElement('div');
+      s.id = 'riSprachChip';
+      s.style.cssText = t.style.cssText + ';margin-left:0';
+      var btn = 'background:none;border:0;color:var(--k-ffffff,#fff);cursor:pointer;font-size:11px;padding:3px 7px;border-radius:8px';
+      s.innerHTML = '<span style="opacity:.7;margin:0 3px">Sprache:</span>' +
+        [['DE','🇩🇪 DE'],['UK','🇬🇧 UK'],['US','🇺🇸 US'],['FR','🇫🇷 FR']].map(function(x){
+          var an = x[0] === m;
+          return '<button data-m="' + x[0] + '" style="' + btn + (an ? ';background:var(--k-ffffff,#fff);color:var(--k-111827,#111827);font-weight:700' : '') + '">' + x[1] + '</button>';
+        }).join('');
+      s.addEventListener('click', function(ev){
+        var b = ev.target.closest && ev.target.closest('button[data-m]'); if (!b) return;
+        var neu = b.getAttribute('data-m'); if (neu === m) return;
+        if (typeof landWaehlen === 'function') { landWaehlen(neu); }
+        else { try { localStorage.setItem('ri_markt', neu); } catch (e) {} location.reload(); }
+      });
+      w.appendChild(s);
+      return true;
+    }
+    function start(){
+      if (bauen()) return;
+      var o = new MutationObserver(function(){ if (bauen()) o.disconnect(); });
+      o.observe(document.body, { childList: true, subtree: true });
+      setTimeout(function(){ o.disconnect(); }, 60000);
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+  })();
+
   if (L === 'de') return;
   try { document.documentElement.lang = L; } catch (e) {}
   var I = L === 'en' ? 0 : 1;
@@ -287,9 +328,6 @@
     'Kategorien': ['Categories', 'Catégories'],
     'Schwach': ['Weak', 'Faible'],
     'Sehr gut': ['Very good', 'Très bon'],
-    'Ansehen als:': ['View as:', 'Voir en tant que :'],
-    'ich': ['me', 'moi'],
-    'Gast': ['Guest', 'Invité'],
     'Getränk': ['Drinks', 'Boissons'],
     'Weitere Treffer laden': ['Load more results', 'Charger plus de résultats']
   };
@@ -326,7 +364,10 @@
     for (var i = 0; i < MUSTER.length; i++) { if (MUSTER[i][0].test(t)) return t.replace(MUSTER[i][0], MUSTER[i][1]); }
     return null;
   }
+  /* Admin-/Entwickler-Leiste bleibt deutsch (Ralph 28.09.) */
+  function gesperrt(el){ return !!(el && el.closest && el.closest('#tierOvChip,[data-kein-i18n]')); }
   function textKnoten(n){
+    if (gesperrt(n.parentElement)) return;
     var roh = n.nodeValue; if (!roh) return;
     var t = roh.replace(/\s+/g, ' ').trim();
     if (!t || t.length > 300) return;
@@ -338,6 +379,7 @@
   }
   var ATTR = ['placeholder', 'title', 'aria-label'];
   function element(e){
+    if (gesperrt(e)) return;
     for (var i = 0; i < ATTR.length; i++) {
       var a = ATTR[i], w = e.getAttribute && e.getAttribute(a);
       if (w) { var v = tr(w.trim()); if (v != null && v !== w) e.setAttribute(a, v); }
@@ -352,7 +394,7 @@
     element(root);
     var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT | NodeFilter.SHOW_ELEMENT, {
       acceptNode: function(x){
-        if (x.nodeType === 1) { var g = x.tagName; return (g === 'SCRIPT' || g === 'STYLE' || g === 'TEXTAREA') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
+        if (x.nodeType === 1) { var g = x.tagName; return (g === 'SCRIPT' || g === 'STYLE' || g === 'TEXTAREA' || x.id === 'tierOvChip' || x.hasAttribute('data-kein-i18n')) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT; }
         return NodeFilter.FILTER_ACCEPT;
       }
     });
