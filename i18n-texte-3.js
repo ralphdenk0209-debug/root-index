@@ -355,5 +355,6 @@ var M = {
   'Es ist keine Kamera gefunden worden. Nimm „Datei“ und wähl ein Foto aus.': ['No camera found. Use “File” and choose a photo.', 'Aucune caméra trouvée. Utilisez « Fichier » et choisissez une photo.']
 };
 window.RI_I18N_EXTRA = Object.assign(window.RI_I18N_EXTRA || {}, X);
+M['Premium ist in deinem Land noch nicht verfügbar. Alle kostenlosen Funktionen kannst du weiter nutzen.'] = ['Premium is not yet available in your country. You can keep using all free features.', 'Premium n’est pas encore disponible dans votre pays. Vous pouvez continuer à utiliser toutes les fonctions gratuites.'];
 window.RI_I18N_MELDUNG = Object.assign(window.RI_I18N_MELDUNG || {}, M);
 })();

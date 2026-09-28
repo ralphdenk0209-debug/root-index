@@ -28,3 +28,6 @@ verify_jwt = false
 
 [functions.quick-import]
 verify_jwt = true
+
+[functions.stripe-checkout]
+verify_jwt = false

@@ -1275,11 +1275,14 @@ async function refreshMyFeatures(){
   }catch(e){ MY_FEATURES=null; }
 }
 async function _startCheckout(plan, consent){
+  if(RI_PREMIUM_GESPERRT){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativePurchase(plan, consent); }
   try{
     // Zustimmung (Zeitstempel + Text) best-effort persistieren; Fehler nicht blockierend
     if(consent){ try{ await client.rpc("cb_consent_speichern",{p_consent: consent}); }catch(_){} }
-    const {data,error}=await client.functions.invoke('stripe-checkout',{ body:{ plan: plan||'month', consent: consent||null } });
+    const {data,error}=await client.functions.invoke('stripe-checkout',{ body:{ plan: plan||'month', consent: consent||null, markt: RI_MARKT } });
+    if(data&&data.error==='land_gesperrt'){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
+    if(error&&error.context&&error.context.status===403){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
     if(error||!data||!data.url) throw new Error((data&&data.error)||'no url');
     window.location.href=data.url;
   }catch(e){
@@ -1293,8 +1296,13 @@ function _planRow(val,title,price,sub,badge,checked){
    +(badge?'<span style="font-size:11px;font-weight:700;color:var(--k-166534);background:var(--k-dcfce7);border-radius:999px;padding:2px 8px;white-space:nowrap">'+badge+'</span>':'')
    +'</label>';
 }
+/* 28.09.2026 (Ralph: Steuerrecht): Premium vorerst nicht in UK/US. Sperre auch
+   serverseitig in stripe-checkout (Profil-Land oder mitgeschicktes Land). */
+const RI_PREMIUM_GESPERRT = (RI_MARKT==='UK'||RI_MARKT==='US');
+const RI_PREMIUM_GESPERRT_TEXT = 'Premium ist in deinem Land noch nicht verfügbar. Alle kostenlosen Funktionen kannst du weiter nutzen.';
 function premiumInfo(){
   if(!ME){ openLogin(); return; }
+  if(RI_PREMIUM_GESPERRT){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
   const ex=document.getElementById('premOv'); if(ex) ex.remove();
   const ov=document.createElement('div'); ov.id='premOv';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
