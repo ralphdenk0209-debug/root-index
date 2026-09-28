@@ -269,8 +269,53 @@
     'Salz': ['Salt', 'Sel']
   };
 
+  /* Startseite/Kacheln/Liste (Nachtrag 28.09. nach Ralphs Bildschirmfotos) */
+  var D2 = {
+    'Noch nichts erfasst': ['Nothing logged yet', 'Rien de saisi'],
+    'Nährwert': ['Nutrition', 'Nutrition'],
+    'KH': ['Carbs', 'Glucides'],
+    'Protein': ['Protein', 'Protéines'],
+    'Ballast': ['Fibre', 'Fibres'],
+    'suchen & scannen': ['search & scan', 'rechercher & scanner'],
+    'finden & kochen': ['find & cook', 'trouver & cuisiner'],
+    'heute erfassen': ['log today', 'saisir aujourd\'hui'],
+    'Plan & Verlauf': ['plan & history', 'plan & historique'],
+    'sammeln & abhaken': ['collect & tick off', 'rassembler & cocher'],
+    'Empfehlungen': ['Recommendations', 'Recommandations'],
+    'für dich': ['for you', 'pour vous'],
+    'Nur Bio': ['Organic only', 'Bio uniquement'],
+    'Kategorien': ['Categories', 'Catégories'],
+    'Schwach': ['Weak', 'Faible'],
+    'Sehr gut': ['Very good', 'Très bon'],
+    'Ansehen als:': ['View as:', 'Voir en tant que :'],
+    'ich': ['me', 'moi'],
+    'Gast': ['Guest', 'Invité'],
+    'Getränk': ['Drinks', 'Boissons'],
+    'Weitere Treffer laden': ['Load more results', 'Charger plus de résultats']
+  };
   var map = new Map();
   Object.keys(D).forEach(function(k){ map.set(k, D[k][I]); });
+  Object.keys(D2).forEach(function(k){ map.set(k, D2[k][I]); });
+  var X = window.RI_I18N_EXTRA || {};
+  Object.keys(X).forEach(function(k){ if (!map.has(k)) map.set(k, X[k][I]); });
+  /* „29 Produkt(e)“, „Weitere 60 von 120 laden“ – Zahlen im Text */
+  var MUSTER = [
+    [/^(\d[\d.]*) Produkt\(e\)$/, ['$1 product(s)', '$1 produit(s)'][I]],
+    [/^Weitere (\d+) von (\d+) laden$/, ['Load $1 more of $2', 'Charger $1 de plus sur $2'][I]]
+  ];
+  /* Meldungsfenster: exakter Text oder bekannter Textanfang */
+  var M = window.RI_I18N_MELDUNG || {};
+  var mKeys = Object.keys(M).sort(function(a, b){ return b.length - a.length; });
+  function meldung(s){
+    if (typeof s !== 'string') return s;
+    if (M[s]) return M[s][I];
+    for (var i = 0; i < mKeys.length; i++) { var k = mKeys[i]; if (s.indexOf(k) === 0) return M[k][I] + s.slice(k.length); }
+    return s;
+  }
+  ['alert', 'confirm', 'prompt'].forEach(function(f){
+    var orig = window[f]; if (typeof orig !== 'function') return;
+    window[f] = function(msg){ var a = Array.prototype.slice.call(arguments); a[0] = meldung(msg); return orig.apply(window, a); };
+  });
   var namen = null;
   try { var c = sessionStorage.getItem('ri_namen_' + L); if (c) namen = JSON.parse(c); } catch (e) {}
 
@@ -278,6 +323,7 @@
     var v = map.get(t);
     if (v != null) return v;
     if (namen && Object.prototype.hasOwnProperty.call(namen, t)) return namen[t];
+    for (var i = 0; i < MUSTER.length; i++) { if (MUSTER[i][0].test(t)) return t.replace(MUSTER[i][0], MUSTER[i][1]); }
     return null;
   }
   function textKnoten(n){
