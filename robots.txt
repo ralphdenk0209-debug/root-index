@@ -3,3 +3,4 @@ Allow: /
 Disallow: /admin.html
 
 Sitemap: https://root-index.de/sitemap.xml
+Sitemap: https://root-index.de/sitemap-int.xml
