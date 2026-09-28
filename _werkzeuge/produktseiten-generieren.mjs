@@ -228,6 +228,7 @@ const UNT_BLOCK = `<div class="unt">
 <b>Root Index unterstützen</b>
 <p>Freiwilliger Beitrag – hilf uns, unabhängig und werbefrei zu bleiben. Kein Abo, keine Gegenleistung.</p>
 <a class="btn" href="${UNT_URL}" target="_blank" rel="noopener nofollow">Jetzt unterstützen ↗</a>
+<p style="font-size:.8em;opacity:.75;margin-top:.6em">Root Index ist nicht gemeinnützig – es gibt keine Spendenbescheinigung.</p>
 </div></div>`;
 
 /* ---------- Stil und Skript als eigene Dateien (Ralph 27.09.2026) ----------

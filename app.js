@@ -1340,6 +1340,7 @@ function riLandGesperrt(){
     +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Root Index ist ein kleines, unabhängiges Projekt. Premium bieten wir vorerst nur in der EU an. Alle kostenlosen Funktionen kannst du weiter nutzen.</p>'
     +'<button id="riLandWunsch" style="'+knopf+';border:1px solid var(--greendk);background:var(--card);color:var(--greendk)"'+(schon?' disabled':'')+'>'+(schon?'Danke! Deine Stimme ist gezählt.':'👍 Root Index soll auch in meinem Land verfügbar sein')+'</button>'
     +'<p style="font-size:13px;line-height:1.5;margin:14px 0 0;color:var(--muted)">Du möchtest Root Index trotzdem unterstützen? Ein freiwilliger Beitrag hilft uns, schneller in dein Land zu kommen. Kein Abo, keine Gegenleistung.</p>'
+    +'<p style="font-size:11.5px;line-height:1.45;margin:6px 0 0;color:var(--muted)">Root Index ist nicht gemeinnützig – es gibt keine Spendenbescheinigung.</p>'
     +'<a href="https://buy.stripe.com/bJedR88cq2V26jCbxB1gs00?client_reference_id=land-'+m.toLowerCase()+'" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;'+knopf+';border:0;background:var(--greendk);color:#fff">Root Index unterstützen ↗</a>'
     +'<button onclick="document.getElementById(\'riLandOv\').remove()" style="'+knopf+';border:0;background:transparent;color:var(--muted);font-weight:600">Schließen</button>'
     +'</div>';
@@ -8091,6 +8092,7 @@ function unterstuetzenHtml(){
     +'<div style="font-weight:700;font-size:15.5px;margin:.25em 0 .15em">Root Index unterstützen</div>'
     +'<div style="font-size:13px;color:var(--greendk,var(--k-166534));line-height:1.5;margin-bottom:12px">Freiwilliger Beitrag – hilf uns, unabhängig und werbefrei zu bleiben. Kein Abo, keine Gegenleistung.</div>'
     +'<a href="'+UNTERSTUETZEN_URL+'" target="_blank" rel="noopener" style="display:inline-block;padding:11px 22px;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:700;font-size:14.5px;text-decoration:none">Jetzt unterstützen ↗</a>'
+    +'<div style="font-size:11.5px;color:var(--muted);margin-top:8px">Root Index ist nicht gemeinnützig – es gibt keine Spendenbescheinigung.</div>'
     +'</div>';
 }
 /* ===== Startseite: Premium-Block + Über uns (Ralph 24.09.2026) =====

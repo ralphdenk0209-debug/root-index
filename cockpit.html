@@ -178,6 +178,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="qiEin"><input id="qiUrl" type="url" placeholder="Link zur Produktseite einfügen – alle Sorten werden angelegt und durch die Maschine geschickt" onkeydown="if(event.key==='Enter')qiLos()"><button onclick="qiLos()">Los</button></div>
   <div id="qiMsg" class="qiMsg"></div><div id="qiListe"></div></div>
  <div class="kette ii"><h4>Import international <span id="iiSt"></span></h4><div class="iiGrid" id="iiGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div></div>
+ <div class="kette ii"><h4>EU-Schwelle 10.000 € <span id="esSt"></span> <button class="qiX" id="esBtn" onclick="esSync()" title="Stripe-Zahlungen jetzt abgleichen">↻ abgleichen</button></h4><div class="iiGrid" id="esGrid" style="grid-template-columns:repeat(2,1fr)"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="esHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
   <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks in 28 Tagen</span><span class="d" id="sD"></span></div>
@@ -641,7 +642,34 @@ async function iiLaden(){
     }).join('');
   }catch(e){}
 }
-function allesLaden(){ laden(); karteLaden(); qiLaden(); iiLaden(); }
+/* 28.09.2026 EU-Schwelle 10.000 EUR (Ralph "ja, plausibel"). Quelle cb_admin_eu_schwelle (nur Admins),
+   Daten aus Stripe ueber Edge-Funktion umsatz-sync (taeglich per Cron, hier auf Knopfdruck). Keine Steuerberatung. */
+async function esLaden(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_eu_schwelle');
+    if(error||!data){ $('esGrid').innerHTML='<div class="z">Stand nicht lesbar'+(error?': '+esc(error.message):'')+'</div>'; return; }
+    const S=Number(data.schwelle_eur)||10000, eur=v=>Number(v||0).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+    $('esSt').textContent=data.letzter_abgleich?'Stand '+new Date(data.letzter_abgleich).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}):'noch kein Abgleich';
+    $('esGrid').innerHTML=(data.jahre||[]).map(j=>{
+      const v=Number(j.eu_ausland_eur)||0, q=Math.min(100,100*v/S), farbe=q>=100?'#ef4444':q>=80?'#f59e0b':'var(--acc)';
+      const la=Object.entries(j.je_land||{}).sort((a,b)=>b[1]-a[1]).map(([l,b])=>l+' '+eur(b)).join(' · ');
+      return `<div class="iiL"><div class="k">${j.jahr}<span>${q.toFixed(1)} %</span></div>
+        <div class="n">${eur(v)}<small>EU-Ausland</small></div>
+        <div class="iiBalken"><i style="width:${q.toFixed(1)}%;background:${farbe}"></i></div>
+        <div class="z">${la||'noch keine Zahlung aus dem EU-Ausland'}</div>
+        <div class="z">Deutschland ${eur(j.deutschland_eur)} · ohne Land ${eur(j.ohne_land_eur)}${Number(j.nicht_eu_eur)?' · Nicht-EU '+eur(j.nicht_eu_eur):''}</div>
+        <div class="z">Abo ${eur(j.abo_eur)} · Unterstützung ${eur(j.unterstuetzung_eur)} · ${de(j.zahlungen)} Zahlungen${Number(j.andere_waehrung)?' · '+de(j.andere_waehrung)+' in anderer Währung':''}</div></div>`;
+    }).join('');
+    $('esHinweis').textContent=(data.hinweis||'')+(data.letzter_fehler?' · Letzter Abgleich: '+data.letzter_fehler:'');
+  }catch(e){}
+}
+async function esSync(){
+  const b=$('esBtn'); b.disabled=true; b.textContent='… gleicht ab';
+  try{ const {data,error}=await client.functions.invoke('umsatz-sync',{body:{}}); if(error) alertLeise('Abgleich: '+error.message); }catch(e){}
+  b.disabled=false; b.textContent='↻ abgleichen'; esLaden();
+}
+function alertLeise(t){ const h=$('esHinweis'); if(h) h.textContent=t; }
+function allesLaden(){ laden(); karteLaden(); qiLaden(); iiLaden(); esLaden(); }
 allesLaden();
 </script>
 </body></html>

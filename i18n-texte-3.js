@@ -366,4 +366,5 @@ Object.assign(window.RI_I18N_EXTRA, {"Danke! Deine Stimme ist gezählt.": ["Than
 Object.assign(window.RI_I18N_EXTRA, {"Du möchtest Root Index trotzdem unterstützen? Ein freiwilliger Beitrag hilft uns, schneller in dein Land zu kommen. Kein Abo, keine Gegenleistung.": ["Would you still like to support Root Index? A voluntary contribution helps us come to your country sooner. No subscription, nothing in return.", "Vous souhaitez tout de même soutenir Root Index ? Une contribution volontaire nous aide à arriver plus vite dans votre pays. Sans abonnement, sans contrepartie."]});
 Object.assign(window.RI_I18N_EXTRA, {"Root Index unterstützen ↗": ["Support Root Index ↗", "Soutenir Root Index ↗"]});
 Object.assign(window.RI_I18N_EXTRA, {"Schließen": ["Close", "Fermer"]});
+Object.assign(window.RI_I18N_EXTRA, {"Root Index ist nicht gemeinnützig – es gibt keine Spendenbescheinigung.": ["Root Index is not a charity – no donation receipts are issued.", "Root Index n’est pas un organisme d’intérêt général – aucun reçu fiscal n’est délivré."]});
 })();

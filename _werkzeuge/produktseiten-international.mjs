@@ -80,7 +80,7 @@ const SPR = {
     rm: { frage: "Was this page helpful?", ja: "Yes", nein: "No", melden: "Report an error", fehlt: "What was missing?",
       falsch: "What is wrong? (ingredients, nutrition, brand …)", senden: "Send", danke: "Thank you for your feedback." },
     unt: { mehr: "See all rated products", app: "Root Index as an app", titel: "Support Root Index",
-      text: "Voluntary contribution – help us stay independent and ad-free. No subscription, nothing in return.", knopf: "Support now ↗" },
+      text: "Voluntary contribution – help us stay independent and ad-free. No subscription, nothing in return.", knopf: "Support now ↗", hinweis: "Root Index is not a charity – no donation receipts are issued." },
     zahl: (v) => String(v),
   },
   fr: {
@@ -120,7 +120,7 @@ const SPR = {
     rm: { frage: "Cette page vous a-t-elle été utile ?", ja: "Oui", nein: "Non", melden: "Signaler une erreur", fehlt: "Qu’est-ce qui manquait ?",
       falsch: "Qu’est-ce qui est faux ? (ingrédients, valeurs nutritionnelles, marque …)", senden: "Envoyer", danke: "Merci pour votre retour." },
     unt: { mehr: "Voir tous les produits notés", app: "Root Index en app", titel: "Soutenir Root Index",
-      text: "Contribution volontaire – aidez-nous à rester indépendants et sans publicité. Sans abonnement, sans contrepartie.", knopf: "Soutenir ↗" },
+      text: "Contribution volontaire – aidez-nous à rester indépendants et sans publicité. Sans abonnement, sans contrepartie.", knopf: "Soutenir ↗", hinweis: "Root Index n’est pas un organisme d’intérêt général – aucun reçu fiscal n’est délivré." },
     zahl: (v) => String(v).replace(".", ","),
   },
 };
@@ -240,6 +240,7 @@ function seite(T, V, jsV, { titel, beschreibung, kanonisch, inhalt, jsonld, ruec
 <b>${esc(T.unt.titel)}</b>
 <p>${esc(T.unt.text)}</p>
 <a class="btn" href="https://buy.stripe.com/bJedR88cq2V26jCbxB1gs00?client_reference_id=produktseite-${T.html}" target="_blank" rel="noopener nofollow">${esc(T.unt.knopf)}</a>
+<p style="font-size:.8em;opacity:.75;margin-top:.6em">${esc(T.unt.hinweis)}</p>
 </div></div>` : "";
   return `<!doctype html>
 <html lang="${T.html}">
