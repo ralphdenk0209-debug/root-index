@@ -71,7 +71,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v13";
+const WORKER = "riki-scan-worker v14";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -368,7 +368,10 @@ Deno.serve(async (req: Request) => {
         quelle_typ: "Etikettfoto",
         naehrwerte: v.naehrwerte_100g ?? null,
         zutaten: Array.isArray(v.zutaten) ? v.zutaten : [],
-        zutaten_replace: true,
+        /* v14 (28.09.2026, Ralph jaja „im Laden entscheidet Geschwindigkeit"): Ohne lesbare
+           Zutatenliste auf dem Foto duerfen leere Zutaten NICHTS ersetzen - parallel liest
+           cb_scan_hersteller_takt schon die Herstellerseite und hat evtl. Zutaten geschrieben. */
+        zutaten_replace: Array.isArray(v.zutaten) && v.zutaten.length > 0,
         zutaten_rohtext: rohtext || null,
         zusatzstoffe_text: zusatz.text ?? "",
         zusatzstoffe_status: zusatz.status ?? null,
