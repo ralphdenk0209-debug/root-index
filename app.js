@@ -8718,7 +8718,7 @@ var MFAN_GRUPPEN=[
     ['Verträge hier kündigen','book','#8fa79a',function(){ riKuendigenFormular(); }],
     ['Vertrag widerrufen','book','#8fa79a',function(){ riWiderrufFormular(); }],
     ['Einwilligung widerrufen','book','#8fa79a',function(){ riEinwilligungWiderrufen(); }]
-  ]]
+  ].concat(RI_MARKT==='US'?[['Consumer Health Data Privacy Policy','book','#8fa79a',function(){ legalOpen('gesundheit'); }]]:[])]
 ];
 /* Welche Gruppe gerade aufgeschlagen ist. Leer = erstes Blatt. */
 var _mfanGruppe=null;
@@ -8946,7 +8946,7 @@ function legalOpen(which){
   const impressum = H("Impressum")+`<p style="font-size:12px;color:var(--muted)">Angaben gemäß § 5 DDG</p>`
     +P("<b>Ralph Denk</b><br>Root Index (Einzelunternehmen)<br>Auweg 23<br>84103 Postau<br>Deutschland")
     +H("Kontakt")+P("E-Mail: kontakt@root-index.de<br>Alternativ über das Kontaktformular in der App (Menü „Mehr“ → Kontakt). Wir antworten in der Regel innerhalb von 48 Stunden.")
-    +H("Umsatzsteuer")+P("Kleinunternehmerin gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
+    +H("Umsatzsteuer")+P("Kleinunternehmer gemäß § 19 UStG – es wird keine Umsatzsteuer ausgewiesen.")
     +H("Verantwortlich i.S.d. § 18 Abs. 2 MStV")+P("Ralph Denk, Anschrift wie oben.")
     +H("Werbung &amp; Partnerlinks")+P("Root Index ist Teilnehmer des Amazon-Partnerprogramms. <b>Als Amazon-Partner verdienen wir an qualifizierten Verkäufen.</b> Mit „Anzeige“ gekennzeichnete Links sind Partnerlinks – der Preis ändert sich für dich dadurch nicht. <b>Partnerlinks haben keinerlei Einfluss auf den Root Index.</b> Ein Produkt wird bewertet, bevor überhaupt geprüft wird, ob es einen Partnerlink gibt; kein Hersteller kann eine Bewertung kaufen oder beeinflussen.")
     +H("Datenquellen &amp; Lizenzen")+P("Nährwerte generischer Lebensmittel stammen aus dem <b>Bundeslebensmittelschlüssel (BLS 4.0)</b>, © Max Rubner-Institut, Bundesforschungsinstitut für Ernährung und Lebensmittel, lizenziert unter <b>CC BY 4.0</b> (creativecommons.org/licenses/by/4.0). Ergänzend nutzen wir Daten von <b>Open Food Facts</b> (Datenbank lizenziert unter <b>ODbL 1.0</b>, Inhalte unter CC BY-SA 3.0) sowie Herstellerangaben und Etikettfotos unserer Nutzerinnen und Nutzer. Die Quelle steht bei jedem Produkt unter dem Index. Wissenschaftliche Grundlagen: EFSA, WHO, EU-VO 1333/2008 und 432/2012, IARC, DGE.")
@@ -9179,7 +9179,13 @@ function legalOpen(which){
     +P("Bestellt am: ______________________________<br>Name des/der Verbraucher(s): ______________________________<br>Anschrift des/der Verbraucher(s): ______________________________<br>Unterschrift des/der Verbraucher(s) – nur bei Mitteilung auf Papier: ______________________________<br>Datum: ______________________________")
     +P("(*) Unzutreffendes streichen.")
     +P("<button onclick=\"document.getElementById('legalOv').remove();riWiderrufFormular()\" style=\"margin:8px 0 4px;padding:10px 16px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer\">Vertrag widerrufen</button>");
-  const body = which==='datenschutz'?ds : which==='agb'?agb : which==='widerruf'?widerruf : impressum;
+  let body = which==='datenschutz'?ds : which==='agb'?agb : which==='widerruf'?widerruf : impressum;
+  /* 28.09.2026 (Ralph: ".com - fehlendes ergaenzen"): Land UK/US -> englische,
+     FR -> franzoesische Rechtstexte aus recht-texte.js (mit Laenderzusaetzen).
+     Die US-Datenschutzrichtlinie fuer Gesundheitsdaten gibt es nur englisch. */
+  try{ const R=window.RI_RECHT||{}; const L=(RI_MARKT==='UK'||RI_MARKT==='US')?'en':(RI_MARKT==='FR'?'fr':''); 
+    if(L&&R[L]&&R[L][which]) body=R[L][which]; else if(which==='gesundheit'&&R.en&&R.en.gesundheit) body=R.en.gesundheit; }catch(_){}
+  ov.setAttribute('data-kein-i18n','1');
   ov.innerHTML=`<div style="background:var(--card);max-width:640px;width:92%;margin:24px 0;border-radius:16px;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow)"><button onclick="document.getElementById('legalOv').remove()" style="float:right;border:0;background:var(--line);color:var(--ink);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>${body}</div>`;
   document.body.appendChild(ov);
 }
