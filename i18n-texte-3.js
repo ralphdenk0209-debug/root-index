@@ -357,4 +357,13 @@ var M = {
 window.RI_I18N_EXTRA = Object.assign(window.RI_I18N_EXTRA || {}, X);
 M['Premium ist in deinem Land noch nicht verfügbar. Alle kostenlosen Funktionen kannst du weiter nutzen.'] = ['Premium is not yet available in your country. You can keep using all free features.', 'Premium n’est pas encore disponible dans votre pays. Vous pouvez continuer à utiliser toutes les fonctions gratuites.'];
 window.RI_I18N_MELDUNG = Object.assign(window.RI_I18N_MELDUNG || {}, M);
+/* 28.09.2026 Laendersperre-Dialog (riLandGesperrt) */
+window.RI_I18N_EXTRA = window.RI_I18N_EXTRA || {};
+Object.assign(window.RI_I18N_EXTRA, {"Premium gibt es in deinem Land noch nicht": ["Premium is not available in your country yet", "Premium n’est pas encore disponible dans votre pays"]});
+Object.assign(window.RI_I18N_EXTRA, {"Root Index ist ein kleines, unabhängiges Projekt. Premium bieten wir vorerst nur in der EU an. Alle kostenlosen Funktionen kannst du weiter nutzen.": ["Root Index is a small, independent project. For now, we only offer Premium in the EU. You can keep using all free features.", "Root Index est un petit projet indépendant. Pour l’instant, nous ne proposons Premium que dans l’UE. Vous pouvez continuer à utiliser toutes les fonctions gratuites."]});
+Object.assign(window.RI_I18N_EXTRA, {"👍 Root Index soll auch in meinem Land verfügbar sein": ["👍 I want Root Index in my country too", "👍 Je veux Root Index dans mon pays aussi"]});
+Object.assign(window.RI_I18N_EXTRA, {"Danke! Deine Stimme ist gezählt.": ["Thank you! Your vote has been counted.", "Merci ! Votre vote a été compté."]});
+Object.assign(window.RI_I18N_EXTRA, {"Du möchtest Root Index trotzdem unterstützen? Ein freiwilliger Beitrag hilft uns, schneller in dein Land zu kommen. Kein Abo, keine Gegenleistung.": ["Would you still like to support Root Index? A voluntary contribution helps us come to your country sooner. No subscription, nothing in return.", "Vous souhaitez tout de même soutenir Root Index ? Une contribution volontaire nous aide à arriver plus vite dans votre pays. Sans abonnement, sans contrepartie."]});
+Object.assign(window.RI_I18N_EXTRA, {"Root Index unterstützen ↗": ["Support Root Index ↗", "Soutenir Root Index ↗"]});
+Object.assign(window.RI_I18N_EXTRA, {"Schließen": ["Close", "Fermer"]});
 })();

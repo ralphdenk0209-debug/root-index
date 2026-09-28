@@ -633,6 +633,7 @@ async function iiLaden(){
       return `<div class="iiL"><div class="k">${esc(fl[l.markt]||l.markt)}<span>+${de(l.heute)} heute</span></div>
         <div class="n">${de(l.aktiv)}<small>aktiv</small></div>
         <div class="z">${de(l.entwurf)} Entwurf${Number(l.abgelehnt)?' · '+de(l.abgelehnt)+' abgelehnt':''}</div>
+        ${(l.markt==='UK'||l.markt==='US')?`<div class="z">👍 ${de(l.wunsch||0)} Stimmen „auch in meinem Land“${l.drossel?' · gedrosselt '+l.drossel+' Seiten/Tag':''}</div>`:''}
         <svg viewBox="0 0 400 34" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--g)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg>
         <div class="z">neu je Tag · 14 Tage</div>
         <div class="iiBalken"><i style="width:${q.toFixed(1)}%"></i></div>

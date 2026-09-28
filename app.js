@@ -1275,14 +1275,14 @@ async function refreshMyFeatures(){
   }catch(e){ MY_FEATURES=null; }
 }
 async function _startCheckout(plan, consent){
-  if(RI_PREMIUM_GESPERRT){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
+  if(RI_PREMIUM_GESPERRT){ riLandGesperrt(); return; }
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativePurchase(plan, consent); }
   try{
     // Zustimmung (Zeitstempel + Text) best-effort persistieren; Fehler nicht blockierend
     if(consent){ try{ await client.rpc("cb_consent_speichern",{p_consent: consent}); }catch(_){} }
     const {data,error}=await client.functions.invoke('stripe-checkout',{ body:{ plan: plan||'month', consent: consent||null, markt: RI_MARKT } });
-    if(data&&data.error==='land_gesperrt'){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
-    if(error&&error.context&&error.context.status===403){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
+    if(data&&data.error==='land_gesperrt'){ riLandGesperrt(); return; }
+    if(error&&error.context&&error.context.status===403){ riLandGesperrt(); return; }
     if(error||!data||!data.url) throw new Error((data&&data.error)||'no url');
     window.location.href=data.url;
   }catch(e){
@@ -1300,9 +1300,36 @@ function _planRow(val,title,price,sub,badge,checked){
    serverseitig in stripe-checkout (Profil-Land oder mitgeschicktes Land). */
 const RI_PREMIUM_GESPERRT = (RI_MARKT==='UK'||RI_MARKT==='US');
 const RI_PREMIUM_GESPERRT_TEXT = 'Premium ist in deinem Land noch nicht verfügbar. Alle kostenlosen Funktionen kannst du weiter nutzen.';
+/* 28.09.2026 (Ralph): statt nur "gesperrt" – unterstuetzen (Spende ueber Stripe, Kennung
+   land-uk/land-us) und Daumen hoch "Root Index soll auch in meinem Land verfuegbar sein"
+   (cb_land_wunsch, nur Tagessummen je Land, einmal je Geraet). Indikator fuer die Oeffnung. */
+function riLandGesperrt(){
+  var alt=document.getElementById('riLandOv'); if(alt) alt.remove();
+  var m=RI_MARKT, schon=false; try{ schon=localStorage.getItem('ri_land_wunsch_'+m)==='1'; }catch(_){}
+  var ov=document.createElement('div'); ov.id='riLandOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  var knopf='width:100%;padding:12px;border-radius:12px;font-weight:700;cursor:pointer;font-size:14px;margin-top:8px';
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
+    +'<div style="font-size:17px;font-weight:700;margin-bottom:8px">Premium gibt es in deinem Land noch nicht</div>'
+    +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Root Index ist ein kleines, unabhängiges Projekt. Premium bieten wir vorerst nur in der EU an. Alle kostenlosen Funktionen kannst du weiter nutzen.</p>'
+    +'<button id="riLandWunsch" style="'+knopf+';border:1px solid var(--greendk);background:var(--card);color:var(--greendk)"'+(schon?' disabled':'')+'>'+(schon?'Danke! Deine Stimme ist gezählt.':'👍 Root Index soll auch in meinem Land verfügbar sein')+'</button>'
+    +'<p style="font-size:13px;line-height:1.5;margin:14px 0 0;color:var(--muted)">Du möchtest Root Index trotzdem unterstützen? Ein freiwilliger Beitrag hilft uns, schneller in dein Land zu kommen. Kein Abo, keine Gegenleistung.</p>'
+    +'<a href="https://buy.stripe.com/bJedR88cq2V26jCbxB1gs00?client_reference_id=land-'+m.toLowerCase()+'" target="_blank" rel="noopener" style="display:block;text-align:center;text-decoration:none;box-sizing:border-box;'+knopf+';border:0;background:var(--greendk);color:#fff">Root Index unterstützen ↗</a>'
+    +'<button onclick="document.getElementById(\'riLandOv\').remove()" style="'+knopf+';border:0;background:transparent;color:var(--muted);font-weight:600">Schließen</button>'
+    +'</div>';
+  document.body.appendChild(ov);
+  var b=document.getElementById('riLandWunsch');
+  if(b&&!schon) b.onclick=async function(){
+    b.disabled=true;
+    try{ await client.rpc('cb_land_wunsch',{p_markt:m}); }catch(_){}
+    try{ localStorage.setItem('ri_land_wunsch_'+m,'1'); }catch(_){}
+    b.textContent='Danke! Deine Stimme ist gezählt.';
+  };
+}
 function premiumInfo(){
+  if(RI_PREMIUM_GESPERRT){ riLandGesperrt(); return; }
   if(!ME){ openLogin(); return; }
-  if(RI_PREMIUM_GESPERRT){ alert(RI_PREMIUM_GESPERRT_TEXT); return; }
   const ex=document.getElementById('premOv'); if(ex) ex.remove();
   const ov=document.createElement('div'); ov.id='premOv';
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px';
