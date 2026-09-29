@@ -34,3 +34,6 @@ verify_jwt = false
 
 [functions.umsatz-sync]
 verify_jwt = true
+
+[functions.hersteller-abgleich]
+verify_jwt = true
