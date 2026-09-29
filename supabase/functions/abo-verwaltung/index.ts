@@ -14,6 +14,7 @@
    modus "ende"       – Abo beendet (stripe-webhook, subscription.deleted): endet der
                         Vertrag in einem bezahlten Zeitraum, wird der Rest tagegenau
                         erstattet (§ 7) und per E-Mail mitgeteilt.
+   modus "verlaengerung" – FR-Hinweis nach L215-1 (Cron täglich, siehe unten).
 
    Alle Vorgänge stehen in public."Abo_Post". Mails wie widerruf-bestaetigen. */
 import Stripe from "https://esm.sh/stripe@16?target=deno";
@@ -386,6 +387,83 @@ async function ende(body: any) {
   }
 }
 
+/* ---- modus: verlaengerung (FR, Code de la consommation L215-1) -------------
+   29.09.2026 (I35): Kunden mit Markt FR und Laufzeit > 1 Monat erhalten 30–62 Tage
+   vor Ende des Abrechnungszeitraums einen Hinweis auf die stillschweigende
+   Verlängerung und ihr Kündigungsrecht. Einmal je Abo und Zeitraum (Abo_Post
+   typ "verlaengerung", daten.bis). Täglich per Cron. Monatsabos: nicht betroffen. */
+function datumFr(ts: number): string {
+  return new Date(ts * 1000).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long", year: "numeric" });
+}
+function euroFr(cent: number): string { return (cent / 100).toFixed(2).replace(".", ",") + " €"; }
+async function verlaengerung(body: any) {
+  const admin = adminClient();
+  const probe = body.probe === true;
+  const jetzt = Math.floor(Date.now() / 1000);
+  const { data: fr } = await admin.from("Benutzer_Einstellung").select("Benutzer_ID").eq("Schluessel", "markt").ilike("Wert", "FR");
+  const ids = (fr || []).map((r: any) => r.Benutzer_ID);
+  const erg: any[] = [];
+  if (!ids.length) return json({ ok: true, fr_konten: 0, erg });
+  const { data: bs } = await admin.from("Benutzer").select("Benutzer_ID, Email, auth_id, stripe_customer_id").in("Benutzer_ID", ids).not("stripe_customer_id", "is", null);
+  for (const b of bs || []) {
+    try {
+      const sub = await aktivesAbo(b.stripe_customer_id as string);
+      if (!sub || sub.status !== "active" || sub.cancel_at_period_end || sub.cancel_at) { erg.push({ b: b.Benutzer_ID, skip: "kein laufendes Abo" }); continue; }
+      const t = tarifInfo(sub);
+      if (t.monate <= 1) { erg.push({ b: b.Benutzer_ID, skip: "Monatsabo" }); continue; }
+      const bis = sub.current_period_end;
+      const tage = Math.floor((bis - jetzt) / 86400);
+      if (tage < 30 || tage > 62) { erg.push({ b: b.Benutzer_ID, skip: "Fenster", tage }); continue; }
+      const { data: da } = await admin.from("Abo_Post").select("id").eq("typ", "verlaengerung").eq("stripe_sub", sub.id).eq("daten->>bis", String(bis)).limit(1);
+      if (da && da.length) { erg.push({ b: b.Benutzer_ID, skip: "schon gesendet" }); continue; }
+      const email = adresseSauber(b.Email as string);
+      if (probe) { erg.push({ b: b.Benutzer_ID, wuerde_senden: true, tage, email: !!email }); continue; }
+      const { data: z, error } = await admin.from("Abo_Post").insert({
+        typ: "verlaengerung", auth_id: (b.auth_id as string) || null, email, stripe_customer: b.stripe_customer_id as string, stripe_sub: sub.id,
+        daten: { bis, tarif: t.name, preis: t.preis, markt: "FR" },
+      }).select("id").single();
+      if (error) throw new Error(error.message);
+      if (!email) { await admin.from("Abo_Post").update({ fehler: "keine E-Mail-Adresse" }).eq("id", z.id); erg.push({ b: b.Benutzer_ID, fehler: "keine E-Mail" }); continue; }
+      const duree = t.monate === 12 ? "un an" : t.monate + " mois";
+      const text = [
+        "Bonjour,",
+        "",
+        "┌──────────────────────────────────────────────────────────",
+        "│ RECONDUCTION DE VOTRE ABONNEMENT ROOT INDEX PREMIUM",
+        "│",
+        "│ Votre période d'abonnement en cours se termine le " + datumFr(bis) + ".",
+        "│ Sans action de votre part, elle sera reconduite tacitement pour " + duree,
+        "│ au prix de " + euroFr(t.preis) + " (TVA non applicable, art. 293 B du CGI).",
+        "│",
+        "│ Vous pouvez refuser cette reconduction : résiliez au plus tard",
+        "│ le " + datumFr(bis) + ", sans frais ni justification.",
+        "│ Après cette date, vous pouvez toujours résilier à tout moment",
+        "│ (préavis d'un mois) ; le trop-perçu vous est remboursé au prorata.",
+        "│",
+        "│ Résilier votre contrat : root-index.de/?kuendigen",
+        "│ ou par e-mail à kontakt@root-index.de",
+        "└──────────────────────────────────────────────────────────",
+        "",
+        "Cette information vous est adressée conformément à l'article L215-1 du Code de la consommation.",
+        "",
+        "Référence : Stripe " + sub.id,
+        "",
+        "Cordialement,",
+        "Ralph Denk – Root Index",
+        "Auweg 23, 84103 Postau, Allemagne · kontakt@root-index.de · root-index.com",
+      ].join("\r\n");
+      await senden(email, "Reconduction de votre abonnement Root Index Premium – " + datumFr(bis), text, KONTAKT());
+      await admin.from("Abo_Post").update({ bestaetigt_am: new Date().toISOString() }).eq("id", z.id);
+      await senden(KONTAKT(), "FR-HINWEIS VERLÄNGERUNG " + sub.id + " · " + email, "L215-1-Hinweis gesendet.\r\n\r\n" + text, email, "Root Index Abo");
+      await admin.from("Abo_Post").update({ kopie_am: new Date().toISOString() }).eq("id", z.id);
+      erg.push({ b: b.Benutzer_ID, gesendet: z.id, tage });
+    } catch (e) {
+      erg.push({ b: b.Benutzer_ID, fehler: String((e as Error)?.message || e).slice(0, 300) });
+    }
+  }
+  return json({ ok: true, fr_konten: ids.length, erg });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ error: "Nur POST" }, 405);
@@ -397,6 +475,7 @@ Deno.serve(async (req) => {
     if (!dienst) return json({ error: "nicht erlaubt" }, 403);
     if (modus === "vertrag") return await vertrag(body);
     if (modus === "ende") return await ende(body);
+    if (modus === "verlaengerung") return await verlaengerung(body);
     return json({ error: "unbekannter modus" }, 400);
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
