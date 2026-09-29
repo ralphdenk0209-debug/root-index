@@ -92,7 +92,7 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
   <h1>Produkttabelle</h1>
   <input id="suche" type="search" placeholder="Suche: Name, Marke, EAN, P-Nummer" autocomplete="off">
   <input id="marke" type="text" placeholder="Marke beginnt mit …" style="width:150px">
-  <select id="status"><option value="">Status: alle</option><option>Aktiv</option><option>Entwurf</option><option>prüfen</option><option>Aktiv ohne Index</option><option>Abgelehnt</option><option>Inaktiv</option></select>
+  <select id="status"><option value="">Status: alle</option><option>Aktiv</option><option>Entwurf</option><option>prüfen</option><option>Aktiv ohne Index</option><option>Abgelehnt</option><option>Inaktiv</option><option value="Ralph">★ Bei Ralph</option></select>
   <select id="markt"><option value="">Markt: alle</option><option>DE</option><option>UK</option><option>FR</option><option>IE</option><option>US</option></select>
   <select id="proseite"><option>50</option><option selected>100</option><option>250</option><option>500</option></select>
   <button onclick="neu()">Suchen</button>
@@ -120,6 +120,7 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
   <li>Name, Marke, EAN, Menge → werden direkt übernommen.</li>
   <li>Quelle (z. B. Herstellerseite) → wird am Produkt vermerkt.</li>
   <li>Status → wird direkt gesetzt, ohne Neuberechnung.</li>
+  <li>★ Ralph → deine persönliche Markierung (Haken). Filter oben: Status → „★ Bei Ralph“. Ändert nichts an Maschine oder Index.</li>
   <li>Zusatzstoffe (Status/Stoffe) von Hand → Index wird neu gerechnet, deine Angabe bleibt.</li>
   <li>Nährstoffe laut Etikett: eine Zeile je Stoff, z. B. <i>L-Leucin 10,8 g</i> oder <i>Vitamin D3 20 µg (400 %)</i> (Zahl in Klammern = % NRV). Bezug daneben wählen (pro 100 g, pro Portion, Tagesdosis …). Speichern ersetzt die ganze Liste; Index wird neu gerechnet.</li></ol></div>
  <div class="fl h"><b>Herstellerabgleich (Stand) <span class="tag">nur Markierung</span></b><ol>
@@ -157,6 +158,7 @@ const SP = [
   ['marke','Marke','marke', r=>esc(r.marke)],
   ['ean','EAN',null, r=>esc(r.ean)],
   ['status','Status','status', r=>esc(r.status)],
+  ['ralph','★ Ralph',null, r=>r.ralph?'★':''],
   ['markt','Markt',null, r=>esc(r.markt)],
   ['menge','Menge',null, r=>esc(r.menge)],
   ['quelle','Quelle',null, r=>esc(r.quelle)],
@@ -184,11 +186,11 @@ const SP = [
 ];
 const TXT = {verifiziert:'verifiziert',korrigiert:'korrigiert',abweichend:'abweichend',offen:'in Arbeit',vorlegen:'Ralph vorlegen',nicht_lesbar:'nicht lesbar',keine_seite:'keine Seite',ungeprueft:'ungeprüft',sonstiges:'sonstiges'};
 // Gruppen, Farben, Standardbreiten
-const GR = [['','Produkt',['id','name','marke','ean','status','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
+const GR = [['','Produkt',['id','name','marke','ean','status','ralph','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
   ['gr-nw','Nährwerte je 100 g/ml',['kcal','fett','gesf','kh','zucker','bst','prot','salz']],['gr-ns','Nährstoffe laut Etikett',['n_bezug','naehrstoffe']],['gr-zus','Zusatzstoffe',['zus_status','zus_text']],
   ['gr-zut','Zutaten',['zutaten']],['gr-her','Herstellerabgleich',['hersteller','hersteller_url']]];
 const GRK={}, GSTART={}; GR.forEach(g=>{ g[2].forEach((k,j)=>{ GRK[k]=g[0]; if(j===0&&g[0]) GSTART[k]=1; }); });
-const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
+const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,ralph:70,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
   kcal:68,fett:62,gesf:62,kh:62,zucker:66,bst:74,prot:66,salz:62,n_bezug:120,naehrstoffe:320,zus_status:120,zus_text:220,zutaten:440,hersteller:170,hersteller_url:260};
 let BREITE={...BREITE_STD};
 try{ Object.assign(BREITE, JSON.parse(localStorage.getItem('pt-breiten')||'{}')); }catch(e){}
@@ -245,7 +247,7 @@ async function laden(){
 // ---- Bearbeiten (Ralph 29.09.2026) ----------------------------------------
 const EDIT = {name:'text',marke:'text',ean:'text',status:'status',menge:'text',
   kcal:'zahl',fett:'zahl',gesf:'zahl',kh:'zahl',zucker:'zahl',bst:'zahl',prot:'zahl',salz:'zahl',
-  zus_status:'text',zus_text:'text',zutaten:'lang', quelle:'wahl', hersteller:'wahl', hersteller_url:'text', naehrstoffe:'lang', n_bezug:'wahl'};
+  zus_status:'text',zus_text:'text',zutaten:'lang', quelle:'wahl', hersteller:'wahl', hersteller_url:'text', naehrstoffe:'lang', n_bezug:'wahl', ralph:'haken'};
 const QUELLEN=['Herstellerseite','Etikettfoto','OpenFoodFacts','Amazon/Haendler','BLS 4.0','USDA FoodData Central','EU-Recht','Riki-Einstufung','Setzung (Ralph-Entscheid)','Regelwerk-Staffel','Anker/Systematik'];
 const HSTAENDE=['verifiziert','korrigiert','abweichend','vorlegen','nicht_lesbar','keine_seite'];
 const BEZ={pro_100g:'pro 100 g',pro_100ml:'pro 100 ml',pro_portion:'pro Portion',tagesdosis:'Tagesdosis',pro_liter:'pro Liter',unbekannt:'unbekannt'};
@@ -258,6 +260,7 @@ function zelle(r,s,i){
   const c=kl(k,s[4]);
   if(k==='id') return '<td class="'+c+'">'+esc(r.id)+'<button class="sp" onclick="speichern('+i+')">Speichern</button></td>';
   if(!typ) return '<td class="'+c+'">'+s[3](r)+'</td>';
+  if(typ==='haken') return '<td class="'+c+'" style="text-align:center"><input type="checkbox" data-k="ralph" title="Bei Ralph markieren (Filter: Status → ★ Bei Ralph)"'+(r.ralph?' checked':'')+' onchange="geaendert('+i+',this,\'ralph\')" style="accent-color:var(--acc);width:16px;height:16px;cursor:pointer"></td>';
   if(typ==='status'||typ==='wahl'){
     const liste=WAHL[k](), akt=r[k]==null?'':String(r[k]);
     const extra = k==='hersteller'&&r.hersteller_url ? ' <a href="'+esc(r.hersteller_url)+'" target="_blank" rel="noopener" title="Seite öffnen'+(r.hersteller_am?' · geprüft '+datum(r.hersteller_am):'')+'">↗</a>' : '';
@@ -269,10 +272,10 @@ function zelle(r,s,i){
 }
 function zeileHtml(r,i){ return '<tr data-i="'+i+'">'+SP.map(s=>zelle(r,s,i)).join('')+'</tr>'; }
 function geaendert(i,el,k){
-  const neu = el.tagName==='SELECT' ? el.value : el.innerText.replace(/\u00a0/g,' ').trim();
-  const alt = roh(ZEILEN[i][k]);
+  const neu = el.type==='checkbox' ? String(el.checked) : el.tagName==='SELECT' ? el.value : el.innerText.replace(/\u00a0/g,' ').trim();
+  const alt = k==='ralph' ? String(!!ZEILEN[i][k]) : roh(ZEILEN[i][k]);
   AEND[i]=AEND[i]||{};
-  const td = el.tagName==='SELECT' ? el.parentElement : el;
+  const td = (el.tagName==='SELECT'||el.tagName==='INPUT') ? el.parentElement : el;
   if(neu===alt){ delete AEND[i][k]; td.classList.remove('geaendert'); }
   else { AEND[i][k]=neu; td.classList.add('geaendert'); }
   if(!Object.keys(AEND[i]).length) delete AEND[i];
