@@ -678,9 +678,22 @@ async function main() {
   }));
 
   // Sitemap + robots
+  /* 29.09.2026: Google liest je Sitemap hoechstens 50.000 URLs (Search Console meldete 1 Fehler,
+     60.676 URLs -> 10.676 fehlten). Jetzt Teile zu je 40.000 (sitemap-de-N.xml) und sitemap.xml als Index. */
+  const TEIL = 40000;
+  for (const f of readdirSync(WEB)) if (/^sitemap-de-\d+\.xml$/.test(f)) unlinkSync(join(WEB, f));
+  const teile = [];
+  for (let i = 0; i < urls.length; i += TEIL) {
+    const name = `sitemap-de-${teile.length + 1}.xml`;
+    writeFileSync(join(WEB, name),
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+      urls.slice(i, i + TEIL).map((u) => `<url><loc>${u}</loc></url>`).join("\n") + `\n</urlset>\n`);
+    teile.push(name);
+  }
+  const heute = new Date().toISOString().slice(0, 10);
   writeFileSync(join(WEB, "sitemap.xml"),
-    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `<url><loc>${u}</loc></url>`).join("\n") + `\n</urlset>\n`);
+    `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    teile.map((t) => `<sitemap><loc>${DOMAIN}/${t}</loc><lastmod>${heute}</lastmod></sitemap>`).join("\n") + `\n</sitemapindex>\n`);
   writeFileSync(join(WEB, "robots.txt"),
     `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\nSitemap: ${DOMAIN}/sitemap-int.xml\n`);
 
