@@ -125,9 +125,24 @@ function ausText(text) {
   return null;
 }
 
+// I41: Reiter-/Abschnittsbloecke mit id/class "zutaten"/"ingredients" (z. B. albi.de: <div id="zutaten"><p>…</p>)
+function ausBlock(html) {
+  const re = /<(?:div|section|p|li|dd|span)\b[^>]*(?:id|class)=["'][^"']*(?:zutaten|ingredients?)[^"']*["'][^>]*>([\s\S]{0,3000})/gi;
+  for (const m of html.matchAll(re)) {
+    const t = htmlZuText(m[1]).split(new RegExp(ABBRUCH, "i"))[0];
+    for (const teil of t.split(/\n\s*\n|\n/)) {
+      const k = teil.replace(/^\s*Zutaten(?:verzeichnis|liste)?\s*:?\s*/i, "").trim();
+      if (k && istPlausibel(k)) return k;
+    }
+  }
+  return null;
+}
+
 function zutatenFinden(html) {
   const a = ausJsonLd(html);
   if (a) return { text: a, weg: "json-ld" };
+  const c = ausBlock(html);
+  if (c) return { text: c, weg: "block" };
   const b = ausText(htmlZuText(html));
   if (b) return { text: b, weg: "muster" };
   return null;
