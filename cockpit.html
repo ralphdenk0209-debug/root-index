@@ -194,6 +194,12 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="stapel" id="pStapel"></div><div class="legende2" id="pLeg"></div>
   <div class="hb" id="produkte"></div></a>
 
+ <a class="zone" href="produkte-tabelle.html"><h4>Produkttabelle <span class="st" id="ptSt">bearbeiten · Excel</span></h4>
+  <div class="lead"><span class="n" id="ptN">–</span><span class="u">vom Hersteller verifiziert</span></div>
+  <div class="hb" id="ptZahlen"></div>
+  <div class="q">Alle Produkte mit Index, Nährwerten, Zusatzstoffen und Zutaten – direkt bearbeiten und speichern.</div>
+  <div class="link">→ Produkttabelle öffnen</div></a>
+
  <a class="zone" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4>
   <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
   <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
@@ -671,5 +677,19 @@ async function esSync(){
 function alertLeise(t){ const h=$('esHinweis'); if(h) h.textContent=t; }
 function allesLaden(){ laden(); karteLaden(); qiLaden(); iiLaden(); esLaden(); }
 allesLaden();
+</script>
+
+<script>
+/* 29.09.2026 (Ralph): Kachel Produkttabelle mit Stand Herstellerabgleich */
+(async function ptKachel(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_hersteller_stand_zahlen');
+    if(error||!data) return;
+    const n=k=>Number(data[k]||0);
+    document.getElementById('ptN').textContent=(n('verifiziert')+n('korrigiert')).toLocaleString('de-DE');
+    const reihe=[['korrigiert','korrigiert'],['abweichend','abweichend'],['vorlegen','dir vorgelegt'],['nicht_lesbar','nicht lesbar'],['keine_seite','keine Seite'],['offen','in Arbeit']];
+    document.getElementById('ptZahlen').innerHTML=reihe.map(([k,t])=>'<div><span>'+t+'</span><b>'+n(k).toLocaleString('de-DE')+'</b></div>').join('');
+  }catch(e){}
+})();
 </script>
 </body></html>
