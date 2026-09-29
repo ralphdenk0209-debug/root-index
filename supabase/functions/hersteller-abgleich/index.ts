@@ -2,7 +2,8 @@
 // Liest Herstellerseiten KOSTENLOS (einfacher Abruf, keine KI) und vergleicht die
 // Zutatenliste mit unserem Text. NUR MELDEN – schreibt nie in Produkte/Zutaten_Rohtext.
 // Arbeitsliste: public.cb_hersteller_abgleich_holen(max), Ergebnis: public.cb_hersteller_abgleich_setzen(jsonb).
-// Die Leselogik (htmlZuText .. zutatenFinden) ist eine Kopie aus quelle-abruf-einfach v5.
+// Die Leselogik (htmlZuText .. zutatenFinden) ist eine Kopie aus quelle-abruf-einfach v5,
+// mit Wortgrenze vor "Zutaten" (sonst greift "Backzutaten" im Seitenmenue).
 // Aufruf: pg_cron ueber cb_edge_rufen (service_role) oder Admin.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -99,7 +100,7 @@ function ausJsonLd(html) {
 
 function ausText(text) {
   const muster = new RegExp(
-    "Zutaten(?:verzeichnis|liste)?\\s*[:\\n]\\s*([\\s\\S]{10,2500}?)" +
+    "(?<![A-Za-zÄÖÜäöüß])Zutaten(?:verzeichnis|liste)?\\s*[:\\n]\\s*([\\s\\S]{10,2500}?)" +
       "(?=\\n\\s*\\n|" + ABBRUCH + "|$)",
     "i",
   );
