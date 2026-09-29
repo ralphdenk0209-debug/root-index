@@ -85,6 +85,30 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 .fl .tag{display:inline-block;font-size:10.5px;border-radius:99px;padding:0 7px;margin-left:6px;vertical-align:1px}
 .fl.m .tag{background:rgba(127,217,154,.15);color:var(--g)}.fl.d .tag{background:rgba(143,184,242,.15);color:var(--b)}.fl.h .tag{background:rgba(230,161,90,.15);color:var(--acc)}
 #hilfe .fuss{margin-top:10px;color:var(--ink3)}
+
+/* Zutaten-Werkstatt (Rechtsklick auf Zutaten) */
+#zw{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:50;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+#zw.an{display:flex}
+#zw .kasten{background:var(--card);border:1px solid var(--line);border-radius:14px;width:min(1000px,100%);padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#zw h2{margin:0 0 4px;font-size:15px}
+#zw .unter{color:var(--ink3);font-size:12px;margin-bottom:10px}
+#zw textarea{width:100%;min-height:90px;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13px;resize:vertical}
+#zw .knoepfe{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+#zw button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+#zw button.haupt{background:var(--acc);color:#1a1714;border:0;font-weight:600}
+#zw button:hover{border-color:var(--acc)}
+#zw table{width:100%;min-width:0;table-layout:auto;border-collapse:collapse;margin-top:6px}
+#zw th,#zw td{border-bottom:1px solid var(--line);border-right:0;padding:5px 6px;white-space:normal;overflow:visible;font-size:12.5px;vertical-align:middle}
+#zw thead th{position:static;background:transparent;color:var(--ink3);font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+#zw tr.neu td{background:#3a3226}
+#zw .ein{position:relative}
+#zw .ein input{width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px}
+#zw .vor{position:absolute;left:0;right:0;top:100%;background:var(--card2);border:1px solid var(--acc);border-radius:6px;z-index:5;max-height:220px;overflow:auto}
+#zw .vor div{padding:5px 8px;cursor:pointer;display:flex;justify-content:space-between;gap:8px}
+#zw .vor div:hover{background:#3a3226}
+.bw{display:inline-block;min-width:26px;text-align:center;border-radius:6px;padding:0 6px;font-weight:600;color:#1a1714}
+#zw .hinw{color:var(--ink3);font-size:11.5px}
+#zw .zst{font-size:11px;color:var(--ink2)}
 @media (max-width:700px){.bar input[type=search]{width:100%}}
 </style></head>
 <body>
@@ -120,6 +144,7 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
   <li>Name, Marke, EAN, Menge → werden direkt übernommen.</li>
   <li>Quelle (z. B. Herstellerseite) → wird am Produkt vermerkt.</li>
   <li>Status → wird direkt gesetzt, ohne Neuberechnung.</li>
+  <li><b>Rechtsklick auf Zutaten</b> → Werkstatt: Herstellertext einfügen, zerlegen, je Zutat die Stamm-Zutat mit Bewertung sehen und ändern, speichern &amp; neu rechnen.</li>
   <li>★ Ralph → deine persönliche Markierung (Haken). Filter oben: Status → „★ Bei Ralph“. Ändert nichts an Maschine oder Index.</li>
   <li>Zusatzstoffe (Status/Stoffe) von Hand → Index wird neu gerechnet, deine Angabe bleibt.</li>
   <li>Nährstoffe laut Etikett: eine Zeile je Stoff, z. B. <i>L-Leucin 10,8 g</i> oder <i>Vitamin D3 20 µg (400 %)</i> (Zahl in Klammern = % NRV). Bezug daneben wählen (pro 100 g, pro Portion, Tagesdosis …). Speichern ersetzt die ganze Liste; Index wird neu gerechnet.</li></ol></div>
@@ -139,6 +164,22 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 <tr class="k" id="kopf"></tr>
 </thead><tbody id="rumpf"></tbody></table></div>
 
+<div id="zw"><div class="kasten">
+ <h2 id="zwTitel">Zutaten</h2>
+ <div class="unter">Rechtsklick auf eine Zutaten-Zelle öffnet diese Werkstatt. Oben den Text vom Hersteller einfügen, „Zerlegen“ zeigt, wie die Maschine ihn liest. Je Zeile kannst du die Stamm-Zutat ändern (tippen → Vorschlag wählen).</div>
+ <textarea id="zwText" spellcheck="false"></textarea>
+ <div class="knoepfe">
+  <button onclick="zwZerlegen()">Zerlegen (Vorschau)</button>
+  <button onclick="zwAktuell()">Aktuelle Bindung zeigen</button>
+  <button onclick="zwInZelle()" title="Text nur in die Tabellenzelle schreiben – gespeichert wird mit „Speichern“ in der Zeile">Text in Zelle übernehmen</button>
+  <span style="flex:1"></span>
+  <button class="haupt" onclick="zwSpeichern()">Speichern &amp; neu rechnen</button>
+  <button onclick="zwZu()">Schließen</button>
+ </div>
+ <div id="zwMeldung" class="hinw"></div>
+ <table><thead><tr><th>#</th><th>Text auf dem Etikett</th><th style="width:38%">Stamm-Zutat</th><th>Bewertung</th><th>Status</th></tr></thead><tbody id="zwRumpf"></tbody></table>
+ <div class="hinw" style="margin-top:8px">Hinweis: Eine geänderte Stamm-Zutat wird als <b>Namensbrücke</b> gespeichert (Etikett-Name → Stamm-Zutat). Sie gilt dann für alle Produkte mit diesem Namen – so lernt die Maschine dazu. Jede Änderung steht im Verlauf.</div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
@@ -332,6 +373,108 @@ async function csv(){
   const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'text/csv;charset=utf-8'}));
   a.download='root-index-produkte-'+new Date().toISOString().slice(0,10)+'.csv'; a.click();
   $('zahl').textContent=gesamt.toLocaleString('de-DE')+' Produkte';
+}
+
+
+// ---- Zutaten-Werkstatt (Ralph 29.09.2026) -----------------------------------
+let ZW = {i:null, zeilen:[], wahl:{}, modus:''};
+const bwFarbe = b => b==null ? 'var(--ink3)' : b>=8 ? '#7fd99a' : b>=5 ? '#f2cd6c' : '#f2716c';
+const bwHtml = b => b==null ? '<span class="leer">–</span>' : '<span class="bw" style="background:'+bwFarbe(b)+'">'+b+'</span>';
+document.addEventListener('contextmenu', e=>{
+  const td = e.target.closest && e.target.closest('td[data-k="zutaten"]'); if(!td) return;
+  e.preventDefault(); const i = Number(td.closest('tr').dataset.i); zwAuf(i);
+});
+function zwAuf(i){
+  ZW = {i, zeilen:[], wahl:{}, modus:''};
+  const r = ZEILEN[i];
+  $('zwTitel').textContent = r.id+' · '+(r.name||'')+(r.marke?' ('+r.marke+')':'');
+  $('zwText').value = (AEND[i] && AEND[i].zutaten!=null) ? AEND[i].zutaten : (r.zutaten||'');
+  $('zwMeldung').textContent=''; $('zwRumpf').innerHTML='';
+  $('zw').classList.add('an'); zwAktuell();
+}
+function zwZu(){ $('zw').classList.remove('an'); }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape' && $('zw').classList.contains('an')) zwZu(); });
+async function zwAktuell(){
+  $('zwMeldung').textContent='lädt aktuelle Bindung …';
+  const {data,error} = await client.rpc('cb_admin_produkt_bindungen',{p_id:ZEILEN[ZW.i].id});
+  if(error){ $('zwMeldung').textContent='Fehler: '+error.message; return; }
+  ZW.modus='aktuell'; ZW.wahl={};
+  ZW.zeilen = (data||[]).map(z=>({name:z.text, original:z.text, zutat_id:z.zutat_id, stamm:z.stamm, bewertung:z.bewertung, status:z.zaehlt===false?'Hülle':'gebunden'}));
+  $('zwMeldung').textContent = ZW.zeilen.length ? 'So ist das Produkt gerade gebunden ('+ZW.zeilen.length+' Zutaten), Index '+(ZEILEN[ZW.i].idx??'–')+'.' : 'Noch keine Bindung – „Zerlegen“ drücken.';
+  zwMalen();
+}
+async function zwZerlegen(){
+  $('zwMeldung').textContent='zerlege …';
+  const {data,error} = await client.rpc('cb_admin_zutaten_vorschau',{p_text:$('zwText').value});
+  if(error){ $('zwMeldung').textContent='Fehler: '+error.message; return; }
+  ZW.modus='vorschau'; ZW.wahl={};
+  ZW.zeilen = (data||[]).filter(z=>z.typ!=='kennzeichnungstext').map(z=>({name:z.name, original:z.original, zutat_id:z.zutat_id, stamm:z.stamm, bewertung:z.bewertung, status:z.status, ebene:z.ebene, e:z.e_nummer}));
+  const offen = ZW.zeilen.filter(z=>!z.zutat_id).length;
+  $('zwMeldung').textContent = 'Vorschau: '+ZW.zeilen.length+' Zutaten erkannt'+(offen?', '+offen+' ohne Stamm-Zutat (rot) – bitte zuordnen':'')+'. Noch nichts gespeichert.';
+  zwMalen();
+}
+function zwMalen(){
+  $('zwRumpf').innerHTML = ZW.zeilen.map((z,k)=>{
+    const w = ZW.wahl[k]; const stamm = w? w.name : z.stamm; const bw = w? w.bewertung : z.bewertung;
+    const einr = (z.ebene||1)>1 ? '&nbsp;&nbsp;↳ ' : '';
+    return '<tr class="'+(w?'neu':'')+'"><td>'+(k+1)+'</td><td>'+einr+esc(z.original||z.name)+'</td>'
+      +'<td><div class="ein"><input data-k="'+k+'" value="'+esc(stamm||'')+'" placeholder="Stamm-Zutat suchen …" oninput="zwSuche(this)" onfocus="this.select()" style="'+(stamm?'':'border-color:var(--r)')+'"></div></td>'
+      +'<td>'+bwHtml(bw)+'</td><td class="zst">'+esc(w?'geändert':(z.status||''))+(z.e?' · '+esc(z.e):'')+'</td></tr>';
+  }).join('') || '<tr><td colspan="5" class="leer">keine Zeilen</td></tr>';
+}
+let zwTimer=null;
+function zwSuche(inp){
+  clearTimeout(zwTimer); const k=Number(inp.dataset.k); const q=inp.value.trim();
+  const box=inp.parentElement; box.querySelectorAll('.vor').forEach(x=>x.remove());
+  if(q.length<2) return;
+  zwTimer=setTimeout(async()=>{
+    const {data,error}=await client.rpc('cb_admin_zutaten_suchen_v2',{p_suche:q,p_limit:10});
+    box.querySelectorAll('.vor').forEach(x=>x.remove());
+    if(error||!data||!data.length) return;
+    const d=document.createElement('div'); d.className='vor';
+    d.innerHTML=data.map((t,j)=>'<div data-j="'+j+'"><span>'+esc(t.name)+' <span class="leer">'+esc(t.category||'')+'</span></span>'+bwHtml(t.canonical_default_rating)+'</div>').join('');
+    d.querySelectorAll('div[data-j]').forEach(el=>el.onmousedown=ev=>{
+      ev.preventDefault(); const t=data[Number(el.dataset.j)];
+      ZW.wahl[k]={zutat_id:t.technical_legacy_id, name:t.name, bewertung:t.canonical_default_rating};
+      zwMalen();
+    });
+    box.appendChild(d);
+  },250);
+}
+document.addEventListener('click',e=>{ if(!e.target.closest('#zw .ein')) document.querySelectorAll('#zw .vor').forEach(x=>x.remove()); });
+function zwInZelle(){
+  const i=ZW.i; const td=$('rumpf').querySelector('tr[data-i="'+i+'"] td[data-k="zutaten"]');
+  if(!td) return; td.innerText=$('zwText').value; geaendert(i,td,'zutaten');
+  $('zwMeldung').textContent='Text steht in der Zelle (gelb). Mit „Speichern“ in der Zeile oder hier „Speichern & neu rechnen“ übernehmen.';
+}
+async function zwSpeichern(){
+  const i=ZW.i, r=ZEILEN[i]; const text=$('zwText').value.trim();
+  const brueck = Object.entries(ZW.wahl);
+  $('zwMeldung').textContent='speichere …';
+  for(const [k,w] of brueck){
+    const z=ZW.zeilen[Number(k)]; const name=(z.name||z.original||'').trim(); if(!name) continue;
+    const {error}=await client.rpc('cb_admin_namensbruecke_setzen',{p_name:name,p_zutat_id:w.zutat_id});
+    if(error){ $('zwMeldung').innerHTML='<span style="color:var(--r)">Brücke „'+esc(name)+'“: '+esc(error.message)+'</span>'; return; }
+  }
+  let alt=r.idx, neu=null, fehler=null;
+  if(text && text!==(r.zutaten||'').trim()){
+    const {data,error}=await client.rpc('cb_admin_produkt_speichern',{p_id:r.id,p:{zutaten:text}});
+    if(error) fehler=error.message; else { if(data && data.zeile) ZEILEN[i]=data.zeile; neu=ZEILEN[i].idx; }
+  } else {
+    const {data,error}=await client.rpc('cb_admin_produkt_neu_binden',{p_id:r.id});
+    if(error) fehler=error.message; else {
+      neu=data.neu;
+      const t=await client.rpc('cb_admin_produkt_tabelle',{p_suche:r.id,p_marke:null,p_status:null,p_hersteller:null,p_markt:null,p_sort:'id',p_ab:false,p_limit:5,p_offset:0});
+      const z=(t.data&&t.data.zeilen||[]).find(x=>x.id===r.id); if(z) ZEILEN[i]=z;
+    }
+  }
+  if(fehler){ $('zwMeldung').innerHTML='<span style="color:var(--r)">'+esc(fehler)+'</span>'; return; }
+  if(AEND[i]) { delete AEND[i].zutaten; if(!Object.keys(AEND[i]).length) delete AEND[i]; knopf(); }
+  const tr=$('rumpf').querySelector('tr[data-i="'+i+'"]'); const nb=document.createElement('tbody'); nb.innerHTML=zeileHtml(ZEILEN[i],i);
+  const ntr=nb.firstElementChild; ntr.classList.add('gespeichert'); tr.replaceWith(ntr); breitenSetzen();
+  await zwAktuell();
+  $('zwMeldung').innerHTML='<span style="color:var(--g)">Gespeichert'+(brueck.length?' ('+brueck.length+' Namensbrücke'+(brueck.length>1?'n':'')+')':'')+'. Index '+(alt??'–')+' → '+(neu??'–')+'.</span>'
+    +(brueck.length && neu===alt ? ' <span class="hinw">Bleibt die Bindung gleich, trifft die Maschine den Namen schon direkt – dann bitte melden.</span>':'');
 }
 
 stand(); laden();
