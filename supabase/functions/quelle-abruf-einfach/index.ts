@@ -1,4 +1,7 @@
-// quelle-abruf-einfach — Stufe 1 des Quellenwegs (Work #373), Fassung 5.
+// quelle-abruf-einfach — Stufe 1 des Quellenwegs (Work #373), Fassung 6.
+//
+// v6 (2026-09-29, I41, Ralph-Go): Wortgrenze vor "Zutaten" – vorher griff das Muster
+//   auf "Backzutaten" im Seitenmenue und nahm die Menueliste als Zutatenliste (dovgan.de).
 //
 // v5 (2026-09-06, #622): EIN PRODUKT GEZIELT. Bisher war die Arbeitsliste
 //   v_quelle_abruf_offen die einzige Bezugsquelle. Wer ein bestimmtes Produkt
@@ -138,7 +141,7 @@ function ausJsonLd(html) {
 
 function ausText(text) {
   const muster = new RegExp(
-    "Zutaten(?:verzeichnis|liste)?\\s*[:\\n]\\s*([\\s\\S]{10,2500}?)" +
+    "(?<![A-Za-zÄÖÜäöüß])Zutaten(?:verzeichnis|liste)?\\s*[:\\n]\\s*([\\s\\S]{10,2500}?)" +
       "(?=\\n\\s*\\n|" + ABBRUCH + "|$)",
     "i",
   );
