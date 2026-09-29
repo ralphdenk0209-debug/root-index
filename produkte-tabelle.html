@@ -34,6 +34,9 @@ body.ziehen{cursor:col-resize;user-select:none}
 /* Farbgruppen */
 .gr-idx{background-image:linear-gradient(rgba(143,184,242,.08),rgba(143,184,242,.08))}
 .gr-nw{background-image:linear-gradient(rgba(127,217,154,.09),rgba(127,217,154,.09))}
+.gr-ns{background-image:linear-gradient(rgba(120,210,220,.08),rgba(120,210,220,.08))}
+thead tr.g th.gr-ns{color:#78d2dc}
+td.nz{white-space:pre-line}
 .gr-zus{background-image:linear-gradient(rgba(242,205,108,.08),rgba(242,205,108,.08))}
 .gr-zut{background-image:linear-gradient(rgba(200,160,230,.06),rgba(200,160,230,.06))}
 .gr-her{background-image:linear-gradient(rgba(230,161,90,.09),rgba(230,161,90,.09))}
@@ -117,7 +120,8 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
   <li>Name, Marke, EAN, Menge → werden direkt übernommen.</li>
   <li>Quelle (z. B. Herstellerseite) → wird am Produkt vermerkt.</li>
   <li>Status → wird direkt gesetzt, ohne Neuberechnung.</li>
-  <li>Zusatzstoffe (Status/Stoffe) von Hand → Index wird neu gerechnet, deine Angabe bleibt.</li></ol></div>
+  <li>Zusatzstoffe (Status/Stoffe) von Hand → Index wird neu gerechnet, deine Angabe bleibt.</li>
+  <li>Nährstoffe laut Etikett: eine Zeile je Stoff, z. B. <i>L-Leucin 10,8 g</i> oder <i>Vitamin D3 20 µg (400 %)</i> (Zahl in Klammern = % NRV). Bezug daneben wählen (pro 100 g, pro Portion, Tagesdosis …). Speichern ersetzt die ganze Liste; Index wird neu gerechnet.</li></ol></div>
  <div class="fl h"><b>Herstellerabgleich (Stand) <span class="tag">nur Markierung</span></b><ol>
   <li><i>verifiziert</i> = Hersteller-Zutaten stimmen mit unseren überein.</li>
   <li><i>korrigiert</i> = du hast unsere Daten an die Herstellerseite angepasst. Die Korrektur selbst machst du in der Zutaten-Spalte – der Stand ist nur das Häkchen.</li>
@@ -170,6 +174,8 @@ const SP = [
   ['bst','Ballastst.',null, r=>zahl(r.bst),'n'],
   ['prot','Eiweiß',null, r=>zahl(r.prot),'n'],
   ['salz','Salz',null, r=>zahl(r.salz,2),'n'],
+  ['n_bezug','Bezug',null, r=>esc(BEZ[r.n_bezug]||r.n_bezug)],
+  ['naehrstoffe','Nährstoffe (Vitamine, Mineralien, Aminosäuren …)',null, r=>esc(r.naehrstoffe),'lang zu nz'],
   ['zus_status','Status',null, r=>esc(r.zus_status)],
   ['zus_text','Stoffe',null, r=>esc(r.zus_text)],
   ['zutaten','Zutatenliste',null, r=>esc(r.zutaten),'lang zu'],
@@ -179,11 +185,11 @@ const SP = [
 const TXT = {verifiziert:'verifiziert',korrigiert:'korrigiert',abweichend:'abweichend',offen:'in Arbeit',vorlegen:'Ralph vorlegen',nicht_lesbar:'nicht lesbar',keine_seite:'keine Seite',ungeprueft:'ungeprüft',sonstiges:'sonstiges'};
 // Gruppen, Farben, Standardbreiten
 const GR = [['','Produkt',['id','name','marke','ean','status','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
-  ['gr-nw','Nährwerte je 100 g/ml',['kcal','fett','gesf','kh','zucker','bst','prot','salz']],['gr-zus','Zusatzstoffe',['zus_status','zus_text']],
+  ['gr-nw','Nährwerte je 100 g/ml',['kcal','fett','gesf','kh','zucker','bst','prot','salz']],['gr-ns','Nährstoffe laut Etikett',['n_bezug','naehrstoffe']],['gr-zus','Zusatzstoffe',['zus_status','zus_text']],
   ['gr-zut','Zutaten',['zutaten']],['gr-her','Herstellerabgleich',['hersteller','hersteller_url']]];
 const GRK={}, GSTART={}; GR.forEach(g=>{ g[2].forEach((k,j)=>{ GRK[k]=g[0]; if(j===0&&g[0]) GSTART[k]=1; }); });
 const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
-  kcal:68,fett:62,gesf:62,kh:62,zucker:66,bst:74,prot:66,salz:62,zus_status:120,zus_text:220,zutaten:440,hersteller:170,hersteller_url:260};
+  kcal:68,fett:62,gesf:62,kh:62,zucker:66,bst:74,prot:66,salz:62,n_bezug:120,naehrstoffe:320,zus_status:120,zus_text:220,zutaten:440,hersteller:170,hersteller_url:260};
 let BREITE={...BREITE_STD};
 try{ Object.assign(BREITE, JSON.parse(localStorage.getItem('pt-breiten')||'{}')); }catch(e){}
 function kl(k,extra){ return [extra||'',GRK[k]||'',GSTART[k]?'gstart':''].join(' ').trim(); }
@@ -239,10 +245,11 @@ async function laden(){
 // ---- Bearbeiten (Ralph 29.09.2026) ----------------------------------------
 const EDIT = {name:'text',marke:'text',ean:'text',status:'status',menge:'text',
   kcal:'zahl',fett:'zahl',gesf:'zahl',kh:'zahl',zucker:'zahl',bst:'zahl',prot:'zahl',salz:'zahl',
-  zus_status:'text',zus_text:'text',zutaten:'lang', quelle:'wahl', hersteller:'wahl', hersteller_url:'text'};
+  zus_status:'text',zus_text:'text',zutaten:'lang', quelle:'wahl', hersteller:'wahl', hersteller_url:'text', naehrstoffe:'lang', n_bezug:'wahl'};
 const QUELLEN=['Herstellerseite','Etikettfoto','OpenFoodFacts','Amazon/Haendler','BLS 4.0','USDA FoodData Central','EU-Recht','Riki-Einstufung','Setzung (Ralph-Entscheid)','Regelwerk-Staffel','Anker/Systematik'];
 const HSTAENDE=['verifiziert','korrigiert','abweichend','vorlegen','nicht_lesbar','keine_seite'];
-const WAHL={status:()=>STATI, quelle:()=>QUELLEN, hersteller:()=>HSTAENDE};
+const BEZ={pro_100g:'pro 100 g',pro_100ml:'pro 100 ml',pro_portion:'pro Portion',tagesdosis:'Tagesdosis',pro_liter:'pro Liter',unbekannt:'unbekannt'};
+const WAHL={n_bezug:()=>Object.keys(BEZ),status:()=>STATI, quelle:()=>QUELLEN, hersteller:()=>HSTAENDE};
 const STATI=['Aktiv','Entwurf','prüfen','Aktiv ohne Index','Abgelehnt','Inaktiv'];
 let AEND={};   // {zeilenIndex: {feld: wert}}
 const roh = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : String(v));
@@ -255,8 +262,8 @@ function zelle(r,s,i){
     const liste=WAHL[k](), akt=r[k]==null?'':String(r[k]);
     const extra = k==='hersteller'&&r.hersteller_url ? ' <a href="'+esc(r.hersteller_url)+'" target="_blank" rel="noopener" title="Seite öffnen'+(r.hersteller_am?' · geprüft '+datum(r.hersteller_am):'')+'">↗</a>' : '';
     return '<td class="'+c+'"><select data-k="'+k+'" onchange="geaendert('+i+',this,\''+k+'\')">'
-     + (liste.includes(akt)?'':'<option value="'+esc(akt)+'" selected>'+esc(k==='hersteller'?(TXT[akt]||akt||'–'):(akt||'–'))+'</option>')
-     + liste.map(x=>'<option value="'+esc(x)+'"'+(x===akt?' selected':'')+'>'+esc(k==='hersteller'?TXT[x]:x)+'</option>').join('') + '</select>'+extra+'</td>';
+     + (liste.includes(akt)?'':'<option value="'+esc(akt)+'" selected>'+esc(k==='hersteller'?(TXT[akt]||akt||'–'):k==='n_bezug'?(BEZ[akt]||akt||'–'):(akt||'–'))+'</option>')
+     + liste.map(x=>'<option value="'+esc(x)+'"'+(x===akt?' selected':'')+'>'+esc(k==='hersteller'?TXT[x]:k==='n_bezug'?BEZ[x]:x)+'</option>').join('') + '</select>'+extra+'</td>';
   }
   return '<td class="'+c+'" contenteditable="plaintext-only" spellcheck="false" data-k="'+k+'" oninput="geaendert('+i+',this,\''+k+'\')">'+esc(roh(r[k]))+'</td>';
 }
