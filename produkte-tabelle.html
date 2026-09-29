@@ -22,7 +22,7 @@ a{color:var(--acc);text-decoration:none}
 #hinweis{padding:8px 16px;color:var(--r)}
 .info{padding:6px 16px;color:var(--ink3);font-size:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .info button{background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:6px;padding:3px 9px;cursor:pointer;font:inherit}
-.box{overflow:auto;height:calc(100vh - 150px);border-top:1px solid var(--line)}
+.box{overflow:auto;height:calc(100vh - 150px);min-height:400px;border-top:1px solid var(--line)}
 table{border-collapse:separate;border-spacing:0;table-layout:fixed}
 th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 thead th{position:sticky;background:var(--card2);color:var(--ink2);font-weight:600;font-size:11.5px;text-align:left;z-index:3}
@@ -71,6 +71,17 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 .st.nicht_lesbar,.st.keine_seite{color:var(--ink3)}
 .st.ungeprueft{color:var(--ink3);border-style:dashed}
 .leer{color:var(--ink3)}
+#hilfe{display:none;margin:8px 16px;padding:14px 16px;background:var(--card);border:1px solid var(--line);border-radius:12px;font-size:12.5px;color:var(--ink2)}
+#hilfe.an{display:block}
+#hilfe h2{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--acc);margin:0 0 10px}
+.fluss{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px}
+.fl{background:var(--card2);border-radius:10px;padding:10px 12px;border-left:3px solid var(--line)}
+.fl b{display:block;color:var(--ink);margin-bottom:6px;font-size:13px}
+.fl ol{margin:0;padding-left:18px}.fl li{margin:2px 0}
+.fl.m{border-left-color:var(--g)}.fl.d{border-left-color:var(--b)}.fl.h{border-left-color:var(--acc)}
+.fl .tag{display:inline-block;font-size:10.5px;border-radius:99px;padding:0 7px;margin-left:6px;vertical-align:1px}
+.fl.m .tag{background:rgba(127,217,154,.15);color:var(--g)}.fl.d .tag{background:rgba(143,184,242,.15);color:var(--b)}.fl.h .tag{background:rgba(230,161,90,.15);color:var(--acc)}
+#hilfe .fuss{margin-top:10px;color:var(--ink3)}
 @media (max-width:700px){.bar input[type=search]{width:100%}}
 </style></head>
 <body>
@@ -89,8 +100,33 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 <div id="hinweis"></div>
 <div class="info"><span id="zahl">lädt …</span>
   <button onclick="blatt(-1)">‹ zurück</button><span id="seite"></span><button onclick="blatt(1)">weiter ›</button>
+  <button onclick="$('hilfe').classList.toggle('an')" style="border-color:var(--acc);color:var(--acc)">So läuft's ?</button>
   <button onclick="csv()" title="Alle Treffer des aktuellen Filters als CSV (Excel), max. 5.000 Zeilen">Als Excel (CSV)</button>
   <span>Zelle anklicken und ändern – geänderte Felder werden gelb; „Speichern“ in der Zeile oder oben „Alle speichern“ schreibt in die Datenbank. Index und Achsen rechnet die Maschine. Spaltenbreite: Rand im Kopf ziehen (Doppelklick = Standard).</span></div>
+<div id="hilfe"><h2>Was passiert beim Speichern?</h2>
+<div class="fluss">
+ <div class="fl m"><b>Zutaten oder Nährwerte ändern <span class="tag">läuft durch die Maschine</span></b><ol>
+  <li>Zelle ändern → wird gelb → „Speichern“.</li>
+  <li>Alte Zutaten-Zuordnung wird im Verlauf gesichert und gelöscht.</li>
+  <li>Maschine liest die neue Liste: erkennt jede Zutat, E-Nummern, Zusatzstoffe.</li>
+  <li>Zusatzstoffe werden neu abgeleitet (außer du hast sie selbst eingetragen).</li>
+  <li>Index, Achsen und NOVA werden neu gerechnet – sofort in der Zeile sichtbar.</li>
+  <li>War das Produkt „Abgelehnt/Inaktiv“, wird es automatisch „Entwurf“.</li>
+  <li>Live (Aktiv) geht es erst, wenn der Freigabe-Takt alle Wächter grün sieht.</li></ol></div>
+ <div class="fl d"><b>Stammdaten ändern <span class="tag">nur speichern</span></b><ol>
+  <li>Name, Marke, EAN, Menge → werden direkt übernommen.</li>
+  <li>Quelle (z. B. Herstellerseite) → wird am Produkt vermerkt.</li>
+  <li>Status → wird direkt gesetzt, ohne Neuberechnung.</li>
+  <li>Zusatzstoffe (Status/Stoffe) von Hand → Index wird neu gerechnet, deine Angabe bleibt.</li></ol></div>
+ <div class="fl h"><b>Herstellerabgleich (Stand) <span class="tag">nur Markierung</span></b><ol>
+  <li><i>verifiziert</i> = Hersteller-Zutaten stimmen mit unseren überein.</li>
+  <li><i>korrigiert</i> = du hast unsere Daten an die Herstellerseite angepasst. Die Korrektur selbst machst du in der Zutaten-Spalte – der Stand ist nur das Häkchen.</li>
+  <li><i>abweichend / Ralph vorlegen</i> = passt nicht, muss geklärt werden.</li>
+  <li><i>nicht lesbar / keine Seite</i> = Seite fehlt oder ist nicht auslesbar.</li>
+  <li>URL eintragen → ↗ öffnet die Seite. Nichts wird neu gerechnet.</li></ol></div>
+</div>
+<div class="fuss">Jede Änderung steht mit alt → neu im Verlauf (wer, wann). Tipp: Zutaten korrigieren + Stand „korrigiert“ + Quelle „Herstellerseite“ in einem Rutsch, dann einmal speichern.</div>
+</div>
 <div class="box"><table id="tab">
 <colgroup id="cols"></colgroup>
 <thead>
