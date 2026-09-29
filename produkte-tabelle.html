@@ -3,7 +3,7 @@
 <title>Produkttabelle — Root Index</title><base target="_top">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-/* Produkttabelle (I41, 29.09.2026): alle Produkte live aus der Datenbank – Index, Achsen, Nährwerte, Zusatzstoffe, Zutaten, Herstellerabgleich. Nur lesen. */
+/* Produkttabelle (I41, 29.09.2026): alle Produkte live aus der Datenbank, bearbeitbar; Spaltenbreiten ziehbar, Gruppen farbig. */
 *{box-sizing:border-box}
 :root{--bg:#1a1714;--card:#242019;--card2:#2c2720;--ink:#f4efe6;--ink2:#bdb3a3;--ink3:#7f776b;--line:rgba(255,255,255,.08);--acc:#e6a15a;--g:#7fd99a;--y:#f2cd6c;--r:#f2716c;--b:#8fb8f2}
 html,body{margin:0}
@@ -23,32 +23,44 @@ a{color:var(--acc);text-decoration:none}
 .info{padding:6px 16px;color:var(--ink3);font-size:12px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
 .info button{background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:6px;padding:3px 9px;cursor:pointer;font:inherit}
 .box{overflow:auto;height:calc(100vh - 150px);border-top:1px solid var(--line)}
-table{border-collapse:separate;border-spacing:0;min-width:2300px;width:100%}
-th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top;white-space:nowrap}
+table{border-collapse:separate;border-spacing:0;table-layout:fixed}
+th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 thead th{position:sticky;background:var(--card2);color:var(--ink2);font-weight:600;font-size:11.5px;text-align:left;z-index:3}
 thead tr.g th{top:0;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;color:var(--ink3);text-align:center}
-thead tr.k th{top:26px;cursor:pointer;user-select:none}
+thead tr.k th{top:26px;cursor:pointer;user-select:none;position:sticky;overflow:visible}
+.zieh{position:absolute;top:0;right:-4px;width:8px;height:100%;cursor:col-resize;z-index:5}
+.zieh:hover,.zieh.an{background:var(--acc);opacity:.6}
+body.ziehen{cursor:col-resize;user-select:none}
+/* Farbgruppen */
+.gr-idx{background-image:linear-gradient(rgba(143,184,242,.08),rgba(143,184,242,.08))}
+.gr-nw{background-image:linear-gradient(rgba(127,217,154,.09),rgba(127,217,154,.09))}
+.gr-zus{background-image:linear-gradient(rgba(242,205,108,.08),rgba(242,205,108,.08))}
+.gr-zut{background-image:linear-gradient(rgba(200,160,230,.06),rgba(200,160,230,.06))}
+.gr-her{background-image:linear-gradient(rgba(230,161,90,.09),rgba(230,161,90,.09))}
+thead tr.g th.gr-idx{color:var(--b)} thead tr.g th.gr-nw{color:var(--g)} thead tr.g th.gr-zus{color:var(--y)} thead tr.g th.gr-zut{color:#c8a0e6} thead tr.g th.gr-her{color:var(--acc)}
+.gstart{border-left:2px solid rgba(255,255,255,.18)}
 thead tr.k th.s::after{content:" ↕";color:var(--ink3)}
 thead tr.k th.auf::after{content:" ▲";color:var(--acc)}
 thead tr.k th.ab::after{content:" ▼";color:var(--acc)}
-td.fix,th.fix{position:sticky;left:0;background:var(--card);z-index:2;width:112px;min-width:112px;max-width:112px}
+td.fix,th.fix{position:sticky;left:0;background:var(--card);z-index:2}
 thead th.fix{z-index:4;background:var(--card2)}
-td.fix2,th.fix2{position:sticky;left:112px;background:var(--card);z-index:2;width:260px;min-width:260px;max-width:260px;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 0 var(--line)}
+td.fix2,th.fix2{position:sticky;left:112px;background:var(--card);z-index:2;box-shadow:2px 0 0 var(--line)}
 thead th.fix2{z-index:4;background:var(--card2)}
 td[contenteditable]{cursor:text;outline:none}
 td[contenteditable]:focus{background:#3a3226!important;box-shadow:inset 0 0 0 1px var(--acc);white-space:normal}
 td.fix2[contenteditable]:focus{overflow:visible}
 td.geaendert{background:#4a3d1c!important}
-td select{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12px;padding:1px 4px}
+td select{max-width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12px;padding:1px 4px}
 .sp{display:none;margin-left:6px;background:var(--acc);color:#1a1714;border:0;border-radius:6px;padding:1px 7px;font:inherit;font-size:11px;font-weight:600;cursor:pointer}
-tr.dirty .sp{display:inline-block}
+tr.dirty .sp{display:block;margin:4px 0 0 0}
+td.fix{white-space:normal}
 tr.gespeichert td.fix{box-shadow:inset 3px 0 0 var(--g)}
 tr.fehler td.fix{box-shadow:inset 3px 0 0 var(--r)}
 #alleSp{background:var(--acc);color:#1a1714;font-weight:600;border:0;display:none}
 #meldung{font-size:12px}
 tbody tr:hover td{background:#302a22}
 td.n{text-align:right}
-td.lang{white-space:normal;min-width:360px;max-width:520px;color:var(--ink2)}
+td.lang{white-space:normal;color:var(--ink2)}
 td.lang.zu{max-height:3.2em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 .idx{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:600;color:#1a1714}
@@ -78,10 +90,11 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 <div class="info"><span id="zahl">lädt …</span>
   <button onclick="blatt(-1)">‹ zurück</button><span id="seite"></span><button onclick="blatt(1)">weiter ›</button>
   <button onclick="csv()" title="Alle Treffer des aktuellen Filters als CSV (Excel), max. 5.000 Zeilen">Als Excel (CSV)</button>
-  <span>Zelle anklicken und ändern – geänderte Felder werden gelb; „Speichern“ in der Zeile oder oben „Alle speichern“ schreibt in die Datenbank. Index, Achsen und Quelle rechnet die Maschine.</span></div>
-<div class="box"><table>
+  <span>Zelle anklicken und ändern – geänderte Felder werden gelb; „Speichern“ in der Zeile oder oben „Alle speichern“ schreibt in die Datenbank. Index und Achsen rechnet die Maschine. Spaltenbreite: Rand im Kopf ziehen (Doppelklick = Standard).</span></div>
+<div class="box"><table id="tab">
+<colgroup id="cols"></colgroup>
 <thead>
-<tr class="g"><th class="fix" colspan="1"></th><th class="fix2"></th><th colspan="6">Produkt</th><th colspan="6">Index</th><th colspan="8">Nährwerte je 100 g/ml</th><th colspan="2">Zusatzstoffe</th><th>Zutaten</th><th colspan="2">Herstellerabgleich</th></tr>
+<tr class="g" id="gkopf"></tr>
 <tr class="k" id="kopf"></tr>
 </thead><tbody id="rumpf"></tbody></table></div>
 
@@ -125,13 +138,43 @@ const SP = [
   ['zus_text','Stoffe',null, r=>esc(r.zus_text)],
   ['zutaten','Zutatenliste',null, r=>esc(r.zutaten),'lang zu'],
   ['hersteller','Stand','hersteller', r=>'<span class="st '+esc(r.hersteller)+'">'+esc(TXT[r.hersteller]||r.hersteller)+'</span>'],
-  ['hersteller_url','Seite / geprüft',null, r=> r.hersteller_url ? '<a href="'+esc(r.hersteller_url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">öffnen</a> '+datum(r.hersteller_am) : ''],
+  ['hersteller_url','Herstellerseite (URL)',null, r=>esc(r.hersteller_url)],
 ];
 const TXT = {verifiziert:'verifiziert',korrigiert:'korrigiert',abweichend:'abweichend',offen:'in Arbeit',vorlegen:'Ralph vorlegen',nicht_lesbar:'nicht lesbar',keine_seite:'keine Seite',ungeprueft:'ungeprüft',sonstiges:'sonstiges'};
+// Gruppen, Farben, Standardbreiten
+const GR = [['','Produkt',['id','name','marke','ean','status','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
+  ['gr-nw','Nährwerte je 100 g/ml',['kcal','fett','gesf','kh','zucker','bst','prot','salz']],['gr-zus','Zusatzstoffe',['zus_status','zus_text']],
+  ['gr-zut','Zutaten',['zutaten']],['gr-her','Herstellerabgleich',['hersteller','hersteller_url']]];
+const GRK={}, GSTART={}; GR.forEach(g=>{ g[2].forEach((k,j)=>{ GRK[k]=g[0]; if(j===0&&g[0]) GSTART[k]=1; }); });
+const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
+  kcal:68,fett:62,gesf:62,kh:62,zucker:66,bst:74,prot:66,salz:62,zus_status:120,zus_text:220,zutaten:440,hersteller:170,hersteller_url:260};
+let BREITE={...BREITE_STD};
+try{ Object.assign(BREITE, JSON.parse(localStorage.getItem('pt-breiten')||'{}')); }catch(e){}
+function kl(k,extra){ return [extra||'',GRK[k]||'',GSTART[k]?'gstart':''].join(' ').trim(); }
 function farbe(i){ return i>=70?'#7fd99a':i>=50?'#f2cd6c':'#f2716c'; }
 
 let sort='id', ab=false, offset=0, gesamt=0, hstand='', ZEILEN=[];
-$('kopf').innerHTML = SP.map(s=>'<th class="'+(s[4]||'').replace('lang zu','')+(s[2]?' s':'')+'" data-k="'+(s[2]||'')+'">'+s[1]+'</th>').join('');
+$('gkopf').innerHTML = '<th class="fix"></th><th class="fix2"></th>' + GR.map((g,j)=>'<th colspan="'+(j===0?g[2].length-2:g[2].length)+'" class="'+g[0]+(j?' gstart':'')+'">'+g[1]+'</th>').join('');
+$('kopf').innerHTML = SP.map(s=>'<th class="'+kl(s[0],(s[4]||'').replace('lang zu',''))+(s[2]?' s':'')+'" data-k="'+(s[2]||'')+'" data-sp="'+s[0]+'">'+s[1]+'<span class="zieh" title="Breite ziehen · Doppelklick = Standard"></span></th>').join('');
+function breitenSetzen(){
+  $('cols').innerHTML = SP.map(s=>'<col style="width:'+BREITE[s[0]]+'px">').join('');
+  $('tab').style.width = SP.reduce((a,s)=>a+BREITE[s[0]],0)+'px';
+  document.querySelectorAll('.fix2').forEach(el=>el.style.left=BREITE.id+'px');
+}
+function breitenMerken(){ try{ localStorage.setItem('pt-breiten', JSON.stringify(BREITE)); }catch(e){} }
+breitenSetzen();
+$('kopf').querySelectorAll('.zieh').forEach(h=>{
+  h.addEventListener('click',e=>e.stopPropagation());
+  h.addEventListener('dblclick',e=>{ e.stopPropagation(); const k=h.parentElement.dataset.sp; BREITE[k]=BREITE_STD[k]; breitenSetzen(); breitenMerken(); kopfHoehe(); });
+  h.addEventListener('pointerdown',e=>{
+    e.preventDefault(); e.stopPropagation();
+    const k=h.parentElement.dataset.sp, x0=e.clientX, w0=BREITE[k];
+    h.classList.add('an'); document.body.classList.add('ziehen');
+    const zug=ev=>{ BREITE[k]=Math.max(40, Math.round(w0+ev.clientX-x0)); breitenSetzen(); };
+    const los=()=>{ h.classList.remove('an'); document.body.classList.remove('ziehen'); removeEventListener('pointermove',zug); removeEventListener('pointerup',los); breitenMerken(); kopfHoehe(); };
+    addEventListener('pointermove',zug); addEventListener('pointerup',los);
+  });
+});
 $('kopf').querySelectorAll('th').forEach(th=>{ const k=th.dataset.k; if(!k) return; th.onclick=()=>{ if(sort===k) ab=!ab; else { sort=k; ab=(k==='index'||k==='kcal'); } offset=0; laden(); }; });
 ['suche','marke'].forEach(id=>$(id).addEventListener('keydown',e=>{ if(e.key==='Enter') neu(); }));
 ['status','markt','proseite'].forEach(id=>$(id).addEventListener('change',neu));
@@ -152,6 +195,7 @@ async function laden(){
   $('seite').textContent=(gesamt? (offset+1)+'–'+Math.min(offset+n,gesamt) : '0')+' von '+gesamt.toLocaleString('de-DE');
   $('kopf').querySelectorAll('th').forEach(th=>{ th.classList.remove('auf','ab'); if(th.dataset.k===sort) th.classList.add(ab?'ab':'auf'); });
   $('rumpf').innerHTML = ZEILEN.map((r,i)=>zeileHtml(r,i)).join('');
+  breitenSetzen();
   AEND={}; knopf();
   kopfHoehe();
 }
@@ -159,17 +203,26 @@ async function laden(){
 // ---- Bearbeiten (Ralph 29.09.2026) ----------------------------------------
 const EDIT = {name:'text',marke:'text',ean:'text',status:'status',menge:'text',
   kcal:'zahl',fett:'zahl',gesf:'zahl',kh:'zahl',zucker:'zahl',bst:'zahl',prot:'zahl',salz:'zahl',
-  zus_status:'text',zus_text:'text',zutaten:'lang'};
+  zus_status:'text',zus_text:'text',zutaten:'lang', quelle:'wahl', hersteller:'wahl', hersteller_url:'text'};
+const QUELLEN=['Herstellerseite','Etikettfoto','OpenFoodFacts','Amazon/Haendler','BLS 4.0','USDA FoodData Central','EU-Recht','Riki-Einstufung','Setzung (Ralph-Entscheid)','Regelwerk-Staffel','Anker/Systematik'];
+const HSTAENDE=['verifiziert','korrigiert','abweichend','vorlegen','nicht_lesbar','keine_seite'];
+const WAHL={status:()=>STATI, quelle:()=>QUELLEN, hersteller:()=>HSTAENDE};
 const STATI=['Aktiv','Entwurf','prüfen','Aktiv ohne Index','Abgelehnt','Inaktiv'];
 let AEND={};   // {zeilenIndex: {feld: wert}}
 const roh = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : String(v));
 function zelle(r,s,i){
-  const k=s[0], typ=EDIT[k], kl=(s[4]||'');
-  if(k==='id') return '<td class="fix">'+esc(r.id)+'<button class="sp" onclick="speichern('+i+')">Speichern</button></td>';
-  if(!typ) return '<td class="'+kl+'">'+s[3](r)+'</td>';
-  if(typ==='status') return '<td class="'+kl+'"><select data-k="status" onchange="geaendert('+i+',this,\'status\')">'
-     + STATI.map(x=>'<option'+(x===r.status?' selected':'')+'>'+x+'</option>').join('') + (STATI.includes(r.status)?'':'<option selected>'+esc(r.status)+'</option>') + '</select></td>';
-  return '<td class="'+kl+'" contenteditable="plaintext-only" spellcheck="false" data-k="'+k+'" oninput="geaendert('+i+',this,\''+k+'\')">'+esc(roh(r[k]))+'</td>';
+  const k=s[0], typ=EDIT[k];
+  const c=kl(k,s[4]);
+  if(k==='id') return '<td class="'+c+'">'+esc(r.id)+'<button class="sp" onclick="speichern('+i+')">Speichern</button></td>';
+  if(!typ) return '<td class="'+c+'">'+s[3](r)+'</td>';
+  if(typ==='status'||typ==='wahl'){
+    const liste=WAHL[k](), akt=r[k]==null?'':String(r[k]);
+    const extra = k==='hersteller'&&r.hersteller_url ? ' <a href="'+esc(r.hersteller_url)+'" target="_blank" rel="noopener" title="Seite öffnen'+(r.hersteller_am?' · geprüft '+datum(r.hersteller_am):'')+'">↗</a>' : '';
+    return '<td class="'+c+'"><select data-k="'+k+'" onchange="geaendert('+i+',this,\''+k+'\')">'
+     + (liste.includes(akt)?'':'<option value="'+esc(akt)+'" selected>'+esc(k==='hersteller'?(TXT[akt]||akt||'–'):(akt||'–'))+'</option>')
+     + liste.map(x=>'<option value="'+esc(x)+'"'+(x===akt?' selected':'')+'>'+esc(k==='hersteller'?TXT[x]:x)+'</option>').join('') + '</select>'+extra+'</td>';
+  }
+  return '<td class="'+c+'" contenteditable="plaintext-only" spellcheck="false" data-k="'+k+'" oninput="geaendert('+i+',this,\''+k+'\')">'+esc(roh(r[k]))+'</td>';
 }
 function zeileHtml(r,i){ return '<tr data-i="'+i+'">'+SP.map(s=>zelle(r,s,i)).join('')+'</tr>'; }
 function geaendert(i,el,k){
@@ -194,7 +247,7 @@ async function speichern(i){
   if(data && data.zeile){ ZEILEN[i]=data.zeile; }
   delete AEND[i];
   const neu=document.createElement('tbody'); neu.innerHTML=zeileHtml(ZEILEN[i],i);
-  const ntr=neu.firstElementChild; ntr.classList.add('gespeichert'); tr.replaceWith(ntr);
+  const ntr=neu.firstElementChild; ntr.classList.add('gespeichert'); tr.replaceWith(ntr); breitenSetzen();
   $('meldung').innerHTML='<span style="color:var(--g)">'+esc(r.id)+' gespeichert ('+(data.geaendert||0)+' Felder), Index '+(ZEILEN[i].idx??'–')+'</span>';
   knopf(); return true;
 }
