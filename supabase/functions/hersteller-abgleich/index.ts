@@ -24,6 +24,8 @@ function htmlZuText(html) {
     .replace(/<\/(p|div|li|td|tr|h[1-6]|section)>/gi, "\n")
     .replace(/<[^>]+>/g, " ")
     .replace(/&nbsp;/gi, " ")
+    .replace(/&shy;/gi, "")
+    .replace(/\u00ad/g, "")
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .replace(/&#0?39;|&apos;/gi, "'")
@@ -102,10 +104,15 @@ function ausText(text) {
   const muster = new RegExp(
     "(?<![A-Za-zÄÖÜäöüß])Zutaten(?:verzeichnis|liste)?\\s*[:\\n]\\s*([\\s\\S]{10,2500}?)" +
       "(?=\\n\\s*\\n|" + ABBRUCH + "|$)",
-    "i",
+    "gi",
   );
-  const t = text.match(muster);
-  if (t && istPlausibel(t[1])) return t[1].trim();
+  // I41: alle Fundstellen pruefen (die erste ist oft nur ein Reiter "Zutaten | Naehrwerte | Allergene");
+  // Treffer, die mit Naehrwert/Allergen beginnen, sind Reiterbeschriftungen, keine Liste.
+  for (const t of text.matchAll(muster)) {
+    const k = t[1].trim();
+    if (/^(N(ä|ae)hrwert|Allergen|Allergiker)/i.test(k)) continue;
+    if (istPlausibel(k)) return k;
+  }
 
   const zeilen = text.split("\n");
   for (let i = 0; i < zeilen.length - 1; i++) {
