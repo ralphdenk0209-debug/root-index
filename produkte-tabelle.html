@@ -109,6 +109,11 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 .bw{display:inline-block;min-width:26px;text-align:center;border-radius:6px;padding:0 6px;font-weight:600;color:#1a1714}
 #zw .hinw{color:var(--ink3);font-size:11.5px}
 #zw .zst{font-size:11px;color:var(--ink2)}
+#zw .vor div.anl{color:var(--acc);border-top:1px solid var(--line)}
+#zw tr.form td{background:var(--card2)}
+#zw .form select,#zw .form input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px}
+#zw .form .reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+#zw .lab{width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--acc);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px}
 @media (max-width:700px){.bar input[type=search]{width:100%}}
 </style></head>
 <body>
@@ -171,6 +176,7 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
  <div class="knoepfe">
   <button onclick="zwZerlegen()">Zerlegen (Vorschau)</button>
   <button onclick="zwAktuell()">Aktuelle Bindung zeigen</button>
+  <button onclick="zwNeuZeile()" title="Zutat ergänzen, die im Text fehlt – wird beim Speichern hinten an den Zutatentext gehängt">+ Zutat hinzufügen</button>
   <button onclick="zwInZelle()" title="Text nur in die Tabellenzelle schreiben – gespeichert wird mit „Speichern“ in der Zeile">Text in Zelle übernehmen</button>
   <span style="flex:1"></span>
   <button class="haupt" onclick="zwSpeichern()">Speichern &amp; neu rechnen</button>
@@ -417,9 +423,11 @@ function zwMalen(){
   $('zwRumpf').innerHTML = ZW.zeilen.map((z,k)=>{
     const w = ZW.wahl[k]; const stamm = w? w.name : z.stamm; const bw = w? w.bewertung : z.bewertung;
     const einr = (z.ebene||1)>1 ? '&nbsp;&nbsp;↳ ' : '';
-    return '<tr class="'+(w?'neu':'')+'"><td>'+(k+1)+'</td><td>'+einr+esc(z.original||z.name)+'</td>'
+    const lab = z.neu ? '<input class="lab" data-k="'+k+'" value="'+esc(z.name||'')+'" placeholder="Name wie auf dem Etikett" oninput="ZW.zeilen['+k+'].name=this.value">' : einr+esc(z.original||z.name);
+    const form = ZW.form===k ? zwFormHtml(k) : '';
+    return '<tr class="'+(w||z.neu?'neu':'')+'"><td>'+(k+1)+'</td><td>'+lab+'</td>'
       +'<td><div class="ein"><input data-k="'+k+'" value="'+esc(stamm||'')+'" placeholder="Stamm-Zutat suchen …" oninput="zwSuche(this)" onfocus="this.select()" style="'+(stamm?'':'border-color:var(--r)')+'"></div></td>'
-      +'<td>'+bwHtml(bw)+'</td><td class="zst">'+esc(w?'geändert':(z.status||''))+(z.e?' · '+esc(z.e):'')+'</td></tr>';
+      +'<td>'+bwHtml(bw)+'</td><td class="zst">'+esc(w?'geändert':(z.status||''))+(z.e?' · '+esc(z.e):'')+'</td></tr>'+form;
   }).join('') || '<tr><td colspan="5" class="leer">keine Zeilen</td></tr>';
 }
 let zwTimer=null;
@@ -430,11 +438,14 @@ function zwSuche(inp){
   zwTimer=setTimeout(async()=>{
     const {data,error}=await client.rpc('cb_admin_zutaten_suchen_v2',{p_suche:q,p_limit:10});
     box.querySelectorAll('.vor').forEach(x=>x.remove());
-    if(error||!data||!data.length) return;
+    if(error) return;
+    const liste=data||[];
     const d=document.createElement('div'); d.className='vor';
-    d.innerHTML=data.map((t,j)=>'<div data-j="'+j+'"><span>'+esc(t.name)+' <span class="leer">'+esc(t.category||'')+'</span></span>'+bwHtml(t.canonical_default_rating)+'</div>').join('');
+    d.innerHTML=liste.map((t,j)=>'<div data-j="'+j+'"><span>'+esc(t.name)+' <span class="leer">'+esc(t.category||'')+'</span></span>'+bwHtml(t.canonical_default_rating)+'</div>').join('')
+      +'<div class="anl" data-anl="1">➕ „'+esc(q)+'“ neu im Stamm anlegen …</div>';
+    d.querySelector('[data-anl]').onmousedown=ev=>{ ev.preventDefault(); ZW.form=k; ZW.formName=((ZW.zeilen[k]&&ZW.zeilen[k].name)||q).trim(); zwMalen(); };
     d.querySelectorAll('div[data-j]').forEach(el=>el.onmousedown=ev=>{
-      ev.preventDefault(); const t=data[Number(el.dataset.j)];
+      ev.preventDefault(); const t=liste[Number(el.dataset.j)];
       ZW.wahl[k]={zutat_id:t.technical_legacy_id, name:t.name, bewertung:t.canonical_default_rating};
       zwMalen();
     });
@@ -442,13 +453,52 @@ function zwSuche(inp){
   },250);
 }
 document.addEventListener('click',e=>{ if(!e.target.closest('#zw .ein')) document.querySelectorAll('#zw .vor').forEach(x=>x.remove()); });
+const ZW_KAT=['Lebensmittel','Obst','Gemüse','Getreide','Hülsenfrüchte','Nüsse & Samen','Milchprodukt','Käse','Ei','Fleisch','Fisch & Meeresfrüchte','Öl/Fett','Zucker & Süßungsmittel','Gewürze & Kräuter','Pilze','Protein','Ballaststoff','Stärke','Konzentrat','Zubereitung','Getränk','Aroma','Zusatzstoff','Vitamine & Mineralstoffe','Salz','Essig','Hefe','Kultur','Pflanzenextrakt','Sonstiges'];
+function zwNeuZeile(){
+  ZW.zeilen.push({name:'', original:'', zutat_id:null, stamm:null, bewertung:null, status:'neu', neu:true});
+  zwMalen(); const ins=$('zwRumpf').querySelectorAll('input.lab'); if(ins.length) ins[ins.length-1].focus();
+  $('zwMeldung').textContent='Neue Zeile: Namen eintragen, rechts die Stamm-Zutat wählen. Beim Speichern wird der Name hinten an den Zutatentext gehängt.';
+}
+function zwFormHtml(k){
+  return '<tr class="form"><td></td><td colspan="4"><div class="form"><div class="reihe">'
+    +'<b>Neu im Stamm:</b> <input id="zwfName" value="'+esc(ZW.formName||'')+'" style="min-width:180px">'
+    +' Kategorie <select id="zwfKat">'+ZW_KAT.map(c=>'<option>'+esc(c)+'</option>').join('')+'</select>'
+    +' Note <input id="zwfNote" type="number" min="0" max="10" step="1" style="width:60px" placeholder="0–10">'
+    +'</div><div class="reihe" style="margin-top:6px"><input id="zwfGrund" placeholder="Begründung (optional)" style="flex:1;min-width:240px">'
+    +' <button class="haupt" onclick="zwAnlegen('+k+')">Anlegen</button> <button onclick="ZW.form=null;zwMalen()">Abbrechen</button></div>'
+    +'<div class="hinw" style="margin-top:4px">Gibt es die Zutat schon (gleicher Name), wird die vorhandene genommen – ihre Note bleibt.</div></div></td></tr>';
+}
+async function zwAnlegen(k){
+  const name=$('zwfName').value.trim(), kat=$('zwfKat').value, note=$('zwfNote').value, grund=$('zwfGrund').value.trim();
+  if(!name){ $('zwMeldung').textContent='Name fehlt.'; return; }
+  if(note===''||Number(note)<0||Number(note)>10){ $('zwMeldung').textContent='Note 0–10 fehlt.'; return; }
+  $('zwMeldung').textContent='lege an …';
+  const {data,error}=await client.rpc('cb_admin_zutat_anlegen',{p_name:name,p_kategorie:kat,p_note:Number(note),p_begruendung:grund||null});
+  if(error){ $('zwMeldung').innerHTML='<span style="color:var(--r)">'+esc(error.message)+'</span>'; return; }
+  if(!data||!data.ok||!data.zutat_id){ $('zwMeldung').innerHTML='<span style="color:var(--r)">Nicht angelegt: '+esc((data&&data.grund)||'unbekannt')+'</span>'; return; }
+  ZW.wahl[k]={zutat_id:data.zutat_id, name:data.name, bewertung:data.bewertung};
+  ZW.form=null; zwMalen();
+  $('zwMeldung').innerHTML='<span style="color:var(--g)">'+(data.status==='VORHANDEN'?'Gab es schon – vorhandene Zutat gewählt':'Im Stamm angelegt')+': '+esc(data.name)+' (Note '+(data.bewertung??'–')+').</span> Mit „Speichern & neu rechnen“ ins Produkt übernehmen.';
+}
 function zwInZelle(){
   const i=ZW.i; const td=$('rumpf').querySelector('tr[data-i="'+i+'"] td[data-k="zutaten"]');
   if(!td) return; td.innerText=$('zwText').value; geaendert(i,td,'zutaten');
   $('zwMeldung').textContent='Text steht in der Zelle (gelb). Mit „Speichern“ in der Zeile oder hier „Speichern & neu rechnen“ übernehmen.';
 }
 async function zwSpeichern(){
-  const i=ZW.i, r=ZEILEN[i]; const text=$('zwText').value.trim();
+  const i=ZW.i, r=ZEILEN[i]; let text=$('zwText').value.trim();
+  const neue=ZW.zeilen.filter(z=>z.neu && (z.name||'').trim());
+  if(ZW.zeilen.some((z,k)=>z.neu && (z.name||'').trim() && !ZW.wahl[k])){ $('zwMeldung').innerHTML='<span style="color:var(--r)">Neue Zeile ohne Stamm-Zutat – bitte zuordnen oder leeren.</span>'; return; }
+  for(const z of neue){
+    const n=z.name.trim(); const low=text.toLowerCase();
+    if(!low.includes(n.toLowerCase())){
+      const f=text.search(/\.?\s*\*+\s*(aus|from|kontroll|biolog|ökolog)/i);
+      if(!text) text=n;
+      else if(f>0) text=text.slice(0,f).replace(/[.\s]+$/,'')+', '+n+'. '+text.slice(f).replace(/^\.?\s*/,'');
+      else text=text.replace(/[.\s]+$/,'')+', '+n;
+    }
+  }
+  $('zwText').value=text;
   const brueck = Object.entries(ZW.wahl);
   $('zwMeldung').textContent='speichere …';
   for(const [k,w] of brueck){
