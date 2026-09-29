@@ -27,19 +27,30 @@ table{border-collapse:separate;border-spacing:0;min-width:2300px;width:100%}
 th,td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:5px 8px;vertical-align:top;white-space:nowrap}
 thead th{position:sticky;background:var(--card2);color:var(--ink2);font-weight:600;font-size:11.5px;text-align:left;z-index:3}
 thead tr.g th{top:0;text-transform:uppercase;letter-spacing:.1em;font-size:10.5px;color:var(--ink3);text-align:center}
-thead tr.k th{top:25px;cursor:pointer;user-select:none}
+thead tr.k th{top:26px;cursor:pointer;user-select:none}
 thead tr.k th.s::after{content:" ↕";color:var(--ink3)}
 thead tr.k th.auf::after{content:" ▲";color:var(--acc)}
 thead tr.k th.ab::after{content:" ▼";color:var(--acc)}
-td.fix,th.fix{position:sticky;left:0;background:var(--card);z-index:2}
+td.fix,th.fix{position:sticky;left:0;background:var(--card);z-index:2;width:112px;min-width:112px;max-width:112px}
 thead th.fix{z-index:4;background:var(--card2)}
-td.fix2,th.fix2{position:sticky;left:74px;background:var(--card);z-index:2;max-width:260px;overflow:hidden;text-overflow:ellipsis}
+td.fix2,th.fix2{position:sticky;left:112px;background:var(--card);z-index:2;width:260px;min-width:260px;max-width:260px;overflow:hidden;text-overflow:ellipsis;box-shadow:2px 0 0 var(--line)}
 thead th.fix2{z-index:4;background:var(--card2)}
+td[contenteditable]{cursor:text;outline:none}
+td[contenteditable]:focus{background:#3a3226!important;box-shadow:inset 0 0 0 1px var(--acc);white-space:normal}
+td.fix2[contenteditable]:focus{overflow:visible}
+td.geaendert{background:#4a3d1c!important}
+td select{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:6px;font:inherit;font-size:12px;padding:1px 4px}
+.sp{display:none;margin-left:6px;background:var(--acc);color:#1a1714;border:0;border-radius:6px;padding:1px 7px;font:inherit;font-size:11px;font-weight:600;cursor:pointer}
+tr.dirty .sp{display:inline-block}
+tr.gespeichert td.fix{box-shadow:inset 3px 0 0 var(--g)}
+tr.fehler td.fix{box-shadow:inset 3px 0 0 var(--r)}
+#alleSp{background:var(--acc);color:#1a1714;font-weight:600;border:0;display:none}
+#meldung{font-size:12px}
 tbody tr:hover td{background:#302a22}
 td.n{text-align:right}
 td.lang{white-space:normal;min-width:360px;max-width:520px;color:var(--ink2)}
 td.lang.zu{max-height:3.2em;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-tr.offen td.lang{-webkit-line-clamp:unset;display:table-cell}
+td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 .idx{display:inline-block;min-width:30px;text-align:center;border-radius:6px;padding:1px 6px;font-weight:600;color:#1a1714}
 .st{font-size:11px;border-radius:99px;padding:1px 8px;border:1px solid var(--line)}
 .st.verifiziert,.st.korrigiert{color:var(--g);border-color:var(--g)}
@@ -59,6 +70,7 @@ tr.offen td.lang{-webkit-line-clamp:unset;display:table-cell}
   <select id="markt"><option value="">Markt: alle</option><option>DE</option><option>UK</option><option>FR</option><option>IE</option><option>US</option></select>
   <select id="proseite"><option>50</option><option selected>100</option><option>250</option><option>500</option></select>
   <button onclick="neu()">Suchen</button>
+  <button id="alleSp" onclick="alleSpeichern()">Alle speichern</button><span id="meldung"></span>
   <div class="nav"><a href="cockpit.html">Cockpit</a><a href="admin.html">Admin</a><a href="steuerung.html">Steuerung</a></div>
 </div>
 <div class="chips" id="chips"></div>
@@ -66,7 +78,7 @@ tr.offen td.lang{-webkit-line-clamp:unset;display:table-cell}
 <div class="info"><span id="zahl">lädt …</span>
   <button onclick="blatt(-1)">‹ zurück</button><span id="seite"></span><button onclick="blatt(1)">weiter ›</button>
   <button onclick="csv()" title="Alle Treffer des aktuellen Filters als CSV (Excel), max. 5.000 Zeilen">Als Excel (CSV)</button>
-  <span>Klick auf eine Zeile zeigt die ganze Zutatenliste. Daten kommen live aus der Datenbank.</span></div>
+  <span>Zelle anklicken und ändern – geänderte Felder werden gelb; „Speichern“ in der Zeile oder oben „Alle speichern“ schreibt in die Datenbank. Index, Achsen und Quelle rechnet die Maschine.</span></div>
 <div class="box"><table>
 <thead>
 <tr class="g"><th class="fix" colspan="1"></th><th class="fix2"></th><th colspan="6">Produkt</th><th colspan="6">Index</th><th colspan="8">Nährwerte je 100 g/ml</th><th colspan="2">Zusatzstoffe</th><th>Zutaten</th><th colspan="2">Herstellerabgleich</th></tr>
@@ -129,6 +141,7 @@ function neu(){ offset=0; laden(); }
 function blatt(d){ const n=Number($('proseite').value); const o=offset+d*n; if(o<0||o>=gesamt) return; offset=o; laden(); }
 
 async function laden(){
+  if(Object.keys(AEND||{}).length && !confirm('Es gibt ungespeicherte Änderungen. Trotzdem neu laden?')) return;
   $('zahl').textContent='lädt …';
   const n=Number($('proseite').value);
   const {data,error}=await client.rpc('cb_admin_produkt_tabelle',{...filter(), p_limit:n, p_offset:offset});
@@ -138,9 +151,62 @@ async function laden(){
   $('zahl').textContent=gesamt.toLocaleString('de-DE')+' Produkte';
   $('seite').textContent=(gesamt? (offset+1)+'–'+Math.min(offset+n,gesamt) : '0')+' von '+gesamt.toLocaleString('de-DE');
   $('kopf').querySelectorAll('th').forEach(th=>{ th.classList.remove('auf','ab'); if(th.dataset.k===sort) th.classList.add(ab?'ab':'auf'); });
-  $('rumpf').innerHTML = ZEILEN.map((r,i)=>'<tr data-i="'+i+'">'+SP.map(s=>'<td class="'+(s[4]||'')+'">'+s[3](r)+'</td>').join('')+'</tr>').join('');
-  $('rumpf').querySelectorAll('tr').forEach(tr=>tr.onclick=()=>tr.classList.toggle('offen'));
+  $('rumpf').innerHTML = ZEILEN.map((r,i)=>zeileHtml(r,i)).join('');
+  AEND={}; knopf();
+  kopfHoehe();
 }
+
+// ---- Bearbeiten (Ralph 29.09.2026) ----------------------------------------
+const EDIT = {name:'text',marke:'text',ean:'text',status:'status',menge:'text',
+  kcal:'zahl',fett:'zahl',gesf:'zahl',kh:'zahl',zucker:'zahl',bst:'zahl',prot:'zahl',salz:'zahl',
+  zus_status:'text',zus_text:'text',zutaten:'lang'};
+const STATI=['Aktiv','Entwurf','prüfen','Aktiv ohne Index','Abgelehnt','Inaktiv'];
+let AEND={};   // {zeilenIndex: {feld: wert}}
+const roh = v => v==null ? '' : (typeof v==='number' ? String(v).replace('.',',') : String(v));
+function zelle(r,s,i){
+  const k=s[0], typ=EDIT[k], kl=(s[4]||'');
+  if(k==='id') return '<td class="fix">'+esc(r.id)+'<button class="sp" onclick="speichern('+i+')">Speichern</button></td>';
+  if(!typ) return '<td class="'+kl+'">'+s[3](r)+'</td>';
+  if(typ==='status') return '<td class="'+kl+'"><select data-k="status" onchange="geaendert('+i+',this,\'status\')">'
+     + STATI.map(x=>'<option'+(x===r.status?' selected':'')+'>'+x+'</option>').join('') + (STATI.includes(r.status)?'':'<option selected>'+esc(r.status)+'</option>') + '</select></td>';
+  return '<td class="'+kl+'" contenteditable="plaintext-only" spellcheck="false" data-k="'+k+'" oninput="geaendert('+i+',this,\''+k+'\')">'+esc(roh(r[k]))+'</td>';
+}
+function zeileHtml(r,i){ return '<tr data-i="'+i+'">'+SP.map(s=>zelle(r,s,i)).join('')+'</tr>'; }
+function geaendert(i,el,k){
+  const neu = el.tagName==='SELECT' ? el.value : el.innerText.replace(/\u00a0/g,' ').trim();
+  const alt = roh(ZEILEN[i][k]);
+  AEND[i]=AEND[i]||{};
+  const td = el.tagName==='SELECT' ? el.parentElement : el;
+  if(neu===alt){ delete AEND[i][k]; td.classList.remove('geaendert'); }
+  else { AEND[i][k]=neu; td.classList.add('geaendert'); }
+  if(!Object.keys(AEND[i]).length) delete AEND[i];
+  const tr=$('rumpf').querySelector('tr[data-i="'+i+'"]');
+  tr.classList.toggle('dirty', !!AEND[i]); tr.classList.remove('gespeichert','fehler');
+  knopf();
+}
+function knopf(){ const n=Object.keys(AEND).length; $('alleSp').style.display=n?'inline-block':'none'; $('alleSp').textContent='Alle speichern ('+n+')'; }
+async function speichern(i){
+  if(!AEND[i]) return true;
+  const r=ZEILEN[i]; const tr=$('rumpf').querySelector('tr[data-i="'+i+'"]');
+  $('meldung').textContent=r.id+' wird gespeichert …';
+  const {data,error}=await client.rpc('cb_admin_produkt_speichern',{p_id:r.id, p:AEND[i]});
+  if(error){ tr.classList.add('fehler'); $('meldung').innerHTML='<span style="color:var(--r)">'+esc(r.id)+': '+esc(error.message)+'</span>'; return false; }
+  if(data && data.zeile){ ZEILEN[i]=data.zeile; }
+  delete AEND[i];
+  const neu=document.createElement('tbody'); neu.innerHTML=zeileHtml(ZEILEN[i],i);
+  const ntr=neu.firstElementChild; ntr.classList.add('gespeichert'); tr.replaceWith(ntr);
+  $('meldung').innerHTML='<span style="color:var(--g)">'+esc(r.id)+' gespeichert ('+(data.geaendert||0)+' Felder), Index '+(ZEILEN[i].idx??'–')+'</span>';
+  knopf(); return true;
+}
+async function alleSpeichern(){
+  for(const i of Object.keys(AEND).map(Number)){ const ok=await speichern(i); if(!ok) break; }
+}
+window.addEventListener('beforeunload',e=>{ if(Object.keys(AEND).length){ e.preventDefault(); e.returnValue=''; } });
+// Enter beendet einzeilige Felder
+document.addEventListener('keydown',e=>{ const t=e.target; if(e.key==='Enter' && t.dataset && t.dataset.k && EDIT[t.dataset.k]!=='lang' && t.isContentEditable){ e.preventDefault(); t.blur(); } });
+// zweite Kopfzeile genau unter der ersten
+function kopfHoehe(){ const h=document.querySelector('thead tr.g').getBoundingClientRect().height; document.querySelectorAll('thead tr.k th').forEach(th=>th.style.top=h+'px'); }
+window.addEventListener('resize',kopfHoehe);
 
 async function stand(){
   const {data,error}=await client.rpc('cb_admin_hersteller_stand_zahlen');
