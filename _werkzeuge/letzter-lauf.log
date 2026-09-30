@@ -1,37 +1,52 @@
-Lauf: 56 · Commit: 9c32b344f80dd9cf8585d552487ea24f3f94f264 · 2026-09-30 09:09 UTC
+Lauf: 57 · Commit: d16ed676df83d1ac91e49399d2534ac4649d6599 · 2026-09-30 13:03 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id null: 80 Zeilen gingen nicht, versuche kleiner
-  ... 30 Produkte (zuletzt P060)
-  ! nach id P1018: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P10818: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P10818: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P10818: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P10818: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P11583: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P11583: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P11583: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P11593: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P11668: 200 Zeilen gingen nicht, versuche kleiner
-  ... 2083 Produkte (zuletzt P11950)
-  ... 4083 Produkte (zuletzt P13924)
-  ... 6083 Produkte (zuletzt P15913)
-  ... 8083 Produkte (zuletzt P17831)
-  ... 10083 Produkte (zuletzt P19759)
-  ! nach id P20763: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20763: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 3 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20994: 1 Zeilen gingen nicht, versuche kleiner
-  ! P20996 uebersprungen (nach id P20994 auch mit 1 Zeilen nicht zu holen - REST 500: {"code":"57014","det)
-  ! nach id P20996: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20996: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20996: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20996: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20996: 3 Zeilen gingen nicht, versuche kleiner
-  ! nach id P20996: 1 Zeilen gingen nicht, versuche kleiner
-❌ Produktseiten-Generator: nach id P20996 auch mit 1 Zeilen nicht zu holen - REST 500: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+  ... 80 Produkte (zuletzt P10034)
+  ! nach id P10034: 200 Zeilen gingen nicht, versuche kleiner
+  ... 160 Produkte (zuletzt P10113)
+  ... 2160 Produkte (zuletzt P12027)
+  ... 4160 Produkte (zuletzt P14004)
+  ... 6160 Produkte (zuletzt P15990)
+  ... 8160 Produkte (zuletzt P17907)
+  ... 10160 Produkte (zuletzt P19835)
+  ... 12160 Produkte (zuletzt P21849)
+  ... 14160 Produkte (zuletzt P23862)
+  ... 16160 Produkte (zuletzt P25888)
+  ! nach id P27500: 200 Zeilen gingen nicht, versuche kleiner
+  ... 18040 Produkte (zuletzt P27783)
+  ... 20040 Produkte (zuletzt P29812)
+  ... 22040 Produkte (zuletzt P31835)
+  ... 24040 Produkte (zuletzt P33891)
+  ... 26040 Produkte (zuletzt P35905)
+  ... 28040 Produkte (zuletzt P40885)
+  ... 30040 Produkte (zuletzt P42911)
+  ... 32040 Produkte (zuletzt P44925)
+  ... 34040 Produkte (zuletzt P46951)
+  ... 36040 Produkte (zuletzt P48982)
+  ... 38040 Produkte (zuletzt P51009)
+  ... 40040 Produkte (zuletzt P53027)
+  ! nach id P54240: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P54240: 80 Zeilen gingen nicht, versuche kleiner
+  ... 42070 Produkte (zuletzt P55075)
+  ... 44070 Produkte (zuletzt P57095)
+  ... 46070 Produkte (zuletzt P59105)
+  ... 48070 Produkte (zuletzt P61119)
+  ... 50070 Produkte (zuletzt P63233)
+  ... 52070 Produkte (zuletzt P65265)
+  ... 54070 Produkte (zuletzt P67340)
+  ! nach id P68153: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68153: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68153: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68153: 10 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68153: 3 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68153: 1 Zeilen gingen nicht, versuche kleiner
+  ! P68154 uebersprungen (nach id P68153 auch mit 1 Zeilen nicht zu holen - REST 500: {"code":"57014","det)
+  ! nach id P68358: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 10 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 3 Zeilen gingen nicht, versuche kleiner
+  ! nach id P68642: 1 Zeilen gingen nicht, versuche kleiner
+❌ Produktseiten-Generator: nach id P68642 auch mit 1 Zeilen nicht zu holen - REST 500: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
