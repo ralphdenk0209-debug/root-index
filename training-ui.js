@@ -717,9 +717,11 @@ async function renderProfilMass(){
      fuer den Verlauf darunter die letzten Termine. Ein Leseweg, nicht zwei. */
   try{ const r=await client.rpc("cb_mass_historie",{p_limit:24}); hist=(r.data||[]); last=hist[0]||{}; }catch(e){}
   MASS_HIST=hist;
-  const naechste=p.Mass_Naechste?('Nächste Messung: <b>'+esc(p.Mass_Naechste)+'</b>'+(p.Mass_Naechste<=tbToday()?' · <span style="color:var(--k-b45309)">fällig</span>':'')):'';
+  /* 30.09.2026 Webtest PR7/PR11: deutsches Datum, und bei ueberfaelliger Messung, seit wann */
+  const _faelligTage=p.Mass_Naechste?Math.round((new Date(tbToday())-new Date(p.Mass_Naechste))/86400000):null;
+  const naechste=p.Mass_Naechste?('Nächste Messung: <b>'+esc(deDatum(p.Mass_Naechste))+'</b>'+(_faelligTage!=null&&_faelligTage>=0?' · <span style="color:var(--k-b45309)">'+(_faelligTage===0?'heute fällig':('fällig seit '+_faelligTage+(_faelligTage===1?' Tag':' Tagen')))+'</span>':'')):'';
   const standZeile = hist.length
-    ? '<div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:6px">Angezeigt: Messung vom <b style="color:var(--ink)">'+esc(last.Datum)+'</b>'+(hist.length>1?(' · die farbige Zahl neben jedem Maß ist die Veränderung in cm gegen die vorige Messung')  :' · erste Messung')+'</div>'
+    ? '<div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:6px">Angezeigt: Messung vom <b style="color:var(--ink)">'+esc(deDatum(last.Datum))+'</b>'+(hist.length>1?(' · die farbige Zahl neben jedem Maß ist die Veränderung in cm gegen die vorige Messung')  :' · erste Messung')+'</div>'
     : '<div style="text-align:center;font-size:12px;color:var(--muted);margin-bottom:6px">Noch keine Messung gespeichert.</div>';
   box.innerHTML=standZeile+bodyMapHtml(last, hist)+massVerlaufRahmenHtml(hist)
     +'<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:6px;padding-top:10px;border-top:1px solid var(--k-eef2f5)">'

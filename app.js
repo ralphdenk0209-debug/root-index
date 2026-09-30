@@ -1709,7 +1709,7 @@ async function loadZielHistorie(){
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px">';
   h+='<tr style="color:var(--muted)"><th style="text-align:left;padding:4px 8px">ab</th><th style="text-align:right;padding:4px 8px">kcal</th><th style="text-align:right;padding:4px 8px">Eiweiß</th><th style="text-align:right;padding:4px 8px">KH</th><th style="text-align:right;padding:4px 8px">Fett</th></tr>';
   rows.forEach((r,i)=>{ const cur=i===0?' style="font-weight:700"':'';
-    h+='<tr style="border-top:1px solid var(--line)"><td'+cur+' style="padding:5px 8px">'+esc(r.gueltig_ab)+(i===0?' <span style="color:var(--green);font-weight:600">aktuell</span>':'')+'</td>'
+    h+='<tr style="border-top:1px solid var(--line)"><td'+cur+' style="padding:5px 8px">'+esc(deDatum(r.gueltig_ab))+(i===0?' <span style="color:var(--green);font-weight:600">aktuell</span>':'')+'</td>'
       +'<td style="text-align:right;padding:5px 8px">'+(r.kcal??'–')+'</td>'
       +'<td style="text-align:right;padding:5px 8px">'+(r.eiweiss??'–')+'</td>'
       +'<td style="text-align:right;padding:5px 8px">'+(r.kh??'–')+'</td>'
@@ -5551,7 +5551,14 @@ function goBack(){ closeMehr(); var p=NAV_HIST.pop(); setMode(p||'start'); }
 function updateFloatBtns(){
   var bb=document.getElementById('backFab'); if(bb) bb.style.display=(NAV_HIST.length>0)?'flex':'none';
   var tt=document.getElementById('toTopFab'); if(tt) tt.style.display=((window.scrollY||document.documentElement.scrollTop||0)>350)?'flex':'none';
+  /* 30.09.2026 Webtest PR6: der Nach-oben-Knopf lag genau unter RIKIs Kopf (beide rechts
+     unten) und war nicht zu treffen. Ist RIKI da, rueckt er darueber. */
+  if(tt){ var rf=document.getElementById('rikiFab'); var rikiDa=rf && rf.style.display!=='none' && rf.style.visibility!=='hidden';
+          tt.style.bottom = rikiDa ? 'calc(156px + env(safe-area-inset-bottom))' : 'calc(84px + env(safe-area-inset-bottom))'; }
 }
+/* 30.09.2026 Webtest PR7: Datum wie in Deutschland ueblich („01.07.2026" statt „2026-07-01"). */
+function deDatum(iso){ var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m?(m[3]+'.'+m[2]+'.'+m[1]):String(iso||''); }
+if(typeof window!=="undefined") window.deDatum=deDatum;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    STAMMWAECHTER + EDITIERBARE STAMMTABELLEN (Ralph-Auftrag 15.08.2026)
@@ -16718,7 +16725,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-8";
+const APP_BUILD = "2026-09-30-9";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
