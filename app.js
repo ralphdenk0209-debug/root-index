@@ -1755,7 +1755,7 @@ async function saveProfil(){
   }
   const ttOk = await saveTrainTage();
   if(!ttOk){ msg.style.color="var(--k-e8920c)"; msg.textContent="Profil gespeichert – Trainingstage nicht. Bitte nochmal."; loadProfil(); return; }
-  msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; loadProfil(); refreshMe();
+  msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; if(!window._pfAutoLauf) loadProfil(); refreshMe();
 }
 /* ---- Zyklus (EN-12) ---- */
 function pfZyklusToggle(){
@@ -5495,7 +5495,7 @@ function setMode(m){
   if(m==="rezepte") loadRezepte();
   if(m==="tagebuch"){ const _d=document.getElementById("tbDatum"); if(_d) _d.value=tbToday(); loadTagebuch(); }
   if(m==="planer") loadPlaner();
-  if(m==="profil"){ loadProfil(); if(typeof wasserPrefRender==="function" && document.getElementById("pfWasserBox")) wasserPrefRender(); pfAppRender(); }
+  if(m==="profil"){ try{ _pfOffen=null; }catch(e){} loadProfil(); if(typeof wasserPrefRender==="function" && document.getElementById("pfWasserBox")) wasserPrefRender(); pfAppRender(); }
   if(m==="training") loadTraining();
   if(m==="zyklus") renderZyklus();
   if(m==="darm") renderDarm();
@@ -7865,10 +7865,138 @@ async function scanProduktLoeschen(i){
   loadScans();
 }
 if(typeof window!=='undefined') window.scanProduktLoeschen=scanProduktLoeschen;
-function pfTab(name){
-  document.querySelectorAll('#pfTabs button').forEach(b=>b.classList.toggle('active', b.dataset.p===name));
-  document.querySelectorAll('#profilInner .pf-pane').forEach(c=>{ c.style.display = c.classList.contains('pf-'+name)?'':'none'; });
+/* 30.09.2026 (Ralph: "die darstellung in mein profil finde ich etwas unuebersichtlich"
+   -> gewaehlt "Uebersicht mit Karten"). Mein Profil beginnt mit 7 Karten mit Kurzinfo;
+   Antippen oeffnet genau diesen Teil. Die Felder in index.html bleiben, wo sie sind -
+   pfAufbauen() haengt sie beim ersten Oeffnen in Gruppen um (IDs unveraendert, alle
+   Render-/Speicherwege laufen weiter). Speichern geschieht automatisch beim Aendern;
+   Knoepfe bleiben nur, wo ein Speichern bewusst etwas anlegt (Tagesziele -> Verlauf,
+   Koerpermasse, Zyklus, Passwort). App (ProfilView) zieht gleich. */
+var PF_GRP=[
+  {g:'ich',    i:'👤', t:'Über mich'},
+  {g:'gesund', i:'🩺', t:'Gesundheit'},
+  {g:'ziele',  i:'🎯', t:'Ziele & Bedarf'},
+  {g:'masse',  i:'📐', t:'Körpermaße'},
+  {g:'wasser', i:'💧', t:'Wasser & Training'},
+  {g:'region', i:'🏠', t:'Haushalt & Region'},
+  {g:'app',    i:'⚙️', t:'App & Konto'}
+];
+var _pfOffen=null, _pfAufgebaut=false, _pfTimer=null, _pfAnTimer=null;
+var PF_KARTE='background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin-bottom:12px';
+function pfAufbauen(){
+  if(_pfAufgebaut) return true;
+  var inner=document.getElementById('profilInner'); if(!inner) return false;
+  var daten=inner.querySelector('.pf-pane.pf-daten:not(#profZeiten)'); if(!daten) return false;
+  var $=function(id){ return document.getElementById(id); };
+  var tabs=$('pfTabs'); if(tabs) tabs.style.display='none';
+  var st=document.createElement('style');
+  st.textContent='#profilInner button[onclick="saveProfil()"],#profilInner button[onclick="saveAnteile()"],#pfWasserBox button[onclick="wasserPrefSave()"]{display:none!important}'
+    +'.pf-karten{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}'
+    +'.pf-karte{display:flex;align-items:center;gap:12px;text-align:left;width:100%;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--ink);cursor:pointer;font:inherit}'
+    +'.pf-karte:hover{border-color:var(--green,#16a34a)}'
+    +'.pf-karte .pf-ki{font-size:22px;line-height:1}.pf-karte .pf-kt{font-weight:600;font-size:14.5px}'
+    +'.pf-karte .pf-ks{font-size:12.5px;color:var(--muted);margin-top:2px;line-height:1.35}.pf-karte .pf-kp{margin-left:auto;color:var(--muted);font-size:20px}';
+  document.head.appendChild(st);
+  var ueb=document.createElement('div'); ueb.id='pfUebersicht'; ueb.className='pf-karten';
+  var kopf=document.createElement('div'); kopf.id='pfGrpKopf';
+  kopf.style.cssText='display:none;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px';
+  kopf.innerHTML='<button type="button" onclick="pfOeffnen(null)" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer;font-size:13px">‹ Übersicht</button>'
+    +'<b id="pfGrpTitel" style="font-size:16px"></b><span style="font-size:11.5px;color:var(--muted);margin-left:auto">speichert automatisch</span>';
+  var anker=tabs||inner.querySelector('h2');
+  anker.parentNode.insertBefore(ueb, anker.nextSibling); ueb.parentNode.insertBefore(kopf, ueb.nextSibling);
+  var grp={}, ref=kopf;
+  PF_GRP.forEach(function(x){ var d=document.createElement('div'); d.className='pf-grp'; d.dataset.g=x.g; d.style.display='none';
+    ref.parentNode.insertBefore(d, ref.nextSibling); ref=d; grp[x.g]=d; });
+  var karte=function(titel){ var d=document.createElement('div'); d.style.cssText=PF_KARTE; if(titel) d.innerHTML='<div style="font-weight:600;margin-bottom:10px">'+titel+'</div>'; return d; };
+  /* Rueckmeldung "✓ gespeichert" gehoert in den Kopf, nicht unter einen versteckten Knopf */
+  var msg=$('pfMsg'); if(msg){ msg.style.marginLeft='0'; kopf.insertBefore(msg, kopf.lastChild); }
+  /* Gesundheit */
+  var g=karte('Gesundheit'); var gg=document.createElement('div');
+  gg.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px'; g.appendChild(gg);
+  [$('pfDiab')&&$('pfDiab').closest('label'), $('pfZustandLbl'), $('pfUnvBox')].forEach(function(e){ if(e) gg.appendChild(e); });
+  grp.gesund.appendChild(g); if($('pfZyklusBox')) grp.gesund.appendChild($('pfZyklusBox'));
+  /* Wasser & Training */
+  var tt=$('pfTrainTage')&&$('pfTrainTage').parentElement; if(tt){ tt.style.marginTop='0'; tt.style.marginBottom='12px'; grp.wasser.appendChild(tt); }
+  if($('pfWasserBox')) grp.wasser.appendChild($('pfWasserBox'));
+  /* Haushalt & Region */
+  var r=karte(''); ['pfHhBox','pfBlBox'].forEach(function(id){ var e=$(id); if(e){ e.style.marginTop= r.children.length?'14px':'0'; r.appendChild(e); } });
+  grp.region.appendChild(r);
+  /* App & Konto: Darstellung/RIKI, Konto & Sicherheit, Newsletter */
+  if($('pfAppBox')) grp.app.appendChild($('pfAppBox'));
+  var konto=$('pfPass')&&$('pfPass').closest('div[style*="border-radius:10px"]');
+  var news=$('pfNews')&&$('pfNews').closest('label');
+  if(konto){ konto.style.marginTop='0'; konto.style.marginBottom='12px'; if(news){ news.style.marginTop='14px'; konto.appendChild(news); } grp.app.appendChild(konto); }
+  /* Ziele & Masse: die vorhandenen Karten */
+  inner.querySelectorAll('.pf-pane.pf-ziele').forEach(function(e){ grp.ziele.appendChild(e); });
+  inner.querySelectorAll('.pf-pane.pf-masse').forEach(function(e){ grp.masse.appendChild(e); });
+  /* Ueber mich: persoenliche Daten + Zeiten */
+  grp.ich.appendChild(daten); if($('profZeiten')) grp.ich.appendChild($('profZeiten'));
+  inner.querySelectorAll('.pf-pane').forEach(function(e){ e.style.display=''; e.classList.remove('pf-pane'); });
+  /* Automatisch speichern */
+  ['pfName','pfGeb','pfAlter','pfGeschlecht','pfGroesse','pfGewicht','pfAktiv','pfErn','pfDiab','pfZustand','pfTrainPlus','pfNews'].forEach(function(id){
+    var e=$(id); if(e) e.addEventListener('change', pfAutoSpeichern); });
+  if($('pfTrainTage')) $('pfTrainTage').addEventListener('click', function(ev){ if(ev.target.closest('button')) pfAutoSpeichern(); });
+  ['pfAnFr','pfAnMi','pfAnAb','pfAnSn'].forEach(function(id){ var e=$(id); if(e) e.addEventListener('change', function(){
+    clearTimeout(_pfAnTimer); _pfAnTimer=setTimeout(function(){ saveAnteile(); }, 500); }); });
+  if($('pfWasserBox')) $('pfWasserBox').addEventListener('change', function(ev){
+    if(ev.target && (ev.target.id==='pfWasserSel'||ev.target.id==='pfWasserGlas')) wasserPrefSave().then(pfUebersichtRender); });
+  _pfAufgebaut=true;
+  return true;
 }
+function pfAutoSpeichern(){
+  clearTimeout(_pfTimer);
+  var m=document.getElementById('pfMsg'); if(m){ m.style.color='var(--muted)'; m.textContent='…'; }
+  _pfTimer=setTimeout(async function(){
+    window._pfAutoLauf=true;
+    try{ await saveProfil(); } finally { window._pfAutoLauf=false; }
+    pfUebersichtRender();
+  }, 700);
+}
+function _pfSelText(id){ var e=document.getElementById(id); if(!e||!e.value) return ''; var o=e.options&&e.options[e.selectedIndex]; return o?o.textContent.replace(/\s*\(.*\)$/,''):e.value; }
+function _pfVal(id){ var e=document.getElementById(id); return e&&String(e.value||'').trim(); }
+function pfUebersichtRender(){
+  var box=document.getElementById('pfUebersicht'); if(!box) return;
+  var ich=[_pfSelText('pfGeschlecht'), _pfVal('pfAlter')&&(_pfVal('pfAlter')+' J.'), _pfVal('pfGroesse')&&(_pfVal('pfGroesse')+' cm'),
+           _pfVal('pfGewicht')&&(String(_pfVal('pfGewicht')).replace('.',',')+' kg'), _pfSelText('pfAktiv')].filter(Boolean).join(' · ');
+  var unv=(window._UNV||[]).length;
+  var ges=[_pfVal('pfDiab')?('Diabetes: '+_pfSelText('pfDiab')):'Kein Diabetes angegeben',
+           unv?(unv+(unv===1?' Unverträglichkeit':' Unverträglichkeiten')):'keine Unverträglichkeiten'].join(' · ');
+  var zi=_pfVal('pfKcal')?[_pfVal('pfKcal')+' kcal', _pfVal('pfEiw')&&('Eiweiß '+_pfVal('pfEiw')+' g')].filter(Boolean).join(' · '):'Noch kein Tagesziel – Bedarf berechnen';
+  var mt=((document.getElementById('pfMass')||{}).textContent||'').match(/heute fällig|fällig seit \d+ Tag(en)?/);
+  var ma=mt?('Messung '+mt[0]):'Umfänge & Verlauf';
+  var tage=(typeof TT_GEWAEHLT!=='undefined'&&typeof TT_TAGE!=='undefined')?TT_TAGE.filter(function(t){return TT_GEWAEHLT.has(t[0]);}).map(function(t){return t[1];}).join(', '):'';
+  var wa=[_pfSelText('pfWasserSel')||'Kein Wasser gewählt', tage?('Training: '+tage):'keine Trainingstage'].join(' · ');
+  var bl=_pfSelText('pfBundesland'), hh=window._HH;
+  var re=[hh?('Haushalt'+(hh.name?(': '+hh.name):'')):'', bl?bl:''].filter(Boolean).join(' · ')||'Noch nichts angegeben';
+  var nw=(document.getElementById('pfNews')||{}).checked;
+  var ap='Darstellung, RIKI, Passwort'+(nw?' · Newsletter an':'');
+  var zeigRegion=(typeof feat==='function')&&(feat('haushalt')||feat('bundesland_karte'));
+  var sum={ich:ich||'Noch leer – antippen zum Ausfüllen', gesund:ges, ziele:zi, masse:ma, wasser:wa, region:re, app:ap};
+  box.innerHTML=PF_GRP.filter(function(x){ return x.g!=='region'||zeigRegion; }).map(function(x){
+    return '<button type="button" class="pf-karte" onclick="pfOeffnen(\''+x.g+'\')"><span class="pf-ki">'+x.i+'</span>'
+      +'<span><div class="pf-kt">'+esc(x.t)+'</div><div class="pf-ks">'+esc(sum[x.g])+'</div></span><span class="pf-kp">›</span></button>';
+  }).join('');
+}
+function pfOeffnen(g){
+  if(!pfAufbauen()) return;
+  _pfOffen=g||null;
+  var ueb=document.getElementById('pfUebersicht'), kopf=document.getElementById('pfGrpKopf');
+  if(ueb) ueb.style.display=_pfOffen?'none':'';
+  if(kopf) kopf.style.display=_pfOffen?'flex':'none';
+  document.querySelectorAll('#profilInner .pf-grp').forEach(function(d){ d.style.display=(d.dataset.g===_pfOffen)?'':'none'; });
+  var x=PF_GRP.filter(function(p){return p.g===_pfOffen;})[0];
+  var t=document.getElementById('pfGrpTitel'); if(t) t.textContent=x?(x.i+' '+x.t):'';
+  if(!_pfOffen) pfUebersichtRender();
+  try{ window.scrollTo(0,0); }catch(e){}
+}
+/* Alte Aufrufe: loadProfil ruft pfTab('daten') nach jedem Laden (offene Gruppe bleibt offen),
+   das Menue ruft pfTab('app'). */
+function pfTab(name){
+  if(!pfAufbauen()) return;
+  if(name==='daten'){ if(_pfOffen) pfOeffnen(_pfOffen); else pfOeffnen(null); return; }
+  pfOeffnen({app:'app',ziele:'ziele',masse:'masse'}[name]||null);
+}
+if(typeof window!=='undefined'){ window.pfTab=pfTab; window.pfOeffnen=pfOeffnen; window.pfUebersichtRender=pfUebersichtRender; }
 /* ===== Startseite (Home) ===== */
 let BILD={};
 /* Produktbilder aktuell ausgeblendet (eigene Bilder in Arbeit). Wieder einschalten: SHOW_PRODUKTBILDER=true */
@@ -16725,7 +16853,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-11";
+const APP_BUILD = "2026-09-30-12";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
