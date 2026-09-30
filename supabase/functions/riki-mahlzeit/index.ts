@@ -114,7 +114,8 @@ Deno.serve(async (req) => {
         model: m.id,
         max_tokens: 2000,
         tools: [WERKZEUG],
-        tool_choice: { type: "tool", name: "mahlzeit_ergebnis" },
+        // Erzwingen (tool_choice "tool") lehnen Sonnet/Opus/Fable 5.x ab - "auto" + klare Anweisung.
+        tool_choice: { type: "auto" },
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: typ, data: bild } },
           { type: "text", text: PROMPT },
