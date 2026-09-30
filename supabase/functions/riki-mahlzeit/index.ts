@@ -101,7 +101,9 @@ Deno.serve(async (req) => {
   const m = MODELLE[String(body.modell || "sonnet")] ?? MODELLE.sonnet;
   const bild = String(body.bild || "");
   const typ = String(body.typ || "image/jpeg");
-  if (!bild || bild.length < 1000) return json({ error: "Kein Foto erhalten." }, 400);
+  // Testweg (nur Admin): Foto per Adresse statt Upload, z. B. freie Testbilder von Wikimedia.
+  const bildUrl = typeof body.bild_url === "string" && /^https:\/\/[^\s]+$/.test(body.bild_url) ? body.bild_url : "";
+  if (!bildUrl && (!bild || bild.length < 1000)) return json({ error: "Kein Foto erhalten." }, 400);
   if (bild.length > 7_000_000) return json({ error: "Foto zu groß – bitte kleiner aufnehmen." }, 413);
 
   const start = Date.now();
@@ -117,7 +119,7 @@ Deno.serve(async (req) => {
         // Erzwingen (tool_choice "tool") lehnen Sonnet/Opus/Fable 5.x ab - "auto" + klare Anweisung.
         tool_choice: { type: "auto" },
         messages: [{ role: "user", content: [
-          { type: "image", source: { type: "base64", media_type: typ, data: bild } },
+          { type: "image", source: bildUrl ? { type: "url", url: bildUrl } : { type: "base64", media_type: typ, data: bild } },
           { type: "text", text: PROMPT },
         ] }],
       }),
