@@ -3433,6 +3433,7 @@ function detail2(d){
        Referenz asynchron kommt - die Karte darf darauf nicht warten. Kommt nichts, bleibt
        der Kasten leer und niemand merkt etwas (§1.11n-f: nach jedem await neu zeichnen). */
     + '<div id="pkRueck"></div>'
+    + '<div id="alBox" data-pid="'+esc(d.id)+'"></div>'   /* 30.09.2026: Allergene / Unvertraeglichkeiten, befuellt von alBoxLaden */
     /* 2026-07-24w: Feature-Schranken der alten Karte in detail2 uebernommen (Ralphs Fund 23.07.:
        Free/Gast sahen alles - die Sperren sassen nur im toten Code der alten Karte). pk_ringe
        sperrt NUR die Achsen-Grafik; die Index-ZAHL bleibt fuer alle sichtbar (ZdE). */
@@ -3514,6 +3515,7 @@ function detail2(d){
      die Funktion selbst arbeitet (manuell gerufen erscheint der Kasten).
      Deshalb steht der Aufruf jetzt dort, wo die Karte wirklich entsteht. */
   if(typeof ladeBindungsLuecke === "function"){ try{ ladeBindungsLuecke(d && d.id); }catch(e){} }
+  try{ alBoxLaden(); }catch(e){}   /* 30.09.2026 */
 }
 /* Salz-Karte: "Was dieses Salz zusaetzlich liefert" (Jod/Fluorid/Folsaeure/Selen).
    Belegt aus Produkt_Mikronaehrstoffe + EFSA_Grenzwerte (RPC cb_salz_fakten).
@@ -16572,7 +16574,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-1";
+const APP_BUILD = "2026-09-30-2";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
