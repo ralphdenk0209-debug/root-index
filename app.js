@@ -2108,7 +2108,7 @@ async function load(){
   await render();
 }
 function mkLabel(m){ return (m && m.toLowerCase()!=="generisch") ? m : ""; }
-function subLine(d){ const m=mkLabel(d.marke); return (m?esc(m)+" · ":"")+esc(d.kategorie||""); }
+function subLine(d){ const m=mkLabel(d.marke); return (m?esc(m)+" · ":"")+(d.menge?esc(d.menge)+" · ":"")+esc(d.kategorie||""); }  /* 30.09.2026 O1: Packungsgroesse unterscheidet gleichnamige Produkte */
 function prodLabel(p){ const m=mkLabel(p.marke); return p.name+(m?" · "+m:""); }
 function betterAlt(d){
   const s=num(d.clean_score); if(s==null) return null;
@@ -2167,7 +2167,8 @@ function prodRef(id, opts){
   const bild=(typeof BILD!=='undefined'&&BILD&&BILD[id])?BILD[id]:'';
   const thumb=bild?'<img src="'+esc(bild)+'" alt="" style="width:40px;height:40px;object-fit:cover;border-radius:8px;flex:0 0 auto;background:var(--k-ffffff);border:1px solid var(--line)">'
     :'<div style="width:40px;height:40px;border-radius:8px;flex:0 0 auto;background:var(--greenlt);display:flex;align-items:center;justify-content:center;font-size:18px">🌿</div>';
-  const sc=(f&&f.clean_score!=null)?'<span style="font-size:12px;font-weight:800;color:var(--k-ffffff);background:'+farbe(scoreBew(f.clean_score))+';border-radius:999px;padding:3px 9px;flex:0 0 auto">'+f.clean_score+'</span>':'';
+  const _sc=(f&&f.clean_score!=null)?f.clean_score:(opts.score!=null?opts.score:null);   /* 30.09.: Serverliste bringt die Zahl mit */
+  const sc=(_sc!=null)?'<span style="font-size:12px;font-weight:800;color:var(--k-ffffff);background:'+farbe(scoreBew(_sc))+';border-radius:999px;padding:3px 9px;flex:0 0 auto">'+Math.round(_sc)+'</span>':'';
   /* 28z15: optionaler +Punkte-Abstand (Alternativen-Reihe) - vor der Index-Pille */
   const delta=(opts.delta!=null&&isFinite(opts.delta)&&opts.delta>0)?'<span style="font-size:11px;font-weight:800;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border-radius:6px;padding:2px 6px;flex:0 0 auto">+'+Math.round(opts.delta)+'</span>':'';
   const sub=(opts.label?'<span style="color:var(--green);font-weight:700">'+esc(opts.label)+'</span>'+(marke?' · ':''):'')+(marke?esc(marke):'')+(opts.note?' · '+esc(opts.note):'');
@@ -2268,6 +2269,19 @@ function platzChip(d){
 }
 /* GL-5: Haftungsausschluss sichtbar dort, wo bewertet wird – nicht nur im Kleingedruckten. */
 const MED_HINWEIS='<div style="margin-top:8px;font-size:11.5px;color:var(--muted);line-height:1.5">Der Root Index bewertet <b>Zusammensetzung und Verarbeitungsgrad</b> eines Lebensmittels. Er ist keine Aussage darüber, ob ein Produkt für <b>dich persönlich</b> geeignet ist, und ersetzt <b>keine ärztliche oder ernährungstherapeutische Beratung</b>. Bei Beschwerden, Allergien, Erkrankungen, Schwangerschaft oder Medikamenteneinnahme: bitte ärztlich abklären.</div>';
+async function prodInsTagebuch(id){
+  if(!ME){ openLogin(); return; }
+  closeP();
+  try{ await tbOpenAdd(tbGuessMeal(), id); }catch(e){ console.error("prodInsTagebuch:", e); }
+}
+if(typeof window!=="undefined") window.prodInsTagebuch=prodInsTagebuch;
+/* 30.09.2026 Webtest P7: Esc schliesst die Produktkarte (nur wenn kein Dialog darueber liegt). */
+document.addEventListener("keydown", function(e){
+  if(e.key!=="Escape") return;
+  var ov=document.getElementById("overlay");
+  if(ov && ov.classList.contains("open") && !ov.classList.contains("fgEditorFull")
+     && !document.getElementById("tbAddOv") && !document.getElementById("infoPopOverlay")) closeP();
+});
 async function prodToEinkauf(id){
   if(!ME){ openLogin(); return; }
   if(!hasFeat('planer')){ premiumInfo(); return; }
@@ -2341,40 +2355,46 @@ function altSektion(d){
      bleibt ein Grund zu zahlen, der auch fast immer greift. */
   var _alleAlt = hasFeat('pk_alternativen');
   if(!_alleAlt && !hasFeat('pk_alternative_eine')) return pkSperre('Bessere Alternativen','Bessere Produkte derselben Kategorie, mit Begründung');
-  /* 28z16: kuratierter Tausch-Tipp (Ralphs Kuechentisch-Fall Schinken->Tatar) steht VOR der
-     Algorithmus-Reihe - gelebtes Wissen schlaegt Rechnung. Nur bestaetigte Tipps (cb_tausch_tipps). */
-  const tt = (window._TAUSCH||{})[d.id];
-  const tp = tt ? (ALL||[]).find(function(x){ return x.id===tt.tausch_id; }) : null;
-  var alts = besteAlternativen(d, 3).filter(function(a){ return !tp || a.id!==tp.id; });
-  if(!alts.length && !tp) return '';
-  /* Free sieht genau eine - und darunter, wie viele noch da waeren. */
-  var _verdeckt = 0;
-  if(!_alleAlt){ _verdeckt = Math.max(0, alts.length - 1); alts = alts.slice(0,1); }
-  const s = num(d.clean_score);
-  return '<div style="margin-top:14px">'
-    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 Bessere Alternativen in dieser Kategorie</div>'
-    + (tp && _alleAlt ? prodRef(tp.id, { name:tp.name, marke:tp.marke, label:'💡 Tausch-Tipp der Redaktion', delta:(s!=null&&num(tp.clean_score)!=null?num(tp.clean_score)-s:null), note:(tt.begruendung||'') }) : '')
-    + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, delta:(s!=null?num(a.clean_score) - s:null), note:(_alleAlt?altGrund(d, a):'') }); }).join('')
+  /* 30.09.2026 Webtest P5 (#721): die Alternativen kommen vom SERVER (cb_produkt_alternativen),
+     derselbe Weg wie in der App. Vorher rechnete besteAlternativen() im Browser aus dem Cache
+     der zuletzt gesehenen Produkte - daher „Weizen" als Alternative zu Müsli. Der Server
+     verlangt jetzt dieselbe Produktart (gemeinsames Namenswort). Platzhalter jetzt, Inhalt gleich. */
+  var box='altBox_'+String(d.id).replace(/[^A-Za-z0-9_-]/g,'');
+  setTimeout(function(){ altSektionFuellen(d, box, _alleAlt); }, 0);
+  return '<div id="'+box+'"></div>';
+}
+async function altSektionFuellen(d, box, _alleAlt){
+  var el=document.getElementById(box); if(!el) return;
+  var r; try{ r=await client.rpc('cb_produkt_alternativen',{p_produkt:d.id, p_max:3}); }catch(e){ return; }
+  el=document.getElementById(box); if(!el || !r || r.error || !(r.data||[]).length) return;
+  var alts=r.data;
+  var _verdeckt=0;
+  if(!_alleAlt){ _verdeckt=Math.max(0, alts.length-1); alts=alts.slice(0,1); }
+  el.innerHTML='<div style="margin-top:14px">'
+    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 Bessere Alternativen</div>'
+    + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, score:num(a.clean_score), delta:num(a.plus),
+          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:(_alleAlt?(a.grund||''):'') }); }).join('')
     + (_alleAlt ? '' : '<div onclick="premiumInfo()" style="cursor:pointer;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45">'
         + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> bessere '+(_verdeckt===1?'Wahl':'Wahlen')+' und die Begründung, warum – mit <b>Premium</b>.'
                        : '🔒 Die <b>Begründung</b>, warum das besser ist – mit <b>Premium</b>.')
         + '</div>')
-    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">Besser heißt hier nur eines: höherer Root Index in derselben Kategorie. Keine Werbung, keine bezahlten Plätze.</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">Besser heißt hier: dieselbe Produktart mit höherem Root Index. Keine Werbung, keine bezahlten Plätze.</div>'
     + '</div>';
 }
 /* Dezente Ein-Zeilen-Fassung fuer den Tagebuch-Hinzufuegen-Dialog (Ralph-Entscheid "auch im Tagebuch"). */
 function altHinweisZeile(d){
   if(!hasFeat('pk_alternativen') && !hasFeat('pk_alternative_eine')) return '';
-  const alts = besteAlternativen(d, 3); if(!alts.length) return '';
-  const b = alts[0]; const delta = num(b.clean_score) - num(d.clean_score);
-  /* Free sieht die eine Alternative. „+2 weitere" zu schreiben, ohne sie zeigen
-     zu koennen, waere ein Versprechen ins Leere - dann lieber das Schloss. */
-  const mehr = alts.length > 1
-    ? (hasFeat('pk_alternativen') ? ' · +' + (alts.length - 1) + ' weitere'
-                                  : ' · 🔒 +' + (alts.length - 1))
-    : '';
-  return '<div onclick="detailById(\'' + b.id + '\')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:7px 10px;margin-bottom:11px;cursor:pointer">'
-    + '<span>🌿</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Bessere Wahl: <b>' + esc(b.name) + '</b> (Index ' + num(b.clean_score) + ', +' + delta + ')' + mehr + '</span><span style="font-weight:800">›</span></div>';
+  /* 30.09.2026: vom Server wie die Karte (cb_produkt_alternativen). Platzhalter, dann fuellen. */
+  var box='altZeile_'+String(d.id).replace(/[^A-Za-z0-9_-]/g,'');
+  setTimeout(async function(){
+    var r; try{ r=await client.rpc('cb_produkt_alternativen',{p_produkt:d.id, p_max:3}); }catch(e){ return; }
+    var el=document.getElementById(box); if(!el || !r || r.error || !(r.data||[]).length) return;
+    var alts=r.data, b=alts[0];
+    var mehr = alts.length > 1 ? (hasFeat('pk_alternativen') ? ' · +' + (alts.length - 1) + ' weitere' : ' · 🔒 +' + (alts.length - 1)) : '';
+    el.outerHTML='<div onclick="detailById(\'' + b.id + '\')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:7px 10px;margin-bottom:11px;cursor:pointer">'
+      + '<span>🌿</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Bessere Wahl: <b>' + esc(b.name) + '</b> (Index ' + num(b.clean_score) + ', +' + num(b.plus) + ')' + mehr + '</span><span style="font-weight:800">›</span></div>';
+  }, 0);
+  return '<div id="'+box+'"></div>';
 }
 function _norm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,""); }
 function _lev(a,b){ const m=a.length,n=b.length; if(!m)return n; if(!n)return m; let prev=Array.from({length:n+1},(_,j)=>j),cur=new Array(n+1);
@@ -2443,7 +2463,21 @@ function _relevanz(p,q){
    Bio-Produkte offen an; steht dort 0, ist das ein ehrlicher Zustand und keine leere Liste
    ohne Erklaerung. Er sitzt in EINER Funktion, damit Kachel-Ansicht und Trefferliste
    nicht auseinanderlaufen (§1.11i: eine Regel, ein Ort). */
-function bioAnzahl(){ try{ return (ALL||[]).filter(function(p){ return p&&p.bio===true; }).length; }catch(e){ return 0; } }
+/* 30.09.2026 Webtest P3: die Zahl kam aus dem Browser-Cache (ALL = zuletzt gesehene Produkte)
+   und zeigte 303 statt 10.903. Jetzt die Serverzahl aus cb_produkte_suchen.bio_anzahl -
+   passend zur aktuellen Suche. Auf der Kachelseite ohne Suche einmal geholt. */
+function bioAnzahl(){
+  if(window._bioAnzahl!=null) return window._bioAnzahl;
+  if(!window._bioAnzahlLaeuft){
+    window._bioAnzahlLaeuft=true;
+    try{ client.rpc("cb_produkte_suchen",{p_q:null,p_kategorie:null,p_nur_bio:false,p_limit:1,p_offset:0}).then(function(r){
+      var z=(r&&r.data&&r.data[0])?num(r.data[0].bio_anzahl):null;
+      window._bioAnzahlStart=z; window._bioAnzahlLaeuft=false;
+      if(z!=null && !(document.getElementById("q")||{}).value){ window._bioAnzahl=z; try{ render(); }catch(e){} }
+    },function(){ window._bioAnzahlLaeuft=false; }); }catch(e){ window._bioAnzahlLaeuft=false; }
+  }
+  return 0;
+}
 function bioFilterChipHtml(){
   if(!bioAn()) return "";                               /* Beta-Flag, §3.0 */
   var an=!!window._prodNurBio, n=bioAnzahl();
@@ -2467,6 +2501,7 @@ async function render(){
      Bewusst kein Dritt-Zustand im Filter - "unbekannt" ist kein "kein Bio". */
   const nurBio=!!window._prodNurBio;
   if(!q && !kat && !nurBio && !window._prodShowAll){
+    window._bioAnzahl = (window._bioAnzahlStart!=null) ? window._bioAnzahlStart : null;
     document.getElementById("stats").textContent="";
     var _kacheln=katKachelnHtml();
     /* 🔴 01.08.2026 (Doc): Schlug der Kachel-Zaehler fehl, schrieb load() die
@@ -2528,7 +2563,10 @@ async function render(){
   /* Sortiert wird SERVERSEITIG (Relevanz, dann Score, dann Name) - dieselbe
      Reihenfolge wie vorher, aber an einem Ort (§1.2c). Hier nicht nachsortieren:
      bei nachgeladenen Seiten wuerde das die Reihenfolge zerreissen. */
-  var _zahl = _gedeckelt ? ('über 500') : (_gesamt+' Produkt(e)');
+  window._bioAnzahl = list.length ? num(list[0].bio_anzahl) : 0;
+  /* 30.09.2026 Webtest O3: exakte Zahl, sauber gebeugt. P2: Tippfehler-Treffer ehrlich kennzeichnen. */
+  var _zahl = _gesamt.toLocaleString("de-DE")+' '+(_gesamt===1?'Produkt':'Produkte');
+  if(list.length && list[0].unscharf) _zahl = 'Keine genauen Treffer – '+_zahl+' mit ähnlicher Schreibweise';
   if(kat && q) document.getElementById("stats").innerHTML='<span onclick="prodKatReset()" style="cursor:pointer;color:var(--greendk,var(--k-166534));font-weight:600">‹ Kategorien</span> · Suche in <b>allen</b> Produkten · '+_zahl;
   else if(kat) document.getElementById("stats").innerHTML='<span onclick="prodKatReset()" style="cursor:pointer;color:var(--greendk,var(--k-166534));font-weight:600">‹ Kategorien</span> · '+esc(kat)+' · '+_zahl;
   else document.getElementById("stats").textContent=_zahl;
@@ -2701,7 +2739,7 @@ function katKachelnHtml(){
        > Ein Fehler, zwei Symptome. */
     return '<button data-kat="'+k+'" onclick="prodKatPick(this.dataset.kat)" style="all:unset;box-sizing:border-box;min-width:0;overflow:hidden;cursor:pointer;background:var(--card,var(--k-ffffff));border:1px solid var(--line,var(--k-e7e0d4));border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px">'
       +'<span style="width:34px;height:34px;border-radius:50%;background:'+m.bg+';color:'+m.fg+';display:flex;align-items:center;justify-content:center;font-size:18px;flex:0 0 auto">'+m.e+'</span>'
-      +'<span style="min-width:0"><span style="display:block;font-size:14px;color:var(--ink,var(--k-1d3c24));white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+k+'</span>'
+      +'<span style="min-width:0"><span style="display:block;font-size:14px;color:var(--ink,var(--k-1d3c24));white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+(o.k==='Getränk'?'Getränke':k)+'</span>'
       +'<span style="font-size:12px;color:var(--muted,var(--k-6b6256))">'+o.n+'</span></span></button>';
   }).join('');
   return '<div style="grid-column:1/-1;width:100%;box-sizing:border-box;max-width:760px;margin:0 auto">'
@@ -3474,6 +3512,8 @@ function detail2(d){
           + '</div>'
         : (_nurIndex?'':pkSperre('Nährwerte pro 100 g','Energie, Fett, Zucker, Ballaststoffe, Eiweiß, Salz')))
     + '<div style="display:flex;gap:7px;margin:12px 0;flex-wrap:wrap">'
+      /* 30.09.2026 Webtest P6: wie in der App - direkt aus der Karte ins Tagebuch */
+      + '<button onclick="prodInsTagebuch(\''+d.id+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen,#fff);cursor:pointer;font-size:12.5px;font-weight:700">📒 Ins Tagebuch</button>'
       + '<button onclick="prodToEinkauf(\''+d.id+'\')" style="padding:7px 11px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:12.5px;font-weight:600">🛒 Einkaufsliste</button>'
       + amazonBtn(d,true)
     + '</div>'
@@ -8452,7 +8492,10 @@ function startKennzahlen(sum, prof){
   var hatDaten = (num(sum.eintraege)>0) || kcalIst>0 || (sum.score_schnitt!=null);
   var kernTxt  = hatDaten ? String(idx) : '–';
   var bew = !hatDaten ? '' : (idx>=90?'Sehr gut':idx>=75?'Gut':idx>=60?'Mittel':'Schwach');
-  var subTxt = hatDaten ? ('Dein Tag: '+bew.toLowerCase()) : 'Noch nichts erfasst';
+  /* 30.09.2026 Webtest O5: bei 4 % der Kalorien ist „Dein Tag: sehr gut" zu frueh.
+     Die Note beschreibt die QUALITAET des Gegessenen - solange weniger als die Haelfte
+     des Tagesziels erfasst ist, heisst es ehrlich „Bisher". Gleiche Regel in der App. */
+  var subTxt = hatDaten ? (((kcalSoll>0 && kpct<50)?'Bisher: ':'Dein Tag: ')+bew.toLowerCase()) : 'Noch nichts erfasst';
   /* Die vier Achsen des TAGES (Schnitt ueber alle Eintraege mit Score).
      Fehlt eine, bleibt ihre Bahn grau - wir erfinden keinen Wert. */
   var A4=[
@@ -16625,7 +16668,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-3";
+const APP_BUILD = "2026-09-30-4";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

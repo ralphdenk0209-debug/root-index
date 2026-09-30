@@ -1025,6 +1025,14 @@ function rikiFabInit(){
   document.body.appendChild(b);
   rikiStilEinmal();
   rikiFabZustand("normal");
+  /* 30.09.2026 Webtest O6: waehrend das Intro laeuft, gehoert der Bildschirm dem Intro.
+     Der Kopf wartet, bis es weg ist (Klasse hide oder Element entfernt). */
+  (function warteAufIntro(){
+    var io=document.getElementById("introOverlay");
+    var laeuft=io && io.classList.contains("introOn") && !io.classList.contains("hide");
+    b.style.visibility = laeuft ? "hidden" : "";
+    if(laeuft) setTimeout(warteAufIntro, 300);
+  })();
 }
 try{
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", rikiFabInit);
