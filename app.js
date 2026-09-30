@@ -10712,7 +10712,16 @@ async function loadEinkauf(){
     /* 30.09.2026: 160 erledigte Zeilen machten die Seite endlos. Die letzten 8 reichen
        zum Zurueckholen (Server liefert das Letzte oben); der Rest auf Wunsch. */
     const _erlZeig = window._einkErlAlle ? erl : erl.slice(0,8);
-    h+=einkGrid(_erlZeig.map(function(r){ return einkRow(r,true); }).join(''));
+    /* Nach Einkaufstag gruppiert, wie in der App (Ralph: "das letzte soll oben sein und clustern nach tag"). */
+    const _tag=function(r){ if(!r.erledigt_am) return 'Früher'; const d=new Date(r.erledigt_am), h0=new Date(); h0.setHours(0,0,0,0);
+      const t=Math.round((h0-new Date(d.getFullYear(),d.getMonth(),d.getDate()))/864e5);
+      return t===0?'Heute eingekauft':t===1?'Gestern':d.toLocaleDateString('de-DE',{day:'numeric',month:'long'}); };
+    const _bl=[], _bm={};
+    _erlZeig.forEach(function(r){ const k=_tag(r); if(!_bm[k]){ _bm[k]=[]; _bl.push(k); } _bm[k].push(r); });
+    _bl.forEach(function(k){
+      h+='<div style="font-size:12px;color:var(--muted);margin:10px 0 5px">'+esc(k)+' · '+_bm[k].length+'</div>';
+      h+=einkGrid(_bm[k].map(function(r){ return einkRow(r,true); }).join(''));
+    });
     if(erl.length>_erlZeig.length) h+='<button onclick="window._einkErlAlle=true;loadEinkauf()" style="margin-top:8px;width:100%;padding:10px;border:1px dashed var(--line);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:13px">Alle '+erl.length+' erledigten zeigen</button>';
   }
   if(offen.some(function(r){ return einkAmzBtn(r.produkt_id); })) h+=AMZ_HINWEIS;
@@ -16916,7 +16925,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-16";
+const APP_BUILD = "2026-09-30-17";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
