@@ -106,6 +106,22 @@ Deno.serve(async (req) => {
   if (!bildUrl && (!bild || bild.length < 1000)) return json({ error: "Kein Foto erhalten." }, 400);
   if (bild.length > 7_000_000) return json({ error: "Foto zu groß – bitte kleiner aufnehmen." }, 413);
 
+  // Testweg: Bild selbst laden (Anthropic darf Wikimedia nicht direkt abrufen) und als base64 schicken.
+  let bildDaten = bild, bildTyp = typ;
+  if (bildUrl) {
+    try {
+      const r = await fetch(bildUrl, { headers: { "User-Agent": "RootIndexMahlzeitTest/1.0 (https://root-index.de)" } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const buf = new Uint8Array(await r.arrayBuffer());
+      if (buf.length > 5_000_000) throw new Error("Bild zu groß");
+      let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+      bildDaten = btoa(bin);
+      bildTyp = (r.headers.get("content-type") || "image/jpeg").split(";")[0];
+    } catch (e) {
+      return json({ error: "Bild ließ sich nicht laden: " + String((e as Error)?.message || e) }, 400);
+    }
+  }
+
   const start = Date.now();
   let inTok = 0, outTok = 0, kosten = 0;
   try {
@@ -119,7 +135,7 @@ Deno.serve(async (req) => {
         // Erzwingen (tool_choice "tool") lehnen Sonnet/Opus/Fable 5.x ab - "auto" + klare Anweisung.
         tool_choice: { type: "auto" },
         messages: [{ role: "user", content: [
-          { type: "image", source: bildUrl ? { type: "url", url: bildUrl } : { type: "base64", media_type: typ, data: bild } },
+          { type: "image", source: { type: "base64", media_type: bildTyp, data: bildDaten } },
           { type: "text", text: PROMPT },
         ] }],
       }),
