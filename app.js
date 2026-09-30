@@ -5493,7 +5493,7 @@ function setMode(m){
   { var _rv=document.getElementById("rikiView"); if(_rv) _rv.style.display = m==="rikiimport"?"":"none"; }
   if(m==="produkte"){ try{ render(); }catch(e){} }
   if(m==="rezepte") loadRezepte();
-  if(m==="tagebuch"){ const _d=document.getElementById("tbDatum"); if(_d) _d.value=tbToday(); loadTagebuch(); }
+  if(m==="tagebuch"){ const _d=document.getElementById("tbDatum"); if(_d) _d.value=tbToday(); loadTagebuch(); try{ mzKnopfEinbauen(); }catch(e){} }
   if(m==="planer") loadPlaner();
   if(m==="profil"){ try{ _pfOffen=null; }catch(e){} loadProfil(); if(typeof wasserPrefRender==="function" && document.getElementById("pfWasserBox")) wasserPrefRender(); pfAppRender(); }
   if(m==="training") loadTraining();
@@ -16982,7 +16982,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-22";
+const APP_BUILD = "2026-09-30-23";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17495,3 +17495,86 @@ async function unvSpeichern(){
   window._UNV=r.data||l;
   if(msg){ msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; }
 }
+
+/* ===== RIKI: Mahlzeit fotografieren -> Allergene (30.09.2026, Phase 1: nur Admin-Test) =====
+   Ralph: "erst nur test bei admin ... dazu muss die erkennung aber hervorragend funktionieren."
+   Edge-Funktion riki-mahlzeit (neu, nicht Maschine): das Modell erkennt Bestandteile + moegliche
+   Allergene, der Abgleich mit den eigenen Unvertraeglichkeiten passiert in der Datenbank.
+   Modelle ueber den vorhandenen Anthropic-Schluessel: Sonnet 5.5, Opus 5.5, Fable 5.1 - "alle drei"
+   schickt dasselbe Foto an alle, damit der 30-Foto-Test direkt vergleicht. */
+var MZ_MODELLE=[['sonnet','Sonnet 5.5','≈ 1 ct'],['opus','Opus 5.5','≈ 2 ct'],['fable','Fable 5.1','≈ 5 ct']];
+function mzKnopfEinbauen(){
+  try{
+    if(!(ME&&ME.is_admin)||document.getElementById('tbMahlzeitBtn')) return;
+    var scan=document.querySelector('button[onclick="tbOpenScan()"]'); if(!scan) return;
+    var b=document.createElement('button'); b.id='tbMahlzeitBtn'; b.title='Mahlzeit fotografieren – Allergene prüfen (Test)';
+    b.style.cssText=scan.style.cssText; b.textContent='📷'; b.onclick=mzOeffnen;
+    scan.parentNode.insertBefore(b, scan.nextSibling);
+  }catch(e){}
+}
+function mzOeffnen(){
+  kkOv('<div style="padding:16px 18px;max-height:88vh;overflow:auto">'
+    +'<div style="display:flex;align-items:center;margin-bottom:6px"><b style="flex:1;font-size:17px">📷 Mahlzeit prüfen</b><button onclick="kkZu()" aria-label="Schließen" style="border:0;background:transparent;font-size:20px;cursor:pointer;color:#111">&#10005;</button></div>'
+    +'<div style="font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 9px;margin-bottom:10px">Testphase – nur für Admin sichtbar. Jedes Foto kostet (Tagesdeckel 2 $).</div>'
+    +'<label style="font-size:13px;display:block;margin-bottom:8px">Modell <select id="mzModell" style="margin-left:6px;padding:7px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111">'
+      +MZ_MODELLE.map(function(m){ return '<option value="'+m[0]+'">'+m[1]+' ('+m[2]+')</option>'; }).join('')
+      +'<option value="alle">Alle drei vergleichen (≈ 8 ct)</option></select></label>'
+    +'<label style="display:block;width:100%;box-sizing:border-box;padding:12px;border:1px solid #2e7d46;border-radius:10px;background:#eaf5ee;color:#166534;font-weight:700;text-align:center;cursor:pointer">📷 Foto aufnehmen oder wählen'
+      +'<input id="mzFoto" type="file" accept="image/*" capture="environment" onchange="mzFotoGewaehlt(this)" style="display:none"></label>'
+    +'<div id="mzBild" style="margin-top:10px"></div><div id="mzErgebnis" style="margin-top:8px"></div>'
+    +'<div style="font-size:11px;color:#666;margin-top:10px;line-height:1.45">Nur ein Hinweis aus dem Foto. Versteckte Zutaten (Soße, Panade, Spuren) sieht kein Foto – im Zweifel nachfragen. Ersetzt keine ärztliche Beratung.</div></div>');
+}
+function mzVerkleinern(datei){
+  return new Promise(function(ok,fehler){
+    var r=new FileReader(); r.onerror=fehler;
+    r.onload=function(){ var img=new Image(); img.onerror=fehler; img.onload=function(){
+      var max=1280, s=Math.min(1, max/Math.max(img.width,img.height)), c=document.createElement('canvas');
+      c.width=Math.round(img.width*s); c.height=Math.round(img.height*s); c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      ok(c.toDataURL('image/jpeg',0.85)); }; img.src=r.result; };
+    r.readAsDataURL(datei);
+  });
+}
+async function mzFotoGewaehlt(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var bildBox=document.getElementById('mzBild'), erg=document.getElementById('mzErgebnis');
+  var url; try{ url=await mzVerkleinern(f); }catch(e){ erg.innerHTML='<div style="color:#dc2626">Foto ließ sich nicht lesen.</div>'; return; }
+  bildBox.innerHTML='<img src="'+url+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:10px">';
+  var wahl=(document.getElementById('mzModell')||{}).value||'sonnet';
+  var modelle=wahl==='alle'?MZ_MODELLE.map(function(m){return m[0];}):[wahl];
+  erg.innerHTML=modelle.map(function(m){ return '<div id="mzE_'+m+'" style="border:1px solid #e5e7eb;border-radius:10px;padding:10px;margin-top:8px;font-size:13px;color:#666">'+esc((MZ_MODELLE.find(function(x){return x[0]===m;})||[])[1]||m)+' prüft …</div>'; }).join('');
+  var tok=''; try{ var s=await client.auth.getSession(); tok=s.data.session.access_token; }catch(e){}
+  var b64=url.split(',')[1];
+  modelle.forEach(function(m){
+    fetch(client.supabaseUrl+'/functions/v1/riki-mahlzeit',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+tok,'apikey':client.supabaseKey},body:JSON.stringify({bild:b64,typ:'image/jpeg',modell:m})})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ var el=document.getElementById('mzE_'+m); if(el) el.outerHTML=mzErgebnisHtml(m,d); })
+      .catch(function(e){ var el=document.getElementById('mzE_'+m); if(el) el.innerHTML='<span style="color:#dc2626">Fehler: '+esc(e.message||String(e))+'</span>'; });
+  });
+}
+function mzErgebnisHtml(m,d){
+  var kopf='<b>'+esc((d&&d.modell)||m)+'</b>';
+  if(!d||d.error) return '<div style="border:1px solid #fca5a5;border-radius:10px;padding:10px;margin-top:8px;font-size:13px">'+kopf+' – <span style="color:#dc2626">'+esc((d&&d.error)||'keine Antwort')+'</span></div>';
+  var e=d.ergebnis||{}, ab=d.abgleich||{}, treffer=ab.treffer||[];
+  var name=function(k){ return (typeof AL_NAMEN!=='undefined'&&AL_NAMEN[k])||k; };
+  var farbe={sicher:'#166534',wahrscheinlich:'#92400e',typisch:'#6b7280'};
+  var h='<div style="border:1px solid #e5e7eb;border-radius:10px;padding:10px 12px;margin-top:8px;font-size:13px;color:#111;line-height:1.45">'
+    +'<div style="display:flex;justify-content:space-between;gap:8px"><span>'+kopf+'</span><span style="color:#666;font-size:11.5px">'+(d.meta?(Math.round(d.meta.dauer_ms/100)/10+' s · '+(d.meta.kosten_usd*100).toFixed(2).replace('.',',')+' ct'):'')+'</span></div>'
+    +'<div style="font-size:15px;font-weight:700;margin:4px 0">'+esc(e.gericht||'Kein Essen erkannt')+(e.kcal_geschaetzt?' <span style="font-weight:400;color:#666;font-size:12px">≈ '+Math.round(e.kcal_geschaetzt)+' kcal</span>':'')+'</div>';
+  if(treffer.length) h+='<div style="background:#fef2f2;border:1px solid #fca5a5;color:#b91c1c;border-radius:8px;padding:7px 9px;margin:6px 0"><b>⚠︎ Wahrscheinlich dabei, was du meidest:</b> '+esc(treffer.map(name).join(', '))+'</div>';
+  else if((ab.meine||[]).length) h+='<div style="background:#eaf5ee;border:1px solid #86efac;color:#166534;border-radius:8px;padding:7px 9px;margin:6px 0">Nichts erkannt, was du meidest ('+esc((ab.meine||[]).map(name).join(', '))+') – ohne Gewähr.</div>';
+  h+=(e.bestandteile||[]).map(function(b){
+    return '<div style="display:flex;gap:8px;align-items:baseline;padding:3px 0;border-top:1px solid #f3f4f6"><span style="flex:1">'+esc(b.name)+(b.menge_g?' <span style="color:#666">'+b.menge_g+' g</span>':'')
+      +((b.allergene||[]).length?'<div style="font-size:11.5px;color:#b45309">'+esc(b.allergene.map(name).join(', '))+'</div>':'')+'</span>'
+      +'<span style="font-size:11px;color:'+(farbe[b.sicherheit]||'#666')+'">'+esc(b.sicherheit||'')+'</span></div>';
+  }).join('');
+  if((e.versteckt_moeglich||[]).length) h+='<div style="margin-top:6px;font-size:12px;color:#444"><b>Typisch versteckt:</b> '+esc(e.versteckt_moeglich.map(function(v){ return name(v.allergen)+(v.grund?' ('+v.grund+')':''); }).join('; '))+'</div>';
+  if(e.unsicher) h+='<div style="margin-top:4px;font-size:12px;color:#666"><b>Unsicher:</b> '+esc(e.unsicher)+'</div>';
+  if(d.id) h+='<div style="margin-top:8px;display:flex;gap:6px"><input id="mzW_'+d.id+'" placeholder="Test: was war wirklich drin?" style="flex:1;min-width:0;padding:7px;border:1px solid #ccc;border-radius:8px;font-size:12.5px;background:#fff;color:#111"><button onclick="mzWahrheit('+d.id+')" style="padding:7px 10px;border:0;border-radius:8px;background:#2e7d46;color:#fff;font-size:12.5px;cursor:pointer">merken</button></div>';
+  return h+'</div>';
+}
+async function mzWahrheit(id){
+  var el=document.getElementById('mzW_'+id); if(!el) return;
+  var r=await client.rpc('cb_mahlzeit_wahrheit',{p_id:id,p_wahrheit:el.value});
+  if(typeof toast==='function') toast(r.error?('Fehler: '+r.error.message):'✓ Für den Modellvergleich gemerkt.', r.error?'#dc2626':undefined);
+}
+if(typeof window!=='undefined'){ window.mzOeffnen=mzOeffnen; window.mzFotoGewaehlt=mzFotoGewaehlt; window.mzWahrheit=mzWahrheit; }
