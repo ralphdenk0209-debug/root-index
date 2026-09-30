@@ -8369,6 +8369,19 @@ function riIco(n,s){ s=s||18;
     book:'<path d="M6 4h10a2 2 0 0 1 2 2v13a1.2 1.2 0 0 0-1.2-1.2H6z"/><path d="M6 4v13.8"/><path d="M9.5 8.5h5M9.5 11.5h5"/>',
     shoe:'<path d="M3 15.5h7l3.5-2 4.5 1.3a3 3 0 0 1 2 2.8V19H4.2A1.2 1.2 0 0 1 3 17.8z"/><path d="M3 15.5v-3l2.4 1.1"/>',
     drop:'<path d="M12 3s6 6.5 6 10.5a6 6 0 1 1-12 0C6 9.5 12 3 12 3z"/>',
+    /* 30.09.2026 Webtest M1: passende Zeichen statt Tropfen/Blatt fuer alles */
+    mail:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+    pill:'<g transform="rotate(-40 12 12)"><rect x="4" y="8.5" width="16" height="7" rx="3.5"/><path d="M12 8.5v7"/></g>',
+    star:'<path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.9l-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z"/>',
+    sparkle:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/><path d="M18.5 15.5l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>',
+    logout:'<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/>',
+    trash:'<path d="M4 7h16M9 7V4.5h6V7M6.5 7l1 12.5h9l1-12.5"/><path d="M10 11v5M14 11v5"/>',
+    shield:'<path d="M12 3l7.5 3v5.5c0 4.5-3.2 8-7.5 9.5-4.3-1.5-7.5-5-7.5-9.5V6z"/>',
+    info:'<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5M12 7.6v.2"/>',
+    calendar:'<rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/>',
+    gear:'<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/>',
+    card:'<rect x="3" y="5.5" width="18" height="13" rx="2"/><path d="M3 10h18M7 15h3"/>',
+    stop:'<circle cx="12" cy="12" r="8.5"/><path d="M8.5 8.5l7 7"/>',
     moon:'<path d="M19 14.5A8 8 0 0 1 9.5 5a7 7 0 1 0 9.5 9.5z"/>',
     cutlery:'<circle cx="12" cy="12.5" r="5.5"/><path d="M4 4v4a1.4 1.4 0 0 0 2.8 0V4"/><path d="M5.4 4v16"/><path d="M19 4c-1.4 1-2 2.8-2 4.6V11h2z"/><path d="M18.4 12v8"/>',
     figure:'<circle cx="12" cy="5" r="2.2"/><path d="M12 7.2v6.3"/><path d="M12 9.3l-4-2M12 9.3l4-2"/><path d="M12 13.5l-3 6M12 13.5l3 6"/>',
@@ -8771,28 +8784,30 @@ var MFAN_GRUPPEN=[
   /* 19.09.2026 (Ralph): "empfehlungen gehoert nicht in den planer sondern ins
      menue." Richtig - unter "Plan" gelesen wirkte es wie ein Teil des
      Planers. Beide stehen jetzt als eigene Punkte. */
-  ['planer','Planer','book','#8fa79a',[
-    ['Planer','book','#8fa79a',function(){ navTo('planer'); }]
+  ['planer','Planer','calendar','#8fa79a',[
+    ['Planer','calendar','#8fa79a',function(){ navTo('planer'); }]
   ]],
-  ['empfehlungen','Empfehlungen','heart','#ff6fa8',[
-    ['Empfehlungen','heart','#ff6fa8',function(){ navTo('meinetipps'); }]
+  ['empfehlungen','Empfehlungen','sparkle','#ff6fa8',[
+    ['Empfehlungen','sparkle','#ff6fa8',function(){ navTo('meinetipps'); }]
   ]],
 
   ['t2','','','',[]],
 
   ['profil','Mein Profil','shoe','#4fd6c0',[
     ['Persönliche Daten','shoe','#5ef2a0',function(){ navTo('profil'); }],
-    ['Meine Supplements','drop','#5ab6ff',function(){ navTo('supp'); }]
+    ['Meine Supplements','pill','#5ab6ff',function(){ navTo('supp'); }],
+    /* 30.09.2026 Webtest M5: Darstellung und RIKI an/aus waren nur ueber Profil → App & Konto zu finden */
+    ['Einstellungen (Darstellung, RIKI)','gear','#8fa79a',function(){ navTo('profil'); setTimeout(function(){ try{ pfTab('app'); }catch(e){} }, 350); }]
   ]],
   /* Ralph 19.09.: "premium soll dann loeschen enthalten, oder? sollte also
      abo & co oder so aehnlich sein." Ja - Abo und Konto sind dieselbe Frage:
      was kostet es und wie komme ich wieder raus. */
-  ['abo','Abo & Konto','heart','#ffc24b',[
-    ['Premium','heart','#ffc24b',function(){ premiumInfo(); }],
-    ['Verträge hier kündigen','book','#8fa79a',function(){ riKuendigenFormular(); }],
-    ['Zahlungsdaten & Rechnungen','book','#8fa79a',function(){ startPortal(); }],
-    ['Abmelden','drop','#8fa79a',function(){ doLogout(); }],
-    ['Konto löschen','leaf','#ff6fa8',function(){ kontoLoeschenOpen(); }]
+  ['abo','Abo & Konto','star','#ffc24b',[
+    ['Premium','star','#ffc24b',function(){ premiumInfo(); }],
+    ['Verträge hier kündigen','stop','#8fa79a',function(){ riKuendigenFormular(); }],
+    ['Zahlungsdaten & Rechnungen','card','#8fa79a',function(){ startPortal(); }],
+    ['Abmelden','logout','#8fa79a',function(){ doLogout(); }],
+    ['Konto löschen','trash','#ff6fa8',function(){ kontoLoeschenOpen(); }]
   ]],
 
   ['t3','','','',[]],
@@ -8800,16 +8815,16 @@ var MFAN_GRUPPEN=[
   /* 22.09.2026 (Ralph): "kontakt muesste aus root index raus und direkt ins
      menue." Eine Frage stellen ist kein Kapitel ueber Root Index, sondern ein
      eigener Weg - er steht jetzt mit einem Tipp erreichbar ueber dem Recht. */
-  ['kontakt','Kontakt','drop','#5ab6ff',[
-    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }],
-    ['Newsletter','drop','#5ab6ff',function(){ riNewsletterFormular(); }]
+  ['kontakt','Kontakt','mail','#5ab6ff',[
+    ['Kontakt','mail','#5ab6ff',function(){ kontaktOpen(); }],
+    ['Newsletter','mail','#5ab6ff',function(){ riNewsletterFormular(); }]
   ]],
   ['rootindex','Root Index','book','#5ef2a0',[
-    ['Über uns','heart','#5ef2a0',function(){ ueberUnsOpen(); }],
+    ['Über uns','info','#5ef2a0',function(){ ueberUnsOpen(); }],
     ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
     ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }]
   ]],
-  ['recht','Rechtliches','leaf','#8fa79a',[
+  ['recht','Rechtliches','shield','#8fa79a',[
     ['Impressum','book','#8fa79a',function(){ legalOpen('impressum'); }],
     ['Datenschutz','book','#8fa79a',function(){ legalOpen('datenschutz'); }],
     ['AGB','book','#8fa79a',function(){ legalOpen('agb'); }],
@@ -16700,7 +16715,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-6";
+const APP_BUILD = "2026-09-30-7";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
