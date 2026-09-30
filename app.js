@@ -1666,6 +1666,8 @@ async function loadProfil(){
      die Spalte kommt also ohne zweiten Leseweg mit (§22 - kein neuer Ladeweg noetig).
      NULL wird zu "" und trifft damit die Option "Keine Angabe". */
   _selVal("pfDiab", b.Diabetes_Typ);
+  /* 30.09.2026: Unvertraeglichkeiten (eigener Schreibweg, speichert beim Anklicken). */
+  try{ window._UNV=b.Unvertraeglichkeiten||[]; window._UNV_FUER=ME&&ME.benutzer_id; unvProfilRender(b.Unvertraeglichkeiten); }catch(e){}
   /* 25.09.2026 (Ralph: "ja, du kannst beides bauen"): Schwangerschaft/Stillzeit.
      Bestimmt zusammen mit Geschlecht und Alter die Naehrstoff-Sollwerte
      (D-A-CH/DGE). Das Feld steht in index.html - die darf ich nicht anfassen;
@@ -2563,7 +2565,7 @@ async function render(){
        Zutaten, Naehrwerte, Zusatzstoffe - deshalb wird beim Oeffnen nachgeladen
        (prodOeffnen). Frueher lag der ganze Datensatz schon im Browser; das ging
        nur, solange der ganze Katalog geladen wurde. */
-    c.onclick=()=>prodOeffnen(d.id);
+    c.onclick=()=>prodOeffnen(d.id); c.dataset.pid=d.id;
     // Gestaffeltes Einblenden: nur die ersten 12, danach waere die Verzoegerung
     // laenger als die Geduld. Nur transform+opacity - beides laeuft auf der GPU.
     c.style.animationDelay=(Math.min(i,11)*40)+"ms";
@@ -2576,6 +2578,7 @@ async function render(){
       </div>`;
     grid.appendChild(c);
   });
+  try{ alListeMarkieren(); }catch(e){}   /* 30.09.2026: Warn-Pille bei eigenen Unvertraeglichkeiten */
   /* Weitere Treffer nachladen. Ohne diesen Knopf waere bei 60 Treffern Schluss -
      und der Nutzer wuesste nicht, dass es mehr gibt. Die Zahl daneben sagt,
      wie viele noch kommen. */
@@ -2636,11 +2639,12 @@ async function prodMehrLaden(){
     var grid=document.getElementById("grid");
     var mb=btn?btn.parentNode:null;
     neu.forEach(function(d){
-      var c=document.createElement("div"); c.className="card"; c.onclick=function(){ prodOeffnen(d.id); };
+      var c=document.createElement("div"); c.className="card"; c.onclick=function(){ prodOeffnen(d.id); }; c.dataset.pid=d.id;
       c.innerHTML=scoreLead(d,62)+'<div class="meta"><div class="name">'+esc(d.name)+'</div>'
         +'<div class="sub">'+subLine(d)+'</div>'+statusTag(d)+efChip(d.ernaehrungsform)+bioPill(d)+'</div>';
       if(mb) grid.insertBefore(c, mb); else grid.appendChild(c);
     });
+    try{ alListeMarkieren(); }catch(e){}   /* 30.09.2026 */
     var rest = m.gesamt - m.geladen;
     if(mb && rest>0 && neu.length){ btn.disabled=false; btn.textContent='Weitere '+Math.min(rest,PROD_SEITE)+' von '+rest+' laden'; }
     else if(mb) mb.remove();
@@ -5213,6 +5217,7 @@ async function detail(d){
        : (mRows?`<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:18px 0 6px">Nährwerte pro 100 ${prodEinheit(d)}</div>${mRows}`:"")}
     ${warumBlock}
     ${_sd ? zutatenBlock : ""}
+    <div id="alBox" data-pid="${esc(d.id)}"></div>
     ${d.spuren_hinweis?`<div style="margin-top:10px;font-size:12.5px;line-height:1.45;padding:8px 11px;background:var(--k-fff7e6);border:1px solid var(--line);border-radius:9px;color:var(--ink)"><b>⚠︎ Allergiker-Hinweis vom Etikett:</b> ${esc(d.spuren_hinweis)}<div style="font-size:11px;color:var(--muted);margin-top:3px">Spuren sind keine Zutat und fließen nicht in den Root Index ein.</div></div>`:""}
     ${_sd ? naehrstoffHtml(d) : ""}
     ${bzBlock}
@@ -5222,6 +5227,7 @@ async function detail(d){
   /* Die Reinheits-Ampel wird nachgeladen (RPC gegen die EFSA-Grenzwerte).
      Sie ersetzt bei Supplements den Platz, an dem sonst der Score steht. */
   if(typeof ladeReinheitsAmpel === "function") ladeReinheitsAmpel();
+  try{ alBoxLaden(); }catch(e){}   /* 30.09.2026: Allergene / Unvertraeglichkeiten */
   /* Work #371: Ist die Zutatenliste nur teilweise zugeordnet, steht das hier. */
   if(typeof ladeBindungsLuecke === "function") ladeBindungsLuecke(d && d.id);
 }
@@ -10781,6 +10787,7 @@ async function loadTagebuch(){
   if(window._zyklus===undefined){ try{ const {data:zk}=await client.rpc("cb_zyklus_get"); const r=(zk&&zk[0])||{}; window._zyklus=(r.start)?{start:r.start,laenge:r.laenge||28,ende:r.ende||null}:{}; }catch(e){ window._zyklus={}; } }
   renderZyklusHint();
   renderTbListe(eintraege||[], profil&&profil[0]);
+  try{ alTagebuchMarkieren(eintraege||[]); }catch(e){}   /* 30.09.2026 */
   try{ tbKopfNeuAnwenden(); }catch(e){}   /* 28a: schlanker Kopf (nur mit Flag; NACH dem Datums-Label) */
   const {data:gw}=await client.rpc("cb_gewicht");
   document.getElementById("tbGewichtInfo").textContent = (gw&&gw[0])?("Zuletzt: "+gw[0].Gewicht_kg+" kg ("+gw[0].Datum+")"):"noch kein Gewicht erfasst";
@@ -16362,6 +16369,7 @@ function rezeptDetail(r){
   panel.innerHTML=`<button class="close" onclick="closeP()">Schließen ✕</button>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><h2 style="margin:0">${esc(r.name)}</h2><button onclick="rezFavToggle('${r.id}',this)" title="Als Favorit" style="flex:0 0 auto;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:${(window._rezFav&&window._rezFav.has(r.id))?'var(--k-e11d48)':'var(--k-9aa7b2)'}">${(window._rezFav&&window._rezFav.has(r.id))?'♥':'♡'}</button></div>
     <div class="marke">⏱ ${r.zeit_min??"–"} min · ${esc(r.ziel||"")} · <span id="rzPortInfo">${P0} Portion(en)</span> ${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}</div>
+    <div id="alRzBox" data-rid="${esc(String(r.id))}"></div>
     ${imgHtml}
     <div class="scorebar">
       ${rsc!=null?(function(){var _a=rezeptFluxAchsen(r);return _a?fluxRingHtml(_a,rsc,farbe(rbew),150):donut(rsc,farbe(rbew),76);})():''}
@@ -16380,6 +16388,7 @@ function rezeptDetail(r){
   renderRezeptScaled();
   if(canTb) loadRezeptBudget();
   document.getElementById("overlay").classList.add("open");
+  try{ alRezeptLaden(); }catch(e){}   /* 30.09.2026 */
 }
 /* Liest eine GANZE Stueckzahl aus der Mengenangabe: "180 g (3 St.)" -> {anzahl:3, wort:"St."}
    Bewusst eng gefasst - es wird nur erkannt, was zweifelsfrei stueckig ist:
@@ -16563,7 +16572,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-25-3";
+const APP_BUILD = "2026-09-30-1";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -16947,3 +16956,132 @@ function scanKameraText(e){
     };
   }
 })();
+
+/* ===== Unvertraeglichkeiten / Allergene (30.09.2026, Ralph: "gleich alle einbauen jaja") =====
+   Quelle: Tabelle Produkt_Allergene - automatisch aus Zutaten-Rohtext + Spurenhinweis gelesen
+   (cb_allergene_berechnen_ids, Takt allergene-takt). NUR HINWEIS: fliesst NICHT in den Root Index.
+   Auswahl in Meine Daten: Benutzer.Unvertraeglichkeiten (eigener Schreibweg cb_profil_unvertraeglichkeiten).
+   Laktose ist getrennt von Milch: laktosefreie Milch enthaelt Milch, aber keine Laktose. */
+var AL_NAMEN={laktose:"Laktose",gluten:"Gluten",krebstiere:"Krebstiere",ei:"Ei",fisch:"Fisch",erdnuss:"Erdnüsse",soja:"Soja",milch:"Milch (Milcheiweiß)",schalenfruechte:"Schalenfrüchte (Nüsse)",sellerie:"Sellerie",senf:"Senf",sesam:"Sesam",sulfite:"Schwefeldioxid/Sulfite",lupinen:"Lupinen",weichtiere:"Weichtiere"};
+var AL_REIHE=["laktose","gluten","krebstiere","ei","fisch","erdnuss","soja","milch","schalenfruechte","sellerie","senf","sesam","sulfite","lupinen","weichtiere"];
+window._UNV=null;
+async function unvHolen(){
+  if(!ME) return [];
+  if(window._UNV_FUER!==ME.benutzer_id){ window._UNV=null; window._UNV_FUER=ME.benutzer_id; }
+  if(Array.isArray(window._UNV)) return window._UNV;
+  try{ const {data}=await client.rpc("cb_profil"); window._UNV=((data&&data[0]&&data[0].Unvertraeglichkeiten)||[]); }catch(e){ window._UNV=[]; }
+  return window._UNV;
+}
+function _alNamen(l){ return (l||[]).map(function(k){return AL_NAMEN[k]||k;}).join(", "); }
+function alTreffer(a, unv){
+  var out={enth:[],spur:[],unklar:[]};
+  if(!a||!unv||!unv.length) return out;
+  unv.forEach(function(k){
+    if(k==="laktose"){ if(a.laktose==="enthaelt") out.enth.push(k); else if(a.laktose==="unklar") out.unklar.push(k); return; }
+    if((a.enthaelt||[]).indexOf(k)>=0) out.enth.push(k);
+    else if((a.spuren||[]).indexOf(k)>=0) out.spur.push(k);
+    else if(a.datenlage==="keine_daten"||a.unvollstaendig) out.unklar.push(k);
+  });
+  return out;
+}
+function alBoxHtml(a, unv, art){
+  var box='margin-top:10px;font-size:12.5px;line-height:1.5;padding:9px 12px;border-radius:10px;border:1px solid ';
+  if(!a || a.datenlage==="keine_daten"){
+    return '<div style="'+box+'var(--line);background:var(--k-f4f5f4);color:var(--muted)">Allergene: noch keine Zutatenliste – bitte das Etikett prüfen.</div>';
+  }
+  var h='';
+  if(ME && unv && unv.length){
+    var t=alTreffer(a,unv);
+    if(t.enth.length) h+='<div style="'+box+'var(--k-fca5a5);background:var(--k-fef2f2);color:var(--k-b91c1c)"><b>⚠︎ Enthält, was du meidest:</b> '+esc(_alNamen(t.enth))+'</div>';
+    if(t.spur.length) h+='<div style="'+box+'var(--k-fde68a);background:var(--k-fffbeb);color:var(--k-92400e)"><b>Kann Spuren enthalten:</b> '+esc(_alNamen(t.spur))+'</div>';
+    if(t.unklar.length) h+='<div style="'+box+'var(--line);background:var(--k-f4f5f4);color:var(--muted)"><b>Nicht sicher lesbar:</b> '+esc(_alNamen(t.unklar))+' – bitte Etikett prüfen.</div>';
+    if(!t.enth.length&&!t.spur.length&&!t.unklar.length) h+='<div style="'+box+'var(--green);background:var(--greenlt);color:var(--greendk)"><b>✓ Passt zu deinen Angaben</b> ('+esc(_alNamen(unv))+')</div>';
+  } else if(ME){
+    h+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tipp: Unverträglichkeiten in <a href="#" onclick="event.preventDefault();try{closeP();}catch(e){} try{go(\'profil\');}catch(e){}" style="color:var(--green)">Meine Daten</a> angeben – dann warnen wir dich hier.</div>';
+  }
+  var lak={enthaelt:"enthält Laktose",laktosefrei:"laktosefrei",unklar:"Laktose unklar"}[a.laktose]||"";
+  var zeile='<b>Allergene:</b> '+((a.enthaelt&&a.enthaelt.length)?esc(_alNamen(a.enthaelt)):'keine erkannt')+(lak?' · '+esc(lak):'');
+  if(a.spuren&&a.spuren.length) zeile+='<br><b>Spuren:</b> '+esc(_alNamen(a.spuren));
+  var fuss=(a.datenlage==="name")?'Aus dem Produktnamen abgeleitet.':(art==="rezept"&&a.unvollstaendig?'Nicht für alle Zutaten liegt eine Zutatenliste vor.':'Automatisch aus der Zutatenliste gelesen.');
+  h+='<div style="margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+zeile+'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+fuss+' Nur ein Hinweis, fließt nicht in den Root Index ein. Ersetzt keine ärztliche Beratung – maßgeblich ist das Etikett.</div></div>';
+  return h;
+}
+async function alBoxLaden(){
+  var el=document.getElementById("alBox"); if(!el) return; var pid=el.dataset.pid;
+  try{
+    var r=await client.rpc("cb_produkt_allergene",{p_ids:[pid]}); var unv=await unvHolen();
+    if(!document.body.contains(el)||el.dataset.pid!==pid) return;
+    el.innerHTML=alBoxHtml((r.data||[])[0], unv, "produkt");
+  }catch(e){ el.innerHTML=""; }
+}
+async function alRezeptLaden(){
+  var el=document.getElementById("alRzBox"); if(!el) return; var rid=el.dataset.rid;
+  try{
+    var r=await client.rpc("cb_rezept_allergene",{p_ids:[rid]}); var unv=await unvHolen();
+    if(!document.body.contains(el)||el.dataset.rid!==rid) return;
+    var a=(r.data||[])[0]; if(a) a.datenlage="ok";
+    el.innerHTML=a?alBoxHtml(a, unv, "rezept"):"";
+  }catch(e){ el.innerHTML=""; }
+}
+async function alListeMarkieren(){
+  try{
+    var unv=await unvHolen(); if(!unv.length) return;
+    var cards=[].slice.call(document.querySelectorAll('#grid .card[data-pid]:not([data-al])')); if(!cards.length) return;
+    var ids=cards.map(function(c){return c.dataset.pid;});
+    var r=await client.rpc("cb_produkt_allergene",{p_ids:ids}); var m={};
+    (r.data||[]).forEach(function(x){ m[x.produkt_id]=x; });
+    cards.forEach(function(c){
+      c.dataset.al="1"; var t=alTreffer(m[c.dataset.pid],unv); if(!t.enth.length) return;
+      var meta=c.querySelector('.meta'); if(!meta) return;
+      meta.insertAdjacentHTML('beforeend','<span title="Enthält, was du meidest" style="display:inline-block;margin-top:4px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--k-fef2f2);border:1px solid var(--k-fca5a5);color:var(--k-b91c1c)">⚠︎ '+esc(_alNamen(t.enth))+'</span>');
+    });
+  }catch(e){}
+}
+async function alTagebuchMarkieren(items){
+  try{
+    var liste=document.getElementById("tbListe"); if(!liste) return;
+    var box=document.getElementById("alTbBox");
+    var unv=await unvHolen();
+    if(!unv.length){ if(box) box.remove(); return; }
+    var pids=[]; (items||[]).forEach(function(i){ if(i.Produkt_ID && pids.indexOf(i.Produkt_ID)<0) pids.push(i.Produkt_ID); });
+    if(!box){ box=document.createElement("div"); box.id="alTbBox"; liste.parentNode.insertBefore(box, liste); }
+    if(!pids.length){ box.innerHTML=""; return; }
+    var r=await client.rpc("cb_produkt_allergene",{p_ids:pids}); var m={};
+    (r.data||[]).forEach(function(x){ m[x.produkt_id]=x; });
+    var treffer=[], gesehen={};
+    (items||[]).forEach(function(i){
+      if(!i.Produkt_ID||gesehen[i.Produkt_ID]) return; gesehen[i.Produkt_ID]=1;
+      var t=alTreffer(m[i.Produkt_ID],unv); if(t.enth.length) treffer.push({name:i.Produktname||"Eintrag",al:t.enth});
+    });
+    var st='margin:0 0 12px;font-size:13px;line-height:1.5;padding:10px 12px;border-radius:12px;border:1px solid ';
+    if(!treffer.length){ box.innerHTML='<div style="'+st+'var(--green);background:var(--greenlt);color:var(--greendk)">✓ Heute nichts dabei, was du meidest ('+esc(_alNamen(unv))+').</div>'; return; }
+    box.innerHTML='<div style="'+st+'var(--k-fca5a5);background:var(--k-fef2f2);color:var(--k-b91c1c)"><b>⚠︎ Heute dabei, was du meidest:</b><ul style="margin:4px 0 0 18px;padding:0">'
+      +treffer.map(function(x){return '<li>'+esc(x.name)+' – '+esc(_alNamen(x.al))+'</li>';}).join('')
+      +'</ul><div style="font-size:11px;color:var(--muted);margin-top:4px">Automatisch aus den Zutatenlisten gelesen – maßgeblich ist das Etikett.</div></div>';
+  }catch(e){}
+}
+function unvProfilRender(liste){
+  var anker=document.getElementById("pfZustandLbl")||document.getElementById("pfDiab");
+  if(!anker) return;
+  var host=document.getElementById("pfUnvBox");
+  if(!host){
+    host=document.createElement("div"); host.id="pfUnvBox"; host.style.gridColumn="1 / -1";
+    var lbl=anker.closest("label")||anker; lbl.parentNode.insertBefore(host, lbl.nextSibling);
+  }
+  var sel=liste||[];
+  var h='<div style="font-size:13px;color:var(--ink);margin-top:4px">Unverträglichkeiten &amp; Allergien <span style="color:var(--k-9aa7a0);font-size:11px">(freiwillig)</span></div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px">';
+  AL_REIHE.forEach(function(k){
+    h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer"><input type="checkbox" class="pfUnv" value="'+k+'"'+(sel.indexOf(k)>=0?' checked':'')+' onchange="unvSpeichern()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">'+esc(AL_NAMEN[k])+'</label>';
+  });
+  h+='</div><span id="pfUnvMsg" style="display:block;margin-top:4px;font-size:11px;color:var(--k-9aa7a0);line-height:1.4">Wir warnen dich dann bei Produkten, Rezepten und im Tagebuch. Nur ein Hinweis aus der Zutatenliste – ersetzt keine ärztliche Beratung.</span>';
+  host.innerHTML=h;
+}
+async function unvSpeichern(){
+  var l=[].slice.call(document.querySelectorAll(".pfUnv:checked")).map(function(x){return x.value;});
+  var msg=document.getElementById("pfUnvMsg");
+  var r=await client.rpc("cb_profil_unvertraeglichkeiten",{p_liste:l});
+  if(r.error){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+r.error.message; } return; }
+  window._UNV=r.data||l;
+  if(msg){ msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; }
+}
