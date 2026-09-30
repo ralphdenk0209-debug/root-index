@@ -10215,7 +10215,7 @@ async function renderPlaner(){
   /* 30.09.2026: Am Handy lagen Montag und Dienstag vor "heute" - man musste scrollen. */
   try{ if(_planView!=='tag' && dates.indexOf(tbToday())>0 && !window._planGescrollt){ window._planGescrollt=true;
     const k=[...document.querySelectorAll('#planGrid > div')].find(d=>/· heute/.test(d.textContent||''));
-    if(k) setTimeout(function(){ k.scrollIntoView({behavior:'smooth',block:'start'}); },150); } }catch(e){}
+    if(k) setTimeout(function(){ var y=k.getBoundingClientRect().top+window.pageYOffset-80; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); },600); } }catch(e){}
 }
 /* Kurze Rueckmeldung unten am Bildschirm statt eines Browser-Popups (alert). */
 function toast(text, farbe){
@@ -16982,7 +16982,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-23";
+const APP_BUILD = "2026-09-30-24";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
