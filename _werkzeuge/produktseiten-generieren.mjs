@@ -620,6 +620,16 @@ async function main() {
     return raus;
   }
 
+  /* 30.09.2026: Google meldet ~38.000 Seiten "gefunden - zurzeit nicht indexiert". Statt alle 60.000
+     Produktseiten auf einmal zu melden, steht nur die beste Auswahl in der Sitemap (sitemap-top.xml).
+     Die uebrigen Seiten bleiben online und ueber Kategorieseiten verlinkt; Google findet sie ueber die Links.
+     Groesse ueber SITEMAP_TOP (Standard 2000), spaeter schrittweise erhoehen. */
+  const kandidaten = [];
+  const qualitaet = (p) =>
+    (num(p.clean_score) === null ? -100 : 0) +
+    (p.verifiziert_am ? 4 : 0) + (p.score_vollstaendig ? 3 : 0) +
+    (num(p.m_kcal) !== null ? 1 : 0) + (p.ean ? 1 : 0) + (p.zutaten ? 1 : 0);
+
   let geschrieben = 0;
   for (const [kat, { datei: katDatei, eintraege }] of proKat) {
     // Platz in der Kategorie: nur unter denen, die eine Punktzahl haben -
@@ -631,7 +641,7 @@ async function main() {
       const rang = platzVon.has(p.id) && bewertet.length >= 3
         ? { platz: platzVon.get(p.id), gesamt: bewertet.length } : null;
       writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei, kat, querverweise(p, kat), rang));
-      urls.push(`${DOMAIN}/produkt/${datei}`);
+      kandidaten.push({ url: `${DOMAIN}/produkt/${datei}`, q: qualitaet(p), score: num(p.clean_score) ?? -1, lastmod: p.verifiziert_am ? String(p.verifiziert_am).slice(0, 10) : null });
       geschrieben++;
     }
   }
@@ -680,20 +690,20 @@ async function main() {
   // Sitemap + robots
   /* 29.09.2026: Google liest je Sitemap hoechstens 50.000 URLs (Search Console meldete 1 Fehler,
      60.676 URLs -> 10.676 fehlten). Jetzt Teile zu je 40.000 (sitemap-de-N.xml) und sitemap.xml als Index. */
-  const TEIL = 40000;
+  const TOP = Number(process.env.SITEMAP_TOP || 2000);
   for (const f of readdirSync(WEB)) if (/^sitemap-de-\d+\.xml$/.test(f)) unlinkSync(join(WEB, f));
-  const teile = [];
-  for (let i = 0; i < urls.length; i += TEIL) {
-    const name = `sitemap-de-${teile.length + 1}.xml`;
-    writeFileSync(join(WEB, name),
-      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-      urls.slice(i, i + TEIL).map((u) => `<url><loc>${u}</loc></url>`).join("\n") + `\n</urlset>\n`);
-    teile.push(name);
-  }
+  const auswahl = kandidaten.filter((k) => k.q >= 0)
+    .sort((a, b) => b.q - a.q || b.score - a.score || a.url.localeCompare(b.url))
+    .slice(0, TOP);
   const heute = new Date().toISOString().slice(0, 10);
+  const eintrag = (u, lm) => `<url><loc>${u}</loc>${lm ? `<lastmod>${lm}</lastmod>` : ""}</url>`;
+  writeFileSync(join(WEB, "sitemap-top.xml"),
+    `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+    [...urls.map((u) => eintrag(u, null)), ...auswahl.map((k) => eintrag(k.url, k.lastmod))].join("\n") + `\n</urlset>\n`);
   writeFileSync(join(WEB, "sitemap.xml"),
     `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    teile.map((t) => `<sitemap><loc>${DOMAIN}/${t}</loc><lastmod>${heute}</lastmod></sitemap>`).join("\n") + `\n</sitemapindex>\n`);
+    `<sitemap><loc>${DOMAIN}/sitemap-top.xml</loc><lastmod>${heute}</lastmod></sitemap>\n</sitemapindex>\n`);
+  urls.push(...auswahl.map((k) => k.url));
   writeFileSync(join(WEB, "robots.txt"),
     `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\nSitemap: ${DOMAIN}/sitemap-int.xml\n`);
 

@@ -111,7 +111,7 @@ jobs:
         run: |
           set -e
           SEITEN=$(ls produkt/*.html | wc -l)
-          URLS=$(cat sitemap-de-*.xml | grep -c "<loc>")   # 29.09.: sitemap.xml ist jetzt Index, URLs stehen in sitemap-de-N.xml
+          URLS=$(grep -c "<loc>" sitemap-top.xml)   # 30.09.: nur beste Auswahl in sitemap-top.xml (SITEMAP_TOP)
           echo "Seiten: $SEITEN · Sitemap-URLs: $URLS"
           test -s robots.txt
           test "$SEITEN" -ge 1000
@@ -146,7 +146,8 @@ jobs:
             return 1
           }
 
-          git add -A produkt sitemap.xml sitemap-de-*.xml robots.txt
+          git add -A produkt sitemap.xml sitemap-top.xml robots.txt
+          git add -A -- 'sitemap-de-*.xml' 2>/dev/null || true
           # International (28.09.2026): fehlt der Ordner nach einem Fehlschlag, darf das den Commit nicht stoppen.
           git add -A en/product fr/produit sitemap-int.xml 2>/dev/null || true
           if git diff --cached --quiet; then
