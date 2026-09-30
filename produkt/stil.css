@@ -74,3 +74,4 @@ h2{font-size:1rem;margin-top:24px}
 .unt .kasten p{margin:.4em auto .9em;max-width:440px;font-size:.82rem;color:var(--mut)}
 .unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
 .unt .btn:hover{background:rgba(124,255,155,.1)}
+.unt .kasten+.kasten{margin-top:12px}
