@@ -34,6 +34,9 @@ async function loadTbMikro(){
   if(error||!data||data.ok===false){
     box.innerHTML='<div style="color:var(--tb-muted);font-size:13px">Nährstoffe konnten nicht geladen werden.</div>'; return;
   }
+  /* 30.09.2026 Webtest T7: aktive Supplements zaehlen jeden Tag mit (z. B. Omega-3 729 % an
+     einem Tag mit nur einem Mandeldrink). Das stimmt - muss aber dastehen, sonst wirkt es wie ein Fehler. */
+  try{ const r=await client.rpc("cb_supp_list"); window._tbMikroSupp=(r.data||[]).filter(function(x){ return x.aktiv; }).map(function(x){ return x.name; }); }catch(e){ window._tbMikroSupp=[]; }
   renderTbMikro(data, datum);
 }
 function renderTbMikro(tag, datum){
@@ -81,6 +84,7 @@ function renderTbMikro(tag, datum){
     +'<div class="mklg"><span><i style="background:#5b86b0"></i>0&nbsp;%</span><span><i style="background:#cf9a2e"></i>1–99&nbsp;%</span><span><i style="background:#3f9d6b"></i>≥100&nbsp;% ✓</span></div></div>'
     +'<div class="mksub">Zahl unter dem Prozent = <b>gegessen / Tagesbedarf</b>. <span style="color:#7d3ea6">★</span> = für <b>dich</b> besonders wichtig'+(liste?': '+liste:'')+'.</div>'
     +'<div class="mksub">'+quelle+'</div>'
+    +((window._tbMikroSupp||[]).length?('<div class="mksub" style="color:#7d3ea6">💊 Enthält deine aktiven Supplements: <b>'+(window._tbMikroSupp.map(function(n){ return String(n).replace(/[<>&]/g,''); }).join(', '))+'</b> – sie zählen jeden Tag mit.</div>'):'')
     +'<div class="mkgt">Vitamine</div><div class="mkgrid">'+grp("vit")+'</div>'
     +'<div class="mkgt">Mineralstoffe &amp; Spurenelemente</div><div class="mkgrid">'+grp("min")+'</div>'
     +'<div class="mkgt">Omega-3 (Fettsäuren)</div><div class="mkgrid">'+grp("omega")+'</div>'

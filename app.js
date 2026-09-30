@@ -9732,7 +9732,7 @@ function barChartZucker(rows){
   });
   const gemessen=n-leer;
   const summe=vals.reduce((s,v)=>s+v,0), schnitt=gemessen?rd1(summe/gemessen):0;
-  const kopf=`<text x="${pad}" y="12" font-size="10" fill="var(--k-6b7280)">Ø ${schnitt} g an ${gemessen} erfassten Tagen${leer?` · ${leer} Tage ohne Eintrag`:""}</text>`;
+  const kopf=`<text x="${pad}" y="12" font-size="10" fill="var(--k-6b7280)">Ø ${schnitt} g an ${gemessen} erfassten ${gemessen===1?'Tag':'Tagen'}${leer?` · ${leer} ${leer===1?'Tag':'Tage'} ohne Eintrag`:""}</text>`;
   const grund=`<line x1="${pad}" y1="${(H-pad).toFixed(1)}" x2="${(W-pad).toFixed(1)}" y2="${(H-pad).toFixed(1)}" stroke="var(--k-cbd5e1)" stroke-width="1"/>`;
   return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;overflow:visible">${kopf}${grund}${bars}</svg>`;
 }
@@ -11262,9 +11262,11 @@ function renderZielNeu(s,ben){
   const aktiv=kand[wi]||kand[0];
   const board='<div style="font-size:16.5px;line-height:1.5;letter-spacing:-.015em;font-weight:500;color:var(--tb-text)">'
       +aktiv.satz+'</div>'
-    +'<div style="display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--tb-muted);padding:10px 0 0">'
+    /* 30.09.2026 Webtest T1: „Rang 4b · Zustand, keine Bewertung" war eine interne
+       Begruendung und stand fuer jeden Nutzer sichtbar da. Nur noch fuer Admins. */
+    +((typeof ME!=='undefined'&&ME&&ME.is_admin&&aktiv.warum)?('<div style="display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--tb-muted);padding:10px 0 0">'
       +'<span style="width:5px;height:5px;border-radius:99px;background:#8aa832;flex:0 0 auto"></span>'
-      +aktiv.warum+'</div>'
+      +aktiv.warum+'</div>'):'')
     +(kand.length>1
       ? ('<div style="display:flex;gap:7px;flex-wrap:wrap;padding:13px 0 0">'
           +kand.map(function(o){
@@ -11620,7 +11622,7 @@ function renderTbListe(items, goal){
     const caret=(neu&&rows.length)?`<span style="color:var(--tb-muted);font-size:12px;flex:0 0 auto;transition:transform .25s;${open?'transform:rotate(180deg)':''}">▾</span>`:'';
     const rightHead = rows.length
       ? `<span style="display:flex;align-items:center;gap:8px">${scoreChip(ms)}<span style="color:var(--k-2e7d32)">${Math.round(mk)} kcal</span>${rezBtn}${plusBtn}${caret}</span>`
-      : `<span style="display:flex;align-items:center;gap:8px"><span style="font-size:11.5px;color:var(--tb-muted)">${gK?('Empfohlen ~'+Math.round(gK*sh)+' kcal'):''}</span>${plusBtn}</span>`;
+      : `<span style="display:flex;align-items:center;gap:8px"><span style="font-size:11.5px;color:var(--tb-muted)">${gK?((Math.round(gK*sh)>0)?('Empfohlen ~'+Math.round(gK*sh)+' kcal'):'optional'):''}</span>${plusBtn}</span>`;
     const headKlick=(neu&&rows.length)?` onclick="tbMealToggle('${m}')" `:' ';
     const headBorder=rows.length&&(!neu||open)?'border-bottom:2px solid rgba(22,163,74,.28)':'';
     /* 28b (Ralph, Variante B): Mini-Werte der Mahlzeit direkt im Kopf - auch ZUgeklappt sichtbar.
@@ -11655,7 +11657,7 @@ function renderTbListe(items, goal){
           <div style="min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tbNameHtml(r)}${num(r.Clean_Score)!=null?` <span style="font-size:11px;font-weight:700;color:${farbe(scoreBew(num(r.Clean_Score)))}">${num(r.Clean_Score)}</span>`:""}</div>
           <a href="#" onclick="editMenge(${r.Eintrag_ID},${r.Menge_g},'${r.Produkt_ID||''}','${m}',${num(r.Menge_Stueck)||'null'});return false" style="color:var(--tb-muted);text-decoration:none;font-size:12.5px">${mengeLabel(r)}${neu?' ✎':' · ändern ✎'}</a>${(gK&&!neu&&num(r.Clean_Score)!=null&&num(r.Menge_g)>0)?` <a href="#" onclick="tbFillItem(${r.Eintrag_ID},'${m}');return false" title="Diese Menge so anpassen, dass ${m} das kcal-Ziel trifft (Split: andere Einträge bleiben)" style="color:var(--k-2e7d32);text-decoration:none;font-size:12.5px;white-space:nowrap">· 🎯 auffüllen</a>`:""}</div>
           <div style="display:flex;align-items:center;gap:9px;white-space:nowrap"><span><b>${Math.round(+r.kcal||0)}</b> <span style="font-size:11px;color:var(--tb-muted)">kcal</span></span>
-          <button onclick="delTb(${r.Eintrag_ID})" title="löschen" style="border:0;background:var(--tb-card2);border-radius:8px;width:27px;height:27px;color:var(--k-f87171);cursor:pointer;font-size:14px">✕</button></div>
+          <button onclick="tbDelFrage(this,${r.Eintrag_ID})" title="löschen" style="border:0;background:var(--tb-card2);border-radius:8px;width:27px;height:27px;color:var(--k-f87171);cursor:pointer;font-size:14px">✕</button></div>
         </div>`; });
       if(!neu) html+=`<div style="font-size:11.5px;color:var(--tb-muted);padding:7px 0 2px">Mahlzeit gesamt: Eiweiß <b>${Math.round(mp)} g</b> · KH <b>${Math.round(mkh)} g</b> · Fett <b>${Math.round(mf)} g</b></div>`;
     }
@@ -11900,7 +11902,7 @@ function tbRowHtml(p,i){
   const favUnbekannt = (window._favSet===null || window._favSet===undefined);
   const fav=(!favUnbekannt && window._favSet.has(p.id));
   return '<div style="display:flex;align-items:center;gap:8px;background:var(--k-ffffff);border:1px solid var(--k-e7e0d4);border-radius:10px;padding:10px;margin-bottom:6px">'
-    +'<div onclick="tbAddPick('+i+')" style="flex:1;min-width:0;cursor:pointer"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+(sc!=null?' <span style="font-size:12px;font-weight:700;color:'+farbe(scoreBew(sc))+'">'+sc+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--k-6b6256)">'+esc(mkLabel(p.marke)||"")+(p.kategorie?(" · "+esc(p.kategorie)):"")+'</div></div>'
+    +'<div onclick="tbAddPick('+i+')" style="flex:1;min-width:0;cursor:pointer"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+(sc!=null?' <span style="font-size:12px;font-weight:700;color:'+farbe(scoreBew(sc))+'">'+sc+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--k-6b6256)">'+[mkLabel(p.marke),p.menge,p.kategorie].filter(Boolean).map(esc).join(" · ")+'</div></div>'
     /* Bei unbekanntem Stand gar kein Herz - siehe favUnbekannt oben. */
     +(favUnbekannt ? '' : '<button onclick="tbFavToggle(\''+p.id+'\',this)" title="Favorit" style="border:0;background:none;color:'+(fav?'var(--k-22c55e)':'var(--k-5b6b78)')+';font-size:19px;cursor:pointer;flex:0 0 auto;line-height:1">'+(fav?'♥':'♡')+'</button>')
     +'<button onclick="tbAddPick('+i+')" title="Hinzufügen" style="width:30px;height:30px;border-radius:50%;background:var(--tb-card2);border:1px solid var(--k-e7e0d4);color:var(--k-2e7d32);font-size:18px;cursor:pointer;flex:0 0 auto">+</button>'
@@ -12093,6 +12095,24 @@ async function tbAddFilter(q){
     box.innerHTML='<div style="text-align:center;padding:12px;color:var(--k-6b6256);font-size:13px">Kein Treffer.</div>'
       +'<button onclick="tbAddManualOpen()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-size:14px;font-weight:600;cursor:pointer">+ Manuell eintragen'+(q?(' „'+esc(q)+'"'):'')+'</button>';
     return;
+  }
+  /* 30.09.2026 Webtest T3: ohne Suchbegriff stand eine alphabetische Liste von
+     100-Punkte-Produkten da (Artischocke, Aubergine …). Jetzt zuerst, was DU zuletzt
+     gegessen hast - das ist fast immer das, was du wieder eintragen willst. */
+  if(!q){
+    try{
+      const {data}=await client.rpc("cb_tb_history_produkte",{p_limit:15});
+      const ids=(data||[]).map(x=>x.produkt_id);
+      if(ids.length){
+        const zul=(await Promise.all(ids.slice(0,12).map(function(id){ return ((ALL||[]).find(p=>p&&p.id===id&&p.zutaten!==undefined)) || prodVoll(id).catch(function(){ return null; }); }))).filter(Boolean);
+        if(window._tbAddQ!==q) return;
+        if(zul.length){
+          window._tbAddList=zul;
+          box.innerHTML='<div style="font-size:12px;font-weight:700;color:var(--k-6b6256);margin:2px 2px 8px">Zuletzt gegessen · oder oben suchen</div>'+zul.map((p,i)=>tbRowHtml(p,i)).join("");
+          return;
+        }
+      }
+    }catch(e){ console.warn("Zuletzt gegessen:", e); }
   }
   window._tbAddList=list;
   box.innerHTML=list.map((p,i)=>tbRowHtml(p,i)).join("");
@@ -12520,6 +12540,15 @@ async function tbFillItem(id, meal){
   loadTagebuch();
 }
 async function delTb(id){ await client.rpc("cb_tb_loeschen",{p_eintrag:id}); loadTagebuch(); }
+/* 30.09.2026 Webtest T5: ein Tipp auf ✕ loeschte sofort und ohne Rueckweg. Jetzt: erster
+   Tipp fragt („Löschen?"), zweiter Tipp innerhalb von 3 s loescht. Kein Browser-Dialog. */
+function tbDelFrage(btn,id){
+  if(btn.dataset.frage==='1'){ delTb(id); return; }
+  btn.dataset.frage='1'; var alt=btn.innerHTML, altW=btn.style.width;
+  btn.innerHTML='Löschen?'; btn.style.width='auto'; btn.style.padding='0 8px'; btn.style.fontSize='11.5px'; btn.style.fontWeight='700';
+  setTimeout(function(){ if(btn.isConnected && btn.dataset.frage==='1'){ btn.dataset.frage=''; btn.innerHTML=alt; btn.style.width=altW; btn.style.padding=''; btn.style.fontSize=''; btn.style.fontWeight=''; } }, 3000);
+}
+if(typeof window!=="undefined") window.tbDelFrage=tbDelFrage;
 async function saveGewicht(){
   const kg=parseFloat(document.getElementById("tbGewicht").value); if(!kg) return;
   await client.rpc("cb_gewicht_eintragen",{p_kg:kg,p_datum:document.getElementById("tbDatum").value||tbToday()});
@@ -16668,7 +16697,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-4";
+const APP_BUILD = "2026-09-30-5";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
