@@ -2108,7 +2108,8 @@ async function load(){
   await render();
 }
 function mkLabel(m){ return (m && m.toLowerCase()!=="generisch") ? m : ""; }
-function subLine(d){ const m=mkLabel(d.marke); return (m?esc(m)+" · ":"")+(d.menge?esc(d.menge)+" · ":"")+esc(d.kategorie||""); }  /* 30.09.2026 O1: Packungsgroesse unterscheidet gleichnamige Produkte */
+function sorteTxt(d){ var s=d&&d.sorte; if(!s) return ""; return String(d.name||"").toLowerCase().indexOf(String(s).toLowerCase())>=0?"":String(s); }  /* 30.09.2026 #848: Sorte nur, wenn sie nicht schon im Namen steht */
+function subLine(d){ const m=mkLabel(d.marke), so=sorteTxt(d); return (m?esc(m)+" · ":"")+(so?esc(so)+" · ":"")+(d.menge?esc(d.menge)+" · ":"")+esc(d.kategorie||""); }  /* 30.09.2026 O1: Packungsgroesse unterscheidet gleichnamige Produkte */
 function prodLabel(p){ const m=mkLabel(p.marke); return p.name+(m?" · "+m:""); }
 function betterAlt(d){
   const s=num(d.clean_score); if(s==null) return null;
@@ -11902,7 +11903,7 @@ function tbRowHtml(p,i){
   const favUnbekannt = (window._favSet===null || window._favSet===undefined);
   const fav=(!favUnbekannt && window._favSet.has(p.id));
   return '<div style="display:flex;align-items:center;gap:8px;background:var(--k-ffffff);border:1px solid var(--k-e7e0d4);border-radius:10px;padding:10px;margin-bottom:6px">'
-    +'<div onclick="tbAddPick('+i+')" style="flex:1;min-width:0;cursor:pointer"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+(sc!=null?' <span style="font-size:12px;font-weight:700;color:'+farbe(scoreBew(sc))+'">'+sc+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--k-6b6256)">'+[mkLabel(p.marke),p.menge,p.kategorie].filter(Boolean).map(esc).join(" · ")+'</div></div>'
+    +'<div onclick="tbAddPick('+i+')" style="flex:1;min-width:0;cursor:pointer"><div style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(p.name)+(sc!=null?' <span style="font-size:12px;font-weight:700;color:'+farbe(scoreBew(sc))+'">'+sc+'</span>':'')+'</div><div style="font-size:11.5px;color:var(--k-6b6256)">'+[mkLabel(p.marke),sorteTxt(p),p.menge,p.kategorie].filter(Boolean).map(esc).join(" · ")+'</div></div>'
     /* Bei unbekanntem Stand gar kein Herz - siehe favUnbekannt oben. */
     +(favUnbekannt ? '' : '<button onclick="tbFavToggle(\''+p.id+'\',this)" title="Favorit" style="border:0;background:none;color:'+(fav?'var(--k-22c55e)':'var(--k-5b6b78)')+';font-size:19px;cursor:pointer;flex:0 0 auto;line-height:1">'+(fav?'♥':'♡')+'</button>')
     +'<button onclick="tbAddPick('+i+')" title="Hinzufügen" style="width:30px;height:30px;border-radius:50%;background:var(--tb-card2);border:1px solid var(--k-e7e0d4);color:var(--k-2e7d32);font-size:18px;cursor:pointer;flex:0 0 auto">+</button>'
