@@ -43,3 +43,7 @@ verify_jwt = true
 # Tabelle produktbild_eingang ab (RLS, nur service_role). Darum bewusst aus.
 [functions.produktbild-uebernehmen]
 verify_jwt = false
+
+# newsletter-versand: nur mit Service-Schluessel (Takt/pg_net); prueft ihn selbst zusaetzlich.
+[functions.newsletter-versand]
+verify_jwt = true

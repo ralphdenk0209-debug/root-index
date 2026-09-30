@@ -65,6 +65,9 @@ svg.ch{width:100%;height:90px;display:block}
 .iiL svg{width:100%;height:34px;display:block;margin-top:6px}
 .iiBalken{height:5px;border-radius:9px;background:rgba(255,255,255,.07);margin-top:8px;overflow:hidden}.iiBalken i{display:block;height:100%;background:var(--acc)}
 @media(max-width:1000px){.iiGrid{grid-template-columns:repeat(2,1fr)}}@media(max-width:560px){.iiGrid{grid-template-columns:1fr}}
+.nlPill{display:inline-block;font:11px ui-monospace,Menlo,monospace;padding:1px 8px;border-radius:99px;border:1px solid currentColor}.nlPill.entwurf{color:var(--y)}.nlPill.freigegeben,.nlPill.versendet{color:var(--g)}.nlPill.laeuft{color:var(--acc)}.nlPill.gestoppt{color:var(--r)}
+.nlBt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.nlBt .qiX{margin-left:0}
+#nlOv{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px}#nlOv>div{background:var(--card);border-radius:16px;width:min(680px,100%);height:min(90vh,1000px);display:flex;flex-direction:column;overflow:hidden}#nlOv iframe{flex:1;border:0;background:#fff}
 .kette h4 span{font-weight:400;letter-spacing:0;text-transform:none;color:var(--ink3);font-family:ui-monospace,Menlo,monospace;font-size:11px}
 .st{display:grid;grid-template-columns:repeat(8,1fr);gap:8px}
 .st>div{background:var(--card2);border-radius:12px;padding:10px 12px;border-top:3px solid var(--g);min-width:0}
@@ -178,6 +181,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="qiEin"><input id="qiUrl" type="url" placeholder="Link zur Produktseite einfügen – alle Sorten werden angelegt und durch die Maschine geschickt" onkeydown="if(event.key==='Enter')qiLos()"><button onclick="qiLos()">Los</button></div>
   <div id="qiMsg" class="qiMsg"></div><div id="qiListe"></div></div>
  <div class="kette ii"><h4>Import international <span id="iiSt"></span></h4><div class="iiGrid" id="iiGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div></div>
+ <div class="kette ii" id="nlKachel"><h4>Newsletter <span id="nlSt"></span></h4><div class="iiGrid" id="nlGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="nlHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px">Versand nur nach deiner Freigabe · jeden Sonntag 09:00 · Takt prüft alle 5 Minuten</div></div>
  <div class="kette ii"><h4>EU-Schwelle 10.000 € <span id="esSt"></span> <button class="qiX" id="esBtn" onclick="esSync()" title="Stripe-Zahlungen jetzt abgleichen">↻ abgleichen</button></h4><div class="iiGrid" id="esGrid" style="grid-template-columns:repeat(2,1fr)"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="esHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
@@ -691,5 +695,56 @@ allesLaden();
     document.getElementById('ptZahlen').innerHTML=reihe.map(([k,t])=>'<div><span>'+t+'</span><b>'+n(k).toLocaleString('de-DE')+'</b></div>').join('');
   }catch(e){}
 })();
+</script>
+<script>
+/* 30.09.2026 (Ralph): Newsletter – Übersicht der geplanten Ausgaben, Versand erst nach Freigabe.
+   Quelle cb_admin_newsletter_uebersicht / cb_admin_newsletter_setzen (nur Admins). Takt: cron newsletter-takt. */
+let NL=null;
+const nlDatum=t=>new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'});
+const nlStatusText={entwurf:'Entwurf',freigegeben:'freigegeben',laeuft:'wird versendet',versendet:'versendet',gestoppt:'gestoppt'};
+async function nlLaden(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_newsletter_uebersicht');
+    if(error||!data){ $('nlGrid').innerHTML='<div class="z">Stand nicht lesbar'+(error?': '+esc(error.message):'')+'</div>'; return; }
+    NL=data; const ab=data.abonnenten||{};
+    $('nlSt').textContent=de(data.freigegeben_wochen)+' von '+de(data.vorrat_wochen)+' Wochen freigegeben';
+    const kopf=`<div class="iiL"><div class="k">Abonnenten<span>+${de(ab.neu_7t)} in 7 T</span></div>
+      <div class="n">${de(ab.bestaetigt)}<small>bestätigt</small></div>
+      <div class="z">${de(ab.offen)} warten auf Bestätigung · ${de(ab.abgemeldet)} abgemeldet</div>
+      <div class="z">Vorrat: ${de(data.vorrat_wochen)} Ausgaben geplant</div></div>`;
+    const karten=(data.ausgaben||[]).map(a=>{
+      const b=[];
+      b.push(`<button class="qiX" onclick="nlAnsehen(${a.id})">ansehen</button>`);
+      if(a.status==='entwurf'||a.status==='freigegeben') b.push(`<button class="qiX" onclick="nlSetzen(${a.id},'testmail',this)" title="Testmail an kontakt@">${a.testmail_angefordert?'Test läuft …':'Testmail'}</button>`);
+      if(a.status==='entwurf') b.push(`<button class="qiX" style="border-color:var(--g);color:var(--g)" onclick="nlSetzen(${a.id},'freigeben',this)">✓ freigeben</button>`);
+      if(a.status==='freigegeben'||a.status==='laeuft') b.push(`<button class="qiX" style="border-color:var(--r);color:var(--r)" onclick="nlSetzen(${a.id},'stoppen',this)">■ stoppen</button>`);
+      if(a.status==='freigegeben'||a.status==='gestoppt') b.push(`<button class="qiX" onclick="nlSetzen(${a.id},'entwurf',this)">↩ Entwurf</button>`);
+      const info=a.status==='versendet'||a.status==='laeuft'?`${de(a.empfaenger)} gesendet${a.fehler?' · '+de(a.fehler)+' Fehler':''}`:(a.testmail_am?'Test '+vor(a.testmail_am):'noch kein Test');
+      return `<div class="iiL"><div class="k">Nr. ${a.nr} · ${esc(nlDatum(a.geplant_fuer))}<span class="nlPill ${a.status}">${nlStatusText[a.status]||a.status}</span></div>
+        <div style="font-size:15px;font-weight:600;margin-top:6px;line-height:1.3">${esc(a.betreff)}</div>
+        <div class="z">${esc((a.themen||[]).join(' · '))}</div>
+        <div class="z">${info}</div>
+        <div class="nlBt">${b.join('')}</div></div>`;
+    }).join('');
+    $('nlGrid').innerHTML=kopf+(karten||'<div class="iiL"><div class="z">Keine Ausgaben geplant.</div></div>');
+  }catch(e){}
+}
+function nlAnsehen(id){
+  const a=(NL&&NL.ausgaben||[]).find(x=>x.id===id); if(!a) return;
+  const ov=document.createElement('div'); ov.id='nlOv'; ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  ov.innerHTML=`<div><div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;gap:10px"><b style="font-size:14px">${esc(a.betreff)}</b><button class="qiX" onclick="document.getElementById('nlOv').remove()">schließen</button></div><iframe sandbox></iframe></div>`;
+  document.body.appendChild(ov);
+  ov.querySelector('iframe').srcdoc=String(a.inhalt_html||'').split('{{ABMELDEN}}').join('#');
+}
+async function nlSetzen(id,aktion,btn){
+  if(aktion==='freigeben'){ const a=(NL.ausgaben||[]).find(x=>x.id===id); if(!confirm('Ausgabe '+a.nr+' freigeben?\nSie geht am '+nlDatum(a.geplant_fuer)+' an alle bestätigten Abonnenten.')) return; }
+  if(aktion==='stoppen' && !confirm('Versand dieser Ausgabe stoppen?')) return;
+  if(btn){ btn.disabled=true; }
+  const {data,error}=await client.rpc('cb_admin_newsletter_setzen',{p_id:id,p_aktion:aktion});
+  if(error||!data||!data.ok) $('nlHinweis').textContent='Nicht möglich: '+(error?error.message:(data&&data.grund)||'?');
+  else $('nlHinweis').textContent=aktion==='testmail'?'Testmail angefordert – kommt in ein paar Sekunden an kontakt@root-index.de.':'Gespeichert.';
+  nlLaden();
+}
+nlLaden(); setInterval(nlLaden,60000);
 </script>
 </body></html>

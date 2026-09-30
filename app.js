@@ -8757,7 +8757,8 @@ var MFAN_GRUPPEN=[
      menue." Eine Frage stellen ist kein Kapitel ueber Root Index, sondern ein
      eigener Weg - er steht jetzt mit einem Tipp erreichbar ueber dem Recht. */
   ['kontakt','Kontakt','drop','#5ab6ff',[
-    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }]
+    ['Kontakt','drop','#5ab6ff',function(){ kontaktOpen(); }],
+    ['Newsletter','drop','#5ab6ff',function(){ riNewsletterFormular(); }]
   ]],
   ['rootindex','Root Index','book','#5ef2a0',[
     ['Über uns','heart','#5ef2a0',function(){ ueberUnsOpen(); }],
@@ -15875,6 +15876,56 @@ function riPremKnopf(){ var a=document.getElementById('premConsent'), v=document
    Zwei Schritte wie vom Gesetz verlangt: Formular -> "Widerruf bestaetigen".
    Speichert in Widerruf_Log (cb_widerruf_einreichen, auch ohne Anmeldung);
    ein Trigger schickt sofort die Eingangsbestaetigung per E-Mail. */
+/* 30.09.2026 (Ralph): Newsletter mit Double-Opt-In. Anmelden -> Bestaetigungsmail
+   (Edge-Funktion newsletter-versand) -> Link ?nl=bestaetigen&t=… -> bestaetigt.
+   Jede Ausgabe traegt ?nl=abmelden&t=…  Versand nur nach Ralphs Freigabe im Cockpit. */
+function riNlHuelle(inhalt){
+  var alt=document.getElementById('riNlOv'); if(alt) alt.remove();
+  var ov=document.createElement('div'); ov.id='riNlOv';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:440px;width:100%;max-height:92vh;overflow:auto;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'+inhalt+'</div>';
+  document.body.appendChild(ov); return ov;
+}
+function riNewsletterFormular(){
+  var mail=(typeof ME!=='undefined'&&ME&&(ME.email||ME.Email))||'';
+  riNlHuelle('<div style="font-size:18px;font-weight:700;margin-bottom:6px">Newsletter</div>'
+    +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Jeden Sonntag ein kurzer Blick hinter die Zutatenliste: ein Produktvergleich, eine Zutat einfach erklärt, was neu in der App ist – und ein Tipp für die Küche. Kostenlos, ohne Werbung.</p>'
+    +'<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">E-Mail *</label>'
+    +'<input id="riNlMail" type="email" autocomplete="email" value="'+String(mail).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px">'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
+    +'<button id="riNlGo" onclick="riNewsletterAnmelden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Anmelden</button></div>'
+    +'<div id="riNlMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>');
+}
+async function riNewsletterAnmelden(){
+  var msg=document.getElementById('riNlMsg'), m=(document.getElementById('riNlMail')||{}).value||'';
+  msg.style.color='var(--k-dc2626)';
+  if(!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(m.trim())){ msg.textContent='Bitte eine gültige E-Mail-Adresse angeben.'; return; }
+  if(!(document.getElementById('riNlHaken')||{}).checked){ msg.textContent='Bitte den Haken setzen.'; return; }
+  var b=document.getElementById('riNlGo'); b.disabled=true;
+  try{
+    var r=await client.rpc('cb_newsletter_anmelden',{p_email:m.trim(),p_quelle:'web',p_sprache:'de'});
+    if(r.error||!r.data||!r.data.ok){ msg.textContent=(r.data&&r.data.grund)||'Das hat nicht geklappt. Bitte später noch einmal.'; b.disabled=false; return; }
+    document.getElementById('riNlOv').firstChild.innerHTML='<div style="font-size:18px;font-weight:700;margin-bottom:6px">Fast geschafft</div><p style="font-size:13.5px;line-height:1.55;margin:0">Wir haben dir eine Mail geschickt. Bitte klick auf den Link darin, um die Anmeldung zu bestätigen. Schau notfalls im Spam-Ordner nach.</p><div style="margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">OK</button></div>';
+  }catch(e){ msg.textContent='Das hat nicht geklappt. Bitte später noch einmal.'; b.disabled=false; }
+}
+async function riNewsletterLink(art,token){
+  var titel=art==='bestaetigen'?'Newsletter':'Newsletter abmelden';
+  riNlHuelle('<div style="font-size:18px;font-weight:700;margin-bottom:6px">'+titel+'</div><p id="riNlErg" style="font-size:13.5px;line-height:1.55;margin:0">Einen Moment …</p><div style="margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">OK</button></div>');
+  var t=document.getElementById('riNlErg');
+  if(!/^[0-9a-f-]{36}$/i.test(token||'')){ t.textContent='Der Link ist unvollständig. Bitte kopiere ihn ganz aus der Mail.'; return; }
+  try{
+    var r=await client.rpc(art==='bestaetigen'?'cb_newsletter_bestaetigen':'cb_newsletter_abmelden',{p_token:token});
+    if(r.error||!r.data){ t.textContent='Das hat nicht geklappt. Bitte später noch einmal.'; return; }
+    if(art==='bestaetigen') t.textContent=r.data.ok?'Danke! Deine Anmeldung ist bestätigt. Die nächste Ausgabe kommt am Sonntag.':(r.data.grund||'Der Link ist ungültig.');
+    else t.textContent=r.data.ok?'Du bist abgemeldet und bekommst keinen Newsletter mehr. Schade – du kannst dich jederzeit wieder anmelden.':'Diesen Link kennen wir nicht. Schreib uns an kontakt@root-index.de, dann tragen wir dich von Hand aus.';
+  }catch(e){ t.textContent='Das hat nicht geklappt. Bitte später noch einmal.'; }
+}
+(function(){ try{ var p=new URLSearchParams(location.search), a=p.get('nl'), t=p.get('t');
+  if(a==='bestaetigen'||a==='abmelden'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ riNewsletterLink(a,t); },700); }
+  else if(p.has('newsletter')){ setTimeout(function(){ riNewsletterFormular(); },700); }
+}catch(_){} })();
 function riWiderrufFormular(){
   var alt=document.getElementById('riWdrOv'); if(alt) alt.remove();
   var mail=(ME&&(ME.email||ME.Email))||'';
@@ -16574,7 +16625,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-2";
+const APP_BUILD = "2026-09-30-3";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
