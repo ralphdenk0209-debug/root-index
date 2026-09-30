@@ -56,9 +56,11 @@ function applyAdminMode(){
          video-skript-01.html — eigenes Fenster mit Cache-Buster, damit nach einem
          Deploy nie ein alter Stand aus dem Cache kommt. Kein app.js-Panel: die
          Seite bringt ihre eigene Anmeldung aus derselben Sitzung mit. */
-      +_an('steuerung','🎛️','Steuerung',"window.open('steuerung.html?cb='+Date.now(),'_blank')")
       /* 07.09.2026 (#217, Ralph): die Maschine als Netzplan - eigene Seite, eigenes Fenster. */
-      +_an('maschine','🚇','Maschine',"window.open('maschine.html?cb='+Date.now(),'_blank')")
+      /* 30.09.2026, Ralph: "fotostudio, marken-domains, wer hat was angelegt, rezept zutaten, tausch-tips,
+         empfehlungen raus aus dem menü nutzt keiner" + "maschine und steuerung auch raus". Nur die Knoepfe
+         sind weg - die Seiten und Funktionen bleiben aufrufbar. Neu: Monatsbericht. */
+      +_an('monatsbericht','📅','Monatsbericht',"window.open('monatsbericht.html?cb='+Date.now(),'_blank')")
       /* 09.09.2026 (#217, Ralph): Riki-Kosten je Aufruf und Produkt - eigene Seite. */
       +_an('rikikosten','💸','Kosten',"window.open('riki-kosten.html?cb='+Date.now(),'_blank')")
       /* 16.09.2026, Ralph: "Benchmark im Menü löschen." Wie schon bei bewerten/
@@ -90,15 +92,11 @@ function applyAdminMode(){
          Tuer weniger im Menue. */
       +_an('bundles','🧩','Bundles',"adminGo('bundles')")
       +_an('rezepte','🍳','Rezepte',"adminGo('rezepte')")
-      +_an('rezzut','🥣','Rezept-Zutaten',"rezZutatenWaecherOpenSafe()")
-      +_an('tausch','🔁','Tausch-Tipps',"adminGo('tausch')")
-      +_an('empfehlungen','⭐','Empfehlungen',"adminGo('empfehlungen')")
       /* 🔴 03.09.2026: Regelwerk und Notenleiter haben hier keinen eigenen Knopf
          mehr. Beide wohnen als Reiter im Zutatenstamm — dort, wo man sie
          braucht. Die alten Wege adminGo('regelwerk') und staffelnOeffnen()
          funktionieren unveraendert weiter, sie landen nur an der neuen Stelle. */
       +_an('stufen','🎚️','Stufen',"adminGo('stufen')")
-      +_an('fotostudio','📸','Fotostudio',"adminGo('fotostudio')")
       /* 27.08.2026, Ralph: Video-Skript 01 (Vorstellung Root Index) als eigene
          Seite wie fahrplan.html — Lese-Ansicht plus Prompter-Modus. Eigenes
          Fenster mit Cache-Buster, damit nach einem Deploy nie ein alter Stand
@@ -117,8 +115,6 @@ function applyAdminMode(){
          wie steuerung.html — eigenes Fenster mit Cache-Buster. Sie fuettert den
          Skript-Abruf mit Adressen; ohne Adresse holt er nichts. RIKI darf eine
          Domain vorschlagen, belegt wird sie erst durch einen Zutatentext. */
-      +_an('markendomain','🌐','Marken-Domains',"window.open('marken-domains.html?cb='+Date.now(),'_blank')")
-      +_an('werangelegt','👤','Wer hat angelegt',"admWerAngelegtOpen()")
       +_an('nutzer','👥','Nutzer',"adminGo('nutzer')");
     /* Menüplaketten aus bereits geladenen Dashboarddaten ableiten. */
     window.adminNavBadges=function(d){

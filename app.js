@@ -8936,6 +8936,7 @@ var MFAN_GRUPPEN=[
   ['profil','Mein Profil','shoe','#4fd6c0',[
     ['Persönliche Daten','shoe','#5ef2a0',function(){ navTo('profil'); }],
     ['Meine Supplements','pill','#5ab6ff',function(){ navTo('supp'); }],
+    ['Mein Monat','calendar','#ffc24b',function(){ meinMonatOeffnen(); }],
     /* 30.09.2026 Webtest M5: Darstellung und RIKI an/aus waren nur ueber Profil → App & Konto zu finden */
     ['Einstellungen (Darstellung, RIKI)','gear','#8fa79a',function(){ navTo('profil'); setTimeout(function(){ try{ pfTab('app'); }catch(e){} }, 350); }]
   ]],
@@ -16982,7 +16983,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-25";
+const APP_BUILD = "2026-09-30-26";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17578,3 +17579,70 @@ async function mzWahrheit(id){
   if(typeof toast==='function') toast(r.error?('Fehler: '+r.error.message):'✓ Für den Modellvergleich gemerkt.', r.error?'#dc2626':undefined);
 }
 if(typeof window!=='undefined'){ window.mzOeffnen=mzOeffnen; window.mzFotoGewaehlt=mzFotoGewaehlt; window.mzWahrheit=mzWahrheit; }
+
+/* ===== Mein Monat (30.09.2026, Ralph: "der Monatsbericht sollte fuer die Nutzer sein - wie war seine
+   Ernaehrung, Trinken, Schritte, Sport, Koerpermasse") =====
+   Nur Premium. Der Server liefert fertige Zahlen (cb_mein_monat: gespeichert am 1. des Monats,
+   laufender Monat live). Hier wird nur angezeigt und mit dem Vormonat verglichen. */
+async function meinMonatOeffnen(monat){
+  var panel=document.getElementById("panel"); if(!panel) return;
+  panel.innerHTML='<button class="close" onclick="closeP()">Schließen ✕</button><h2 style="margin-top:0">📅 Mein Monat</h2><div id="mmInhalt" style="color:var(--muted)">Lade …</div>';
+  document.getElementById("overlay").classList.add("open"); panel.scrollTop=0;
+  var r=await client.rpc("cb_mein_monat",{p_monat:monat||null});
+  var box=document.getElementById("mmInhalt"); if(!box) return;
+  if(r.error){ box.innerHTML='<div style="color:var(--k-dc2626)">Fehler: '+esc(r.error.message)+'</div>'; return; }
+  var d=r.data||{};
+  if(!d.premium){ box.innerHTML='<div style="color:var(--ink);line-height:1.5">Dein Monatsrückblick – Ernährung, Trinken, Schritte, Training und Körpermaße im Vergleich zum Vormonat – gehört zu Premium.</div>'
+    +'<button onclick="closeP();premiumInfo()" style="margin-top:12px;padding:10px 16px;border:0;border-radius:9px;background:var(--green);color:var(--auf-gruen);font-weight:700;cursor:pointer">Premium ansehen</button>'; return; }
+  box.innerHTML=meinMonatHtml(d);
+}
+function meinMonatHtml(d){
+  var t=d.dieser||{}, v=d.vormonat||{}, e=t.ernaehrung||{}, ve=v.ernaehrung||{};
+  var z=function(x){ return x==null?'–':Number(x).toLocaleString('de-DE'); };
+  var pf=function(a,b,gut,einheit){ if(a==null||b==null) return ''; var dd=Math.round((Number(a)-Number(b))*10)/10; if(!dd) return '<span style="color:var(--muted)">wie im Vormonat</span>';
+    var besser=gut==='hoch'?dd>0:gut==='tief'?dd<0:null; var f=besser==null?'var(--muted)':(besser?'var(--k-16a34a)':'var(--k-b45309)');
+    return '<span style="color:'+f+'">'+(dd>0?'▲ +':'▼ ')+String(dd).replace('.',',')+(einheit||'')+'</span> <span style="color:var(--muted)">zum Vormonat</span>'; };
+  var karte=function(ico,titel,wert,unter){ return '<div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 13px">'
+    +'<div style="font-size:12.5px;color:var(--muted)">'+ico+' '+titel+'</div><div style="font-size:22px;font-weight:800;color:var(--ink);margin-top:2px">'+wert+'</div>'
+    +'<div style="font-size:12px;line-height:1.45;margin-top:2px">'+(unter||'')+'</div></div>'; };
+  var monat=new Date(d.monat+'T00:00:00').toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+  var sel=(d.monate||[]).length>1?'<select onchange="meinMonatOeffnen(this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)">'
+    +(d.monate||[]).map(function(m){ return '<option value="'+m+'"'+(m===d.monat?' selected':'')+'>'+new Date(m+'T00:00:00').toLocaleDateString('de-DE',{month:'long',year:'numeric'})+'</option>'; }).join('')+'</select>':'';
+  var h='<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px"><div style="font-size:17px;font-weight:700;color:var(--ink)">'+esc(monat)+(d.laufend?' <span style="font-size:12px;font-weight:500;color:var(--muted)">· läuft noch</span>':'')+'</div>'+sel+'</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px">';
+  h+=karte('🍽️','Tage getrackt', z(e.tage_getrackt)+' <span style="font-size:13px;font-weight:500;color:var(--muted)">von '+z(t.tage_im_monat)+'</span>', pf(e.tage_getrackt,ve.tage_getrackt,'hoch'));
+  h+=karte('🔥','kcal pro Tag', z(e.kcal_schnitt), (e.kcal_ziel?'Ziel '+z(e.kcal_ziel)+' · '+z(e.tage_im_ziel)+' Tage im Zielbereich':''));
+  h+=karte('💪','Eiweiß pro Tag', z(e.eiweiss_schnitt)+' g', (e.eiweiss_ziel?'Ziel '+z(e.eiweiss_ziel)+' g · ':'')+pf(e.eiweiss_schnitt,ve.eiweiss_schnitt,'hoch',' g'));
+  h+=karte('⭐','Root Index Ø', z(e.index_schnitt), pf(e.index_schnitt,ve.index_schnitt,'hoch'));
+  h+=karte('🍬','Zucker pro Tag', z(e.zucker_schnitt)+' g', pf(e.zucker_schnitt,ve.zucker_schnitt,'tief',' g'));
+  h+=karte('🌾','Ballaststoffe', String(e.ballast_schnitt==null?'–':e.ballast_schnitt).replace('.',',')+' g', pf(e.ballast_schnitt,ve.ballast_schnitt,'hoch',' g'));
+  var tr=t.trinken||{}, sr=t.schritte||{}, sl=t.schlaf||{}, tg=t.training||{}, gw=t.gewicht||{};
+  h+=karte('💧','Trinken pro Tag', tr.ml_schnitt!=null?String(Math.round(tr.ml_schnitt/100)/10).replace('.',',')+' l':'–', (tr.tage?tr.tage+' Tage erfasst · '+z(tr.tage_ab_2l)+'× ab 2 l':'noch nichts erfasst'));
+  h+=karte('👟','Schritte pro Tag', z(sr.schnitt), (sr.tage?('Bester Tag '+z(sr.max)+' · '+pf(sr.schnitt,(v.schritte||{}).schnitt,'hoch')):'noch nichts erfasst'));
+  h+=karte('😴','Schlaf', sl.stunden_schnitt!=null?String(sl.stunden_schnitt).replace('.',',')+' h':'–', sl.tage?sl.tage+' Nächte erfasst':'noch nichts erfasst');
+  h+=karte('🏋️','Training', z(tg.tage)+' <span style="font-size:13px;font-weight:500;color:var(--muted)">Tage</span>', (tg.saetze?z(tg.saetze)+' Sätze'+(tg.top_uebung?' · meist '+esc(tg.top_uebung):''):'')+(tg.tage!=null?'<br>'+pf(tg.tage,(v.training||{}).tage,'hoch'):''));
+  if(gw.messungen) h+=karte('⚖️','Gewicht', String(gw.ende).replace('.',',')+' kg', gw.start!=null&&gw.start!==gw.ende?'Monatsanfang '+String(gw.start).replace('.',',')+' kg':'');
+  h+='</div>';
+  var km=t.koerpermasse, kv=t.koerpermasse_vorher;
+  if(km){
+    var felder=[['Brust','Brust'],['Taille','Taille'],['Bauch','Bauch'],['Huefte','Hüfte'],['Po','Po'],['Oberschenkel','Oberschenkel'],['Oberarm','Oberarm']];
+    h+='<div style="margin-top:14px;font-weight:700;color:var(--ink)">📐 Körpermaße <span style="font-weight:400;font-size:12px;color:var(--muted)">Messung vom '+esc(deDatum(km.Datum))+(kv?', verglichen mit '+esc(deDatum(kv.Datum)):'')+'</span></div>'
+      +'<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:6px;margin-top:6px">'
+      +felder.filter(function(f){ return km[f[0]]!=null; }).map(function(f){ var a=km[f[0]], b=kv&&kv[f[0]], dd=b!=null?Math.round((a-b)*10)/10:null;
+        return '<div style="border:1px solid var(--line);border-radius:10px;padding:7px 9px;background:var(--card)"><div style="font-size:11.5px;color:var(--muted)">'+f[1]+'</div><div style="font-weight:700;color:var(--ink)">'+String(a).replace('.',',')+' cm'
+          +(dd?' <span style="font-size:12px;color:'+(dd<0?'var(--k-16a34a)':'var(--k-b45309)')+'">'+(dd>0?'+':'')+String(dd).replace('.',',')+'</span>':'')+'</div></div>'; }).join('')+'</div>';
+  }
+  if((e.top_produkte||[]).length) h+='<div style="margin-top:14px;font-weight:700;color:var(--ink)">🛒 Am häufigsten gegessen</div><ol style="margin:6px 0 0 20px;padding:0;color:var(--ink);font-size:13.5px;line-height:1.6">'
+    +e.top_produkte.map(function(p){ return '<li><a href="#" onclick="event.preventDefault();closeP();prodOeffnen(\''+esc(p.produkt_id)+'\')" style="color:var(--ink)">'+esc(p.name)+'</a> <span style="color:var(--muted)">'+p.anzahl+'×</span></li>'; }).join('')+'</ol>';
+  h+='<div style="font-size:11.5px;color:var(--muted);margin-top:14px;line-height:1.45">Aus deinen eigenen Einträgen berechnet. Tage ohne Eintrag zählen nicht in den Schnitt. Keine medizinische Beratung.</div>';
+  return h;
+}
+/* Push "Dein Monat ist fertig" oeffnet /?p=monat */
+(function(){
+  var p=null; try{ p=new URLSearchParams(location.search).get("p"); }catch(_){}
+  if(p!=="monat") return;
+  var n=0, t=setInterval(function(){ n++;
+    if(typeof ME!=="undefined" && ME && typeof meinMonatOeffnen==="function"){ clearInterval(t); try{ history.replaceState(null,"",location.pathname); }catch(_){} setTimeout(meinMonatOeffnen,600); }
+    else if(n>100) clearInterval(t); },200);
+})();
+if(typeof window!=='undefined'){ window.meinMonatOeffnen=meinMonatOeffnen; }

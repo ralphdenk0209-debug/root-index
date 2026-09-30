@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monatsbericht — Root Index</title>
+<!-- monatsbericht.html · 30.09.2026 · Ralph: "einen Bericht fuer mich: Nutzerzahlen, Aufrufe,
+     Insta, Facebook, Seitenaufrufe, Stripe, welche Produkte gesucht/gescannt werden."
+     Liest nur cb_admin_monatsbericht (Tabelle Monatsbericht, am 1. per pg_cron erzeugt;
+     laufender Monat wird live gerechnet). Die Seite rechnet nichts nach ausser Differenzen. -->
+<style>
+  :root{--bg:#0f1412;--card:#181f1b;--line:#2a3530;--text:#e9ece9;--muted:#9fb0a6;--gruen:#3ddc84;--gelb:#f5c451;--blau:#7cb3ff;--rot:#ff7b7b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px}
+  h1{font-size:28px;margin:0 0 4px} h2{font-size:19px;margin:28px 0 8px}
+  .lead,.muted{color:var(--muted)}
+  .filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  select,button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:14px}
+  button{cursor:pointer}
+  .karten{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
+  .karte{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .karte .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .karte .v{font-size:24px;font-weight:800;margin-top:2px}
+  .karte .s{font-size:12.5px;color:var(--muted)}
+  .up{color:var(--gruen)} .down{color:var(--rot)}
+  .zwei{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 12px 10px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📅 Monatsbericht</h1>
+<p class="lead">Nutzer, Aufrufe, Suchen und Scans, Umsatz, Instagram und Facebook. Entsteht am 1. des Monats für den Vormonat; der laufende Monat wird live gerechnet.</p>
+<div class="filter">
+  <label>Monat <select id="monat" onchange="laden()"></select></label>
+  <button onclick="laden(true)">Neu berechnen</button>
+  <span id="stand" class="muted"></span>
+</div>
+<div id="inhalt">lädt …</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const zahl = x => x==null ? '–' : Number(x).toLocaleString('de-DE');
+const monatName = m => new Date(m+'T00:00:00').toLocaleDateString('de-DE',{month:'long',year:'numeric'});
+function diff(a,b,einheit){ if(a==null||b==null) return ''; const d=Number(a)-Number(b); if(!d) return '<span class="muted">wie Vormonat</span>';
+  return '<span class="'+(d>0?'up':'down')+'">'+(d>0?'+':'')+Number(d.toFixed(2)).toLocaleString('de-DE')+(einheit||'')+'</span> zum Vormonat'; }
+function karte(k,v,s){ return '<div class="karte"><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div><div class="s">'+(s||'')+'</div></div>'; }
+function tabelle(titel, zeilen, spalten){
+  if(!zeilen||!zeilen.length) return '<div class="tab"><h3 style="font-size:15px;margin:6px 0">'+esc(titel)+'</h3><div class="muted" style="padding:6px 0">keine Daten</div></div>';
+  return '<div class="tab"><h3 style="font-size:15px;margin:6px 0">'+esc(titel)+'</h3><table><tr>'+spalten.map(s=>'<th'+(s[2]?' class="n"':'')+'>'+s[0]+'</th>').join('')+'</tr>'
+    +zeilen.map(z=>'<tr>'+spalten.map(s=>'<td'+(s[2]?' class="n"':'')+'>'+esc(z[s[1]])+'</td>').join('')+'</tr>').join('')+'</table></div>';
+}
+async function laden(neu){
+  const sel=$('monat'); const m=sel.value||null;
+  $('inhalt').innerHTML='lädt …';
+  const {data:d,error}=await client.rpc('cb_admin_monatsbericht',{p_monat:m,p_neu:!!neu});
+  if(error){ $('inhalt').innerHTML='<div class="down">Fehler: '+esc(error.message)+'</div>'; return; }
+  if(!sel.options.length){ sel.innerHTML=(d.monate||[]).map(x=>'<option value="'+x+'">'+monatName(x)+'</option>').join(''); sel.value=d.monat; }
+  const v=d.vormonat||{}, n=d.nutzer||{}, vn=v.nutzer||{}, a=d.aufrufe||{}, va=v.aufrufe||{}, s=d.stripe||{}, vs=v.stripe||{}, k=d.katalog||{};
+  $('stand').textContent = d.laufend ? 'laufender Monat, Stand jetzt' : 'abgeschlossen';
+  let h='<h2>Nutzer</h2><div class="karten">'
+    +karte('Konten', zahl(n.gesamt), (n.neu?('+'+n.neu+' neu im Monat'):'keine neuen'))
+    +karte('Premium', zahl(n.premium), diff(n.premium,vn.premium))
+    +karte('Aktiv (Tagebuch)', zahl(n.aktiv), diff(n.aktiv,vn.aktiv))
+    +karte('Newsletter', zahl(n.newsletter), 'Abonnenten')
+    +'</div><h2>Aufrufe</h2><div class="karten">'
+    +karte('Aufrufe gesamt', zahl(a.gesamt), diff(a.gesamt,va.gesamt))
+    +karte('Produktseiten', zahl(a.produktseiten), diff(a.produktseiten,va.produktseiten))
+    +karte('App', zahl(a.app), diff(a.app,va.app))
+    +karte('Von Google', zahl(a.google), diff(a.google,va.google))
+    +karte('Direkt', zahl(a.direkt), 'verlinkt: '+zahl(a.verlinkt))
+    +'</div><h2>Umsatz (Stripe)</h2><div class="karten">'
+    +karte('Umsatz', (s.umsatz_eur!=null?Number(s.umsatz_eur).toLocaleString('de-DE',{style:'currency',currency:'EUR'}):'–'), diff(s.umsatz_eur,vs.umsatz_eur,' €'))
+    +karte('Zahlungen', zahl(s.zahlungen), 'erstattet: '+(s.erstattet_eur!=null?Number(s.erstattet_eur).toLocaleString('de-DE',{style:'currency',currency:'EUR'}):'–'))
+    +karte('KI-Kosten', (d.ki_kosten_usd!=null?Number(d.ki_kosten_usd).toLocaleString('de-DE')+' $':'–'), diff(d.ki_kosten_usd,v.ki_kosten_usd,' $'))
+    +'</div><h2>Instagram & Facebook</h2><div class="karten">';
+  const so=d.social||{};
+  ['instagram','facebook'].forEach(kn=>{ const x=so[kn]||{};
+    h+=karte(kn==='instagram'?'Instagram':'Facebook', zahl(x.follower_ende)+' <span style="font-size:13px;font-weight:400" class="muted">Follower</span>',
+      (x.follower_start!=null?diff(x.follower_ende,x.follower_start)+'<br>':'')+'Reichweite '+zahl(x.reichweite)+' · Interaktionen '+zahl(x.interaktionen)+' · Beiträge '+zahl(x.beitraege)); });
+  h+='</div><h2>Was gesucht, gescannt und angesehen wird</h2><div class="karten">'
+    +karte('Suchen', zahl((d.suchen||{}).gesamt), diff((d.suchen||{}).gesamt,(v.suchen||{}).gesamt))
+    +karte('Scans', zahl((d.scans||{}).gesamt), zahl((d.scans||{}).unbekannt)+' unbekannte Barcodes')
+    +karte('Katalog', zahl(k.produkte), '+'+zahl(k.neu)+' neu · '+zahl(k.freigegeben)+' freigegeben')
+    +'</div><div class="zwei" style="margin-top:12px">'
+    +tabelle('Meistgesucht', (d.suchen||{}).top, [['Begriff','begriff'],['Anzahl','anzahl',1]])
+    +tabelle('Gesucht, nichts gefunden', (d.suchen||{}).ohne_treffer, [['Begriff','begriff'],['Anzahl','anzahl',1]])
+    +tabelle('Meistgescannt', (d.scans||{}).top, [['Produkt','name'],['Scans','anzahl',1]])
+    +tabelle('Meistgesehene Produktseiten', d.top_seiten, [['Produkt','name'],['Aufrufe','aufrufe',1]])
+    +'</div>';
+  $('inhalt').innerHTML=h;
+}
+laden();
+</script>
+</body>
+</html>
