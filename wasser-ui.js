@@ -89,7 +89,7 @@ async function wasserPrefRender(){
     +'<select id="pfWasserSel" style="width:100%;margin:4px 0 10px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--k-ffffff);color:var(--ink)">'+opts+'</select>'
     +'<label style="font-size:12px;color:var(--ink)">Standard-Glasgröße</label>'
     +'<select id="pfWasserGlas" style="width:100%;margin:4px 0 10px;padding:9px;border:1px solid var(--line);border-radius:8px;background:var(--k-ffffff);color:var(--ink)">'+sopts+'</select>'
-    +'<div style="display:flex;align-items:center;gap:10px"><button onclick="wasserPrefSave()" style="padding:9px 16px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:600;cursor:pointer">Speichern</button>'
+    +'<div style="display:flex;align-items:center;gap:10px"><button onclick="wasserPrefSave()" style="padding:9px 16px;border:0;border-radius:8px;background:var(--k-16a34a,#16a34a);color:#fff;font-weight:600;cursor:pointer">Speichern</button>'
     +'<span id="pfWasserMsg" style="font-size:12.5px"></span></div>'
     +'<div style="font-size:11px;color:var(--muted);margin-top:8px">Dein Wasser ist nicht dabei? Fotografiere das Etikett mit der Analyse – dann trage ich es ein.</div>'
   +'</div>';
