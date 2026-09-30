@@ -16982,7 +16982,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-24";
+const APP_BUILD = "2026-09-30-25";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17502,7 +17502,7 @@ async function unvSpeichern(){
    Allergene, der Abgleich mit den eigenen Unvertraeglichkeiten passiert in der Datenbank.
    Modelle ueber den vorhandenen Anthropic-Schluessel: Sonnet 5.5, Opus 5.5, Fable 5.1 - "alle drei"
    schickt dasselbe Foto an alle, damit der 30-Foto-Test direkt vergleicht. */
-var MZ_MODELLE=[['sonnet','Sonnet 5.5','≈ 1 ct'],['opus','Opus 5.5','≈ 2 ct'],['fable','Fable 5.1','≈ 5 ct']];
+var MZ_MODELLE=[['sonnet','Sonnet 5.5 – empfohlen','≈ 1,5 ct'],['opus','Opus 5.5','≈ 2 ct'],['fable','Fable 5.1','≈ 5 ct']];
 function mzKnopfEinbauen(){
   try{
     if(!(ME&&ME.is_admin)||document.getElementById('tbMahlzeitBtn')) return;
