@@ -14679,7 +14679,9 @@ function rezKatBarRender(){
   REZ_KAT_GRUPPEN.forEach(function(g){ aktiv+=(sel[g[0]]||[]).length; });
   var h="";
   REZ_KAT_GRUPPEN.forEach(function(g){
-    var art=g[0], liste=(window._rezKat||[]).filter(function(k){ return k.art===art; });
+    /* 30.09.2026 (Webtest Rezepte): "Gemuese 0" - ein Filter ohne Treffer ist eine Sackgasse.
+       Ausgeblendet, ausser er ist gerade gewaehlt (sonst liesse er sich nicht abwaehlen). */
+    var art=g[0], liste=(window._rezKat||[]).filter(function(k){ return k.art===art && ((k.anzahl||0)>0 || art==="sammlung" || (sel[art]||[]).indexOf(k.id)>=0); });
     /* Sammlungen zeigt die Leiste nur, wenn der Nutzer welche hat – eine leere
        Gruppe ist eine Frage ohne Antwort. */
     if(!liste.length) return;
@@ -14702,7 +14704,17 @@ function rezKatBarRender(){
   if(aktiv) h+='<button onclick="rezKatReset()" style="border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer">✕ Alle '+aktiv+' Filter zurücksetzen</button>';
   if(ME&&ME.is_admin) h+='<button onclick="rezKatAdminOpen()" title="Titel-Vorschläge bestätigen oder korrigieren" style="border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:5px 11px;font-size:12px;cursor:pointer">🏷 Vorschläge prüfen</button>';
   h+='</div>';
-  box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px 8px;background:var(--card);margin:0 0 12px">'+h+'</div>';
+  /* 30.09.2026 (Webtest Rezepte): Der Filterkasten fuellte am Handy den ganzen Bildschirm,
+     bevor das erste Rezept kam. Jetzt eingeklappt; offen bleibt er, wenn man ihn oeffnet. */
+  var offen=!!window._rezKatOffen; try{ offen=localStorage.getItem("ri_rezkat_offen")==="1"; }catch(e){}
+  var kopf='<button onclick="rezKatKlappen()" style="display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:2px 0;cursor:pointer;color:var(--ink);font:inherit;font-weight:700;font-size:14px">'
+    +'<span>⚙︎ Filter</span>'+(aktiv?'<span style="font-size:12px;font-weight:700;color:var(--greendk,#166534);background:var(--greenlt,#eaf5ee);border-radius:999px;padding:1px 8px">'+aktiv+' aktiv</span>':'')
+    +'<span style="margin-left:auto;color:var(--muted);font-weight:400">'+(offen?'▴':'▾')+'</span></button>';
+  box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px '+(offen?'8px':'10px')+';background:var(--card);margin:0 0 12px">'+kopf+(offen?'<div style="margin-top:9px">'+h+'</div>':'')+'</div>';
+}
+function rezKatKlappen(){
+  var o=false; try{ o=localStorage.getItem("ri_rezkat_offen")==="1"; localStorage.setItem("ri_rezkat_offen", o?"0":"1"); }catch(e){ window._rezKatOffen=!window._rezKatOffen; }
+  rezKatBarRender();
 }
 function rezKatSammlungKnopf(){
   if(!(ME&&ME.id)) return "";
@@ -14873,10 +14885,10 @@ function renderRezeptList(){
     if(_katAn) data=data.filter(rezKatMatch);
   }
   const mine=all.filter(r=>r.is_own).length, favN=(window._rezFav?window._rezFav.size:0);
-  document.getElementById("rezeptStats").textContent=`${data.length} Rezept(e)`+(window._rezFavOnly?" · nur ♥":"")+(_katAn?` · ${_katAn} Kategorie-Filter`:"")+(mine?` · ${mine} eigene`:"")+(favN?` · ${favN} ♥`:"");
+  document.getElementById("rezeptStats").textContent=`${data.length} Rezept${data.length===1?"":"e"}`+(window._rezFavOnly?" · nur ♥":"")+(_katAn?` · ${_katAn} Kategorie-Filter`:"")+(mine?` · ${mine} eigene`:"")+(favN?` · ${favN} ♥`:"");
   const g=document.getElementById("rezeptGrid"); g.innerHTML="";
   data.forEach(r=>{
-    const c=document.createElement("div");c.className="card";c.style.position="relative";c.onclick=()=>rezeptDetail(r);
+    const c=document.createElement("div");c.className="card";c.style.position="relative";c.dataset.rid=r.id;c.onclick=()=>rezeptDetail(r);
     const rsc=rezeptScore(r), rbew=scoreBew(rsc);
     const _rfx = rsc!=null ? rezeptFluxAchsen(r) : null;
     const lead = _rfx ? fluxRingHtml(_rfx, rsc, farbe(rbew), 104)
@@ -14884,7 +14896,7 @@ function renderRezeptList(){
                : `<div class="badge" style="background:var(--green2)"><span class="num">${r.kcal??"–"}</span><span class="lbl">KCAL</span></div>`);
     const _fav=(window._rezFav&&window._rezFav.has(r.id));
     c.innerHTML=`<button onclick="event.stopPropagation();rezFavToggle('${r.id}',this)" title="Als Favorit" style="position:absolute;top:8px;right:8px;border:0;background:var(--k-w92);border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;color:${_fav?'var(--k-e11d48)':'var(--k-9aa7b2)'};box-shadow:0 1px 5px rgba(0,0,0,.15);z-index:2">${_fav?'♥':'♡'}</button>${lead}
-      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">⏱ ${r.zeit_min??"–"} min · ${r.kcal??"–"} kcal · ${esc(r.ziel||"")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}</div>`;
+      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">${[r.zeit_min!=null?`⏱ ${r.zeit_min} min`:"", r.kcal!=null?`${r.kcal} kcal`:"", rezKatAktiv()?"":esc(r.ziel||"")].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}</div>`;
     g.appendChild(c);
   });
   if(!(ME && hasFeat('rezepte_alle'))){
@@ -14895,6 +14907,22 @@ function renderRezeptList(){
       +'<button onclick="'+(ME?"premiumInfo":"openLogin")+'()" style="padding:9px 16px;border:0;border-radius:9px;background:var(--green);color:var(--auf-gruen);font-weight:700;cursor:pointer">Premium – 7 Tage gratis</button>';
     g.appendChild(t);
   }
+  alRezeptListeMarkieren();
+}
+/* 30.09.2026 (Webtest Rezepte): Wer Unvertraeglichkeiten angegeben hat, sah die Warnung
+   erst im geoeffneten Rezept. Jetzt steht sie schon auf der Karte - wie bei Produkten. */
+async function alRezeptListeMarkieren(){
+  try{
+    var unv=await unvHolen(); if(!unv.length) return;
+    var cards=[].slice.call(document.querySelectorAll('#rezeptGrid .card[data-rid]:not([data-al])')); if(!cards.length) return;
+    var r=await client.rpc("cb_rezept_allergene",{p_ids:cards.map(function(c){return c.dataset.rid;})}); var m={};
+    (r.data||[]).forEach(function(x){ m[x.rezept_id]=x; });
+    cards.forEach(function(c){
+      c.dataset.al="1"; var t=alTreffer(m[c.dataset.rid],unv); if(!t.enth.length) return;
+      var meta=c.querySelector('.meta'); if(!meta) return;
+      meta.insertAdjacentHTML('beforeend','<span title="Enthält, was du meidest" style="display:inline-block;margin-top:4px;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--k-fef2f2);border:1px solid var(--k-fca5a5);color:var(--k-b91c1c)">⚠︎ '+esc(_alNamen(t.enth))+'</span>');
+    });
+  }catch(e){}
 }
 const RZ_UNITS=[["g",1],["ml",1],["Stück",null],["EL",15],["TL",5],["Prise",0.5],["Pck.",null],["Handvoll",null],["Messerspitze",null]];
 /* Menge+Einheit -> Gramm (für Nährwerte/Index). Stück = Portionsgewicht des verknüpften Produkts. */
@@ -16710,7 +16738,7 @@ function rezeptDetail(r){
         <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px">
           <label>Portionen <input type="number" id="rzPers" min="1" step="1" value="${P0}" oninput="renderRezeptScaled()" style="width:62px;padding:7px;border:1px solid var(--line);border-radius:8px"></label>
           <label>Ziel-kcal/Portion <input type="number" id="rzKcal" min="50" step="10" placeholder="${K0||''}" oninput="renderRezeptScaled()" style="width:92px;padding:7px;border:1px solid var(--line);border-radius:8px"></label>
-          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="rzTrain" onchange="renderRezeptScaled()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">Trainingstag (+20%)</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="rzTrain" onchange="renderRezeptScaled()" style="width:16px;height:16px;accent-color:var(--k-16a34a)"><span id="rzTrainLbl">Trainingstag (+${_rzTrainPlus()}%)</span></label>
         </div>
       </div>`
     : `<div class="gatebox" style="max-width:none;margin:12px 0;padding:14px;text-align:left;box-shadow:none">
@@ -16721,7 +16749,7 @@ function rezeptDetail(r){
   const panel=document.getElementById("panel");
   panel.innerHTML=`<button class="close" onclick="closeP()">Schließen ✕</button>
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><h2 style="margin:0">${esc(r.name)}</h2><button onclick="rezFavToggle('${r.id}',this)" title="Als Favorit" style="flex:0 0 auto;border:0;background:none;font-size:26px;line-height:1;cursor:pointer;color:${(window._rezFav&&window._rezFav.has(r.id))?'var(--k-e11d48)':'var(--k-9aa7b2)'}">${(window._rezFav&&window._rezFav.has(r.id))?'♥':'♡'}</button></div>
-    <div class="marke">⏱ ${r.zeit_min??"–"} min · ${esc(r.ziel||"")} · <span id="rzPortInfo">${P0} Portion(en)</span> ${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}</div>
+    <div class="marke">⏱ ${r.zeit_min??"–"} min · ${esc(r.ziel||"")} · <span id="rzPortInfo">${_portTxt(P0)}</span> ${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}</div>
     <div id="alRzBox" data-rid="${esc(String(r.id))}"></div>
     ${imgHtml}
     <div class="scorebar">
@@ -16790,28 +16818,29 @@ function renderRezeptScaled(){
       const neu = Math.max(1, Math.round(stk.anzahl*totalFactor));
       const gs = neu*proStueck;
       mengeStr = rd(gs)+" g <span style=\"color:var(--muted)\">("+neu+" "+esc(stk.wort)+")</span>"
-        +(train?` · <span style="color:var(--k-b45309)">Trainingstag ${rd(gs*1.2)} g</span>`:"");
+        +(train?` · <span style="color:var(--k-b45309)">Trainingstag ${rd(gs*_rzTrainF())} g</span>`:"");
     }
-    else if(g!=null){ const gs=g*totalFactor; mengeStr=rd(gs)+" g"+(train?` · <span style="color:var(--k-b45309)">Trainingstag ${rd(gs*1.2)} g</span>`:""); }
+    else if(g!=null){ const gs=g*totalFactor; mengeStr=rd(gs)+" g"+(train?` · <span style="color:var(--k-b45309)">Trainingstag ${rd(gs*_rzTrainF())} g</span>`:""); }
     else { mengeStr=esc(i.menge||"nach Geschmack"); }
     return `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(i.name)}${badge}</span><span style="color:var(--muted);white-space:nowrap;text-align:right">${mengeStr}</span></div>`;
   }).join("");
   const zc=document.getElementById("rzZutaten"); if(zc) zc.innerHTML=zHtml;
   const kb=document.getElementById("rzKcalBadge"); if(kb) kb.textContent=K0?rd(K0*fK):"–";
-  const pi=document.getElementById("rzPortInfo"); if(pi) pi.textContent=`${rd(pers)} Portion(en)`;
+  const pi=document.getElementById("rzPortInfo"); if(pi) pi.textContent=_portTxt(rd(pers));
   const mk=document.getElementById("rzMakros");
-  if(mk) mk.innerHTML=`Protein <b>${num(r.protein)!=null?rd(num(r.protein)*fK):"–"} g</b> · Kohlenhydrate <b>${num(r.kh)!=null?rd(num(r.kh)*fK):"–"} g</b> · Fett <b>${num(r.fett)!=null?rd(num(r.fett)*fK):"–"} g</b><div class="formula">pro Portion${(rd(pers)!=P0)?` · gesamt ${rd(pers)} Portion(en)`:""}</div>`;
+  if(mk) mk.innerHTML=`Protein <b>${num(r.protein)!=null?rd(num(r.protein)*fK):"–"} g</b> · Kohlenhydrate <b>${num(r.kh)!=null?rd(num(r.kh)*fK):"–"} g</b> · Fett <b>${num(r.fett)!=null?rd(num(r.fett)*fK):"–"} g</b><div class="formula">pro Portion${(rd(pers)!=P0)?` · gesamt ${_portTxt(rd(pers))}`:""}</div>`;
   const bud=document.getElementById("rzBudget");
   if(bud){
     const nLog=parseFloat((document.getElementById("rzTbPort")||{}).value)||1;
-    const tf=train?1.2:1, f2=fK*tf*nLog;
+    const tf=train?_rzTrainF():1, f2=fK*tf*nLog;
+    { const tl=document.getElementById("rzTrainLbl"); if(tl) tl.textContent="Trainingstag (+"+_rzTrainPlus()+"%)"; }
     const recK=K0?rd(K0*f2):0, recP=rd((num(r.protein)||0)*f2), recKh=rd((num(r.kh)||0)*f2), recF=rd((num(r.fett)||0)*f2);
     const eaten=rd(num((_daySum||{}).kcal)||0), eP=rd(num((_daySum||{}).protein)||0), eKh=rd(num((_daySum||{}).kh)||0), eF=rd(num((_daySum||{}).fett)||0);
     const gK=num((_goal||{}).Kalorienziel_kcal), gP=num((_goal||{}).Eiweiss_ziel_g), gKh=num((_goal||{}).KH_ziel_g), gF=num((_goal||{}).Fett_ziel_g);
     const row=(lbl,eat,goal,rec,u)=>{
       const r2=(u||''); const right = goal==null
         ? `<span style="color:var(--muted)">${eat}${r2} gegessen</span>`
-        : `${eat}/${rd(goal)}${r2} · Rest <b style="color:${(goal-eat-rec)<0?'var(--k-dc2626)':'var(--k-16a34a)'}">${rd(goal-eat-rec)}${r2}</b>`;
+        : `bisher ${eat} von ${rd(goal)}${r2} · Rest <b style="color:${(goal-eat-rec)<0?'var(--k-dc2626)':'var(--k-16a34a)'}">${rd(goal-eat-rec)}${r2}</b>`;
       return `<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0;border-top:1px solid var(--k-dbeafe)"><span><b>${lbl}</b> <span style="color:var(--muted)">Rezept +${rec}${r2}</span></span><span style="text-align:right">${right}</span></div>`;
     };
     bud.innerHTML=`<div style="font-weight:700;margin-bottom:3px">Tagesbudget – Rest nach diesem Rezept</div>`
@@ -16822,6 +16851,11 @@ function renderRezeptScaled(){
       + (gK==null?`<div style="color:var(--muted);margin-top:4px">Tipp: Tagesziele in „Mein Profil" setzen, dann siehst du den Rest.</div>`:'');
   }
 }
+/* 30.09.2026 (Webtest Rezepte): Der Trainingstag-Zuschlag stand fest auf +20 % -
+   eingestellt ist er im Profil (Wasser & Training), bei Ralph z. B. 10 %. */
+function _rzTrainPlus(){ const v=num((_goal||{}).Trainingstag_Plus); return v!=null?v:20; }
+function _rzTrainF(){ return 1+_rzTrainPlus()/100; }
+function _portTxt(n){ return n+" Portion"+(+n===1?"":"en"); }
 async function loadRezeptBudget(){
   try{
     const r1=await client.rpc("cb_tagessumme",{p_datum:tbToday()});
@@ -16925,7 +16959,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-17";
+const APP_BUILD = "2026-09-30-18";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17350,7 +17384,7 @@ function alBoxHtml(a, unv, art){
     if(t.unklar.length) h+='<div style="'+box+'var(--line);background:var(--k-f4f5f4);color:var(--muted)"><b>Nicht sicher lesbar:</b> '+esc(_alNamen(t.unklar))+' – bitte Etikett prüfen.</div>';
     if(!t.enth.length&&!t.spur.length&&!t.unklar.length) h+='<div style="'+box+'var(--green);background:var(--greenlt);color:var(--greendk)"><b>✓ Passt zu deinen Angaben</b> ('+esc(_alNamen(unv))+')</div>';
   } else if(ME){
-    h+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tipp: Unverträglichkeiten in <a href="#" onclick="event.preventDefault();try{closeP();}catch(e){} try{go(\'profil\');}catch(e){}" style="color:var(--green)">Meine Daten</a> angeben – dann warnen wir dich hier.</div>';
+    h+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tipp: Unverträglichkeiten in <a href="#" onclick="event.preventDefault();try{closeP();}catch(e){} try{navTo(\'profil\'); setTimeout(function(){ try{ pfOeffnen(\'gesund\'); }catch(e){} },400);}catch(e){}" style="color:var(--green)">Mein Profil</a> angeben – dann warnen wir dich hier.</div>';
   }
   var lak={enthaelt:"enthält Laktose",laktosefrei:"laktosefrei",unklar:"Laktose unklar"}[a.laktose]||"";
   var zeile='<b>Allergene:</b> '+((a.enthaelt&&a.enthaelt.length)?esc(_alNamen(a.enthaelt)):'keine erkannt')+(lak?' · '+esc(lak):'');
