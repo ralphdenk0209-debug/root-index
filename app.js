@@ -10343,9 +10343,16 @@ function einkRow(r,done){
        sie so viel Platz wie der Name selbst. */
     +'<span style="flex:1;min-width:0">'
       +'<span style="display:block;font-size:17px;font-weight:650;line-height:1.28;letter-spacing:.1px;color:'+tx+';'+(done?'text-decoration:line-through':'')+'">'+esc(r.titel)+'</span>'
-      +(r.menge?'<span style="display:block;font-size:14px;font-weight:600;line-height:1.35;margin-top:3px;color:'+tx2+';'+(done?'text-decoration:line-through':'')+'">'+esc(r.menge)+'</span>':'')
+      +(function(){
+        /* 30.09.2026 (Webtest Einkauf): Unterzeile = Menge · Marke · wer es eingetragen hat.
+           Vorher stand "von" nur als Einzelbuchstabe ("S") im Kreis - am Handy ohne
+           Tooltip nicht lesbar. Die Marke hilft im Regal; sie kommt aus dem Katalog. */
+        var pr=r.produkt_id?(ALL||[]).find(function(x){ return x.id===r.produkt_id; }):null;
+        var mk=pr&&pr.marke&&String(pr.marke).toLowerCase()!=='generisch'&&String(r.titel||'').toLowerCase().indexOf(String(pr.marke).toLowerCase())<0?pr.marke:'';
+        var t=[r.menge, mk, r.von?('von '+String(r.von).trim().split(/\s+/)[0]):''].filter(Boolean);
+        return t.length?'<span style="display:block;font-size:14px;font-weight:600;line-height:1.35;margin-top:3px;color:'+tx2+';'+(done?'text-decoration:line-through':'')+'">'+esc(t.join(' · '))+'</span>':'';
+      })()
     +'</span>'
-    +(r.von?'<span title="Eingetragen von '+esc(r.von)+'" style="flex:0 0 auto;font-size:10.5px;font-weight:800;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border-radius:99px;padding:2px 7px">'+esc(String(r.von).trim().charAt(0).toUpperCase())+'</span>':'')
     /* 28z26: Angebote-Marker vorerst raus (Ralph) - Funktion einkAngebotBtn bleibt fuer spaeter */
     +(done?'':einkAmzBtn(r.produkt_id))
     /* Diffuser Kreis hinter den drei Punkten: macht die Flaeche als antippbar
@@ -10457,7 +10464,7 @@ function hhBoxHtml(hh){
 function hhMiniZeile(hh){
   if(!hh) return hhBoxHtml(null);   /* ohne Haushalt: Gruenden/Beitreten bleibt sichtbar */
   return '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">\u{1F46A} Gemeinsame Liste \u00B7 <b style="color:var(--greendk,var(--k-166534))">'+esc(hh.name)+'</b>'
-    +' \u00B7 <a href="#" onclick="event.preventDefault();navTo(\'profil\')" style="color:var(--muted);text-decoration:underline">verwalten im Profil</a></div>';
+    +' \u00B7 <a href="#" onclick="event.preventDefault();navTo(\'profil\');setTimeout(function(){ try{ pfOeffnen(\'region\'); }catch(e){} },400)" style="color:var(--muted);text-decoration:underline">verwalten im Profil</a></div>';
 }
 /* ===== Etappe 2 (Ralph 29.07.): Bundesland - FREIWILLIGE Angabe im Profil =====
    Ralph-Entscheid: keine automatische Schaetzung, die Nutzer waehlen selbst.
@@ -10685,21 +10692,28 @@ async function loadEinkauf(){
     h+='<div style="color:var(--muted);font-size:13px;padding:14px 0">Liste ist leer – tippe oben ein, scanne einen Barcode oder erzeuge sie aus dem Wochenplan.</div>';
     _fertig(h); return;
   }
-  const groups={};
-  offen.forEach(function(r){ const k=r.kategorie||'Sonstiges'; (groups[k]=groups[k]||[]).push(r); });
-  Object.keys(groups).sort(function(a,b){ if(a==='Sonstiges') return 1; if(b==='Sonstiges') return -1; return a.localeCompare(b,'de'); }).forEach(function(k){
+  /* 30.09.2026: Reihenfolge kommt vom Server (cb_einkauf_list: eigene Ladenreihenfolge,
+     sonst alphabetisch) - hier wurde sie nochmal alphabetisch umsortiert und die eigene
+     Reihenfolge damit ueberschrieben. Jetzt: Server-Reihenfolge, "Sonstiges" ans Ende. */
+  const groups={}, _reihe=[], _anz={};
+  offen.forEach(function(r){ const k=r.kategorie||'Sonstiges'; if(!groups[k]){ groups[k]=[]; _reihe.push(k); } groups[k].push(r); if(r.anzeigename) _anz[k]=r.anzeigename; });
+  _reihe.sort(function(a,b){ return (a==='Sonstiges')-(b==='Sonstiges'); }).forEach(function(k){
     const m=(typeof katMeta==='function')?katMeta(k):{e:'🏷️'};
     /* 28z31: Kategorie-Ueberschrift war 11.5px versal - lesbar am Schreibtisch,
        nicht im Supermarkt. 13.5px, mehr Luft davor. */
     h+='<div style="display:flex;align-items:center;gap:8px;margin:20px 0 9px">'
       +'<span style="font-size:18px">'+m.e+'</span>'
-      +'<span style="font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">'+esc(k)+'</span>'
+      +'<span style="font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">'+esc(_anz[k]||k)+'</span>'
       +'<span style="flex:1;height:1px;background:var(--line)"></span></div>';
     h+=einkGrid(groups[k].map(function(r){ return einkRow(r,false); }).join(''));
   });
   if(erl.length){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px"><span style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Erledigt ('+erl.length+')</span><button onclick="einkaufClearDone()" style="font-size:12.5px;color:var(--k-dc2626);background:none;border:0;cursor:pointer">entfernen</button></div>';
-    h+=einkGrid(erl.map(function(r){ return einkRow(r,true); }).join(''));
+    /* 30.09.2026: 160 erledigte Zeilen machten die Seite endlos. Die letzten 8 reichen
+       zum Zurueckholen (Server liefert das Letzte oben); der Rest auf Wunsch. */
+    const _erlZeig = window._einkErlAlle ? erl : erl.slice(0,8);
+    h+=einkGrid(_erlZeig.map(function(r){ return einkRow(r,true); }).join(''));
+    if(erl.length>_erlZeig.length) h+='<button onclick="window._einkErlAlle=true;loadEinkauf()" style="margin-top:8px;width:100%;padding:10px;border:1px dashed var(--line);border-radius:10px;background:transparent;color:var(--muted);cursor:pointer;font-size:13px">Alle '+erl.length+' erledigten zeigen</button>';
   }
   if(offen.some(function(r){ return einkAmzBtn(r.produkt_id); })) h+=AMZ_HINWEIS;
   _fertig(h);
@@ -10805,8 +10819,11 @@ async function einkaufClearDone(){ await client.rpc("cb_einkauf_clear_done"); aw
 async function einkaufFromPlan(){
   const mon=_planMonday||planMondayOf(tbToday()); const e=new Date(mon+"T00:00:00"); e.setDate(e.getDate()+6);
   const {data,error}=await client.rpc("cb_einkauf_from_plan",{p_von:mon,p_bis:tbISO(e)});
-  if(error){ alert("Fehler: "+error.message); return; }
+  if(error){ einkMsg("Fehler: "+esc(error.message),"var(--k-dc2626)"); return; }
   await loadEinkauf();
+  /* 30.09.2026: vorher keine Rueckmeldung - man wusste nicht, ob etwas passiert ist. */
+  const n=+data||0, von=new Date(mon+"T00:00:00").toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"}), bis=e.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit"});
+  einkMsg(n ? ("&#10003; "+n+" Zutat"+(n===1?"":"en")+" aus dem Wochenplan ("+von+"–"+bis+") übernommen.") : ("Im Wochenplan "+von+"–"+bis+" steht noch nichts – erst im Planer Rezepte einplanen."), n?"var(--k-16a34a)":"var(--k-b45309)");
 }
 function fmtMin(m){ if(m==null) return ""; const h=Math.floor(m/60), mm=m%60; return (h<10?"0":"")+h+":"+(mm<10?"0":"")+mm; }
 /* rezept und produkt kommen aus dem Wochenplan - ohne sie waeren Mahlzeiten grau. */
@@ -16899,7 +16916,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-15";
+const APP_BUILD = "2026-09-30-16";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
