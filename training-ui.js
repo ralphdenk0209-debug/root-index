@@ -146,7 +146,7 @@ function renderTrainPlanPane(){
     +'<button onclick="openPlanGen()" style="padding:9px 14px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen);cursor:pointer;font-size:14px">'+(p.Plan?'Plan neu erstellen':'Plan erstellen')+'</button>'
     +(p.Plan?'<button onclick="uebernehmenPlan()" style="margin-left:8px;padding:9px 14px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt,var(--k-ecfdf5));color:var(--greendk,var(--k-166534));cursor:pointer;font-size:14px">📒 Ins Trainingstagebuch übernehmen</button>':'')
     +(p.Plan_aktiv_ab?'<div style="margin-top:10px;background:var(--greenlt,var(--k-ecfdf5));border:1px solid var(--green);border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--greendk,var(--k-166534))">✓ Im Tagebuch aktiv ab <b>'+new Date(p.Plan_aktiv_ab+"T00:00:00").toLocaleDateString("de-DE")+'</b>'+(_adh?' · Zielerreichung: <b>'+_adh.absolviert+'/'+_adh.geplant+'</b> Einheiten absolviert'+(_adh.verpasst>0?' · <span style="color:var(--k-b45309)">'+_adh.verpasst+' verpasst</span>':''):'')+'</div>':'')
-    +(p.Plan?'<div style="margin-top:12px">'+renderPlanHtml(p.Plan)+'</div>':'')
+    +(p.Plan?'<div id="trTageHinweis"></div><div style="margin-top:12px">'+renderPlanHtml(p.Plan)+'</div>':'')
     +'</div>'
     +'<div style="'+card+'"><h3 style="'+h2+'">⏱️ Zeitbudget pro Training</h3>'
     +'<div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center">'
@@ -156,6 +156,28 @@ function renderTrainPlanPane(){
     +'<div id="trainMsg" style="font-size:13px;color:var(--k-16a34a);margin-top:6px"></div></div>'
     +'<div style="'+card+'"><h3 style="'+h2+'">😊 Tagesform heute</h3><div style="display:flex;gap:8px">'+tfHtml+'</div>'
     +'<div id="tfMsg" style="font-size:12px;color:var(--k-16a34a);margin-top:6px"></div></div>';
+  if(p.Plan) trTageAbgleich(p.Plan);
+}
+/* 30.09.2026 (Webtest Training): Plan Mo/Mi/Fr, im Profil aber nur Do als Trainingstag -
+   der Kalorien-Zuschlag im Tagebuch kam dann am falschen Tag. Unterschied zeigen und
+   mit einem Tipp angleichen (cb_trainingstage_profil, Zuschlag bleibt wie eingestellt). */
+const TR_ISO={Mo:1,Di:2,Mi:3,Do:4,Fr:5,Sa:6,So:7};
+async function trTageAbgleich(pl){
+  const box=document.getElementById("trTageHinweis"); if(!box||!pl||!(pl.wochentage||[]).length) return;
+  let b={}; try{ const {data}=await client.rpc("cb_profil"); b=(data&&data[0])||{}; }catch(e){ return; }
+  const plan=(pl.wochentage||[]).map(t=>TR_ISO[t]).filter(Boolean).sort((a,c)=>a-c).join(",");
+  const prof=String(b.Trainingstage||"").split(",").filter(Boolean).map(Number).sort((a,c)=>a-c).join(",");
+  if(plan===prof){ box.innerHTML=""; return; }
+  const namen=v=>v?v.split(",").map(n=>Object.keys(TR_ISO).find(k=>TR_ISO[k]===+n)).join("/"):"keine";
+  box.innerHTML='<div style="margin-top:10px;background:var(--k-fff7e6);border:1px solid var(--k-fde68a);border-radius:9px;padding:9px 11px;font-size:12.5px;color:var(--k-92400e);line-height:1.45">'
+    +'Im Profil stehen als Trainingstage <b>'+esc(namen(prof))+'</b>, der Plan sagt <b>'+esc(namen(plan))+'</b>. An den Profil-Tagen gibt es im Tagebuch den Kalorien-Zuschlag.'
+    +'<div style="margin-top:7px"><button onclick="trTageUebernehmen(\''+plan+'\','+(b.Trainingstag_Plus==null?20:+b.Trainingstag_Plus)+')" style="padding:6px 11px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen);cursor:pointer;font-size:12.5px;font-weight:600">Profil auf '+esc(namen(plan))+' setzen</button></div></div>';
+}
+async function trTageUebernehmen(tage, plus){
+  try{ const {data,error}=await client.rpc("cb_trainingstage_profil",{p_tage:tage,p_plus:plus}); if(error||!(data&&data.ok)) throw new Error(error?error.message:"nicht gespeichert");
+    if(typeof toast==='function') toast("✓ Trainingstage im Profil angeglichen.");
+  }catch(e){ if(typeof toast==='function') toast("Fehler: "+e.message,'#dc2626'); return; }
+  const pl=TRAIN&&TRAIN.Plan; if(pl) trTageAbgleich(pl);
 }
 let UEBUNGEN=null;
 async function openUebungen(target){
@@ -309,7 +331,7 @@ async function openTrainStats(target){
   let ms=[]; try{ const {data}=await client.rpc("cb_mass_historie",{p_limit:20}); ms=(data||[]).slice().reverse(); }catch(e){}
   if(ms.length>=2){
     html+='<h3 style="font-size:15px;margin:16px 0 6px">Körpermaße-Trend</h3>';
-    MASS.forEach(([k,label,col])=>{ const vals=ms.map(r=>r[col]).filter(v=>v!=null); if(vals.length>=2){ html+='<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px;color:var(--ink)">'+label+'</span>'+sparkline(ms.map(r=>r[col]))+'<span style="font-size:12px;color:var(--muted)">'+vals[vals.length-1]+' cm</span></div>'; } });
+    MASS.forEach(([k,label,col])=>{ const vals=ms.map(r=>r[col]).filter(v=>v!=null); if(vals.length>=2){ html+='<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px;color:var(--ink)">'+label+'</span>'+sparkline(ms.map(r=>r[col]))+'<span style="font-size:12px;color:var(--muted)">'+String(vals[vals.length-1]).replace('.',',')+' cm</span></div>'; } });
   }
   document.getElementById("stArea").innerHTML=html;
   if(list.length) renderStatUeb();
@@ -322,9 +344,9 @@ async function renderStatUeb(){
   const maxG=v.map(x=>x.max_gewicht), vol=v.map(x=>x.volumen);
   const lastG=maxG[maxG.length-1], firstG=maxG.find(x=>x!=null);
   box.innerHTML='<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px">'
-   +'<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px">Max. Gewicht</span>'+sparkline(maxG)+'<span style="font-size:12px;color:var(--muted)">'+(lastG??'–')+' kg</span></div>'
-   +'<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px">Volumen</span>'+sparkline(vol)+'<span style="font-size:12px;color:var(--muted)">'+Math.round(vol[vol.length-1]||0)+'</span></div>'
-   +'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+v.length+' Trainingstage'+((lastG!=null&&firstG!=null)?(' · Δ '+(Math.round((lastG-firstG)*10)/10)+' kg'):'')+'</div></div>';
+   +'<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px">Max. Gewicht</span>'+sparkline(maxG)+'<span style="font-size:12px;color:var(--muted)">'+(lastG==null?'–':String(lastG).replace('.',','))+' kg</span></div>'
+   +'<div style="display:flex;align-items:center;gap:10px;margin:4px 0"><span style="width:96px;font-size:13px">Volumen</span>'+sparkline(vol)+'<span style="font-size:12px;color:var(--muted)">'+Math.round(vol[vol.length-1]||0).toLocaleString('de-DE')+' kg</span></div>'
+   +'<div style="font-size:12px;color:var(--muted);margin-top:6px">'+v.length+' Trainingstage'+((lastG!=null&&firstG!=null)?(' · Δ '+String(Math.round((lastG-firstG)*10)/10).replace('.',',')+' kg'):'')+'</div></div>';
 }
 
 /* ---- Intervall-Taktgeber ---- */
@@ -396,21 +418,36 @@ async function openPlanGen(){
   const dauer = sommer ? ((TRAIN&&TRAIN.Zeit_Sommer_Min)||90) : ((TRAIN&&TRAIN.Zeit_Winter_Min)||120);
   const panel=document.getElementById("panel");
   panel.innerHTML='<button class="close" onclick="closeP()">Schließen ✕</button><h2 style="margin-top:0">🗓️ Trainingsplan erstellen</h2>'
-   +'<div style="font-size:13px;margin-bottom:10px"><div style="margin-bottom:5px;font-weight:600">Trainingstage (anhaken)</div><div id="pgTageBox" style="display:flex;gap:5px;flex-wrap:wrap">'+['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,i)=>'<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;cursor:pointer"><input type="checkbox" class="pgTag" value="'+i+'" data-lbl="'+d+'"'+([0,2,4].indexOf(i)>=0?' checked':'')+' style="margin:0">'+d+'</label>').join("")+'</div></div>'
+   +'<div style="font-size:13px;margin-bottom:10px"><div style="margin-bottom:5px;font-weight:600">Trainingstage (anhaken)</div><div id="pgTageBox" style="display:flex;gap:5px;flex-wrap:wrap">'+['Mo','Di','Mi','Do','Fr','Sa','So'].map((d,i)=>'<label style="display:inline-flex;align-items:center;gap:4px;padding:6px 9px;border:1px solid var(--line);border-radius:8px;cursor:pointer"><input type="checkbox" class="pgTag" value="'+i+'" data-lbl="'+d+'"'+(_pgVorTage().indexOf(i)>=0?' checked':'')+' style="margin:0">'+d+'</label>').join("")+'</div></div>'
    +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px">'
-   +'<label style="font-size:13px">Ziel<br><select id="pgZiel" style="padding:8px;border:1px solid var(--line);border-radius:8px"><option>Muskelaufbau</option><option>Kraft</option><option>Abnehmen &amp; Ausdauer</option><option>Allgemein fit</option></select></label>'
+   +'<label style="font-size:13px">Ziel<br><select id="pgZiel" onchange="pgZielSchema()" style="padding:8px;border:1px solid var(--line);border-radius:8px"><option>Muskelaufbau</option><option>Kraft</option><option>Abnehmen &amp; Ausdauer</option><option>Allgemein fit</option></select></label>'
    +'<label style="font-size:13px">Dauer/Einheit (Min)<br><input id="pgDauer" type="number" value="'+dauer+'" style="width:90px;padding:8px;border:1px solid var(--line);border-radius:8px"></label>'
-   +'<label style="font-size:13px">Sätze<br><input id="pgSaetze" type="number" min="1" max="10" value="3" style="width:64px;padding:8px;border:1px solid var(--line);border-radius:8px"></label>'
-   +'<label style="font-size:13px">Wiederholungen<br><input id="pgWdh" value="10" style="width:100px;padding:8px;border:1px solid var(--line);border-radius:8px"></label>'
+   +'<label style="font-size:13px">Sätze<br><input id="pgSaetze" type="number" min="1" max="10" value="4" style="width:64px;padding:8px;border:1px solid var(--line);border-radius:8px"></label>'
+   +'<label style="font-size:13px">Wiederholungen<br><input id="pgWdh" value="8–12" style="width:100px;padding:8px;border:1px solid var(--line);border-radius:8px"></label>'
    +'</div>'
    +'<label style="font-size:13px;display:block;margin-bottom:12px"><input type="checkbox" id="pgMine" checked> nur mit meinen Geräten</label>'
    +'<button onclick="genPlan()" style="padding:10px 16px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen);cursor:pointer;font-size:14px">Plan erstellen</button>'
    +'<div id="pgResult" style="margin-top:14px"></div>';
   document.getElementById("overlay").classList.add("open"); panel.scrollTop=0;
 }
+/* 30.09.2026 (Webtest Training): Ziel "Kraft" ergab trotzdem 3 × 10 - das Schema je Ziel
+   wurde berechnet, aber nie benutzt. Jetzt fuellt die Zielwahl Saetze/Wdh vor (aenderbar). */
+const PG_SCHEMA={'Muskelaufbau':[4,'8–12'],'Kraft':[5,'4–6'],'Abnehmen & Ausdauer':[3,'12–15'],'Allgemein fit':[3,'10–12']};
+function pgZielSchema(){
+  const z=(document.getElementById("pgZiel")||{}).value, s=PG_SCHEMA[z]; if(!s) return;
+  const a=document.getElementById("pgSaetze"), w=document.getElementById("pgWdh"); if(a) a.value=s[0]; if(w) w.value=s[1];
+}
+/* Vorbelegung der Tage: Profil-Trainingstage (ISO 1-7), sonst der gespeicherte Plan, sonst Mo/Mi/Fr. */
+function _pgVorTage(){
+  try{ if(typeof TT_GEWAEHLT!=='undefined' && TT_GEWAEHLT.size) return [...TT_GEWAEHLT].map(n=>n-1); }catch(e){}
+  const pl=TRAIN&&TRAIN.Plan; if(pl&&(pl.wochentage||[]).length) return pl.wochentage.map(t=>['Mo','Di','Mi','Do','Fr','Sa','So'].indexOf(t)).filter(i=>i>=0);
+  return [0,2,4];
+}
+/* Halte-Uebungen werden in Sekunden gemacht, nicht in Wiederholungen. */
+function _pgHalten(name){ return /plank|unterarmst|seitst|wall ?sit|hollow|halten|isometr/i.test(name||''); }
 function genPlan(){
   const tagCbs=[...document.querySelectorAll('.pgTag:checked')];
-  if(!tagCbs.length){ alert("Bitte mindestens einen Trainingstag anhaken."); return; }
+  if(!tagCbs.length){ const r=document.getElementById("pgResult"); if(r) r.innerHTML='<div style="color:var(--k-dc2626);font-size:13px">Bitte mindestens einen Trainingstag anhaken.</div>'; return; }
   const wochentage=tagCbs.map(c=>c.dataset.lbl);
   const tage=wochentage.length;
   const ziel=document.getElementById("pgZiel").value;
@@ -431,13 +468,14 @@ function genPlan(){
   if(grpImPool.size<4){ split=Array.from({length:tage},(_,i)=>({name:'Ganzkörper'+(tage>1?(' '+String.fromCharCode(65+i)):''),gruppen:alleGrp})); }
   split.forEach((day,di)=>{
     const picks=pickExercises(pool,day.gruppen,nUeb);
-    plan.tageliste.push({name:day.name,wochentag:wochentage[di]||'',uebungen:picks.map(u=>({name:u.name,muskelgruppe:u.muskelgruppe,saetze:uSaetze,wdh:uWdh})),cardio:(cardioMin?('Cardio '+cardioMin+' min'):null)});
+    plan.tageliste.push({name:day.name,wochentag:wochentage[di]||'',uebungen:picks.map(u=>({name:u.name,muskelgruppe:u.muskelgruppe,saetze:uSaetze,wdh:_pgHalten(u.name)?'30–45 s':uWdh})),cardio:(cardioMin?('Cardio '+cardioMin+' min'):null)});
   });
   _genPlan=plan; renderPlanPreview(plan);
 }
 function renderPlanHtml(pl){
-  return (pl.tageliste||[]).map((d,i)=>'<div style="border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:8px"><div style="font-weight:700;font-size:14px;margin-bottom:6px">'+(d.wochentag?esc(d.wochentag):'Tag '+(i+1))+': '+esc(d.name)+'</div>'
-    +(d.uebungen||[]).map(u=>'<div style="display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0;gap:8px"><span>'+esc(u.name)+' <span style="color:var(--muted);font-size:11px">'+esc(u.muskelgruppe)+'</span></span><span style="color:var(--muted);white-space:nowrap">'+u.saetze+' × '+esc(u.wdh)+'</span></div>').join("")
+  const heute=['So','Mo','Di','Mi','Do','Fr','Sa'][new Date().getDay()];
+  return (pl.tageliste||[]).map((d,i)=>'<div style="border:1px solid '+(d.wochentag===heute?'var(--green)':'var(--line)')+';border-radius:10px;padding:10px 12px;margin-bottom:8px'+(d.wochentag===heute?';background:var(--greenlt,#eaf5ee)':'')+'"><div style="font-weight:700;font-size:14px;margin-bottom:6px">'+(d.wochentag?esc(d.wochentag):'Tag '+(i+1))+': '+esc(d.name)+(d.wochentag===heute?' <span style="font-weight:600;color:var(--greendk,#166534);font-size:12px">· heute</span>':'')+'</div>'
+    +(d.uebungen||[]).map(u=>'<div style="display:flex;justify-content:space-between;font-size:13.5px;padding:2px 0;gap:8px"><span>'+esc(u.name)+' <span style="color:var(--muted);font-size:11px">'+esc(u.muskelgruppe)+'</span></span><span style="color:var(--muted);white-space:nowrap">'+u.saetze+' × '+esc(_pgHalten(u.name)&&!/s$/.test(String(u.wdh||''))?'30–45 s':u.wdh)+'</span></div>').join("")
     +(d.cardio?'<div style="font-size:13px;color:var(--k-16a34a);margin-top:4px">+ '+esc(d.cardio)+'</div>':'')+'</div>').join("");
 }
 function renderPlanPreview(pl){
@@ -447,7 +485,7 @@ function renderPlanPreview(pl){
 async function savePlan(){
   if(!_genPlan) return;
   const {error}=await client.rpc("cb_train_plan_speichern",{p_plan:_genPlan});
-  if(error){ alert("Fehler: "+error.message); return; }
+  if(error){ const r=document.getElementById("pgResult"); if(r) r.insertAdjacentHTML('beforeend','<div style="color:var(--k-dc2626);font-size:13px;margin-top:6px">Fehler: '+esc(error.message)+'</div>'); return; }
   closeP(); loadTraining();
 }
 function openPlanView(){
