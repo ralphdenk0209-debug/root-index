@@ -7911,7 +7911,7 @@ function pfAufbauen(){
   /* Rueckmeldung "✓ gespeichert" gehoert in den Kopf, nicht unter einen versteckten Knopf */
   var msg=$('pfMsg'); if(msg){ msg.style.marginLeft='0'; kopf.insertBefore(msg, kopf.lastChild); }
   /* Gesundheit */
-  var g=karte('Gesundheit'); var gg=document.createElement('div');
+  var g=karte(''); var gg=document.createElement('div');
   gg.style.cssText='display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px'; g.appendChild(gg);
   [$('pfDiab')&&$('pfDiab').closest('label'), $('pfZustandLbl'), $('pfUnvBox')].forEach(function(e){ if(e) gg.appendChild(e); });
   grp.gesund.appendChild(g); if($('pfZyklusBox')) grp.gesund.appendChild($('pfZyklusBox'));
@@ -7980,13 +7980,15 @@ function pfUebersichtRender(){
 function pfOeffnen(g){
   if(!pfAufbauen()) return;
   _pfOffen=g||null;
+  var _m=document.getElementById('pfMsg'); if(_m) _m.textContent='';
   var ueb=document.getElementById('pfUebersicht'), kopf=document.getElementById('pfGrpKopf');
   if(ueb) ueb.style.display=_pfOffen?'none':'';
   if(kopf) kopf.style.display=_pfOffen?'flex':'none';
   document.querySelectorAll('#profilInner .pf-grp').forEach(function(d){ d.style.display=(d.dataset.g===_pfOffen)?'':'none'; });
   var x=PF_GRP.filter(function(p){return p.g===_pfOffen;})[0];
   var t=document.getElementById('pfGrpTitel'); if(t) t.textContent=x?(x.i+' '+x.t):'';
-  if(!_pfOffen) pfUebersichtRender();
+  /* Wasser, Masse, Bundesland laden nachtraeglich - Kurzinfo danach nochmal auffrischen */
+  if(!_pfOffen){ pfUebersichtRender(); [900,2200].forEach(function(ms){ setTimeout(function(){ if(!_pfOffen) pfUebersichtRender(); }, ms); }); }
   try{ window.scrollTo(0,0); }catch(e){}
 }
 /* Alte Aufrufe: loadProfil ruft pfTab('daten') nach jedem Laden (offene Gruppe bleibt offen),
@@ -16853,7 +16855,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-12";
+const APP_BUILD = "2026-09-30-13";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
