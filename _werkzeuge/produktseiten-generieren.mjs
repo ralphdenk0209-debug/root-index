@@ -100,14 +100,16 @@ async function holeAb(url, key, letzteId) {
 // auch dann noch, wenn die Datenbank unter Last steht.
 async function naechsteId(url, key, letzteId) {
   const nach = letzteId ? `&id=gt.${encodeURIComponent(letzteId)}` : "";
-  for (let versuch = 1; versuch <= 3; versuch++) {
+  // Unter Last kann auch das kurz scheitern - laenger und oefter warten.
+  const PAUSEN = [3, 8, 15, 30, 45, 60];
+  for (const pause of PAUSEN) {
     try {
       const r = await fetch(`${url}/rest/v1/v_web_produkte?select=id&order=id&limit=1${nach}`, { headers: { apikey: key } });
       if (r.ok) { const j = await r.json(); return j.length ? j[0].id : null; }
     } catch (e) { /* naechster Versuch */ }
-    await new Promise((f) => setTimeout(f, 2000 * versuch));
+    await new Promise((f) => setTimeout(f, pause * 1000));
   }
-  return null;
+  return undefined; // unbekannt (nicht: Ende erreicht)
 }
 
 async function alleProdukte() {
@@ -120,12 +122,18 @@ async function alleProdukte() {
     let teil;
     try {
       teil = await holeAb(url, key, letzteId);
-    } catch (e) {
+    } catch (e0) {
+      // Erst kurz Luft holen und nochmal versuchen - meist ist nur gerade Last.
+      await new Promise((f) => setTimeout(f, 20000));
+      try { teil = await holeAb(url, key, letzteId); } catch (e1) { teil = null; var e = e1; }
+    }
+    if (teil === null) {
       // Einzelnes Produkt rechnet zu lange (Datenbank unter Last). Frueher stand
       // hier der ganze Lauf still - jetzt wird diese eine Zeile uebersprungen,
       // der naechste Lauf holt sie nach. Zu viele Ausfaelle brechen weiter ab.
       const weiter = await naechsteId(url, key, letzteId);
-      if (!weiter) throw e;
+      if (weiter === null) break; // wirklich keine weiteren Produkte
+      if (weiter === undefined) throw e;
       uebersprungen.push(weiter);
       console.log(`  ! ${weiter} uebersprungen (${e.message.slice(0, 80)})`);
       if (uebersprungen.length > 300) throw new Error(`zu viele uebersprungene Produkte (${uebersprungen.length}) - Datenbank pruefen`);
