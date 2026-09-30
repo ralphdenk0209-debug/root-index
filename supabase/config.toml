@@ -37,3 +37,9 @@ verify_jwt = true
 
 [functions.hersteller-abgleich]
 verify_jwt = true
+
+# produktbild-uebernehmen wird aus der Datenbank (pg_net-Trigger) ohne
+# Schluessel angestossen und nimmt keine Eingabe an – arbeitet nur die
+# Tabelle produktbild_eingang ab (RLS, nur service_role). Darum bewusst aus.
+[functions.produktbild-uebernehmen]
+verify_jwt = false
