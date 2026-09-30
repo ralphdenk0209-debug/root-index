@@ -8516,7 +8516,10 @@ function startKennzahlen(sum, prof){
     {n:'Zutaten',      v:hatDaten?num(sum.p_zutaten):null,      max:30, f:'#3ddb7a'},
     {n:'Zusatzstoffe', v:hatDaten?num(sum.p_zusatzstoffe):null, max:15, f:'#5ab6ff'},
     {n:'Verarbeitung', v:hatDaten?num(sum.p_nova):null,         max:15, f:'#b79bff'},
-    {n:'Nährwert',     v:hatDaten?num(sum.p_naehrwert):null,    max:20, f:'#ffc24b'}
+    /* 30.09.2026 (Ralph: „A, oder seit wann rechnen wir 20?"): die Datenbank fuehrt die
+       Naehrwert-Achse auf 0-20, der Index zaehlt sie doppelt (40). Die Produktkarte zeigte
+       schon „/ 40", der Tag noch „/ 20" - jetzt ueberall dieselbe Skala. Prozent unveraendert. */
+    {n:'Nährwert',     v:hatDaten&&num(sum.p_naehrwert)!=null?num(sum.p_naehrwert)*2:null, max:40, f:'#ffc24b'}
   ].map(function(a){
     a.pct = (a.v==null) ? null : Math.max(0, Math.min(1, a.v/a.max));
     return a;
@@ -16715,7 +16718,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-7";
+const APP_BUILD = "2026-09-30-8";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
