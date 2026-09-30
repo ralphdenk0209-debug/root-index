@@ -43,13 +43,30 @@ function suppItemsRender(){
   if(!arr.length){ l.style.color="var(--muted)"; l.innerHTML="Noch keine Supplements – such oben eins und füg es hinzu."; return; }
   l.style.color="var(--ink)";
   l.innerHTML=arr.map(function(o){
-    var verteil=(o.haeufigkeit_tage>1)?'<span style="color:var(--muted)">→ '+Math.round(100/o.haeufigkeit_tage)+' % Dosis/Tag</span>':'<span style="color:var(--muted)">(täglich)</span>';
+    /* 30.09.2026 (Webtest Supplements): "alle 1 Tag(e) (täglich)" -> Auswahl in Worten. */
+    var h=+o.haeufigkeit_tage||1, opts=[[1,'täglich'],[2,'jeden 2. Tag'],[3,'alle 3 Tage'],[4,'alle 4 Tage'],[5,'alle 5 Tage'],[7,'1× pro Woche'],[14,'alle 2 Wochen'],[30,'1× im Monat']];
+    if(!opts.some(function(x){return x[0]===h;})) opts.push([h,'alle '+h+' Tage']);
+    var sel='<select class="suppHaeuf" onchange="suppSave(this)" style="padding:5px 8px;border:1px solid var(--line);border-radius:7px;background:var(--k-ffffff);color:var(--ink)">'
+      +opts.sort(function(a,b){return a[0]-b[0];}).map(function(x){ return '<option value="'+x[0]+'"'+(x[0]===h?' selected':'')+'>'+x[1]+'</option>'; }).join('')+'</select>';
+    var verteil=(h>1)?'<span style="color:var(--muted)">→ zählt mit '+Math.round(100/h)+' % der Dosis pro Tag</span>':'';
     return '<div class="suppRow" data-pid="'+esc(o.produkt_id)+'" style="border:1px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;opacity:'+(o.aktiv?'1':'0.55')+'">'
-      +'<div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1"><input type="checkbox" class="suppAktiv" '+(o.aktiv?'checked':'')+' onchange="suppSave(this)" style="width:16px;height:16px;accent-color:var(--k-16a34a)"><b style="font-size:14px">'+esc(o.name)+'</b>'+(o.marke?' <span style="font-size:11.5px;color:var(--muted)">'+esc(o.marke)+'</span>':'')+'</label><button onclick="suppDel(this)" title="Entfernen" style="border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer">✕</button></div>'
+      +'<div style="display:flex;align-items:center;gap:8px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer;flex:1"><input type="checkbox" class="suppAktiv" '+(o.aktiv?'checked':'')+' onchange="suppSave(this)" style="width:16px;height:16px;accent-color:var(--k-16a34a)"><b style="font-size:14px">'+esc(o.name)+'</b>'+(o.marke?' <span style="font-size:11.5px;color:var(--muted)">'+esc(o.marke)+'</span>':'')+'</label><span class="suppIdx" data-pid="'+esc(o.produkt_id)+'"></span><button onclick="try{detailById(\''+esc(o.produkt_id)+'\')}catch(e){}" title="Produktkarte öffnen" style="border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:7px;font-size:12px;padding:3px 8px;cursor:pointer">Details</button><button onclick="suppDel(this)" title="Entfernen" style="border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer">✕</button></div>'
       +(o.wirkstoffe?'<div style="font-size:11px;color:var(--muted);margin:4px 0 0 22px">'+esc(o.wirkstoffe)+'</div>':'<div style="font-size:11px;color:var(--k-e8920c);margin:4px 0 0 22px">Keine Wirkstoffe hinterlegt – zählt noch nicht mit.</div>')
-      +'<div style="font-size:12.5px;color:var(--ink);margin:6px 0 0 22px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">Einnahme: alle <input type="number" class="suppHaeuf" min="1" max="60" value="'+esc(String(o.haeufigkeit_tage))+'" onchange="suppSave(this)" style="width:56px;padding:4px 6px;border:1px solid var(--line);border-radius:7px;background:var(--k-ffffff);color:var(--ink)"> Tag(e) '+verteil+'</div>'
+      +'<div style="font-size:12.5px;color:var(--ink);margin:6px 0 0 22px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">Einnahme: '+sel+' '+verteil+'</div>'
     +'</div>';
   }).join("");
+  suppIndexLaden();
+}
+/* Reinheits-Index je Supplement - dieselbe abgelegte Zahl wie auf der Produktkarte (nur holen, nicht rechnen). */
+function suppIndexLaden(){
+  document.querySelectorAll('#suppItems .suppIdx').forEach(function(el){
+    client.rpc("cb_supplement_index_gespeichert",{p_id:el.getAttribute('data-pid')}).then(function(ri){
+      var v=ri&&ri.data; if(typeof v==="string"){ try{ v=JSON.parse(v); }catch(e){} }
+      if(!v||v.index==null) return; var n=Math.round(Number(v.index)); if(!isFinite(n)) return;
+      var f=n>=80?"#1f5e34":n>=60?"#92400e":"#6d28d9";
+      el.innerHTML='<span title="Reinheits-Index (eigene Skala für Nahrungsergänzung)" style="font-size:12px;font-weight:800;color:'+f+';border:1px solid var(--line);border-radius:7px;padding:2px 7px;white-space:nowrap">'+n+' <span style="font-weight:500;color:var(--muted)">Reinheit</span></span>';
+    },function(){});
+  });
 }
 async function suppSave(el){
   var row=el.closest(".suppRow"); if(!row) return; var pid=row.getAttribute("data-pid");
