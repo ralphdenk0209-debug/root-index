@@ -1,6 +1,8 @@
 // produktbild-uebernehmen — eigene Packungsfotos als Produktbild (Ralph, 30.09.2026, Weg B)
 //
-// Ablauf: Claude legt ein Bild per SQL in public.produktbild_eingang ab (Base64).
+// Ablauf: Claude legt ein Bild per SQL in public.produktbild_eingang ab — entweder
+// als Base64 oder als quelle_url auf die Rohdatei im Repo
+// (raw.githubusercontent.com/ralphdenk0209-debug/root-index/main/produktbilder-eingang/...).
 // Ein Trigger stoesst diese Funktion an. Sie laedt jedes offene Bild in den
 // oeffentlichen Bucket "produktbilder" (Pfad p/<zeit>_<Produkt-ID>.<endung>, wie
 // Produkt erfassen) und setzt "Produkte"."Bild_URL".
@@ -18,6 +20,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "produktbilder";
+const ERLAUBT = "https://raw.githubusercontent.com/ralphdenk0209-debug/root-index/";
 const ENDUNG: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 function b64zuBytes(b64: string): Uint8Array {
@@ -31,7 +34,7 @@ Deno.serve(async () => {
   const db = createClient(URL_, KEY, { auth: { persistSession: false } });
   const { data: zeilen, error } = await db
     .from("produktbild_eingang")
-    .select("id, produkt_id, daten_base64, mime, ersetzen")
+    .select("id, produkt_id, daten_base64, quelle_url, mime, ersetzen")
     .eq("status", "offen").order("id").limit(10);
   if (error) return Response.json({ ok: false, fehler: error.message }, { status: 500 });
 
@@ -40,8 +43,17 @@ Deno.serve(async () => {
     const setze = async (felder: Record<string, unknown>) =>
       await db.from("produktbild_eingang").update({ ...felder, erledigt_am: new Date().toISOString() }).eq("id", z.id);
     try {
-      if (!z.daten_base64) throw new Error("keine Bilddaten");
-      const bytes = b64zuBytes(z.daten_base64);
+      let bytes: Uint8Array;
+      if (z.daten_base64) {
+        bytes = b64zuBytes(z.daten_base64);
+      } else if (z.quelle_url && z.quelle_url.startsWith(ERLAUBT) && !z.quelle_url.includes("..")) {
+        const r = await fetch(z.quelle_url, { redirect: "error" });
+        if (!r.ok) throw new Error(`Abruf ${r.status}: ${z.quelle_url}`);
+        bytes = new Uint8Array(await r.arrayBuffer());
+      } else {
+        throw new Error("keine Bilddaten und keine erlaubte quelle_url");
+      }
+      if (bytes.length > 5_000_000) throw new Error(`Bild zu gross (${bytes.length} Byte)`);
       if (bytes.length < 1000) throw new Error(`Bild zu klein (${bytes.length} Byte)`);
       const pfad = `p/${Date.now()}_${z.produkt_id.toLowerCase()}.${ENDUNG[z.mime] ?? "jpg"}`;
       const up = await db.storage.from(BUCKET).upload(pfad, bytes, { contentType: z.mime, upsert: false });
