@@ -32,6 +32,7 @@ Regeln:
 - Beurteile nur, was du siehst. Schaetze Mengen nach der sichtbaren Portion auf dem Foto, nicht nach Standardportionen.
 - "sicherheit": "sicher" = klar erkennbar; "wahrscheinlich" = sehr naheliegend; "typisch" = nicht sichtbar, steckt aber in solchen Gerichten meist drin (z. B. Butter in Soße, Ei in Panade).
 - Allergene nur aus dieser Liste: ${ALLERGENE.join(", ")}. "laktose" nur zusaetzlich zu "milch", wenn das Milchprodukt laktosehaltig ist.
+- "versteckt_moeglich": hoechstens 4 Eintraege. Nur Allergene, die in GENAU diesem Gericht nach ueblichem Rezept unsichtbar drin sind (z. B. Sellerie in Bolognese-Sosse, Ei in Panade). Keine allgemeinen Spuren, keine Allergene, die schon bei einem Bestandteil stehen, nichts "zur Sicherheit".
 - Keine Entwarnung erfinden: Wenn du etwas nicht beurteilen kannst, schreib es in "unsicher".
 - Kein Essen erkennbar -> "gericht": null und leere Listen.
 Gib das Ergebnis ausschliesslich ueber das Werkzeug "mahlzeit_ergebnis" zurueck.`;
@@ -155,8 +156,13 @@ Deno.serve(async (req) => {
       menge_g: Number(b?.menge_g) > 0 ? Math.round(Number(b.menge_g)) : null,
       allergene: sauber(b?.allergene),
     }));
+    // 30.09.2026 (Test mit 10 Gerichten): die Modelle listeten bis zu 10 "versteckte" Allergene
+    // (Fisch bei Currywurst). Nur was nicht schon sichtbar steht, hoechstens 4.
+    const sichtbar = new Set<string>(); erg.bestandteile.forEach((b: any) => b.allergene.forEach((a: string) => sichtbar.add(a)));
     erg.versteckt_moeglich = (Array.isArray(erg.versteckt_moeglich) ? erg.versteckt_moeglich : [])
       .filter((v: any) => ALLERGENE.includes(String(v?.allergen || "").toLowerCase()))
+      .filter((v: any) => !sichtbar.has(String(v.allergen).toLowerCase()))
+      .slice(0, 4)
       .map((v: any) => ({ allergen: String(v.allergen).toLowerCase(), grund: String(v?.grund || "").slice(0, 160) }));
 
     const alle = new Set<string>();
