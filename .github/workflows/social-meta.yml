@@ -11,7 +11,7 @@ name: Social Meta
 
 on:
   schedule:
-    - cron: "30 5 * * *"      # taeglich ~07:30 deutscher Sommerzeit
+    - cron: "30 5,17 * * *"   # taeglich ~07:30 und ~19:30 deutscher Sommerzeit (Beitraege -> Newsletter)
   workflow_dispatch:
   push:
     paths:

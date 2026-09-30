@@ -94,6 +94,46 @@ Deno.serve(async (req: Request) => {
     if (e1.error) throw new Error(`Upsert instagram: ${e1.error.message}`);
     ergebnis.instagram = zIg;
 
+    // Beiträge -> Newsletter (Ralph 30.09.2026): neue Instagram-Beiträge merken, Vorschaubild dauerhaft
+    // in den Bucket newsletter-bilder kopieren (Meta-Adressen laufen ab) und den Abgleich anstoßen:
+    // Video -> eigene Ausgabe am darauffolgenden Sonntag, Vergleich -> mit geplanter Ausgabe abgleichen
+    // oder neu einplanen; geplante Ausgaben rücken eine Woche nach. Versand erst nach Ralphs Freigabe.
+    try {
+      const media = await graph(`${IG_USER_ID}/media`, token, {
+        fields: "id,caption,media_type,media_product_type,permalink,thumbnail_url,media_url,timestamp", limit: "25" });
+      const liste = (media.data || []) as Record<string, string>[];
+      const ids = liste.map((m) => String(m.id));
+      const { data: vorhanden } = ids.length
+        ? await sb.from("social_beitrag").select("extern_id").eq("kanal", "instagram").in("extern_id", ids)
+        : { data: [] };
+      const bekannt = new Set((vorhanden || []).map((v: { extern_id: string }) => v.extern_id));
+      let neu = 0;
+      for (const m of liste) {
+        if (bekannt.has(String(m.id))) continue;
+        const metaBild = m.media_type === "VIDEO" ? (m.thumbnail_url || null) : (m.media_url || m.thumbnail_url || null);
+        let bildUrl: string | null = null;
+        if (metaBild && Date.parse(m.timestamp.replace(/\+0000$/, "Z")) >= Date.parse("2026-09-29T22:00:00Z")) {
+          try {
+            const r = await fetch(metaBild);
+            if (r.ok) {
+              const typ = r.headers.get("content-type") || "image/jpeg";
+              const pfad = `instagram/${m.id}.${typ.includes("png") ? "png" : "jpg"}`;
+              const up = await sb.storage.from("newsletter-bilder").upload(pfad, new Uint8Array(await r.arrayBuffer()), { contentType: typ, upsert: true });
+              if (!up.error) bildUrl = sb.storage.from("newsletter-bilder").getPublicUrl(pfad).data.publicUrl;
+            }
+          } catch (_) { /* ohne Bild weiter */ }
+        }
+        const ins = await sb.from("social_beitrag").insert({
+          kanal: "instagram", extern_id: String(m.id), typ: m.media_type ?? null, produkt_typ: m.media_product_type ?? null,
+          permalink: m.permalink ?? null, caption: m.caption ?? null, meta_bild_url: metaBild, bild_url: bildUrl,
+          veroeffentlicht_am: m.timestamp,
+        });
+        if (!ins.error) neu++;
+      }
+      const abg = await sb.rpc("cb_social_newsletter_abgleich");
+      ergebnis.beitraege = { gelesen: liste.length, neu, abgleich: abg.error ? abg.error.message : abg.data };
+    } catch (e) { ergebnis.beitraege_fehler = (e as Error).message; }
+
     const fb = await graph(FB_PAGE_ID, token, { fields: "followers_count,fan_count" });
     let fbReich = null, fbProfil = null, fbInter = null;
     try {

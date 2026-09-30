@@ -15,7 +15,7 @@
   var URL_="https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/cb_newsletter_klick";
   var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
   var p=new URLSearchParams(location.search), a=parseInt(p.get('a'),10), l=parseInt(p.get('l'),10);
-  var weg=function(z){ var ziel=(typeof z==='string' && /^https:\/\/root-index\.de\//.test(z)) ? z : 'https://root-index.de/'; location.replace(ziel); };
+  var weg=function(z){ var ziel=(typeof z==='string' && /^https:\/\/(root-index\.de|www\.instagram\.com|www\.facebook\.com)\//.test(z)) ? z : 'https://root-index.de/'; location.replace(ziel); };
   if(!(a>0 && l>0)){ weg(); return; }
   var fertig=false; setTimeout(function(){ if(!fertig){ fertig=true; weg(); } }, 2500);
   fetch(URL_,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({p_a:a,p_l:l})})
