@@ -445,32 +445,23 @@ function _pgVorTage(){
 }
 /* Halte-Uebungen werden in Sekunden gemacht, nicht in Wiederholungen. */
 function _pgHalten(name){ return /plank|unterarmst|seitst|wall ?sit|hollow|halten|isometr/i.test(name||''); }
-function genPlan(){
+/* 30.09.2026 (Webtest Training): Der Plan entsteht jetzt auf dem Server
+   (cb_train_plan_erzeugen) - dieselbe Stelle, die die App schon nutzt. Vorher rechnete
+   das Web selbst und die beiden Wege liefen auseinander (#721). */
+async function genPlan(){
+  const out=document.getElementById("pgResult");
   const tagCbs=[...document.querySelectorAll('.pgTag:checked')];
-  if(!tagCbs.length){ const r=document.getElementById("pgResult"); if(r) r.innerHTML='<div style="color:var(--k-dc2626);font-size:13px">Bitte mindestens einen Trainingstag anhaken.</div>'; return; }
-  const wochentage=tagCbs.map(c=>c.dataset.lbl);
-  const tage=wochentage.length;
-  const ziel=document.getElementById("pgZiel").value;
-  const dauer=parseInt(document.getElementById("pgDauer").value)||90;
-  const mine=document.getElementById("pgMine").checked;
-  const uSaetze=Math.max(1,Math.min(10,parseInt(document.getElementById("pgSaetze").value)||3));
-  const uWdh=(document.getElementById("pgWdh").value||"10").trim()||"10";
-  const owned=new Set(Array.isArray(TRAIN&&TRAIN.Geraete)?TRAIN.Geraete:[]);
-  const pool=(UEBUNGEN||[]).filter(u=> !mine || u.ohne_geraet || (u.geraet && owned.has(u.geraet)));
-  const schema={'Muskelaufbau':{s:4,w:'8–12',c:0},'Kraft':{s:5,w:'4–6',c:0},'Abnehmen & Ausdauer':{s:3,w:'12–15',c:15},'Allgemein fit':{s:3,w:'10–12',c:10}}[ziel]||{s:3,w:'10–12',c:0};
-  const cardioVerf = pool.some(u=>/Cardio/i.test(u.muskelgruppe||""));
-  const cardioMin = (schema.c && cardioVerf)?schema.c:0;
-  const nUeb=Math.max(3,Math.min(7,Math.floor((dauer-cardioMin)/12)));
-  const plan={erstellt:tbToday(),ziel:ziel,tage:tage,wochentage:wochentage,dauer:dauer,schema:uSaetze+' Sätze × '+uWdh+' Wdh',tageliste:[]};
-  const grpImPool=new Set((pool||[]).map(u=>u.muskelgruppe).filter(Boolean));
-  const alleGrp=['Brust','Rücken','Beine','Schultern','Arme','Rumpf/Core'];
-  let split=planSplit(tage);
-  if(grpImPool.size<4){ split=Array.from({length:tage},(_,i)=>({name:'Ganzkörper'+(tage>1?(' '+String.fromCharCode(65+i)):''),gruppen:alleGrp})); }
-  split.forEach((day,di)=>{
-    const picks=pickExercises(pool,day.gruppen,nUeb);
-    plan.tageliste.push({name:day.name,wochentag:wochentage[di]||'',uebungen:picks.map(u=>({name:u.name,muskelgruppe:u.muskelgruppe,saetze:uSaetze,wdh:_pgHalten(u.name)?'30–45 s':uWdh})),cardio:(cardioMin?('Cardio '+cardioMin+' min'):null)});
-  });
-  _genPlan=plan; renderPlanPreview(plan);
+  if(!tagCbs.length){ if(out) out.innerHTML='<div style="color:var(--k-dc2626);font-size:13px">Bitte mindestens einen Trainingstag anhaken.</div>'; return; }
+  if(out) out.innerHTML='<div style="color:var(--muted);font-size:13px">Plan wird erstellt …</div>';
+  const {data,error}=await client.rpc("cb_train_plan_erzeugen",{
+    p_wochentage: tagCbs.map(c=>c.dataset.lbl),
+    p_ziel: document.getElementById("pgZiel").value,
+    p_dauer: parseInt(document.getElementById("pgDauer").value)||90,
+    p_saetze: Math.max(1,Math.min(10,parseInt(document.getElementById("pgSaetze").value)||3)),
+    p_wdh: (document.getElementById("pgWdh").value||"10").trim()||"10",
+    p_nur_meine_geraete: !!document.getElementById("pgMine").checked });
+  if(error||!data){ if(out) out.innerHTML='<div style="color:var(--k-dc2626);font-size:13px">Fehler: '+esc(error?error.message:'kein Plan')+'</div>'; return; }
+  _genPlan=data; renderPlanPreview(data);
 }
 function renderPlanHtml(pl){
   const heute=['So','Mo','Di','Mi','Do','Fr','Sa'][new Date().getDay()];
