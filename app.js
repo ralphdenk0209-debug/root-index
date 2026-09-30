@@ -10157,6 +10157,7 @@ async function loadPlaner(){
   fillProdList();
   if(REZEPTE===null) await loadRezepte();
   if(!_planMonday) _planMonday=planMondayOf(tbToday());
+  window._planGescrollt=false;
   await renderPlaner();
 }
 async function renderPlaner(){
@@ -10191,20 +10192,41 @@ async function renderPlaner(){
     html+=`<div style="background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:10px;box-shadow:var(--shadow)${isT?';outline:2px solid var(--greenlt)':''}">
       <div style="display:flex;justify-content:space-between;align-items:center;font-weight:700;margin-bottom:4px">${d.toLocaleDateString("de-DE",{weekday:"long"})} <span style="font-weight:500;color:var(--muted);font-size:12.5px">${d.toLocaleDateString("de-DE",{day:"numeric",month:"short"})}${isT?" · heute":""}</span></div>`;
     if(massAktiv && massNaechste && (ds===massNaechste || (isT && massNaechste<=tbToday()))){
-      html+=`<div onclick="setMode('profil')" style="cursor:pointer;background:var(--k-fff7e6);border:1px solid var(--k-fde68a);border-radius:8px;padding:5px 8px;margin:0 0 6px;font-size:12.5px;color:var(--k-92400e)">📐 Körpermaße messen fällig ›</div>`;
+      html+=`<div onclick="navTo('profil');setTimeout(function(){ try{ pfOeffnen('masse'); }catch(e){} },400)" style="cursor:pointer;background:var(--k-fff7e6);border:1px solid var(--k-fde68a);border-radius:8px;padding:5px 8px;margin:0 0 6px;font-size:12.5px;color:var(--k-92400e)">📐 Körpermaße messen fällig ›</div>`;
     }
     slots.forEach(s=>{
       const items=entries.filter(e=>e.datum===ds && e.slot===s);
       html+=`<div style="padding:4px 0;border-top:1px solid var(--k-f3f6f4)"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:12.5px;color:var(--muted)">${icons[s]} ${s}</span><button onclick="planAdd('${ds}','${s}')" style="border:0;background:var(--greenlt);color:var(--greendk);border-radius:7px;padding:1px 10px;font-size:15px;cursor:pointer">+</button></div>`;
       items.forEach(it=>{ html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:13.5px;padding:3px 0 3px 4px">
         <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${it.typ==='rezept'?'🍲':'•'} ${esc(it.titel)}${it.menge_g?` <span style="color:var(--k-9aa7a0)">${it.menge_g} g</span>`:""}</span>
-        <span style="display:flex;gap:5px;white-space:nowrap"><button onclick="planToTb(${it.eintrag_id})" title="Ins Tagebuch übernehmen" style="border:0;background:var(--k-eef6ff);color:var(--k-1e3a8a);border-radius:6px;padding:2px 7px;font-size:12px;cursor:pointer">→ TB</button><button onclick="planDel(${it.eintrag_id})" style="border:0;background:var(--k-f6f8f7);color:var(--k-dc2626);border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button></span></div>`; });
+        <span style="display:flex;gap:5px;white-space:nowrap"><button onclick="planToTb(${it.eintrag_id})" title="Ins Tagebuch übernehmen" style="border:0;background:var(--k-eef6ff);color:var(--k-1e3a8a);border-radius:6px;padding:2px 7px;font-size:12px;cursor:pointer">→ Tagebuch</button><button onclick="planDel(${it.eintrag_id})" style="border:0;background:var(--k-f6f8f7);color:var(--k-dc2626);border-radius:6px;width:24px;height:24px;cursor:pointer">✕</button></span></div>`; });
       html+=`</div>`;
     });
-    html+=`<div style="text-align:right;margin-top:4px"><button onclick="planDayToTb('${ds}')" style="font-size:12px;color:var(--k-1e3a8a);background:none;border:0;cursor:pointer;text-decoration:underline">ganzen Tag → Tagebuch</button></div></div>`;
+    /* 30.09.2026 (Webtest Planer): nur zeigen, wenn an dem Tag etwas geplant ist. */
+    const _nTag=entries.filter(e=>e.datum===ds).length;
+    html+=(_nTag>1?`<div style="text-align:right;margin-top:4px"><button onclick="planDayToTb('${ds}')" style="font-size:12px;color:var(--k-1e3a8a);background:none;border:0;cursor:pointer;text-decoration:underline">ganzen Tag → Tagebuch</button></div>`:'')+`</div>`;
   });
+  /* 30.09.2026: Leere Woche - kurz sagen, wie es geht, statt 28 leere Plus-Zeilen. */
+  if(!entries.length && _planView!=='tag'){
+    html='<div style="background:var(--greenlt,#eaf5ee);border:1px solid var(--green);border-radius:12px;padding:10px 12px;margin-bottom:10px;font-size:13px;color:var(--greendk,#166534);line-height:1.45">'
+      +'Diese Woche ist noch leer. Tippe bei einer Mahlzeit auf <b>+</b> und wähle ein Rezept oder Produkt – daraus entsteht mit <b>🛒 Einkaufsliste</b> der Einkaufszettel.</div>'+html;
+  }
   document.getElementById("planGrid").innerHTML=html;
+  /* 30.09.2026: Am Handy lagen Montag und Dienstag vor "heute" - man musste scrollen. */
+  try{ if(_planView!=='tag' && dates.indexOf(tbToday())>0 && !window._planGescrollt){ window._planGescrollt=true;
+    const k=[...document.querySelectorAll('#planGrid > div')].find(d=>/· heute/.test(d.textContent||''));
+    if(k) setTimeout(function(){ k.scrollIntoView({behavior:'smooth',block:'start'}); },150); } }catch(e){}
 }
+/* Kurze Rueckmeldung unten am Bildschirm statt eines Browser-Popups (alert). */
+function toast(text, farbe){
+  try{
+    let t=document.getElementById('riToast');
+    if(!t){ t=document.createElement('div'); t.id='riToast'; document.body.appendChild(t); }
+    t.style.cssText='position:fixed;left:50%;bottom:92px;transform:translateX(-50%);z-index:10000;max-width:min(92vw,420px);padding:11px 16px;border-radius:12px;font-size:14px;line-height:1.4;box-shadow:0 6px 20px rgba(0,0,0,.2);color:#fff;background:'+(farbe||'#166534');
+    t.textContent=text; clearTimeout(window._riToastT); window._riToastT=setTimeout(function(){ if(t) t.remove(); }, 3200);
+  }catch(e){}
+}
+if(typeof window!=='undefined') window.toast=toast;
 function planAdd(ds,slot){
   _planTarget={ds,slot};
   const sel=document.getElementById("planRez");
@@ -10268,17 +10290,18 @@ async function planDel(id){ await client.rpc("cb_plan_del",{p_eintrag:id}); rend
 async function planToTb(id,quiet){
   const it=(_planCache||[]).find(e=>e.eintrag_id===id); if(!it) return;
   try{
-    if(it.typ==='rezept' && it.rezept_id){ const {data:rm}=await client.rpc("cb_tb_rezept",{p_mahlzeit:it.slot,p_rezept:it.rezept_id,p_datum:it.datum}); if(/Nicht eingetragen/.test(rm||"")){ alert(rm); return; } }
+    if(it.typ==='rezept' && it.rezept_id){ const {data:rm}=await client.rpc("cb_tb_rezept",{p_mahlzeit:it.slot,p_rezept:it.rezept_id,p_datum:it.datum}); if(/Nicht eingetragen/.test(rm||"")){ toast(rm,'#b45309'); return false; } }
     else if(it.produkt_id){ const p=(ALL||[]).find(x=>x.id===it.produkt_id); const g=it.menge_g||(p?tbDefaultPortion(p):100); await client.rpc("cb_tb_eintragen",{p_mahlzeit:it.slot,p_produkt:it.produkt_id,p_menge_g:g,p_datum:it.datum}); }
-    else { if(!quiet) alert("Nur Rezepte/Produkte können übernommen werden."); return; }
-    if(!quiet) alert("✓ ins Tagebuch übernommen ("+it.datum+")");
-  }catch(e){ if(!quiet) alert("Fehler: "+e.message); }
+    else { if(!quiet) toast("Nur Rezepte und Produkte lassen sich übernehmen.",'#b45309'); return false; }
+    if(!quiet) toast("✓ "+(it.titel||"Eintrag")+" steht im Tagebuch ("+deDatum(it.datum)+", "+it.slot+")");
+    return true;
+  }catch(e){ if(!quiet) toast("Fehler: "+e.message,'#dc2626'); return false; }
 }
 async function planDayToTb(ds){
   const items=(_planCache||[]).filter(e=>e.datum===ds); if(!items.length) return;
-  if(!confirm("Alle "+items.length+" Einträge dieses Tages ins Tagebuch übernehmen?")) return;
-  for(const it of items){ await planToTb(it.eintrag_id,true); }
-  alert("✓ "+items.length+" Einträge ins Tagebuch übernommen.");
+  /* 30.09.2026: kein Browser-Popup mehr - der Knopf ist ausdruecklich "ganzen Tag", das reicht als Frage. */
+  let ok=0; for(const it of items){ if(await planToTb(it.eintrag_id,true)) ok++; }
+  toast(ok===items.length ? ("✓ "+ok+" Einträge vom "+deDatum(ds)+" stehen im Tagebuch.") : (ok+" von "+items.length+" übernommen – der Rest ließ sich nicht eintragen."), ok===items.length?undefined:'#b45309');
 }
 /* Einkaufsliste als eigene Seite (Menü + Startseite). Der Button im Tagebuch bleibt zusätzlich. */
 async function renderEinkaufSeite(){
@@ -16959,7 +16982,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-18";
+const APP_BUILD = "2026-09-30-19";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
