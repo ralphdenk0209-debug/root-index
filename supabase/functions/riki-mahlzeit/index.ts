@@ -34,8 +34,31 @@ Regeln:
 - Allergene nur aus dieser Liste: ${ALLERGENE.join(", ")}. "laktose" nur zusaetzlich zu "milch", wenn das Milchprodukt laktosehaltig ist.
 - Keine Entwarnung erfinden: Wenn du etwas nicht beurteilen kannst, schreib es in "unsicher".
 - Kein Essen erkennbar -> "gericht": null und leere Listen.
-Antworte NUR mit JSON in genau dieser Form, ohne Text davor oder danach:
-{"gericht":"kurzer Name auf Deutsch","bestandteile":[{"name":"...","sicherheit":"sicher|wahrscheinlich|typisch","menge_g":0,"allergene":["..."]}],"versteckt_moeglich":[{"allergen":"...","grund":"..."}],"unsicher":"...","kcal_geschaetzt":0}`;
+Gib das Ergebnis ausschliesslich ueber das Werkzeug "mahlzeit_ergebnis" zurueck.`;
+
+// Strukturierte Ausgabe ueber ein Werkzeug: kein freies JSON, das ein Modell mal falsch schliesst
+// (Opus lieferte beim ersten Test ein kaputtes Array).
+const WERKZEUG = {
+  name: "mahlzeit_ergebnis",
+  description: "Ergebnis der Mahlzeit-Erkennung",
+  input_schema: {
+    type: "object",
+    properties: {
+      gericht: { type: ["string", "null"], description: "kurzer Name auf Deutsch" },
+      bestandteile: { type: "array", items: { type: "object", properties: {
+        name: { type: "string" },
+        sicherheit: { type: "string", enum: ["sicher", "wahrscheinlich", "typisch"] },
+        menge_g: { type: "number" },
+        allergene: { type: "array", items: { type: "string", enum: ALLERGENE } },
+      }, required: ["name", "sicherheit", "allergene"] } },
+      versteckt_moeglich: { type: "array", items: { type: "object", properties: {
+        allergen: { type: "string", enum: ALLERGENE }, grund: { type: "string" } }, required: ["allergen"] } },
+      unsicher: { type: "string" },
+      kcal_geschaetzt: { type: "number" },
+    },
+    required: ["gericht", "bestandteile", "versteckt_moeglich"],
+  },
+};
 
 function findeKey(): string | null {
   const env = Deno.env.toObject();
@@ -89,7 +112,9 @@ Deno.serve(async (req) => {
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
       body: JSON.stringify({
         model: m.id,
-        max_tokens: 1500,
+        max_tokens: 2000,
+        tools: [WERKZEUG],
+        tool_choice: { type: "tool", name: "mahlzeit_ergebnis" },
         messages: [{ role: "user", content: [
           { type: "image", source: { type: "base64", media_type: typ, data: bild } },
           { type: "text", text: PROMPT },
@@ -100,8 +125,8 @@ Deno.serve(async (req) => {
     if (!ai.ok) throw new Error(r?.error?.message || ("Modellfehler " + ai.status));
     inTok = r?.usage?.input_tokens ?? 0; outTok = r?.usage?.output_tokens ?? 0;
     kosten = (inTok * m.in + outTok * m.out) / 1_000_000;
-    const text = (r?.content || []).map((c: any) => c?.text || "").join("");
-    const erg = parseJson(text);
+    const tu = (r?.content || []).find((c: any) => c?.type === "tool_use");
+    const erg: any = tu?.input ?? parseJson((r?.content || []).map((c: any) => c?.text || "").join(""));
 
     // Nur bekannte Allergen-Schluessel durchlassen (was das Modell schreibt, ist ungeprueft).
     const sauber = (l: any) => (Array.isArray(l) ? l : []).map((x: any) => String(x).toLowerCase().trim()).filter((x: string) => ALLERGENE.includes(x));
