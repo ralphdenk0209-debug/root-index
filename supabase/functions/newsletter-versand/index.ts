@@ -174,10 +174,34 @@ Deno.serve(async (req) => {
       erg.test = t;
     }
 
-    /* 3) Faellige, FREIGEGEBENE Ausgabe versenden */
+    /* 2b) Willkommens-Mail (art='willkommen', nur wenn Ralph sie freigegeben hat):
+          einmal an jeden Bestaetigten, der sie noch nicht hat. 30.09.2026 */
+    if (modus === "takt") {
+      const { data: w } = await db.from("newsletter_ausgabe").select("id,betreff,inhalt_text,inhalt_html")
+        .eq("art", "willkommen").eq("status", "freigegeben").order("id").limit(1);
+      const wa = w?.[0];
+      if (wa) {
+        const { data: neue } = await db.from("newsletter_abonnent").select("id,email,token")
+          .eq("status", "bestaetigt").is("willkommen_am", null).order("id").limit(STAPEL);
+        let n = 0; const f: string[] = [];
+        for (const r of neue || []) {
+          if (Date.now() - start > ZEIT_MS) break;
+          const abm = SEITE + "?nl=abmelden&t=" + r.token;
+          try {
+            await verbinden();
+            await smtp.mail(r.email, mime(von, r.email, wa.betreff, einsetzen(wa.inhalt_text, abm), einsetzen(wa.inhalt_html, abm), abm));
+            n++;
+          } catch (e) { f.push(String(e).slice(0, 160)); }
+          await db.from("newsletter_abonnent").update({ willkommen_am: new Date().toISOString() }).eq("id", r.id);
+        }
+        erg.willkommen = { gesendet: n, fehler: f };
+      }
+    }
+
+    /* 3) Faellige, FREIGEGEBENE Ausgabe versenden (ohne Willkommens-Mail) */
     if (modus === "takt") {
       const { data: aus } = await db.from("newsletter_ausgabe").select("*")
-        .in("status", ["freigegeben", "laeuft"]).lte("geplant_fuer", new Date().toISOString())
+        .in("status", ["freigegeben", "laeuft"]).neq("art", "willkommen").lte("geplant_fuer", new Date().toISOString())
         .order("geplant_fuer").limit(1);
       const a = aus?.[0];
       if (a) {

@@ -229,9 +229,16 @@ const RM_BLOCK = `<div class="rm" id="rmBox">
    eher ein Nutzer als aus einem Knopf ein Spender. Der Stripe-Link traegt
    client_reference_id=produktseite, damit in Stripe nachweisbar ist, ob von
    hier je etwas kam - statt darueber zu spekulieren. */
+/* 30.09.2026 (Ralph): Newsletter-Anmeldung als eigener, ruhiger Kasten vor dem Unterstuetzen-Kasten –
+   Link auf /?newsletter (Formular in der App, Double-Opt-In). Keine Formularfelder auf der statischen Seite. */
 const UNT_URL = "https://buy.stripe.com/bJedR88cq2V26jCbxB1gs00?client_reference_id=produktseite";
 const UNT_BLOCK = `<div class="unt">
 <p class="mehr"><a href="/produkt/">Alle bewerteten Produkte ansehen</a> · <a href="/">Root Index als App</a></p>
+<div class="kasten">
+<b>Newsletter: jeden Sonntag ein Vergleich</b>
+<p>Ein Thema pro Woche – Produktvergleich, App-Funktion oder Rezept. Kostenlos, ohne Werbung von Herstellern, jederzeit abbestellbar.</p>
+<a class="btn" href="/?newsletter">Kostenlos anmelden</a>
+</div>
 <div class="kasten">
 <b>Root Index unterstützen</b>
 <p>Freiwilliger Beitrag – hilf uns, unabhängig und werbefrei zu bleiben. Kein Abo, keine Gegenleistung.</p>
@@ -324,7 +331,8 @@ h2{font-size:1rem;margin-top:24px}
 .unt .kasten b{display:block;font-weight:600;font-size:.95rem;color:var(--cream)}
 .unt .kasten p{margin:.4em auto .9em;max-width:440px;font-size:.82rem;color:var(--mut)}
 .unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
-.unt .btn:hover{background:rgba(124,255,155,.1)}`;
+.unt .btn:hover{background:rgba(124,255,155,.1)}
+.unt .kasten+.kasten{margin-top:12px}`;
 const SEITE_JS = [zaehlerJs(), rueckmeldungJs()]
   .map((s) => s.replace(/^<script>/, "").replace(/<\/script>$/, ""))
   .join("\n");

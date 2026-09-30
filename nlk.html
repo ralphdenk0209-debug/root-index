@@ -1,0 +1,26 @@
+<!doctype html>
+<!-- NLK · 30.09.2026 (Ralph: „nutzerzählung für newsletter, also wie viel klicken auf den link").
+     Jeder Link im Newsletter läuft über diese Seite. Gezählt wird ANONYM: nur Ausgabe, Link-Nummer
+     und Tag (cb_newsletter_klick) – keine Person, keine Adresse, kein Cookie. Danach sofort weiter
+     zum Ziel. Das Ziel steht in der Datenbank (newsletter_link), nie in der Adresse – kein offener
+     Weiterleiter. Nur versendete Ausgaben werden gezählt (Testmails und Vorschau nicht). -->
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow">
+<title>Root Index</title>
+<style>body{margin:0;background:#1d321f;color:#F3EEDC;font:15px/1.5 -apple-system,"Segoe UI",Roboto,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}a{color:#7CFF9B}</style>
+</head><body>
+<p id="t">Einen Moment …</p>
+<noscript><p><a href="https://root-index.de/">Weiter zu Root Index</a></p></noscript>
+<script>
+(function(){
+  var URL_="https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/cb_newsletter_klick";
+  var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+  var p=new URLSearchParams(location.search), a=parseInt(p.get('a'),10), l=parseInt(p.get('l'),10);
+  var weg=function(z){ var ziel=(typeof z==='string' && /^https:\/\/root-index\.de\//.test(z)) ? z : 'https://root-index.de/'; location.replace(ziel); };
+  if(!(a>0 && l>0)){ weg(); return; }
+  var fertig=false; setTimeout(function(){ if(!fertig){ fertig=true; weg(); } }, 2500);
+  fetch(URL_,{method:'POST',headers:{'apikey':KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({p_a:a,p_l:l})})
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(z){ if(!fertig){ fertig=true; weg(z); } })
+    .catch(function(){ if(!fertig){ fertig=true; weg(); } });
+})();
+</script></body></html>

@@ -709,6 +709,7 @@ async function nlLaden(){
       `<div class="iiL"><div class="k">Abonnenten<span>+${de(ab.neu_7t)} in 7 T</span></div><div class="n">${de(ab.bestaetigt)}<small>bestätigt</small></div><div class="z">${de(ab.offen)} warten auf Bestätigung · ${de(ab.abgemeldet)} abgemeldet</div></div>`
      +`<div class="iiL"><div class="k">Nächste Ausgabe<span>${n?esc(st[n.status]||n.status):''}</span></div><div class="n" style="font-size:18px;line-height:1.3">${n?'Nr. '+n.nr+' · '+esc(d(n.geplant_fuer)):'keine geplant'}</div><div class="z">${n?esc(n.betreff):''}</div></div>`
      +`<div class="iiL"><div class="k">Vorrat</div><div class="n">${de(data.vorrat_wochen)}<small>Wochen</small></div><div class="z">${data.vorrat_bis?'bis '+new Date(data.vorrat_bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'}):''}</div></div>`
+     +`<div class="iiL"><div class="k">Klicks<span>30 Tage</span></div><div class="n">${de(data.klicks_30t)}<small>anonym</small></div><div class="z">${data.letzte?'Nr. '+data.letzte.nr+': '+de(data.letzte.klicks)+' Klicks bei '+de(data.letzte.empfaenger)+' Empfängern':'noch keine Ausgabe versendet'} · ${de((data.wuensche||[]).length)} Wünsche offen</div></div>`
      +`<div class="iiL"><div class="k">Ohne Termin</div><div class="n">${de(data.platzhalter)}<small>Ausgaben</small></div><div class="z">Buch, Neu in der App, Premium-Vorrat</div></div>`;
   }catch(e){}
 }

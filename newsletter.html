@@ -36,7 +36,9 @@ main{max-width:1400px;margin:0 auto;padding:10px 22px 60px}
 .pille{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.72rem;font-weight:700;border:1px solid currentColor}
 .p-entwurf{color:var(--gelb)}.p-freigegeben,.p-versendet{color:var(--acc)}.p-laeuft{color:#9fd3ff}.p-gestoppt{color:var(--rot)}
 .art{font-size:.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:1px 8px;border-radius:6px;background:rgba(243,238,220,.08)}
-.art-premium{color:#c9b8ff}.art-buch{color:var(--gelb)}.art-vergleich{color:var(--acc)}.art-rezept{color:#ffb37a}.art-neu{color:#9fd3ff}
+.art-premium{color:#c9b8ff}.art-buch{color:var(--gelb)}.art-vergleich{color:var(--acc)}.art-rezept{color:#ffb37a}.art-neu{color:#9fd3ff}.art-willkommen{color:#ffd6f0}
+.links{font-size:.78rem;color:var(--mut);padding:8px 14px;border-bottom:1px solid var(--line)}.links div{display:flex;justify-content:space-between;gap:10px}.links b{color:var(--acc)}
+.wunsch{border:1px dashed rgba(124,255,155,.45);border-radius:14px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:10px;align-items:center}.wunsch small{color:var(--mut)}
 .termin{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:.8rem;color:var(--mut)}.termin input{font:inherit;font-size:.8rem;background:transparent;color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:4px 8px;color-scheme:dark}
 .knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 button{font:inherit;font-size:.8rem;font-weight:700;border-radius:10px;padding:6px 12px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--cream)}
@@ -64,11 +66,13 @@ button:disabled{opacity:.5;cursor:default}
   <section>
    <span class="lab">Geplante Ausgaben</span>
    <div id="liste">lädt …</div>
+   <span class="lab" style="margin-top:18px">Wünsche der Leser</span>
+   <div id="wuensche">lädt …</div>
    <div class="regeln">Versand nur nach deiner Freigabe · jeden Sonntag 09:00 · Takt prüft alle 5 Minuten · nur an bestätigte Abonnenten (Double-Opt-In).<br>
    Beim Freigeben rechnet die Datenbank die Ausgabe neu – Punkte und Achsen kommen frisch aus dem Index. Testmail geht an kontakt@root-index.de.<br>
-   Platzhalter (Buch) lassen sich erst freigeben, wenn Termin und Inhalt stehen.</div>
+   Platzhalter (Buch) lassen sich erst freigeben, wenn Termin und Inhalt stehen. Die Willkommens-Mail geht nach Freigabe an jeden neu Bestätigten.<br>Klicks werden anonym gezählt: nur Ausgabe, Link und Tag – keine Person.</div>
   </section>
-  <aside class="vorschau"><div class="vk"><b id="vTitel">Vorschau</b><span id="vInfo" style="color:var(--mut)"></span></div><iframe id="vRahmen" sandbox title="Vorschau"></iframe></aside>
+  <aside class="vorschau"><div class="vk"><b id="vTitel">Vorschau</b><span id="vInfo" style="color:var(--mut)"></span></div><div class="links" id="vLinks"></div><iframe id="vRahmen" sandbox title="Vorschau"></iframe></aside>
  </div>
 </main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -82,7 +86,7 @@ const de=n=>Number(n||0).toLocaleString('de-DE');
 const dat=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}):'Termin offen';
 const monat=t=>t?new Date(t).toLocaleString('de-DE',{month:'long',year:'numeric',timeZone:'Europe/Berlin'}):'Ohne Termin';
 const ST={entwurf:'Entwurf',freigegeben:'freigegeben',laeuft:'wird versendet',versendet:'versendet',gestoppt:'gestoppt'};
-const ART={vergleich:'Produktvergleich',premium:'Premium erklärt',rezept:'Rezept des Monats',neu:'Neu in der App',buch:'Buch',sonder:'Sonder'};
+const ART={vergleich:'Produktvergleich',premium:'Premium erklärt',rezept:'Rezept des Monats',neu:'Neu in der App',buch:'Buch',sonder:'Sonder',willkommen:'Willkommens-Mail'};
 let D=null, AKTIV=null;
 function hinweis(t,fehler){ const h=$('hinweis'); h.textContent=t||''; h.className=fehler?'fehler':''; }
 async function laden(){
@@ -97,24 +101,27 @@ function zeichnen(){
   const z=[['Abonnenten',de(ab.bestaetigt),'+'+de(ab.neu_7t)+' in 7 Tagen'],['Warten auf Bestätigung',de(ab.offen),de(ab.abgemeldet)+' abgemeldet'],
     ['Nächste Ausgabe',n?('Nr. '+n.nr):'–',n?dat(n.geplant_fuer)+' · '+(ST[n.status]||n.status):'keine geplant'],
     ['Vorrat',de(D.vorrat_wochen)+' Wo.',D.vorrat_bis?'bis '+new Date(D.vorrat_bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'}):''],
-    ['Freigegeben',de(D.freigegeben_wochen)+' / '+de(D.vorrat_wochen),'Rest wartet auf dich'],['Ohne Termin',de(D.platzhalter),'Buch, Neu, Premium-Vorrat']];
+    ['Freigegeben',de(D.freigegeben_wochen)+' / '+de(D.vorrat_wochen),'Rest wartet auf dich'],['Klicks 30 Tage',de(D.klicks_30t),D.letzte?'letzte Ausgabe: '+de(D.letzte.klicks)+' bei '+de(D.letzte.empfaenger)+' Empf.':'anonym gezählt']];
   $('zahlen').innerHTML=z.map(([k,v,s])=>`<div class="zahl"><small>${esc(k)}</small><b>${esc(v)}</b><span>${esc(s)}</span></div>`).join('');
   let letzt='', h='';
   for(const a of (D.ausgaben||[])){
     const m=monat(a.geplant_fuer); if(m!==letzt){ h+=`<div class="monat">${esc(m)}</div>`; letzt=m; }
     const b=[];
     if(!a.platzhalter && (a.status==='entwurf'||a.status==='freigegeben')) b.push(`<button onclick="event.stopPropagation();setzen(${a.id},'testmail',this)">${a.testmail_angefordert?'Test läuft …':'Testmail'}</button>`);
-    if(a.status==='entwurf') b.push(`<button class="gruen" ${a.platzhalter||!a.geplant_fuer?'disabled title="Termin/Inhalt fehlt"':''} onclick="event.stopPropagation();setzen(${a.id},'freigeben',this)">✓ freigeben</button>`);
+    if(a.status==='entwurf') b.push(`<button class="gruen" ${a.platzhalter||(!a.geplant_fuer&&a.art!=='willkommen')?'disabled title="Termin/Inhalt fehlt"':''} onclick="event.stopPropagation();setzen(${a.id},'freigeben',this)">✓ freigeben</button>`);
     if(a.status==='freigegeben'||a.status==='laeuft') b.push(`<button class="rot" onclick="event.stopPropagation();setzen(${a.id},'stoppen',this)">■ stoppen</button>`);
     if(a.status==='freigegeben'||a.status==='gestoppt') b.push(`<button onclick="event.stopPropagation();setzen(${a.id},'entwurf',this)">↩ Entwurf</button>`);
-    const info=a.status==='versendet'||a.status==='laeuft'?`${de(a.empfaenger)} gesendet${a.fehler?' · '+de(a.fehler)+' Fehler':''}`:(a.testmail_am?'Test '+new Date(a.testmail_am).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}):'noch kein Test');
+    const info=a.art==='willkommen'?(a.status==='freigegeben'?`aktiv · ${de((D.willkommen||{}).gesendet)} verschickt`:'aus – erst nach Freigabe')
+      :a.status==='versendet'||a.status==='laeuft'?`${de(a.empfaenger)} gesendet · ${de(a.klicks)} Klicks${a.empfaenger?' ('+Math.round(100*a.klicks/a.empfaenger)+' %)':''}${a.fehler?' · '+de(a.fehler)+' Fehler':''}`:(a.testmail_am?'Test '+new Date(a.testmail_am).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}):'noch kein Test');
     h+=`<div class="aus ${AKTIV===a.id?'an':''}" onclick="ansehen(${a.id})">
       <div class="k"><span>Nr. ${a.nr}</span><span>${esc(dat(a.geplant_fuer))}</span><span class="art art-${a.art}">${esc(ART[a.art]||a.art)}</span><span class="pille p-${a.status}">${esc(ST[a.status]||a.status)}</span><span>${esc(info)}</span></div>
       <div class="t">${esc(a.betreff)}</div>
       <div class="th">${esc((a.themen||[]).join(' · '))}${a.notiz?' · '+esc(a.notiz):''}</div>
-      <div class="knoepfe">${b.join('')}</div>${a.status==='entwurf'?`<div class="termin" onclick="event.stopPropagation()">Termin: <input type="datetime-local" id="t${a.id}" value="${tIn(a.geplant_fuer)}"><button onclick="termin(${a.id})">setzen</button>${a.geplant_fuer?`<button onclick="termin(${a.id},true)">entfernen</button>`:''}</div>`:''}</div>`;
+      <div class="knoepfe">${b.join('')}</div>${a.status==='entwurf'&&a.art!=='willkommen'?`<div class="termin" onclick="event.stopPropagation()">Termin: <input type="datetime-local" id="t${a.id}" value="${tIn(a.geplant_fuer)}"><button onclick="termin(${a.id})">setzen</button>${a.geplant_fuer?`<button onclick="termin(${a.id},true)">entfernen</button>`:''}</div>`:''}</div>`;
   }
   $('liste').innerHTML=h||'Keine Ausgaben geplant.';
+  const w=D.wuensche||[];
+  $('wuensche').innerHTML=w.length?w.map(x=>`<div class="wunsch"><div><b>${esc(x.produkt)}</b>${x.anmerkung?'<br><small>'+esc(x.anmerkung)+'</small>':''}<br><small>${new Date(x.am).toLocaleDateString('de-DE')}</small></div><span style="display:flex;gap:6px"><button onclick="wunsch(${x.id},'erledigt')">✓ erledigt</button><button onclick="wunsch(${x.id},'verworfen')">✕</button></span></div>`).join(''):'<div style="color:var(--mut);font-size:.85rem">Noch keine Wünsche. Jede Mail hat unten den Link „Welches Produkt sollen wir als Nächstes vergleichen?“.</div>';
   if(AKTIV==null){ const erste=(D.ausgaben||[]).find(x=>!x.platzhalter); if(erste) ansehen(erste.id); } else ansehen(AKTIV);
 }
 /* Termin: Sonntag 09:00 Berlin vorbelegen, gespeichert wird als Zeitpunkt */
@@ -132,8 +139,11 @@ function ansehen(id){
   AKTIV=id; document.querySelectorAll('.aus').forEach(el=>el.classList.remove('an'));
   const el=[...document.querySelectorAll('.aus')].find(e=>e.getAttribute('onclick')==='ansehen('+id+')'); if(el) el.classList.add('an');
   $('vTitel').textContent='Nr. '+a.nr+' · '+a.betreff; $('vInfo').textContent=a.vorschau||'';
+  const kurz=u=>u.replace('https://root-index.de/','/').replace(/^\/produkt\//,'Produkt: ').replace('/?nl_ausgabe=','Webversion ').replace('/?vergleichwunsch','Wunsch-Link').replace(/^\/$/,'Startseite / App');
+  $('vLinks').innerHTML=(a.links||[]).length?'<div style="margin-bottom:4px"><b style="color:var(--cream)">Klicks je Link</b> <span>(anonym, nur versendete Ausgaben)</span></div>'+a.links.map(l=>`<div><span>${esc(kurz(l.ziel))}</span><b>${de(l.klicks)}</b></div>`).join(''):'';
   $('vRahmen').srcdoc=String(a.inhalt_html||'').split('{{ABMELDEN}}').join('#');
 }
+async function wunsch(id,st){ const {error}=await client.rpc('cb_admin_newsletter_wunsch_setzen',{p_id:id,p_status:st}); if(error) hinweis('Nicht möglich: '+error.message,true); await laden(); }
 async function setzen(id,aktion,btn){
   const a=(D.ausgaben||[]).find(x=>x.id===id);
   if(aktion==='freigeben' && !confirm('Ausgabe '+a.nr+' freigeben?\nSie geht am '+dat(a.geplant_fuer)+' an alle bestätigten Abonnenten.')) return;

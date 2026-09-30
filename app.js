@@ -9294,7 +9294,7 @@ function legalOpen(which){
     +P("Unser Postfach und der Versand aller E-Mails, auch der Anmelde- und Bestätigungs-E-Mails, laufen über die Server der INWX GmbH in Deutschland (Auftragsverarbeitung, siehe Abschnitt 6). Kontaktanfragen löschen wir 12 Monate nach Abschluss der Bearbeitung, soweit keine Aufbewahrungspflicht besteht.")
     +P("<b>Newsletter:</b> Wenn du dich für unseren Newsletter anmeldest, verarbeiten wir deine E-Mail-Adresse, um dir etwa einmal pro Woche Informationen zu Produktbewertungen, Zutaten, Rezepten und Funktionen von Root Index zu schicken – dazu gehören auch Hinweise auf unsere eigenen Angebote wie Root Index Premium und unser Buch. Werbung von Herstellern oder Dritten enthält der Newsletter nicht. Rechtsgrundlage ist deine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO.")
     +P("Die Anmeldung erfolgt im Double-Opt-In-Verfahren: Eingetragen wirst du erst, wenn du den Link in unserer Bestätigungs-E-Mail anklickst. Zum Nachweis deiner Einwilligung speichern wir den Einwilligungstext sowie die Zeitpunkte von Anmeldung, Bestätigung und gegebenenfalls Abmeldung.")
-    +P("Du kannst den Newsletter jederzeit über den Abmeldelink in jeder Ausgabe oder per E-Mail an <a href=\"mailto:kontakt@root-index.de\">kontakt@root-index.de</a> abbestellen. Die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Die Adressen liegen in unserer Datenbank bei Supabase, der Versand läuft über die Server der INWX GmbH in Deutschland (siehe Abschnitt 6). Öffnungs- oder Klickmessungen finden nicht statt.")
+    +P("Du kannst den Newsletter jederzeit über den Abmeldelink in jeder Ausgabe oder per E-Mail an <a href=\"mailto:kontakt@root-index.de\">kontakt@root-index.de</a> abbestellen. Die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Die Adressen liegen in unserer Datenbank bei Supabase, der Versand läuft über die Server der INWX GmbH in Deutschland (siehe Abschnitt 6). Ob du eine Mail öffnest, messen wir nicht. Links im Newsletter führen über eine Zwischenseite auf root-index.de; dabei zählen wir nur, wie oft ein Link insgesamt angeklickt wurde (Ausgabe, Link, Tag) – ohne Bezug zu deiner Person oder E-Mail-Adresse. Rechtsgrundlage ist unser berechtigtes Interesse, den Newsletter zu verbessern (Art. 6 Abs. 1 lit. f DSGVO). Wenn du über einen Link im Newsletter einen Vergleichswunsch schickst, speichern wir nur den Text, den du eingibst.")
     +H("14. Push-Benachrichtigungen")
     +P("Wenn du Push-Benachrichtigungen aktivierst, werden technische Zustellinformationen verarbeitet, insbesondere eine Zustelladresse und zugehörige Schlüssel. An der Zustellung kann der Push-Dienst deines Browser- oder Betriebssystemanbieters beteiligt sein.")
     +P("Du kannst die Berechtigung in den Einstellungen deines Browsers oder Geräts zurücknehmen.")
@@ -16126,7 +16126,8 @@ function riNewsletterFormular(){
     +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten – mit Produktvergleichen, Tipps, Rezepten und Infos zu Root-Index-Angeboten wie Premium und unserem Buch. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
     +'<button id="riNlGo" onclick="riNewsletterAnmelden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Anmelden</button></div>'
-    +'<div id="riNlMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>');
+    +'<div id="riNlMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
+    +'<p style="font-size:12.5px;margin:12px 0 0;text-align:center"><a onclick="riNewsletterArchiv()" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Bisherige Ausgaben ansehen</a></p>');
 }
 async function riNewsletterAnmelden(){
   var msg=document.getElementById('riNlMsg'), m=(document.getElementById('riNlMail')||{}).value||'';
@@ -16139,6 +16140,46 @@ async function riNewsletterAnmelden(){
     if(r.error||!r.data||!r.data.ok){ msg.textContent=(r.data&&r.data.grund)||'Das hat nicht geklappt. Bitte später noch einmal.'; b.disabled=false; return; }
     document.getElementById('riNlOv').firstChild.innerHTML='<div style="font-size:18px;font-weight:700;margin-bottom:6px">Fast geschafft</div><p style="font-size:13.5px;line-height:1.55;margin:0">Wir haben dir eine Mail geschickt. Bitte klick auf den Link darin, um die Anmeldung zu bestätigen. Schau notfalls im Spam-Ordner nach.</p><div style="margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">OK</button></div>';
   }catch(e){ msg.textContent='Das hat nicht geklappt. Bitte später noch einmal.'; b.disabled=false; }
+}
+/* 30.09.2026 (Ralph): Webversion + Archiv der versendeten Ausgaben, Leser-Wunsch „welches Produkt vergleichen?".
+   Webversion zeigt die Mail so, wie sie verschickt wurde (cb_newsletter_web, nur versendete Ausgaben). */
+function riNlGross(inhalt){
+  var ov=riNlHuelle(inhalt); var box=ov.firstChild; box.style.maxWidth='700px'; box.style.padding='0'; box.style.overflow='hidden'; box.style.height='92vh'; box.style.display='flex'; box.style.flexDirection='column'; return ov;
+}
+async function riNewsletterWeb(nr){
+  var ov=riNlGross('<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px"><b id="riNlWebT" style="font-size:14px">Newsletter</b><span style="display:flex;gap:8px"><button onclick="riNewsletterArchiv()" style="padding:7px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer">Alle Ausgaben</button><button onclick="document.getElementById(\'riNlOv\').remove()" style="padding:7px 12px;border:0;border-radius:9px;background:var(--greendk);color:#fff;cursor:pointer">Schließen</button></span></div><iframe id="riNlWebF" sandbox="allow-popups allow-top-navigation-by-user-activation" style="flex:1;border:0;width:100%;background:#1d321f"></iframe>');
+  try{
+    var r=await client.rpc('cb_newsletter_web',{p_nr:nr});
+    var f=document.getElementById('riNlWebF'); if(!f) return;
+    if(r.error||!r.data||!r.data.ok){ f.srcdoc='<p style="font-family:sans-serif;color:#F3EEDC;background:#1d321f;padding:20px">'+((r.data&&r.data.grund)||'Diese Ausgabe gibt es noch nicht.')+'</p>'; return; }
+    document.getElementById('riNlWebT').textContent='Ausgabe '+r.data.nr+' · '+r.data.betreff;
+    f.srcdoc=String(r.data.html).replace('<head>','<head><base target="_top">');
+  }catch(e){}
+}
+async function riNewsletterArchiv(){
+  riNlHuelle('<div style="font-size:18px;font-weight:700;margin-bottom:10px">Newsletter-Archiv</div><div id="riNlArch" style="font-size:14px">Lädt …</div><div style="display:flex;gap:8px;margin-top:16px"><button onclick="riNewsletterFormular()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Newsletter abonnieren</button><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Schließen</button></div>');
+  try{
+    var r=await client.rpc('cb_newsletter_archiv'); var el=document.getElementById('riNlArch'); if(!el) return;
+    var l=(r.data||[]); if(!l.length){ el.textContent='Die erste Ausgabe erscheint bald. Melde dich an, dann bekommst du sie direkt.'; return; }
+    var art={vergleich:'Produktvergleich',premium:'Premium erklärt',rezept:'Rezept des Monats',neu:'Neu in der App',buch:'Unser Buch'};
+    el.innerHTML=l.map(function(x){ return '<div onclick="riNewsletterWeb('+x.nr+')" style="padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer"><div style="font-size:12px;color:var(--muted)">'+new Date(x.datum).toLocaleDateString('de-DE')+' · '+(art[x.art]||'')+'</div><div style="font-weight:700">'+String(x.betreff).replace(/[<>&]/g,'')+'</div></div>'; }).join('');
+  }catch(e){}
+}
+function riVergleichWunsch(){
+  riNlHuelle('<div style="font-size:18px;font-weight:700;margin-bottom:6px">Welches Produkt sollen wir vergleichen?</div>'
+    +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 6px">Nenn uns ein Produkt (gern mit Marke). Wir suchen den passenden Gegenspieler und stellen den Vergleich vielleicht in einem der nächsten Newsletter vor. Anonym – wir speichern keine Kontaktdaten.</p>'
+    +'<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">Produkt *</label><input id="riVwP" maxlength="200" placeholder="z. B. Kinder Riegel" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px">'
+    +'<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">Anmerkung</label><textarea id="riVwA" maxlength="500" rows="3" placeholder="Womit vergleichen? Was interessiert dich?" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:14px"></textarea>'
+    +'<div style="display:flex;gap:8px;margin-top:14px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button><button id="riVwGo" onclick="riVergleichWunschSenden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Wunsch senden</button></div><div id="riVwMsg" style="font-size:13px;margin-top:10px"></div>');
+}
+async function riVergleichWunschSenden(){
+  var m=document.getElementById('riVwMsg'), p=(document.getElementById('riVwP')||{}).value||'', a=(document.getElementById('riVwA')||{}).value||'';
+  m.style.color='var(--k-dc2626)'; if(p.trim().length<2){ m.textContent='Bitte ein Produkt nennen.'; return; }
+  var b=document.getElementById('riVwGo'); b.disabled=true;
+  try{ var r=await client.rpc('cb_newsletter_wunsch',{p_produkt:p.trim(),p_anmerkung:a.trim()||null});
+    if(r.error||!r.data||!r.data.ok){ m.textContent=(r.data&&r.data.grund)||'Das hat nicht geklappt.'; b.disabled=false; return; }
+    document.getElementById('riNlOv').firstChild.innerHTML='<div style="font-size:18px;font-weight:700;margin-bottom:6px">Danke!</div><p style="font-size:13.5px;line-height:1.55;margin:0">Dein Wunsch ist angekommen. Vielleicht liest du den Vergleich bald im Newsletter.</p><div style="margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="width:100%;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">OK</button></div>';
+  }catch(e){ m.textContent='Das hat nicht geklappt.'; b.disabled=false; }
 }
 async function riNewsletterLink(art,token){
   var titel=art==='bestaetigen'?'Newsletter':'Newsletter abmelden';
@@ -16155,6 +16196,9 @@ async function riNewsletterLink(art,token){
 (function(){ try{ var p=new URLSearchParams(location.search), a=p.get('nl'), t=p.get('t');
   if(a==='bestaetigen'||a==='abmelden'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ riNewsletterLink(a,t); },700); }
   else if(p.has('newsletter')){ setTimeout(function(){ riNewsletterFormular(); },700); }
+  else if(p.has('nl_ausgabe')){ var nn=parseInt(p.get('nl_ausgabe'),10); history.replaceState(null,'',location.pathname); setTimeout(function(){ riNewsletterWeb(nn); },700); }
+  else if(p.has('newsletter_archiv')){ history.replaceState(null,'',location.pathname); setTimeout(function(){ riNewsletterArchiv(); },700); }
+  else if(p.has('vergleichwunsch')){ history.replaceState(null,'',location.pathname); setTimeout(function(){ riVergleichWunsch(); },700); }
 }catch(_){} })();
 function riWiderrufFormular(){
   var alt=document.getElementById('riWdrOv'); if(alt) alt.remove();
@@ -16855,7 +16899,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-14";
+const APP_BUILD = "2026-09-30-15";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
