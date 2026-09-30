@@ -9162,7 +9162,7 @@ function legalOpen(which){
     +P("Bei vertragsbezogenen Anfragen beruht dies auf Art. 6 Abs. 1 lit. b DSGVO, bei sonstigen Anfragen auf unserem berechtigten Interesse an deren Bearbeitung nach Art. 6 Abs. 1 lit. f DSGVO.")
     +P("Anmelde-, Sicherheits- und Vertragsnachrichten werden zur Bereitstellung des Dienstes beziehungsweise zur Erfüllung gesetzlicher Pflichten versandt.")
     +P("Unser Postfach und der Versand aller E-Mails, auch der Anmelde- und Bestätigungs-E-Mails, laufen über die Server der INWX GmbH in Deutschland (Auftragsverarbeitung, siehe Abschnitt 6). Kontaktanfragen löschen wir 12 Monate nach Abschluss der Bearbeitung, soweit keine Aufbewahrungspflicht besteht.")
-    +P("<b>Newsletter:</b> Wenn du dich für unseren Newsletter anmeldest, verarbeiten wir deine E-Mail-Adresse, um dir etwa einmal pro Woche Informationen zu Produktbewertungen, Zutaten und neuen Funktionen von Root Index zu schicken. Rechtsgrundlage ist deine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO.")
+    +P("<b>Newsletter:</b> Wenn du dich für unseren Newsletter anmeldest, verarbeiten wir deine E-Mail-Adresse, um dir etwa einmal pro Woche Informationen zu Produktbewertungen, Zutaten, Rezepten und Funktionen von Root Index zu schicken – dazu gehören auch Hinweise auf unsere eigenen Angebote wie Root Index Premium und unser Buch. Werbung von Herstellern oder Dritten enthält der Newsletter nicht. Rechtsgrundlage ist deine Einwilligung nach Art. 6 Abs. 1 lit. a DSGVO.")
     +P("Die Anmeldung erfolgt im Double-Opt-In-Verfahren: Eingetragen wirst du erst, wenn du den Link in unserer Bestätigungs-E-Mail anklickst. Zum Nachweis deiner Einwilligung speichern wir den Einwilligungstext sowie die Zeitpunkte von Anmeldung, Bestätigung und gegebenenfalls Abmeldung.")
     +P("Du kannst den Newsletter jederzeit über den Abmeldelink in jeder Ausgabe oder per E-Mail an <a href=\"mailto:kontakt@root-index.de\">kontakt@root-index.de</a> abbestellen. Die Rechtmäßigkeit der bis dahin erfolgten Verarbeitung bleibt unberührt. Die Adressen liegen in unserer Datenbank bei Supabase, der Versand läuft über die Server der INWX GmbH in Deutschland (siehe Abschnitt 6). Öffnungs- oder Klickmessungen finden nicht statt.")
     +H("14. Push-Benachrichtigungen")
@@ -15990,10 +15990,10 @@ function riNlHuelle(inhalt){
 function riNewsletterFormular(){
   var mail=(typeof ME!=='undefined'&&ME&&(ME.email||ME.Email))||'';
   riNlHuelle('<div style="font-size:18px;font-weight:700;margin-bottom:6px">Newsletter</div>'
-    +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Jeden Sonntag ein kurzer Blick hinter die Zutatenliste: ein Produktvergleich, eine Zutat einfach erklärt, was neu in der App ist – und ein Tipp für die Küche. Kostenlos, ohne Werbung.</p>'
+    +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Jeden Sonntag ein kurzer Blick hinter die Zutatenliste: ein Produktvergleich, eine Zutat oder eine App-Funktion einfach erklärt – und ein Tipp oder Rezept für die Küche. Kostenlos und ohne Werbung von Herstellern.</p>'
     +'<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">E-Mail *</label>'
     +'<input id="riNlMail" type="email" autocomplete="email" value="'+String(mail).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px">'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten – mit Produktvergleichen, Tipps, Rezepten und Infos zu Root-Index-Angeboten wie Premium und unserem Buch. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
     +'<button id="riNlGo" onclick="riNewsletterAnmelden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Anmelden</button></div>'
     +'<div id="riNlMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>');
@@ -16725,7 +16725,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-9";
+const APP_BUILD = "2026-09-30-10";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

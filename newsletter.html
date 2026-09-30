@@ -1,0 +1,138 @@
+<!doctype html>
+<!-- NEWSLETTER · 30.09.2026 (Ralph: „newsletter in einer neuen seite bauen, im cockpit
+     nur eine zusammenfassung als kachel"). Eigene Seite wie vergleiche.html; Anmeldung
+     kommt aus admin.html (gleicher storageKey). Wahrheit: public.newsletter_ausgabe;
+     HTML/Text rendert die Datenbank (public._nl_rendern) aus inhalt_json, Punkte live
+     aus v_web_produkte. Versand nur nach Freigabe hier (cb_admin_newsletter_setzen). -->
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Newsletter · Root Index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{--acc:#7CFF9B;--cream:#F3EEDC;--mut:rgba(243,238,220,.66);--line:rgba(124,255,155,.2);--panel:rgba(10,26,16,.5);--gelb:#FFC24B;--rot:#ff8a7a}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;color:var(--cream);line-height:1.5;background:#1d321f radial-gradient(120% 60% at 50% 0%,#2f4b31 0%,#263e27 50%,#1d321f 100%) no-repeat;min-height:100vh}
+a{color:var(--acc)}
+.kopf{max-width:1400px;margin:0 auto;padding:18px 22px 4px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.kopf .logo{display:inline-flex;align-items:center;gap:.5em;color:var(--cream);text-decoration:none;font-weight:800;font-size:1.15rem}
+.kopf img{height:36px}
+.kopf .claim{border-left:2px solid var(--line);padding-left:14px;font-size:.78rem;line-height:1.3;color:var(--mut);font-weight:600}
+.kopf h1{margin:0 0 0 auto;font-size:1.3rem;font-weight:800}
+main{max-width:1400px;margin:0 auto;padding:10px 22px 60px}
+.zahlen{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:10px 0 18px}
+.zahl{border:2px solid rgba(124,255,155,.35);border-radius:16px;background:var(--panel);padding:12px 14px}
+.zahl small{display:block;font-size:.68rem;letter-spacing:1.4px;font-weight:800;color:var(--mut);text-transform:uppercase}
+.zahl b{display:block;font-size:1.6rem;font-weight:800;line-height:1.15}
+.zahl span{font-size:.78rem;color:var(--mut)}
+@media(max-width:900px){.zahlen{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:520px){.zahlen{grid-template-columns:repeat(2,1fr)}}
+.lab{display:inline-block;border:2px solid rgba(124,255,155,.55);color:var(--acc);border-radius:30px;padding:3px 14px;font-weight:800;font-size:.7rem;letter-spacing:1px;margin:6px 0 12px;text-transform:uppercase}
+.raster{display:grid;grid-template-columns:minmax(0,1fr) 660px;gap:20px;align-items:start}
+@media(max-width:1200px){.raster{grid-template-columns:1fr}}
+.aus{border:1px solid var(--line);border-radius:16px;background:var(--panel);padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:border-color .15s}
+.aus:hover,.aus.an{border-color:var(--acc)}
+.aus .k{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:.78rem;color:var(--mut);font-weight:600}
+.aus .t{font-size:1.02rem;font-weight:800;margin:4px 0 2px}
+.aus .th{font-size:.8rem;color:var(--mut)}
+.pille{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.72rem;font-weight:700;border:1px solid currentColor}
+.p-entwurf{color:var(--gelb)}.p-freigegeben,.p-versendet{color:var(--acc)}.p-laeuft{color:#9fd3ff}.p-gestoppt{color:var(--rot)}
+.art{font-size:.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:1px 8px;border-radius:6px;background:rgba(243,238,220,.08)}
+.art-premium{color:#c9b8ff}.art-buch{color:var(--gelb)}.art-standard{color:var(--mut)}
+.knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+button{font:inherit;font-size:.8rem;font-weight:700;border-radius:10px;padding:6px 12px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--cream)}
+button:hover{border-color:var(--acc)}
+button.gruen{background:var(--acc);color:#123018;border-color:var(--acc)}
+button.rot{color:var(--rot);border-color:rgba(255,138,122,.5)}
+button:disabled{opacity:.5;cursor:default}
+.vorschau{position:sticky;top:14px;border:2px solid rgba(124,255,155,.35);border-radius:18px;overflow:hidden;background:#1d321f}
+.vorschau .vk{display:flex;justify-content:space-between;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);font-size:.85rem}
+.vorschau iframe{width:100%;height:calc(100vh - 110px);border:0;display:block;background:#1d321f}
+#hinweis{min-height:1.4em;font-size:.85rem;color:var(--acc);margin:0 0 8px}
+#hinweis.fehler{color:var(--rot)}
+.regeln{font-size:.8rem;color:var(--mut);margin-top:16px;line-height:1.6}
+.monat{font-size:.72rem;letter-spacing:1.4px;font-weight:800;color:var(--mut);text-transform:uppercase;margin:16px 2px 8px}
+</style></head><body>
+<header class="kopf">
+ <a class="logo" href="admin.html"><img src="logo-mark.png" alt="" onerror="this.style.display='none'">Root Index<sup style="font-size:.55em">™</sup></a>
+ <div class="claim">Die Vorderseite verkauft.<br>Wir lesen die Rückseite.</div>
+ <h1>Newsletter</h1>
+</header>
+<main>
+ <div class="zahlen" id="zahlen"><div class="zahl"><small>lädt</small><b>…</b></div></div>
+ <div id="hinweis"></div>
+ <div class="raster">
+  <section>
+   <span class="lab">Geplante Ausgaben</span>
+   <div id="liste">lädt …</div>
+   <div class="regeln">Versand nur nach deiner Freigabe · jeden Sonntag 09:00 · Takt prüft alle 5 Minuten · nur an bestätigte Abonnenten (Double-Opt-In).<br>
+   Beim Freigeben rechnet die Datenbank die Ausgabe neu – Punkte und Achsen kommen frisch aus dem Index. Testmail geht an kontakt@root-index.de.<br>
+   Platzhalter (Buch) lassen sich erst freigeben, wenn Termin und Inhalt stehen.</div>
+  </section>
+  <aside class="vorschau"><div class="vk"><b id="vTitel">Vorschau</b><span id="vInfo" style="color:var(--mut)"></span></div><iframe id="vRahmen" sandbox title="Vorschau"></iframe></aside>
+ </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const client = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw",
+  {auth:{persistSession:true,autoRefreshToken:true,storage:window.localStorage,storageKey:"sb-cleanbase-auth"}});
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const de=n=>Number(n||0).toLocaleString('de-DE');
+const dat=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}):'Termin offen';
+const monat=t=>t?new Date(t).toLocaleString('de-DE',{month:'long',year:'numeric',timeZone:'Europe/Berlin'}):'Ohne Termin';
+const ST={entwurf:'Entwurf',freigegeben:'freigegeben',laeuft:'wird versendet',versendet:'versendet',gestoppt:'gestoppt'};
+const ART={standard:'Standard',premium:'Premium erklärt',buch:'Buch',sonder:'Sonder'};
+let D=null, AKTIV=null;
+function hinweis(t,fehler){ const h=$('hinweis'); h.textContent=t||''; h.className=fehler?'fehler':''; }
+async function laden(){
+  const s=await client.auth.getSession();
+  if(!s.data||!s.data.session){ $('liste').innerHTML='Bitte zuerst im <a href="admin.html">Admin</a> anmelden, dann diese Seite neu laden.'; $('zahlen').innerHTML=''; return; }
+  const {data,error}=await client.rpc('cb_admin_newsletter_uebersicht');
+  if(error||!data){ $('liste').textContent='Nicht lesbar: '+(error?error.message:'?'); return; }
+  D=data; zeichnen();
+}
+function zeichnen(){
+  const ab=D.abonnenten||{}, n=D.naechste;
+  const z=[['Abonnenten',de(ab.bestaetigt),'+'+de(ab.neu_7t)+' in 7 Tagen'],['Warten auf Bestätigung',de(ab.offen),de(ab.abgemeldet)+' abgemeldet'],
+    ['Nächste Ausgabe',n?('Nr. '+n.nr):'–',n?dat(n.geplant_fuer)+' · '+(ST[n.status]||n.status):'keine geplant'],
+    ['Vorrat',de(D.vorrat_wochen)+' Wo.',D.vorrat_bis?'bis '+new Date(D.vorrat_bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'}):''],
+    ['Freigegeben',de(D.freigegeben_wochen)+' / '+de(D.vorrat_wochen),'Rest wartet auf dich'],['Platzhalter',de(D.platzhalter),'Buch – Termin offen']];
+  $('zahlen').innerHTML=z.map(([k,v,s])=>`<div class="zahl"><small>${esc(k)}</small><b>${esc(v)}</b><span>${esc(s)}</span></div>`).join('');
+  let letzt='', h='';
+  for(const a of (D.ausgaben||[])){
+    const m=monat(a.geplant_fuer); if(m!==letzt){ h+=`<div class="monat">${esc(m)}</div>`; letzt=m; }
+    const b=[];
+    if(!a.platzhalter && (a.status==='entwurf'||a.status==='freigegeben')) b.push(`<button onclick="event.stopPropagation();setzen(${a.id},'testmail',this)">${a.testmail_angefordert?'Test läuft …':'Testmail'}</button>`);
+    if(a.status==='entwurf') b.push(`<button class="gruen" ${a.platzhalter||!a.geplant_fuer?'disabled title="Termin/Inhalt fehlt"':''} onclick="event.stopPropagation();setzen(${a.id},'freigeben',this)">✓ freigeben</button>`);
+    if(a.status==='freigegeben'||a.status==='laeuft') b.push(`<button class="rot" onclick="event.stopPropagation();setzen(${a.id},'stoppen',this)">■ stoppen</button>`);
+    if(a.status==='freigegeben'||a.status==='gestoppt') b.push(`<button onclick="event.stopPropagation();setzen(${a.id},'entwurf',this)">↩ Entwurf</button>`);
+    const info=a.status==='versendet'||a.status==='laeuft'?`${de(a.empfaenger)} gesendet${a.fehler?' · '+de(a.fehler)+' Fehler':''}`:(a.testmail_am?'Test '+new Date(a.testmail_am).toLocaleString('de-DE',{dateStyle:'short',timeStyle:'short'}):'noch kein Test');
+    h+=`<div class="aus ${AKTIV===a.id?'an':''}" onclick="ansehen(${a.id})">
+      <div class="k"><span>Nr. ${a.nr}</span><span>${esc(dat(a.geplant_fuer))}</span><span class="art art-${a.art}">${esc(ART[a.art]||a.art)}</span><span class="pille p-${a.status}">${esc(ST[a.status]||a.status)}</span><span>${esc(info)}</span></div>
+      <div class="t">${esc(a.betreff)}</div>
+      <div class="th">${esc((a.themen||[]).join(' · '))}${a.notiz?' · '+esc(a.notiz):''}</div>
+      <div class="knoepfe">${b.join('')}</div></div>`;
+  }
+  $('liste').innerHTML=h||'Keine Ausgaben geplant.';
+  if(AKTIV==null){ const erste=(D.ausgaben||[]).find(x=>!x.platzhalter); if(erste) ansehen(erste.id); } else ansehen(AKTIV);
+}
+function ansehen(id){
+  const a=(D.ausgaben||[]).find(x=>x.id===id); if(!a) return;
+  AKTIV=id; document.querySelectorAll('.aus').forEach(el=>el.classList.remove('an'));
+  const el=[...document.querySelectorAll('.aus')].find(e=>e.getAttribute('onclick')==='ansehen('+id+')'); if(el) el.classList.add('an');
+  $('vTitel').textContent='Nr. '+a.nr+' · '+a.betreff; $('vInfo').textContent=a.vorschau||'';
+  $('vRahmen').srcdoc=String(a.inhalt_html||'').split('{{ABMELDEN}}').join('#');
+}
+async function setzen(id,aktion,btn){
+  const a=(D.ausgaben||[]).find(x=>x.id===id);
+  if(aktion==='freigeben' && !confirm('Ausgabe '+a.nr+' freigeben?\nSie geht am '+dat(a.geplant_fuer)+' an alle bestätigten Abonnenten.')) return;
+  if(aktion==='stoppen' && !confirm('Versand von Ausgabe '+a.nr+' stoppen?')) return;
+  if(btn) btn.disabled=true;
+  const {data,error}=await client.rpc('cb_admin_newsletter_setzen',{p_id:id,p_aktion:aktion});
+  if(error||!data||!data.ok) hinweis('Nicht möglich: '+(error?error.message:(data&&data.grund)||'?'),true);
+  else hinweis(aktion==='testmail'?'Testmail angefordert – kommt gleich an kontakt@root-index.de.':aktion==='freigeben'?'Freigegeben – Ausgabe '+a.nr+' geht am '+dat(a.geplant_fuer)+' raus.':'Gespeichert.');
+  await laden();
+}
+laden(); setInterval(laden,60000);
+</script>
+</body></html>

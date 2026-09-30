@@ -109,6 +109,8 @@ function applyAdminMode(){
          und Facebook." Eigene Seite wie marken-domains.html, damit app.js
          unberuehrt bleibt. Wahrheit: Tabelle Instagram_Vergleich. */
       +_an('vergleiche','⚖️','Vergleiche',"window.open('vergleiche.html?cb='+Date.now(),'_blank')")
+      /* 30.09.2026, Ralph: Newsletter als eigene Seite, im Cockpit nur die Zusammenfassung. */
+      +_an('newsletter','✉️','Newsletter',"window.open('newsletter.html?cb='+Date.now(),'_blank')")
       +_an('videoskript','🎬','Video-Skript',"window.open('video-skript-01.html?cb='+Date.now(),'_blank')")
       /* 🔴 06.09.2026, Ralph (#580): „ich will die liste im dashboard haben und
          sehen, wenn riki etwas ergaenzt." Marken-Domain-Liste als eigene Seite
