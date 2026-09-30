@@ -36,7 +36,8 @@ main{max-width:1400px;margin:0 auto;padding:10px 22px 60px}
 .pille{display:inline-block;border-radius:999px;padding:1px 10px;font-size:.72rem;font-weight:700;border:1px solid currentColor}
 .p-entwurf{color:var(--gelb)}.p-freigegeben,.p-versendet{color:var(--acc)}.p-laeuft{color:#9fd3ff}.p-gestoppt{color:var(--rot)}
 .art{font-size:.7rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;padding:1px 8px;border-radius:6px;background:rgba(243,238,220,.08)}
-.art-premium{color:#c9b8ff}.art-buch{color:var(--gelb)}.art-standard{color:var(--mut)}
+.art-premium{color:#c9b8ff}.art-buch{color:var(--gelb)}.art-vergleich{color:var(--acc)}.art-rezept{color:#ffb37a}.art-neu{color:#9fd3ff}
+.termin{display:flex;gap:6px;align-items:center;margin-top:8px;font-size:.8rem;color:var(--mut)}.termin input{font:inherit;font-size:.8rem;background:transparent;color:var(--cream);border:1px solid var(--line);border-radius:8px;padding:4px 8px;color-scheme:dark}
 .knoepfe{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 button{font:inherit;font-size:.8rem;font-weight:700;border-radius:10px;padding:6px 12px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--cream)}
 button:hover{border-color:var(--acc)}
@@ -81,7 +82,7 @@ const de=n=>Number(n||0).toLocaleString('de-DE');
 const dat=t=>t?new Date(t).toLocaleString('de-DE',{weekday:'short',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Berlin'}):'Termin offen';
 const monat=t=>t?new Date(t).toLocaleString('de-DE',{month:'long',year:'numeric',timeZone:'Europe/Berlin'}):'Ohne Termin';
 const ST={entwurf:'Entwurf',freigegeben:'freigegeben',laeuft:'wird versendet',versendet:'versendet',gestoppt:'gestoppt'};
-const ART={standard:'Standard',premium:'Premium erklärt',buch:'Buch',sonder:'Sonder'};
+const ART={vergleich:'Produktvergleich',premium:'Premium erklärt',rezept:'Rezept des Monats',neu:'Neu in der App',buch:'Buch',sonder:'Sonder'};
 let D=null, AKTIV=null;
 function hinweis(t,fehler){ const h=$('hinweis'); h.textContent=t||''; h.className=fehler?'fehler':''; }
 async function laden(){
@@ -96,7 +97,7 @@ function zeichnen(){
   const z=[['Abonnenten',de(ab.bestaetigt),'+'+de(ab.neu_7t)+' in 7 Tagen'],['Warten auf Bestätigung',de(ab.offen),de(ab.abgemeldet)+' abgemeldet'],
     ['Nächste Ausgabe',n?('Nr. '+n.nr):'–',n?dat(n.geplant_fuer)+' · '+(ST[n.status]||n.status):'keine geplant'],
     ['Vorrat',de(D.vorrat_wochen)+' Wo.',D.vorrat_bis?'bis '+new Date(D.vorrat_bis).toLocaleDateString('de-DE',{timeZone:'Europe/Berlin'}):''],
-    ['Freigegeben',de(D.freigegeben_wochen)+' / '+de(D.vorrat_wochen),'Rest wartet auf dich'],['Platzhalter',de(D.platzhalter),'Buch – Termin offen']];
+    ['Freigegeben',de(D.freigegeben_wochen)+' / '+de(D.vorrat_wochen),'Rest wartet auf dich'],['Ohne Termin',de(D.platzhalter),'Buch, Neu, Premium-Vorrat']];
   $('zahlen').innerHTML=z.map(([k,v,s])=>`<div class="zahl"><small>${esc(k)}</small><b>${esc(v)}</b><span>${esc(s)}</span></div>`).join('');
   let letzt='', h='';
   for(const a of (D.ausgaben||[])){
@@ -111,10 +112,20 @@ function zeichnen(){
       <div class="k"><span>Nr. ${a.nr}</span><span>${esc(dat(a.geplant_fuer))}</span><span class="art art-${a.art}">${esc(ART[a.art]||a.art)}</span><span class="pille p-${a.status}">${esc(ST[a.status]||a.status)}</span><span>${esc(info)}</span></div>
       <div class="t">${esc(a.betreff)}</div>
       <div class="th">${esc((a.themen||[]).join(' · '))}${a.notiz?' · '+esc(a.notiz):''}</div>
-      <div class="knoepfe">${b.join('')}</div></div>`;
+      <div class="knoepfe">${b.join('')}</div>${a.status==='entwurf'?`<div class="termin" onclick="event.stopPropagation()">Termin: <input type="datetime-local" id="t${a.id}" value="${tIn(a.geplant_fuer)}"><button onclick="termin(${a.id})">setzen</button>${a.geplant_fuer?`<button onclick="termin(${a.id},true)">entfernen</button>`:''}</div>`:''}</div>`;
   }
   $('liste').innerHTML=h||'Keine Ausgaben geplant.';
   if(AKTIV==null){ const erste=(D.ausgaben||[]).find(x=>!x.platzhalter); if(erste) ansehen(erste.id); } else ansehen(AKTIV);
+}
+/* Termin: Sonntag 09:00 Berlin vorbelegen, gespeichert wird als Zeitpunkt */
+function tIn(t){ const d=t?new Date(t):null; if(!d) return ''; const p=n=>String(n).padStart(2,'0');
+  const b=new Date(d.toLocaleString('en-US',{timeZone:'Europe/Berlin'})); return b.getFullYear()+'-'+p(b.getMonth()+1)+'-'+p(b.getDate())+'T'+p(b.getHours())+':'+p(b.getMinutes()); }
+async function termin(id,weg){
+  let wert=null;
+  if(!weg){ const v=($('t'+id)||{}).value; if(!v){ hinweis('Bitte Datum und Uhrzeit wählen.',true); return; } wert=new Date(v).toISOString(); }
+  const {data,error}=await client.rpc('cb_admin_newsletter_termin',{p_id:id,p_termin:wert});
+  if(error||!data||!data.ok) hinweis('Nicht möglich: '+(error?error.message:(data&&data.grund)||'?'),true); else hinweis(weg?'Termin entfernt.':'Termin gesetzt.');
+  await laden();
 }
 function ansehen(id){
   const a=(D.ausgaben||[]).find(x=>x.id===id); if(!a) return;
