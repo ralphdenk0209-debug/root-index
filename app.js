@@ -2064,6 +2064,19 @@ async function prodVoll(id, _zweiterVersuch){
     return null;
   }
 }
+/* 01.10.2026 (Ralph: "Startseite -> Tagebuch dauert ein paar Sekunden"): Stueck-Daten einmal je
+   Sitzung, beide Abrufe parallel; load() erzwingt Neuladen, das Tagebuch nimmt den gemerkten Stand. */
+function stueckLaden(neu){
+  if(window._stkP && !neu) return window._stkP;
+  window._stkP = Promise.all([
+    Promise.resolve(client.rpc("cb_stueck_map")).then(function(r){ const sm=r&&r.data; if(!sm) return; STK={}; STKD={};
+      sm.forEach(x=>{ STK[x.id]=num(x.stueck_gramm); var d=num(x.stueck_dosis); if(d>0) STKD[x.id]=d; }); }).catch(function(){}),
+    /* Stück-GRÖSSEN (S/M/L/XL …) je Produkt fürs Rezept-Dropdown – Gramm = essbarer Anteil (Ralph 24.07.). */
+    Promise.resolve(client.rpc("cb_stueck_groessen")).then(function(r){ const sg=r&&r.data; if(!sg) return; STKV={};
+      sg.forEach(x=>{ (STKV[x.produkt_id]=STKV[x.produkt_id]||[]).push({bez:x.bezeichnung, g:num(x.gramm), sch:!!x.ist_schaetzung}); }); }).catch(function(){})
+  ]);
+  return window._stkP;
+}
 async function load(){
   ALL = [];
   window._katFehler=null;
@@ -2100,10 +2113,7 @@ async function load(){
      STKD = Stueck je Tagesdosis. Echtes Stueckprodukt ohne brauchbares Gewicht - eine Kapsel
             wiegt niemand, deshalb wird sie in STUECK gebucht (Ralph-Entscheid 27.08.).
      Zwei Faelle, ein Leseweg, eine Entscheidungsstelle: tbEinheitOptionen. */
-  try{ const {data:sm}=await client.rpc("cb_stueck_map"); STK={}; STKD={};
-       (sm||[]).forEach(x=>{ STK[x.id]=num(x.stueck_gramm); var d=num(x.stueck_dosis); if(d>0) STKD[x.id]=d; }); }catch(e){}
-  /* Stück-GRÖSSEN (S/M/L/XL …) je Produkt fürs Rezept-Dropdown – Gramm = essbarer Anteil (Ralph 24.07.). */
-  try{ const {data:sg}=await client.rpc("cb_stueck_groessen"); STKV={}; (sg||[]).forEach(x=>{ (STKV[x.produkt_id]=STKV[x.produkt_id]||[]).push({bez:x.bezeichnung, g:num(x.gramm), sch:!!x.ist_schaetzung}); }); }catch(e){}
+  await stueckLaden(true);
   /* Die Kategorie-Zaehlung kam frueher aus ALL - das ging nur, solange ALL den
      ganzen Katalog enthielt. Jetzt liefert sie cb_katalog_zaehler (oben). */
   await render();
@@ -11023,20 +11033,29 @@ async function loadTagebuch(){
     if(_ch)_ch.style.display=""; if(_cn)_cn.style.display=""; if(_lh)_lh.style.display="none";
     if(!dEl.value) dEl.value=tbToday();
   }
-  if(!ALL.length){ await load(); }
+  /* 01.10.2026: Katalog-Laden (load) blockierte das Tagebuch bei JEDEM Oeffnen ~2,5 s (ALL bleibt seit dem
+     Seitenkatalog leer). Jetzt einmal je Sitzung im Hintergrund; danach wird die Liste einmal nachgemalt. */
+  let _ersteLadung=false;
+  if(!window._loadEinmal){ _ersteLadung=true; window._loadEinmal=Promise.resolve().then(load).catch(function(){}); }
   fillProdList(); loadRezeptDropdown(); loadHistDropdown();
   const datum=dEl.value;
   const lbl=document.getElementById("tbDatumLabel");
   if(lbl){ try{ const dd=new Date(datum+"T00:00:00"); lbl.textContent=dd.toLocaleDateString("de-DE",{weekday:"long",day:"numeric",month:"long"})+(datum===tbToday()?" · heute":""); }catch(e){ lbl.textContent=datum; } }
   const kb=document.getElementById("tbKalBox"); if(kb && kb.style.display!=="none") renderKalender();
-  const {data:eintraege}=await client.rpc("cb_tagebuch",{p_datum:datum});
-  try{ const {data:_rt}=await client.rpc("cb_tb_rezept_tag",{p_datum:datum}); window._tbRezTags=_rt||[]; }catch(e){ window._tbRezTags=[]; }
-  const {data:summe}=await client.rpc("cb_tagessumme",{p_datum:datum});
-  const {data:profil}=await client.rpc("cb_profil");
-  await ladeTrainingstag(datum);   // MUSS vor renderZiel laufen - sonst rechnet das Ziel ohne Zuschlag
-  /* 27z4: Nutzer-Einstellungen (Kopf-Variante) VOR dem Malen laden - nicht nachträglich
-     hineinflicken (§1.11n-f). Gecacht, kostet nach dem ersten Mal nichts. */
-  if(typeof feat==='function' && feat('tagebuch_neu')){ try{ await einstLaden(); }catch(e){} }
+  /* 01.10.2026: alle Abrufe GLEICHZEITIG statt nacheinander (vorher 7 Runden hintereinander).
+     Trainingstag und Einstellungen sind weiter VOR dem Malen da (renderZiel braucht den Zuschlag). */
+  const _gwP=Promise.resolve(client.rpc("cb_gewicht")).catch(function(){ return {data:null}; });
+  const _res=await Promise.all([
+    Promise.resolve(client.rpc("cb_tagebuch",{p_datum:datum})).catch(function(){ return {data:null}; }),
+    Promise.resolve(client.rpc("cb_tb_rezept_tag",{p_datum:datum})).catch(function(){ return {data:null}; }),
+    Promise.resolve(client.rpc("cb_tagessumme",{p_datum:datum})).catch(function(){ return {data:null}; }),
+    Promise.resolve(client.rpc("cb_profil")).catch(function(){ return {data:null}; }),
+    Promise.resolve(ladeTrainingstag(datum)).catch(function(){}),
+    (typeof feat==='function' && feat('tagebuch_neu')) ? Promise.resolve(einstLaden()).catch(function(){}) : null,
+    stueckLaden()
+  ]);
+  const eintraege=_res[0].data, summe=_res[2].data, profil=_res[3].data;
+  window._tbRezTags=_res[1].data||[];
   window._tbItems = eintraege||[];   /* 29a: der Infoboard-Satz braucht die Eintraege - renderZiel laeuft VOR renderTbListe */
   renderZiel(summe&&summe[0], profil&&profil[0]);
   if(window._zyklus===undefined){ try{ const {data:zk}=await client.rpc("cb_zyklus_get"); const r=(zk&&zk[0])||{}; window._zyklus=(r.start)?{start:r.start,laenge:r.laenge||28,ende:r.ende||null}:{}; }catch(e){ window._zyklus={}; } }
@@ -11044,7 +11063,8 @@ async function loadTagebuch(){
   renderTbListe(eintraege||[], profil&&profil[0]);
   try{ alTagebuchMarkieren(eintraege||[]); }catch(e){}   /* 30.09.2026 */
   try{ tbKopfNeuAnwenden(); }catch(e){}   /* 28a: schlanker Kopf (nur mit Flag; NACH dem Datums-Label) */
-  const {data:gw}=await client.rpc("cb_gewicht");
+  if(_ersteLadung){ window._loadEinmal.then(function(){ try{ if(window._curMode==='tagebuch' && document.getElementById('tbDatum').value===datum){ renderTbListe(window._tbItems||[], profil&&profil[0]); } }catch(e){} }); }
+  const {data:gw}=await _gwP;
   document.getElementById("tbGewichtInfo").textContent = (gw&&gw[0])?("Zuletzt: "+gw[0].Gewicht_kg+" kg ("+gw[0].Datum+")"):"noch kein Gewicht erfasst";
 }
 function tbDonut(ist,soll,label,unit,isMax){
@@ -16986,7 +17006,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-4";
+const APP_BUILD = "2026-10-01-5";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
