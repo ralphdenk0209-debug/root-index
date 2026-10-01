@@ -34,6 +34,7 @@ Regeln:
 - Allergene nur aus dieser Liste: ${ALLERGENE.join(", ")}. "laktose" nur zusaetzlich zu "milch", wenn das Milchprodukt laktosehaltig ist.
 - "versteckt_moeglich": hoechstens 4 Eintraege. Nur Allergene, die in GENAU diesem Gericht nach ueblichem Rezept unsichtbar drin sind (z. B. Sellerie in Bolognese-Sosse, Ei in Panade). Keine allgemeinen Spuren, keine Allergene, die schon bei einem Bestandteil stehen, nichts "zur Sicherheit".
 - Keine Entwarnung erfinden: Wenn du etwas nicht beurteilen kannst, schreib es in "unsicher".
+- "naehrwerte": Schaetzung fuer die ganze sichtbare Portion (Gewicht in g, kcal, Eiweiss, Kohlenhydrate, Fett, Zucker, Ballaststoffe), passend zu "kcal_geschaetzt".
 - Kein Essen erkennbar -> "gericht": null und leere Listen.
 Gib das Ergebnis ausschliesslich ueber das Werkzeug "mahlzeit_ergebnis" zurueck.`;
 
@@ -56,6 +57,10 @@ const WERKZEUG = {
         allergen: { type: "string", enum: ALLERGENE }, grund: { type: "string" } }, required: ["allergen"] } },
       unsicher: { type: "string" },
       kcal_geschaetzt: { type: "number" },
+      // 01.10.2026 (Ralph: "button für übernahme ins tagebuch fehlt"): Naehrwerte der sichtbaren Portion.
+      naehrwerte: { type: "object", description: "Schaetzung fuer die GANZE sichtbare Portion", properties: {
+        menge_g: { type: "number" }, kcal: { type: "number" }, protein_g: { type: "number" }, kh_g: { type: "number" },
+        fett_g: { type: "number" }, zucker_g: { type: "number" }, ballaststoffe_g: { type: "number" } } },
     },
     required: ["gericht", "bestandteile", "versteckt_moeglich"],
   },

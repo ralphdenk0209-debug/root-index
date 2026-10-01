@@ -16983,7 +16983,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-09-30-26";
+const APP_BUILD = "2026-10-01-1";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17570,15 +17570,38 @@ function mzErgebnisHtml(m,d){
   }).join('');
   if((e.versteckt_moeglich||[]).length) h+='<div style="margin-top:6px;font-size:12px;color:#444"><b>Typisch versteckt:</b> '+esc(e.versteckt_moeglich.map(function(v){ return name(v.allergen)+(v.grund?' ('+v.grund+')':''); }).join('; '))+'</div>';
   if(e.unsicher) h+='<div style="margin-top:4px;font-size:12px;color:#666"><b>Unsicher:</b> '+esc(e.unsicher)+'</div>';
+  /* 01.10.2026 (Ralph): "button für übernahme ins tagebuch fehlt" - das Gericht als ein Eintrag
+     mit den geschaetzten Naehrwerten der sichtbaren Portion (cb_tb_manuell, wie "Eigenes Lebensmittel"). */
+  var nw=e.naehrwerte||{}; window._mzErg=window._mzErg||{}; if(d.id) window._mzErg[d.id]={name:e.gericht||'Mahlzeit (Foto)', nw:nw, kcal:nw.kcal||e.kcal_geschaetzt};
+  if(d.id && e.gericht){
+    var std=(function(){ var h=new Date().getHours()+new Date().getMinutes()/60; return h<10.5?'Frühstück':h<14.5?'Mittag':h<17?'Snack':'Abendessen'; })();
+    h+='<div style="margin-top:10px;padding:9px 10px;background:#f0faf3;border:1px solid #bbe5c8;border-radius:10px">'
+      +'<div style="font-size:12.5px;color:#166534;margin-bottom:6px">Schätzung für die Portion: '+(nw.menge_g?Math.round(nw.menge_g)+' g · ':'')+(nw.kcal||e.kcal_geschaetzt?Math.round(nw.kcal||e.kcal_geschaetzt)+' kcal':'')
+      +(nw.protein_g!=null?' · Eiweiß '+Math.round(nw.protein_g)+' g':'')+(nw.kh_g!=null?' · KH '+Math.round(nw.kh_g)+' g':'')+(nw.fett_g!=null?' · Fett '+Math.round(nw.fett_g)+' g':'')+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap"><select id="mzM_'+d.id+'" style="padding:7px;border:1px solid #ccc;border-radius:8px;background:#fff;color:#111">'
+      +['Frühstück','Mittag','Abendessen','Snack'].map(function(m){ return '<option'+(m===std?' selected':'')+'>'+m+'</option>'; }).join('')+'</select>'
+      +'<button id="mzT_'+d.id+'" onclick="mzInsTagebuch('+d.id+')" style="flex:1;padding:8px 12px;border:0;border-radius:8px;background:#2e7d46;color:#fff;font-weight:700;cursor:pointer">Ins Tagebuch übernehmen</button></div></div>';
+  }
   if(d.id) h+='<div style="margin-top:8px;display:flex;gap:6px"><input id="mzW_'+d.id+'" placeholder="Test: was war wirklich drin?" style="flex:1;min-width:0;padding:7px;border:1px solid #ccc;border-radius:8px;font-size:12.5px;background:#fff;color:#111"><button onclick="mzWahrheit('+d.id+')" style="padding:7px 10px;border:0;border-radius:8px;background:#2e7d46;color:#fff;font-size:12.5px;cursor:pointer">merken</button></div>';
   return h+'</div>';
+}
+async function mzInsTagebuch(id){
+  var x=(window._mzErg||{})[id], btn=document.getElementById('mzT_'+id); if(!x||!btn||btn.disabled) return;
+  btn.disabled=true; btn.textContent='trägt ein …';
+  var nw=x.nw||{}, datum=((document.getElementById('tbDatum')||{}).value)||tbToday(), mahl=(document.getElementById('mzM_'+id)||{}).value||'Snack';
+  var r=await client.rpc('cb_tb_manuell',{p_mahlzeit:mahl,p_name:x.name+' (Foto)',p_menge_g:Math.round(nw.menge_g||0)||0,p_kcal:x.kcal!=null?Math.round(x.kcal):null,
+    p_protein:nw.protein_g!=null?Math.round(nw.protein_g):null,p_kh:nw.kh_g!=null?Math.round(nw.kh_g):null,p_fett:nw.fett_g!=null?Math.round(nw.fett_g):null,p_datum:datum});
+  if(r.error){ btn.disabled=false; btn.textContent='Ins Tagebuch übernehmen'; if(typeof toast==='function') toast('Fehler: '+r.error.message,'#dc2626'); return; }
+  btn.textContent='✓ im Tagebuch ('+mahl+')';
+  if(typeof toast==='function') toast('✓ '+x.name+' steht im Tagebuch – '+mahl+'.');
+  try{ loadTagebuch(); }catch(e){}
 }
 async function mzWahrheit(id){
   var el=document.getElementById('mzW_'+id); if(!el) return;
   var r=await client.rpc('cb_mahlzeit_wahrheit',{p_id:id,p_wahrheit:el.value});
   if(typeof toast==='function') toast(r.error?('Fehler: '+r.error.message):'✓ Für den Modellvergleich gemerkt.', r.error?'#dc2626':undefined);
 }
-if(typeof window!=='undefined'){ window.mzOeffnen=mzOeffnen; window.mzFotoGewaehlt=mzFotoGewaehlt; window.mzWahrheit=mzWahrheit; }
+if(typeof window!=='undefined'){ window.mzOeffnen=mzOeffnen; window.mzFotoGewaehlt=mzFotoGewaehlt; window.mzWahrheit=mzWahrheit; window.mzInsTagebuch=mzInsTagebuch; }
 
 /* ===== Mein Monat (30.09.2026, Ralph: "der Monatsbericht sollte fuer die Nutzer sein - wie war seine
    Ernaehrung, Trinken, Schritte, Sport, Koerpermasse") =====
