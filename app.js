@@ -14709,7 +14709,8 @@ async function loadRezepte(){
   if(error){document.getElementById("rezeptStats").textContent="Fehler: "+error.message;return;}
   REZEPTE=data;
   try{ const {data:fv}=await client.rpc("cb_rezept_fav_liste"); window._rezFav=new Set((fv||[]).map(x=>x.rezept_id)); }catch(e){ if(!window._rezFav) window._rezFav=new Set(); }
-  try{ await rezKatLoad(); }catch(e){}
+  try{ await Promise.all([ rezKatLoad(), rezVertLaden() ]); }catch(e){}
+  try{ rezKatBarRender(); }catch(e){}
   renderRezeptList();
 }
 
@@ -14744,11 +14745,13 @@ async function rezKatLoad(){
 }
 function rezKatBarRender(){
   var box=document.getElementById("rezKatBar"); if(!box) return;
-  if(!rezKatAktiv()||!(window._rezKat||[]).length){ box.innerHTML=""; box.style.display="none"; return; }
+  var _vertDa=!!(ME&&window._rezVert);
+  if(!_vertDa && (!rezKatAktiv()||!(window._rezKat||[]).length)){ box.innerHTML=""; box.style.display="none"; return; }
   box.style.display="";
   var sel=rezKatSelLoad(), aktiv=0;
   REZ_KAT_GRUPPEN.forEach(function(g){ aktiv+=(sel[g[0]]||[]).length; });
-  var h="";
+  var aktivGes=aktiv+rezVertAktivZahl();
+  var h=rezVertGruppeHtml();
   REZ_KAT_GRUPPEN.forEach(function(g){
     /* 30.09.2026 (Webtest Rezepte): "Gemuese 0" - ein Filter ohne Treffer ist eine Sackgasse.
        Ausgeblendet, ausser er ist gerade gewaehlt (sonst liesse er sich nicht abwaehlen). */
@@ -14779,7 +14782,7 @@ function rezKatBarRender(){
      bevor das erste Rezept kam. Jetzt eingeklappt; offen bleibt er, wenn man ihn oeffnet. */
   var offen=!!window._rezKatOffen; try{ offen=localStorage.getItem("ri_rezkat_offen")==="1"; }catch(e){}
   var kopf='<button onclick="rezKatKlappen()" style="display:flex;align-items:center;gap:8px;width:100%;border:0;background:transparent;padding:2px 0;cursor:pointer;color:var(--ink);font:inherit;font-weight:700;font-size:14px">'
-    +'<span>⚙︎ Filter</span>'+(aktiv?'<span style="font-size:12px;font-weight:700;color:var(--greendk,#166534);background:var(--greenlt,#eaf5ee);border-radius:999px;padding:1px 8px">'+aktiv+' aktiv</span>':'')
+    +'<span>⚙︎ Filter</span>'+(aktivGes?'<span style="font-size:12px;font-weight:700;color:var(--greendk,#166534);background:var(--greenlt,#eaf5ee);border-radius:999px;padding:1px 8px">'+aktivGes+' aktiv</span>':'')
     +'<span style="margin-left:auto;color:var(--muted);font-weight:400">'+(offen?'▴':'▾')+'</span></button>';
   box.innerHTML='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px '+(offen?'8px':'10px')+';background:var(--card);margin:0 0 12px">'+kopf+(offen?'<div style="margin-top:9px">'+h+'</div>':'')+'</div>';
 }
@@ -14800,6 +14803,105 @@ function rezKatToggle(id, art){
 function rezKatReset(){
   window._rezKatSel={gericht:[],eigenschaft:[],hauptzutat:[],sammlung:[]};
   rezKatSelSave(); rezKatBarRender(); renderRezeptList();
+}
+/* ===== Rezept-Filter Unvertraeglichkeiten + Diabetes (01.10.2026, Ralph) =====
+   "filter fuer unsere allergene ... diabetes, lactose, gluten ... dauerhaft speichern ... pillen kennzeichnen und getrennt anzeigen"
+   - Auswahl = Unvertraeglichkeiten aus Meine Daten (eine Wahrheit, gilt auch fuer Produkte/Tagebuch/App).
+   - Diabetes = "zuckerarm": hoechstens 10 g Zucker je Portion, Wert vom Server (cb_rezept_vertraeglichkeit);
+     gespeichert als Einstellung 'rezept_zuckerarm', ohne Eintrag an, wenn im Profil ein Diabetes-Typ steht.
+   - Ausgeblendet wird nur, was ein gemiedenes Allergen sicher ENTHAELT. Spuren/unklar bleiben sichtbar und
+     tragen eine gelbe/graue Pille - lieber ehrlich "pruefen" als still weglassen. */
+var REZ_ZUCKERARM_G=10;
+async function rezVertLaden(){
+  if(!ME){ window._rezVert=null; return; }
+  try{
+    var ids=(REZEPTE||[]).map(function(r){ return r.id; });
+    var res=await Promise.all([ client.rpc("cb_rezept_vertraeglichkeit",{p_ids:ids}), unvHolen(), Promise.resolve(einstLaden()).catch(function(){ return {}; }) ]);
+    var m={}; ((res[0]&&res[0].data)||[]).forEach(function(x){ m[x.rezept_id]=x; });
+    window._rezVert=m;
+  }catch(e){ window._rezVert=null; }
+}
+function rezZuckerarmAn(){
+  if(!ME) return false;
+  var e=(window.__einst||{})['rezept_zuckerarm'];
+  if(e==='1') return true; if(e==='0') return false;
+  return (typeof meDiabetes==='function') && meDiabetes();
+}
+function rezVertAktivZahl(){
+  if(!ME||!window._rezVert) return 0;
+  return (Array.isArray(window._UNV)?window._UNV.length:0)+(rezZuckerarmAn()?1:0);
+}
+function rezIstZuckerarm(v){ return !!(v && v.zucker_vollstaendig && v.zucker_portion!=null && Number(v.zucker_portion)<=REZ_ZUCKERARM_G); }
+function rezVertPasst(r){
+  var v=(window._rezVert||{})[r.id]; if(!v) return true;
+  var unv=window._UNV||[];
+  if(unv.length && alTreffer(v,unv).enth.length) return false;
+  if(rezZuckerarmAn() && !rezIstZuckerarm(v)) return false;
+  return true;
+}
+function _rezPille(txt, art, titel){
+  var f={ok:['var(--greenlt)','var(--green)','var(--greendk)'], rot:['var(--k-fef2f2)','var(--k-fca5a5)','var(--k-b91c1c)'],
+         gelb:['var(--k-fffbeb)','var(--k-fde68a)','var(--k-92400e)'], grau:['var(--k-f4f5f4)','var(--line)','var(--muted)']}[art];
+  return '<span title="'+esc(titel||'')+'" style="display:inline-block;margin:3px 4px 0 0;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:'+f[0]+';border:1px solid '+f[1]+';color:'+f[2]+'">'+txt+'</span>';
+}
+/* Eigene Zeile auf der Rezeptkarte - getrennt von Art/Eigenschaft/Hauptzutat. */
+function rezVertZeile(r){
+  if(!ME||!window._rezVert) return "";
+  var v=window._rezVert[r.id]; if(!v) return "";
+  var unv=window._UNV||[], h="";
+  if(unv.length){
+    var t=alTreffer(v,unv);
+    t.enth.forEach(function(k){ h+=_rezPille('⚠︎ '+esc(AL_NAMEN[k]||k),'rot','Enthält, was du meidest'); });
+    t.spur.forEach(function(k){ h+=_rezPille('Spuren: '+esc(AL_NAMEN[k]||k),'gelb','Kann Spuren enthalten'); });
+    t.unklar.forEach(function(k){ h+=_rezPille('? '+esc(AL_NAMEN[k]||k)+' prüfen','grau','Nicht für alle Zutaten liegt eine Zutatenliste vor'); });
+    var frei=unv.filter(function(k){ return t.enth.indexOf(k)<0 && t.spur.indexOf(k)<0 && t.unklar.indexOf(k)<0; });
+    frei.forEach(function(k){ h+=_rezPille('✓ ohne '+esc(AL_NAMEN[k]||k),'ok','Passt zu deinen Angaben'); });
+  }
+  if(rezZuckerarmAn() || (typeof meDiabetes==='function' && meDiabetes())){
+    if(v.zucker_portion!=null){
+      var zt=String(v.zucker_portion).replace('.',',')+' g Zucker/Portion';
+      h+= rezIstZuckerarm(v) ? _rezPille('✓ zuckerarm · '+zt,'ok','Höchstens '+REZ_ZUCKERARM_G+' g Zucker je Portion')
+        : (v.zucker_vollstaendig ? _rezPille(zt,'gelb','Mehr als '+REZ_ZUCKERARM_G+' g Zucker je Portion') : _rezPille('? Zucker unvollständig','grau','Nicht für alle Zutaten liegt ein Zuckerwert vor'));
+    }
+  }
+  return h ? '<div style="margin-top:3px">'+h+'</div>' : '';
+}
+/* Gruppe im Filterkasten. Zahl = wie viele Rezepte mit diesem Filter (allein) uebrig bleiben. */
+function rezVertGruppeHtml(){
+  if(!ME||!window._rezVert) return "";
+  var unv=window._UNV||[], alle=REZEPTE||[], m=window._rezVert;
+  function zahl(k){ return alle.filter(function(r){ var v=m[r.id]; if(!v) return true;
+    if(k==='zuckerarm') return rezIstZuckerarm(v); return !alTreffer(v,[k]).enth.length; }).length; }
+  function knopf(k, name, an, sym){
+    return '<button onclick="rezVertToggle(\''+k+'\')" style="border:1px solid '+(an?'var(--green)':'var(--line)')+';background:'+(an?'var(--greenlt,#eaf5ee)':'var(--card)')
+      +';color:'+(an?'var(--greendk,#166534)':'var(--ink)')+';border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:'+(an?'700':'500')
+      +';cursor:pointer;white-space:nowrap">'+(sym?sym+' ':'')+esc(name)+' <span style="opacity:.6;font-weight:500">'+zahl(k)+'</span></button>';
+  }
+  var SYM={laktose:'🥛',gluten:'🌾',milch:'🧀',ei:'🥚',fisch:'🐟',krebstiere:'🦐',weichtiere:'🦑',erdnuss:'🥜',schalenfruechte:'🌰',soja:'🫘',sellerie:'🥬',senf:'🟡',sesam:'⚪',sulfite:'🍷',lupinen:'🌼'};
+  var h='<div style="margin:0 0 9px;padding-bottom:8px;border-bottom:1px dashed var(--line)">'
+    +'<div style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px">Unverträglichkeiten &amp; Diabetes <span style="text-transform:none;font-weight:500;letter-spacing:0">– bleibt gespeichert (Meine Daten)</span></div>'
+    +'<div style="display:flex;gap:6px;flex-wrap:wrap">';
+  h+=knopf('zuckerarm','Diabetes · zuckerarm',rezZuckerarmAn(),'🩸');
+  AL_REIHE.forEach(function(k){ h+=knopf(k,'ohne '+(AL_NAMEN[k]||k).replace(/ \(.*\)$/,''),unv.indexOf(k)>=0,SYM[k]||''); });
+  h+='</div><div style="font-size:11px;color:var(--muted);margin-top:5px;line-height:1.4">Ausgeblendet wird nur, was es sicher enthält. Spuren oder unklare Zutaten bleiben sichtbar und sind markiert. Zuckerarm = höchstens '+REZ_ZUCKERARM_G+' g Zucker je Portion. Nur ein Hinweis – im Zweifel Etikett prüfen.</div></div>';
+  return h;
+}
+async function rezVertToggle(k){
+  if(!ME) return;
+  try{
+    if(k==='zuckerarm'){
+      var neu=rezZuckerarmAn()?'0':'1';
+      window.__einst=window.__einst||{}; window.__einst['rezept_zuckerarm']=neu;
+      rezKatBarRender(); renderRezeptList();
+      var r1=await client.rpc('cb_einstellung_setzen',{p_key:'rezept_zuckerarm',p_wert:neu}); if(r1&&r1.error) throw r1.error;
+      return;
+    }
+    var l=(window._UNV||[]).slice(), i=l.indexOf(k);
+    if(i>=0) l.splice(i,1); else l.push(k);
+    window._UNV=l; rezKatBarRender(); renderRezeptList();
+    var r2=await client.rpc("cb_profil_unvertraeglichkeiten",{p_liste:l}); if(r2&&r2.error) throw r2.error;
+    if(r2&&r2.data) window._UNV=r2.data;
+  }catch(e){ try{ toast("Filter konnte nicht gespeichert werden: "+(e.message||e),'#b91c1c'); }catch(_){} }
 }
 /* Innerhalb einer Gruppe ODER, zwischen den Gruppen UND. */
 function rezKatMatch(r){
@@ -14955,8 +15057,10 @@ function renderRezeptList(){
     const _s=rezKatSelLoad(); REZ_KAT_GRUPPEN.forEach(g=>{ _katAn+=(_s[g[0]]||[]).length; });
     if(_katAn) data=data.filter(rezKatMatch);
   }
+  const _vertAn=rezVertAktivZahl();
+  if(_vertAn) data=data.filter(rezVertPasst);
   const mine=all.filter(r=>r.is_own).length, favN=(window._rezFav?window._rezFav.size:0);
-  document.getElementById("rezeptStats").textContent=`${data.length} Rezept${data.length===1?"":"e"}`+(window._rezFavOnly?" · nur ♥":"")+(_katAn?` · ${_katAn} Kategorie-Filter`:"")+(mine?` · ${mine} eigene`:"")+(favN?` · ${favN} ♥`:"");
+  document.getElementById("rezeptStats").textContent=`${data.length} Rezept${data.length===1?"":"e"}`+(window._rezFavOnly?" · nur ♥":"")+(_katAn?` · ${_katAn} Kategorie-Filter`:"")+(_vertAn?` · ${_vertAn} Unverträglichkeits-Filter`:"")+(mine?` · ${mine} eigene`:"")+(favN?` · ${favN} ♥`:"");
   const g=document.getElementById("rezeptGrid"); g.innerHTML="";
   data.forEach(r=>{
     const c=document.createElement("div");c.className="card";c.style.position="relative";c.dataset.rid=r.id;c.onclick=()=>rezeptDetail(r);
@@ -14967,7 +15071,7 @@ function renderRezeptList(){
                : `<div class="badge" style="background:var(--green2)"><span class="num">${r.kcal??"–"}</span><span class="lbl">KCAL</span></div>`);
     const _fav=(window._rezFav&&window._rezFav.has(r.id));
     c.innerHTML=`<button onclick="event.stopPropagation();rezFavToggle('${r.id}',this)" title="Als Favorit" style="position:absolute;top:8px;right:8px;border:0;background:var(--k-w92);border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;color:${_fav?'var(--k-e11d48)':'var(--k-9aa7b2)'};box-shadow:0 1px 5px rgba(0,0,0,.15);z-index:2">${_fav?'♥':'♡'}</button>${lead}
-      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">${[r.zeit_min!=null?`⏱ ${r.zeit_min} min`:"", r.kcal!=null?`${r.kcal} kcal`:"", rezKatAktiv()?"":esc(r.ziel||"")].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}</div>`;
+      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">${[r.zeit_min!=null?`⏱ ${r.zeit_min} min`:"", r.kcal!=null?`${r.kcal} kcal`:"", rezKatAktiv()?"":esc(r.ziel||"")].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}${rezVertZeile(r)}</div>`;
     g.appendChild(c);
   });
   if(!(ME && hasFeat('rezepte_alle'))){
@@ -14983,6 +15087,7 @@ function renderRezeptList(){
 /* 30.09.2026 (Webtest Rezepte): Wer Unvertraeglichkeiten angegeben hat, sah die Warnung
    erst im geoeffneten Rezept. Jetzt steht sie schon auf der Karte - wie bei Produkten. */
 async function alRezeptListeMarkieren(){
+  if(window._rezVert) return;   /* 01.10.2026: die Karte traegt die Zeile jetzt selbst (rezVertZeile) */
   try{
     var unv=await unvHolen(); if(!unv.length) return;
     var cards=[].slice.call(document.querySelectorAll('#rezeptGrid .card[data-rid]:not([data-al])')); if(!cards.length) return;
@@ -17030,7 +17135,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-12";
+const APP_BUILD = "2026-10-01-13";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
