@@ -724,7 +724,10 @@ function rezeptFluxAchsen(r){
   var z=(Array.isArray(r&&r.zutaten)?r.zutaten:[]).filter(function(i){ return num(i&&i.menge_g)>0 && i.produkt_id; });
   if(!z.length) return null;
   var zut=0,zus=0,nov=0,nae=0,g=0;
-  for(var k=0;k<z.length;k++){ var i=z[k]; var p=(ALL||[]).find(function(x){return x.id===i.produkt_id;}); if(!p) return null;
+  for(var k=0;k<z.length;k++){ var i=z[k];
+    /* 01.10.2026: Achsen kommen jetzt direkt mit der Zutat aus cb_rezepte_list - der Katalog (ALL) ist nur noch Rueckfall.
+       Vorher fehlte der Flux, sobald eine Zutat nicht im geladenen Katalogausschnitt lag. */
+    var p=(num(i.p_zutaten)!=null)?i:(ALL||[]).find(function(x){return x.id===i.produkt_id;}); if(!p) return null;
     if(num(p.p_zutaten)==null) return null;   /* fehlt eine Achse → kein Flux (ehrlich) */
     var gg=num(i.menge_g);
     zut+=num(p.p_zutaten)*gg; zus+=(num(p.p_zusatzstoffe)||0)*gg; nov+=(num(p.p_nova)||0)*gg; nae+=(num(p.p_naehrwert)||0)*gg; g+=gg;
@@ -17027,7 +17030,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-11";
+const APP_BUILD = "2026-10-01-12";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
