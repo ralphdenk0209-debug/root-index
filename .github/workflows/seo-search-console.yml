@@ -11,7 +11,7 @@ name: SEO Search Console
 
 on:
   schedule:
-    - cron: "15 5 * * *"      # taeglich ~07:15 deutscher Sommerzeit
+    - cron: "15 */3 * * *"    # 01.10.2026: alle 3 Stunden (frische Daten bis heute), vorher nur 1x taeglich
   workflow_dispatch:
 
 jobs:

@@ -108,16 +108,15 @@ function datumIso(d: Date): string {
 
 // 1b) Klicks/Impressionen je Land und Tag (Cockpit-Karte, 23.09.2026)
 async function laenderHolen(token: string, siteUrl: string) {
-  const ende = new Date();
-  ende.setUTCDate(ende.getUTCDate() - 3);
+  const ende = new Date();   // 01.10.2026: bis heute, frische Daten (dataState "all") wie die Search Console selbst
   const start = new Date(ende);
-  start.setUTCDate(start.getUTCDate() - 27);
+  start.setUTCDate(start.getUTCDate() - 30);
   const r = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ startDate: datumIso(start), endDate: datumIso(ende), dimensions: ["date", "country"], rowLimit: 5000 }),
+      body: JSON.stringify({ startDate: datumIso(start), endDate: datumIso(ende), dimensions: ["date", "country"], rowLimit: 5000, dataState: "all" }),
     },
   );
   if (!r.ok) throw new Error(`searchAnalytics.query (country) fehlgeschlagen: ${r.status} ${await r.text()}`);
@@ -127,10 +126,12 @@ async function laenderHolen(token: string, siteUrl: string) {
 }
 
 async function suchdatenHolen(token: string, siteUrl: string) {
+  /* 01.10.2026 (Ralph: "ist aber kein aktueller stand"): vorher bis heute-3 und nur endgueltige Daten -
+     das Cockpit hing 3-4 Tage hinterher. Jetzt bis heute mit dataState "all" (vorlaeufige Zahlen, wie die
+     Search Console anzeigt); die letzten Tage werden bei jedem Lauf ueberschrieben, bis Google sie festschreibt. */
   const ende = new Date();
-  ende.setUTCDate(ende.getUTCDate() - 3); // GSC-Daten sind ~2-3 Tage verzoegert
   const start = new Date(ende);
-  start.setUTCDate(start.getUTCDate() - 27); // 28-Tage-Fenster
+  start.setUTCDate(start.getUTCDate() - 30);
 
   const r = await fetch(
     `https://www.googleapis.com/webmasters/v3/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
@@ -142,6 +143,7 @@ async function suchdatenHolen(token: string, siteUrl: string) {
         endDate: datumIso(ende),
         dimensions: ["date"],
         rowLimit: 1000,
+        dataState: "all",
       }),
     },
   );
