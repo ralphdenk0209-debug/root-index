@@ -81,10 +81,22 @@ async function holeAb(url, key, letzteId) {
     for (let versuch = 1; versuch <= 2; versuch++) {
       let r = null;
       try {
-        r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id&limit=${groesse}${nach}`, {
+        // 01.10.2026: erst die Schluessel holen (cb_web_produkt_ids, Millisekunden),
+        // dann die Sicht genau fuer diese ids. "id > X limit n" direkt auf der Sicht
+        // rechnete die Kochfett-Teilsicht ueber alle Produkte (bis 58 s je Zeile).
+        const ri = await fetch(`${url}/rest/v1/rpc/cb_web_produkt_ids`, {
+          method: "POST",
+          headers: { apikey: key, "Content-Type": "application/json" },
+          body: JSON.stringify({ p_nach: letzteId || null, p_anzahl: groesse }),
+        });
+        if (!ri.ok) throw new Error(`ids REST ${ri.status}: ${(await ri.text()).slice(0, 120)}`);
+        const ids = await ri.json();
+        if (!ids.length) return { zeilen: [], letzte: null };
+        const liste = ids.map((x) => encodeURIComponent(`"${x}"`)).join(",");
+        r = await fetch(`${url}/rest/v1/v_web_produkte?select=${FELDER}&order=id&id=in.(${liste})`, {
           headers: { apikey: key },
         });
-        if (r.ok) return await r.json();
+        if (r.ok) return { zeilen: await r.json(), letzte: ids[ids.length - 1] };
         fehler = `REST ${r.status}: ${(await r.text()).slice(0, 160)}`;
       } catch (e) {
         fehler = `Netzfehler: ${e.message}`;
@@ -104,8 +116,8 @@ async function naechsteId(url, key, letzteId) {
   const PAUSEN = [3, 8, 15, 30, 45, 60];
   for (const pause of PAUSEN) {
     try {
-      const r = await fetch(`${url}/rest/v1/v_web_produkte?select=id&order=id&limit=1${nach}`, { headers: { apikey: key } });
-      if (r.ok) { const j = await r.json(); return j.length ? j[0].id : null; }
+      const r = await fetch(`${url}/rest/v1/rpc/cb_web_produkt_ids`, { method: "POST", headers: { apikey: key, "Content-Type": "application/json" }, body: JSON.stringify({ p_nach: letzteId || null, p_anzahl: 1 }) });
+      if (r.ok) { const j = await r.json(); return j.length ? j[0] : null; }
     } catch (e) { /* naechster Versuch */ }
     await new Promise((f) => setTimeout(f, pause * 1000));
   }
@@ -140,9 +152,9 @@ async function alleProdukte() {
       letzteId = weiter;
       continue;
     }
-    if (teil.length === 0) break;
-    alle.push(...teil);
-    letzteId = teil[teil.length - 1].id;
+    if (!teil.letzte) break;
+    alle.push(...teil.zeilen);
+    letzteId = teil.letzte;
     if (alle.length % 2000 < STUFEN[0]) console.log(`  ... ${alle.length} Produkte (zuletzt ${letzteId})`);
   }
   console.log(`Fertig geladen: ${alle.length} Produkte` + (uebersprungen.length ? ` · ${uebersprungen.length} uebersprungen: ${uebersprungen.slice(0, 20).join(", ")}` : ""));
