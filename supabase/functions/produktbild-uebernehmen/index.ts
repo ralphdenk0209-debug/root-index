@@ -32,10 +32,9 @@ function b64zuBytes(b64: string): Uint8Array {
 
 Deno.serve(async () => {
   const db = createClient(URL_, KEY, { auth: { persistSession: false } });
-  const { data: zeilen, error } = await db
-    .from("produktbild_eingang")
-    .select("id, produkt_id, daten_base64, quelle_url, mime, ersetzen")
-    .eq("status", "offen").order("id").limit(10);
+  // Zeilen atomar holen (status offen -> laeuft, FOR UPDATE SKIP LOCKED): parallele
+  // Aufrufe aus dem Trigger laden dieselbe Zeile nicht doppelt hoch (01.10.2026).
+  const { data: zeilen, error } = await db.rpc("cb_produktbild_eingang_holen", { p_n: 10 });
   if (error) return Response.json({ ok: false, fehler: error.message }, { status: 500 });
 
   const ergebnis: unknown[] = [];
