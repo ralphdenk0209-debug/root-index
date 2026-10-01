@@ -11861,11 +11861,11 @@ function renderTbListe(items, goal){
           +pPart+fPart+`</div>`;
       }
       html+=tgt+((gK&&!neu)?`<div style="margin:2px 0 6px"><button onclick="tbAdjustMeal('${m}')" title="Mengen der Katalog-Produkte dieser Mahlzeit so skalieren, dass ${m} das kcal-Ziel trifft" style="border:1px solid var(--green);background:var(--greenlt);color:var(--greendk);border-radius:8px;padding:4px 10px;font-size:12px;cursor:pointer;font-weight:600">🎯 Mengen ans Ziel anpassen</button></div>`:"");
-      var _bl=tbBatchLines(rows); html+=_bl.html; var _skip=_bl.skip; rows.forEach(r=>{ if(_skip&&_skip.has(Number(r.Eintrag_ID))) return; html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;padding:9px 0;border-bottom:1px solid var(--tb-line)">
-          <div style="min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${tbNameHtml(r)}${num(r.Clean_Score)!=null?` <span style="font-size:11px;font-weight:700;color:${farbe(scoreBew(num(r.Clean_Score)))}">${num(r.Clean_Score)}</span>`:""}</div>
-          <a href="#" onclick="editMenge(${r.Eintrag_ID},${r.Menge_g},'${r.Produkt_ID||''}','${m}',${num(r.Menge_Stueck)||'null'});return false" style="color:var(--tb-muted);text-decoration:none;font-size:12.5px">${mengeLabel(r)}${neu?' ✎':' · ändern ✎'}</a>${(gK&&!neu&&num(r.Clean_Score)!=null&&num(r.Menge_g)>0)?` <a href="#" onclick="tbFillItem(${r.Eintrag_ID},'${m}');return false" title="Diese Menge so anpassen, dass ${m} das kcal-Ziel trifft (Split: andere Einträge bleiben)" style="color:var(--k-2e7d32);text-decoration:none;font-size:12.5px;white-space:nowrap">· 🎯 auffüllen</a>`:""}</div>
+      var _bl=tbBatchLines(rows); html+=_bl.html; var _skip=_bl.skip; rows.forEach(r=>{ if(_skip&&_skip.has(Number(r.Eintrag_ID))) return; const _em=`editMenge(${r.Eintrag_ID},${r.Menge_g},'${r.Produkt_ID||''}','${m}',${num(r.Menge_Stueck)||'null'})`; html+=`<div${neu?` onclick="${_em}"`:''} style="display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:14px;padding:9px 0;border-bottom:1px solid var(--tb-line)${neu?';cursor:pointer':''}">
+          <div style="min-width:0"><div style="font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${neu?esc(r.Produktname||'?'):tbNameHtml(r)}${num(r.Clean_Score)!=null?` <span style="font-size:11px;font-weight:700;color:${farbe(scoreBew(num(r.Clean_Score)))}">${num(r.Clean_Score)}</span>`:""}</div>
+          <a href="#" onclick="event.stopPropagation();${_em};return false" style="color:var(--tb-muted);text-decoration:none;font-size:12.5px">${mengeLabel(r)}${neu?' ✎':' · ändern ✎'}</a>${(gK&&!neu&&num(r.Clean_Score)!=null&&num(r.Menge_g)>0)?` <a href="#" onclick="tbFillItem(${r.Eintrag_ID},'${m}');return false" title="Diese Menge so anpassen, dass ${m} das kcal-Ziel trifft (Split: andere Einträge bleiben)" style="color:var(--k-2e7d32);text-decoration:none;font-size:12.5px;white-space:nowrap">· 🎯 auffüllen</a>`:""}</div>
           <div style="display:flex;align-items:center;gap:9px;white-space:nowrap"><span><b>${Math.round(+r.kcal||0)}</b> <span style="font-size:11px;color:var(--tb-muted)">kcal</span></span>
-          <button onclick="tbDelFrage(this,${r.Eintrag_ID})" title="löschen" style="border:0;background:var(--tb-card2);border-radius:8px;width:27px;height:27px;color:var(--k-f87171);cursor:pointer;font-size:14px">✕</button></div>
+          <button onclick="event.stopPropagation();tbDelFrage(this,${r.Eintrag_ID})" title="löschen" style="border:0;background:var(--tb-card2);border-radius:8px;width:27px;height:27px;color:var(--k-f87171);cursor:pointer;font-size:14px">✕</button></div>
         </div>`; });
       if(!neu) html+=`<div style="font-size:11.5px;color:var(--tb-muted);padding:7px 0 2px">Mahlzeit gesamt: Eiweiß <b>${Math.round(mp)} g</b> · KH <b>${Math.round(mkh)} g</b> · Fett <b>${Math.round(mf)} g</b></div>`;
     }
@@ -12813,6 +12813,7 @@ function editMengeNeu(id,cur,pid,mahl){
        davon machen um das tagesziel zu erreichen" - füllt gegen das ECHTE Tagesziel (inkl.
        Trainingstag-Zuschlag), nicht gegen die gerechnete Mahlzeits-Aufteilung. */
     +(kannZiel?('<button onclick="tbFillItemTag('+id+')" title="Diese Menge so anpassen, dass der ganze TAG sein kcal-Ziel erreicht (alle anderen Einträge bleiben)" style="margin-top:8px;width:100%;background:none;border:1px solid var(--k-bcd9be);color:var(--k-166534);border-radius:12px;padding:10px;font-size:13px;cursor:pointer;font-weight:600">📅 auf Tagesziel auffüllen</button>'):'')
+    +(pid?('<button onclick="document.getElementById(\'tbMengeOv\').remove();prodOeffnen(\''+String(pid).replace(/\\/g,'\\\\').replace(/'/g,"\\'")+'\')" title="Nährwerte, Zutaten, Zusatzstoffe und Bewertung" style="margin-top:8px;width:100%;background:none;border:1px solid var(--tb-line,var(--k-e7e0d4));color:var(--tb-muted,var(--k-6b6256));border-radius:12px;padding:10px;font-size:13px;cursor:pointer">ℹ️ Produktkarte öffnen</button>'):'')
     +((pid&&typeof hasFeat==='function'&&hasFeat('einkaufsliste'))?('<button onclick="tbMengeEinkauf(this,\''+pid+'\')" title="Dieses Produkt auf die Einkaufsliste setzen" style="margin-top:8px;width:100%;background:none;border:1px solid var(--tb-line,var(--k-e7e0d4));color:var(--tb-muted,var(--k-6b6256));border-radius:12px;padding:10px;font-size:13px;cursor:pointer">🛒 in die Einkaufsliste übernehmen</button>'):'')
   +'</div>';
   document.body.appendChild(ov);
@@ -16984,7 +16985,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-2";
+const APP_BUILD = "2026-10-01-3";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
