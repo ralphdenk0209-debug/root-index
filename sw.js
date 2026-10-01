@@ -6,7 +6,7 @@
    nie verworfen. Zusammen mit einer offen gelassenen App fuehrte das dazu,
    dass Nutzer weiter mit altem Code arbeiteten.
    BEI JEDEM DEPLOY DIESE ZAHL HOCHZAEHLEN – dann wirft activate den alten Cache weg. */
-const CACHE = 'rootindex-2026-10-01-9-einkauf-schnell';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
+const CACHE = 'rootindex-2026-10-01-10-js-revalidate';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
 /* 🔴 DIESE ZEILE WIRD VOM DEPLOY-SKRIPT NEU GESCHRIEBEN (Work #144, 20.08.2026).
    Sie war bis heute von Hand gepflegt — und `./ui.css` fehlte darin, seit es die
    Datei gibt. Sobald app.js in Module zerfällt, hätte dort jedes neue Modul
@@ -64,7 +64,7 @@ self.addEventListener('fetch', (e) => {
   // Ladevorgaenge lang der alte Code aus dem Cache. Offline greift weiter die Kopie.
   if (/\.(js|css)$/.test(url.pathname)) {
     e.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })   // beim Server nachfragen (304 = billig), nicht blind den Browser-Cache nehmen
         .then((r) => {
           if (r && r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); }
           return r;
