@@ -10712,11 +10712,17 @@ async function loadEinkauf(){
     if(_hatte){ try{ window.scrollTo(0,_y); }catch(e){
       try{ console.warn('Einkaufsliste: Position konnte nicht gehalten werden',e); }catch(_){} } }
   };
-  let rows=[]; try{ const {data}=await client.rpc("cb_einkauf_list"); rows=data||[]; }catch(e){}
+  /* 01.10.2026: Liste und Haushalts-Status gleichzeitig holen statt nacheinander */
+  const _hhAn=!!(ME && typeof feat==='function' && feat('haushalt'));
+  const _er=await Promise.all([
+    Promise.resolve(client.rpc("cb_einkauf_list")).catch(function(){ return {}; }),
+    _hhAn ? Promise.resolve(client.rpc("cb_haushalt_status")).catch(function(){ return {}; }) : null
+  ]);
+  let rows=(_er[0]&&_er[0].data)||[];
   /* 28z17: Haushalts-Status (Beta-Flag) - EINE kleine RPC je Anzeige */
   let hh=null;
-  if(ME && typeof feat==='function' && feat('haushalt')){
-    try{ let {data:st}=await client.rpc("cb_haushalt_status"); if(typeof st==='string'){ try{ st=JSON.parse(st);}catch(e){} } if(st&&st.ok) hh=st.haushalt||null; window._HH=hh; }catch(e){}
+  if(_hhAn){
+    try{ let st=_er[1]&&_er[1].data; if(typeof st==='string'){ try{ st=JSON.parse(st);}catch(e){} } if(st&&st.ok) hh=st.haushalt||null; window._HH=hh; }catch(e){}
   }
   const offen=rows.filter(r=>!r.erledigt), erl=rows.filter(r=>r.erledigt);
   let h=(ME && typeof feat==='function' && feat('haushalt'))?hhMiniZeile(hh):'';   /* 28z29: Balken -> Mini-Zeile */
@@ -17021,7 +17027,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-10";
+const APP_BUILD = "2026-10-01-11";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
