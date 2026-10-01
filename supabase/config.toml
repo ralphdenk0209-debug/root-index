@@ -50,3 +50,8 @@ verify_jwt = true
 
 [functions.riki-mahlzeit]
 verify_jwt = true
+
+# 01.10.2026: Apple-Abo. Apple ruft die Server-Meldungen OHNE Supabase-Anmeldung auf - die Funktion
+# prueft selbst: Apple-Signatur (Root-Zertifikat) bzw. Nutzer-JWT beim Kauf aus der App.
+[functions.apple-kauf]
+verify_jwt = false
