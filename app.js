@@ -1130,6 +1130,12 @@ const PROD_VORSCHLAG_MAX = 3000;
    Datenbankzeit, mehrfach bezahlt). Ein laufender Abruf wird jetzt geteilt
    (Single-Flight): Wer waehrend des Ladens fragt, bekommt dasselbe Promise. */
 let _fapLaufend = null;
+/* 01.10.2026: Katalog (Vorschlagsliste) im HINTERGRUND laden - ohne dass eine Seite darauf wartet.
+   Liefert ein Versprechen, das ALL fuellt; mehrfach aufrufen ist billig (laufender Abruf wird geteilt). */
+function katalogHintergrund(){
+  if(ALL&&ALL.length) return Promise.resolve(ALL);
+  return fetchAlleProdukte().then(function(data){ if(data&&!(ALL&&ALL.length)) ALL=data.map(function(d){ return Object.assign({},d,{clean_score:num(d.clean_score)}); }); return ALL; }).catch(function(){ return ALL; });
+}
 function fetchAlleProdukte(){
   if(_fapLaufend) return _fapLaufend;
   _fapLaufend = _fapLaden().finally(function(){ _fapLaufend = null; });
@@ -8443,6 +8449,9 @@ async function renderStart(){
     +premiumBlockHtml()
     +unterstuetzenHtml();
   try{ startWerteLaden(); }catch(e){}
+  /* 01.10.2026: Katalog erst NACH dem Malen der Startseite im Hintergrund holen - dann sind
+     Einkauf, Tagebuch-Vorschlaege usw. beim Wechsel schon bereit, ohne die Startseite zu bremsen. */
+  setTimeout(function(){ try{ katalogHintergrund(); }catch(e){} }, 1500);
 }
 /* Die Seite hinter einer Wertekachel. Sie baut genau EINEN der drei
    Widget-Anker und laesst die bekannten Renderer hineinschreiben - kein
@@ -10324,8 +10333,10 @@ async function renderEinkaufSeite(){
   const gate=document.getElementById("einkaufPageGate");
   const box=document.getElementById("einkaufPageBox");
   if(!gate||!box) return;
-  /* Katalog laden – für Kategorie-Zuordnung beim Tippen und beim Barcode-Scan */
-  if(!(ALL&&ALL.length)){ try{ const data=await fetchAlleProdukte(); if(data) ALL=data.map(d=>({...d, clean_score:num(d.clean_score)})); }catch(e){} }
+  /* Katalog laden – für Kategorie-Zuordnung beim Tippen und beim Barcode-Scan.
+     01.10.2026: nicht mehr abwarten; die Liste steht sofort, kommt der Katalog nach, wird sie einmal nachgemalt. */
+  const _katFehlt=!(ALL&&ALL.length);
+  if(_katFehlt){ katalogHintergrund().then(function(){ try{ if(window._curMode==='einkauf' && ALL&&ALL.length) loadEinkauf(); }catch(e){} }); }
   /* Frueher stand hier `if(!ME)` - die Liste haing also am LOGIN, nicht am Recht.
      Damit war sie fuer jeden angemeldeten Nutzer offen, egal was der Adminbereich
      fuer seine Stufe sagt. Jetzt fragt sie dasselbe wie jede andere Funktion:
@@ -17010,7 +17021,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-8";
+const APP_BUILD = "2026-10-01-9";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
