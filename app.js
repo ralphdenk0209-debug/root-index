@@ -10165,7 +10165,7 @@ async function loadPlaner(){
   const gate=document.getElementById("planerGate"), inner=document.getElementById("planerInner");
   if(!ME || !hasFeat('planer')){ if(inner)inner.style.display="none"; if(gate){gate.style.display="";gate.innerHTML=gateHtml('planer');} return; }
   if(gate)gate.style.display="none"; if(inner)inner.style.display="";
-  if(!ALL.length){ await load(); }
+  if(!window._loadEinmal){ window._loadEinmal=Promise.resolve().then(load).catch(function(){}); } await stueckLaden();   /* 01.10.2026: Katalog nicht abwarten */
   fillProdList();
   if(REZEPTE===null) await loadRezepte();
   if(!_planMonday) _planMonday=planMondayOf(tbToday());
@@ -16600,7 +16600,7 @@ async function openRezeptForm(editId){
   if(!ME){ openLogin(); return; }
   const ed = editId ? ((REZEPTE||[]).find(x=>x.id===editId) || (window._rezept&&window._rezept.id===editId?window._rezept:null)) : null;
   if(!ed && !hasFeat('rezepte_anlegen')){ premiumInfo(); return; }
-  if(!(ALL&&ALL.length)){ try{ await load(); }catch(e){} }
+  if(!window._loadEinmal){ window._loadEinmal=Promise.resolve().then(load).catch(function(){}); } await stueckLaden();   /* 01.10.2026: Katalog nicht abwarten */
   buildProdDL();
   const box=document.getElementById("panel");
   box.innerHTML=`<button class="close" onclick="closeP()">Schließen ✕</button>
@@ -17006,7 +17006,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-5";
+const APP_BUILD = "2026-10-01-6";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
