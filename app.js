@@ -17139,7 +17139,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-14";
+const APP_BUILD = "2026-10-01-15";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17561,7 +17561,13 @@ function alBoxHtml(a, unv, art){
     var t=alTreffer(a,unv);
     if(t.enth.length) h+='<div style="'+box+'var(--k-fca5a5);background:var(--k-fef2f2);color:var(--k-b91c1c)"><b>⚠︎ Enthält, was du meidest:</b> '+esc(_alNamen(t.enth))+'</div>';
     if(t.spur.length) h+='<div style="'+box+'var(--k-fde68a);background:var(--k-fffbeb);color:var(--k-92400e)"><b>Kann Spuren enthalten:</b> '+esc(_alNamen(t.spur))+'</div>';
-    if(t.unklar.length) h+='<div style="'+box+'var(--line);background:var(--k-f4f5f4);color:var(--muted)"><b>Nicht sicher lesbar:</b> '+esc(_alNamen(t.unklar))+' – bitte Etikett prüfen.</div>';
+    /* 01.10.2026 (Ralph): die unklare ZUTAT beim Namen nennen statt aller Allergene */
+    if(t.unklar.length){
+      var _uz=(a.unklar_zutaten||[]);
+      h+='<div style="'+box+'var(--line);background:var(--k-f4f5f4);color:var(--muted)">'
+        +(_uz.length ? '<b>Bitte Etikett prüfen:</b> '+esc(_uz.join(', '))+' – dafür liegt uns keine Zutatenliste vor.'
+                     : '<b>Nicht sicher lesbar:</b> '+esc(_alNamen(t.unklar))+' – bitte Etikett prüfen.')+'</div>';
+    }
     if(!t.enth.length&&!t.spur.length&&!t.unklar.length) h+='<div style="'+box+'var(--green);background:var(--greenlt);color:var(--greendk)"><b>✓ Passt zu deinen Angaben</b> ('+esc(_alNamen(unv))+')</div>';
   } else if(ME){
     h+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tipp: Unverträglichkeiten in <a href="#" onclick="event.preventDefault();try{closeP();}catch(e){} try{navTo(\'profil\'); setTimeout(function(){ try{ pfOeffnen(\'gesund\'); }catch(e){} },400);}catch(e){}" style="color:var(--green)">Mein Profil</a> angeben – dann warnen wir dich hier.</div>';
@@ -17569,7 +17575,7 @@ function alBoxHtml(a, unv, art){
   var lak={enthaelt:"enthält Laktose",laktosefrei:"laktosefrei",unklar:"Laktose unklar"}[a.laktose]||"";
   var zeile='<b>Allergene:</b> '+((a.enthaelt&&a.enthaelt.length)?esc(_alNamen(a.enthaelt)):'keine erkannt')+(lak?' · '+esc(lak):'');
   if(a.spuren&&a.spuren.length) zeile+='<br><b>Spuren:</b> '+esc(_alNamen(a.spuren));
-  var fuss=(a.datenlage==="name")?'Aus dem Produktnamen abgeleitet.':(art==="rezept"&&a.unvollstaendig?'Nicht für alle Zutaten liegt eine Zutatenliste vor.':'Automatisch aus der Zutatenliste gelesen.');
+  var fuss=(a.datenlage==="name")?'Aus dem Produktnamen abgeleitet.':(art==="rezept"&&a.unvollstaendig?((a.unklar_zutaten&&a.unklar_zutaten.length)?'Ohne Zutatenliste: '+esc(a.unklar_zutaten.join(', '))+'.':'Nicht für alle Zutaten liegt eine Zutatenliste vor.'):'Automatisch aus der Zutatenliste gelesen.');
   h+='<div style="margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+zeile+'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+fuss+' Nur ein Hinweis, fließt nicht in den Root Index ein. Ersetzt keine ärztliche Beratung – maßgeblich ist das Etikett.</div></div>';
   return h;
 }
@@ -17584,9 +17590,11 @@ async function alBoxLaden(){
 async function alRezeptLaden(){
   var el=document.getElementById("alRzBox"); if(!el) return; var rid=el.dataset.rid;
   try{
-    var r=await client.rpc("cb_rezept_allergene",{p_ids:[rid]}); var unv=await unvHolen();
+    var _p=await Promise.all([ client.rpc("cb_rezept_allergene",{p_ids:[rid]}), unvHolen(),
+      Promise.resolve(client.rpc("cb_rezept_unklare_zutaten",{p_id:rid})).catch(function(){ return {}; }) ]);
+    var r=_p[0], unv=_p[1];
     if(!document.body.contains(el)||el.dataset.rid!==rid) return;
-    var a=(r.data||[])[0]; if(a) a.datenlage="ok";
+    var a=(r.data||[])[0]; if(a){ a.datenlage="ok"; a.unklar_zutaten=(_p[2]&&_p[2].data)||[]; }
     el.innerHTML=a?alBoxHtml(a, unv, "rezept"):"";
   }catch(e){ el.innerHTML=""; }
 }
