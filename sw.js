@@ -6,7 +6,7 @@
    nie verworfen. Zusammen mit einer offen gelassenen App fuehrte das dazu,
    dass Nutzer weiter mit altem Code arbeiteten.
    BEI JEDEM DEPLOY DIESE ZAHL HOCHZAEHLEN – dann wirft activate den alten Cache weg. */
-const CACHE = 'rootindex-2026-10-01-7-start-schnell';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
+const CACHE = 'rootindex-2026-10-01-8-js-netz';   // 21.09.2026: tiefer Link ?p= und Besucherzaehler in app.js - alter Zwischenspeicher wird verworfen
 /* 🔴 DIESE ZEILE WIRD VOM DEPLOY-SKRIPT NEU GESCHRIEBEN (Work #144, 20.08.2026).
    Sie war bis heute von Hand gepflegt — und `./ui.css` fehlte darin, seit es die
    Datei gibt. Sobald app.js in Module zerfällt, hätte dort jedes neue Modul
@@ -60,6 +60,19 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
+  // 01.10.2026: Programmcode (.js/.css) NETZ-ZUERST - sonst lief nach einem Deploy noch mehrere
+  // Ladevorgaenge lang der alte Code aus dem Cache. Offline greift weiter die Kopie.
+  if (/\.(js|css)$/.test(url.pathname)) {
+    e.respondWith(
+      fetch(req)
+        .then((r) => {
+          if (r && r.ok) { const cp = r.clone(); caches.open(CACHE).then((c) => c.put(req, cp)); }
+          return r;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
   // Sonstige same-origin Assets (Icons, Bilder): Cache-first, das ist unkritisch.
   e.respondWith(
     caches.match(req).then((hit) =>
