@@ -8351,8 +8351,8 @@ if(typeof window!=='undefined'){ window.premiumBlockHtml=premiumBlockHtml; windo
 
 async function renderStart(){
   const body=document.getElementById("startBody"); if(!body) return;
-  if(!(ALL&&ALL.length)){ try{ const data=await fetchAlleProdukte(); if(data) ALL=data.map(d=>({...d, clean_score:num(d.clean_score)})); }catch(e){} }
-  await loadBilder();
+  /* 01.10.2026 (Ralph: "Startseite 5 Sekunden"): Die Startseite wartete auf den halben Katalog
+     (fetchAlleProdukte, 3 Seiten) und die Produktbilder - beides zeigt sie gar nicht an. Raus. */
   const card='background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:var(--shadow)';
   if(!ME){
     body.innerHTML='<div style="max-width:600px;margin:0 auto">'
@@ -8389,9 +8389,13 @@ async function renderStart(){
   body.innerHTML='<div style="max-width:600px;margin:0 auto" id="startDash"><div style="color:var(--muted)">Lade…</div></div>';
   const today=tbToday();
   let sum={},prof={},log=[];
-  try{ const r=await client.rpc("cb_tagessumme",{p_datum:today}); sum=(r.data&&r.data[0])||{}; }catch(e){}
-  try{ const r=await client.rpc("cb_profil"); prof=(r.data&&r.data[0])||{}; }catch(e){}
-  try{ const r=await client.rpc("cb_train_log_tag",{p_datum:today}); log=r.data||[]; }catch(e){}
+  /* 01.10.2026: die drei Abrufe gleichzeitig statt nacheinander */
+  const _sr=await Promise.all([
+    Promise.resolve(client.rpc("cb_tagessumme",{p_datum:today})).catch(function(){ return {}; }),
+    Promise.resolve(client.rpc("cb_profil")).catch(function(){ return {}; }),
+    Promise.resolve(client.rpc("cb_train_log_tag",{p_datum:today})).catch(function(){ return {}; })
+  ]);
+  sum=(_sr[0].data&&_sr[0].data[0])||{}; prof=(_sr[1].data&&_sr[1].data[0])||{}; log=_sr[2].data||[];
   const dash=document.getElementById("startDash"); if(!dash) return;
   const vorname=(prof.Name||prof.Vorname||"") ? String(prof.Name||prof.Vorname).split(" ")[0] : "";
   const kcalZ=prof.Kalorienziel_kcal,eiwZ=prof.Eiweiss_ziel_g,khZ=prof.KH_ziel_g,fettZ=prof.Fett_ziel_g;
@@ -17006,7 +17010,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-6";
+const APP_BUILD = "2026-10-01-7";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
