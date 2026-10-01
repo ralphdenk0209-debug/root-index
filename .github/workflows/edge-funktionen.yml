@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2          # fuer den Vergleich mit dem Commit davor
+          fetch-depth: 0          # ganze Historie: Vergleich before..sha klappt auch nach Merge-Commits (30.09.2026)
 
       - name: Zugangstoken pruefen
         env:
