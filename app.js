@@ -1677,7 +1677,7 @@ async function loadProfil(){
      NULL wird zu "" und trifft damit die Option "Keine Angabe". */
   _selVal("pfDiab", b.Diabetes_Typ);
   /* 30.09.2026: Unvertraeglichkeiten (eigener Schreibweg, speichert beim Anklicken). */
-  try{ window._UNV=b.Unvertraeglichkeiten||[]; window._UNV_FUER=ME&&ME.benutzer_id; unvProfilRender(b.Unvertraeglichkeiten); }catch(e){}
+  try{ window._UNV=b.Unvertraeglichkeiten||[]; window._UNV_FUER=ME&&ME.benutzer_id; unvProfilRender(b.Unvertraeglichkeiten, b.Nierenschwaeche); }catch(e){}
   /* 25.09.2026 (Ralph: "ja, du kannst beides bauen"): Schwangerschaft/Stillzeit.
      Bestimmt zusammen mit Geschlecht und Alter die Naehrstoff-Sollwerte
      (D-A-CH/DGE). Das Feld steht in index.html - die darf ich nicht anfassen;
@@ -3492,6 +3492,7 @@ function detail2(d){
        Referenz asynchron kommt - die Karte darf darauf nicht warten. Kommt nichts, bleibt
        der Kasten leer und niemand merkt etwas (§1.11n-f: nach jedem await neu zeichnen). */
     + '<div id="pkRueck"></div>'
+    + '<div id="hwBox" data-pid="'+esc(d.id)+'"></div>'   /* 01.10.2026: Gesundheits-Hinweise (Buch Kap. 3), befuellt von hwBoxLaden */
     + '<div id="alBox" data-pid="'+esc(d.id)+'"></div>'   /* 30.09.2026: Allergene / Unvertraeglichkeiten, befuellt von alBoxLaden */
     /* 2026-07-24w: Feature-Schranken der alten Karte in detail2 uebernommen (Ralphs Fund 23.07.:
        Free/Gast sahen alles - die Sperren sassen nur im toten Code der alten Karte). pk_ringe
@@ -3577,6 +3578,7 @@ function detail2(d){
      Deshalb steht der Aufruf jetzt dort, wo die Karte wirklich entsteht. */
   if(typeof ladeBindungsLuecke === "function"){ try{ ladeBindungsLuecke(d && d.id); }catch(e){} }
   try{ alBoxLaden(); }catch(e){}   /* 30.09.2026 */
+  try{ hwBoxLaden(); }catch(e){}   /* 01.10.2026 */
 }
 /* Salz-Karte: "Was dieses Salz zusaetzlich liefert" (Jod/Fluorid/Folsaeure/Selen).
    Belegt aus Produkt_Mikronaehrstoffe + EFSA_Grenzwerte (RPC cb_salz_fakten).
@@ -5280,6 +5282,7 @@ async function detail(d){
        : (mRows?`<div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:18px 0 6px">Nährwerte pro 100 ${prodEinheit(d)}</div>${mRows}`:"")}
     ${warumBlock}
     ${_sd ? zutatenBlock : ""}
+    <div id="hwBox" data-pid="${esc(d.id)}"></div>
     <div id="alBox" data-pid="${esc(d.id)}"></div>
     ${d.spuren_hinweis?`<div style="margin-top:10px;font-size:12.5px;line-height:1.45;padding:8px 11px;background:var(--k-fff7e6);border:1px solid var(--line);border-radius:9px;color:var(--ink)"><b>⚠︎ Allergiker-Hinweis vom Etikett:</b> ${esc(d.spuren_hinweis)}<div style="font-size:11px;color:var(--muted);margin-top:3px">Spuren sind keine Zutat und fließen nicht in den Root Index ein.</div></div>`:""}
     ${_sd ? naehrstoffHtml(d) : ""}
@@ -5291,6 +5294,7 @@ async function detail(d){
      Sie ersetzt bei Supplements den Platz, an dem sonst der Score steht. */
   if(typeof ladeReinheitsAmpel === "function") ladeReinheitsAmpel();
   try{ alBoxLaden(); }catch(e){}   /* 30.09.2026: Allergene / Unvertraeglichkeiten */
+  try{ hwBoxLaden(); }catch(e){}   /* 01.10.2026: Gesundheits-Hinweise */
   /* Work #371: Ist die Zutatenliste nur teilweise zugeordnet, steht das hier. */
   if(typeof ladeBindungsLuecke === "function") ladeBindungsLuecke(d && d.id);
 }
@@ -17139,7 +17143,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-15";
+const APP_BUILD = "2026-10-01-16";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17635,7 +17639,7 @@ async function alTagebuchMarkieren(items){
       +'</ul><div style="font-size:11px;color:var(--muted);margin-top:4px">Automatisch aus den Zutatenlisten gelesen – maßgeblich ist das Etikett.</div></div>';
   }catch(e){}
 }
-function unvProfilRender(liste){
+function unvProfilRender(liste, niere){
   var anker=document.getElementById("pfZustandLbl")||document.getElementById("pfDiab");
   if(!anker) return;
   var host=document.getElementById("pfUnvBox");
@@ -17650,7 +17654,32 @@ function unvProfilRender(liste){
     h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer"><input type="checkbox" class="pfUnv" value="'+k+'"'+(sel.indexOf(k)>=0?' checked':'')+' onchange="unvSpeichern()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">'+esc(AL_NAMEN[k])+'</label>';
   });
   h+='</div><span id="pfUnvMsg" style="display:block;margin-top:4px;font-size:11px;color:var(--k-9aa7a0);line-height:1.4">Wir warnen dich dann bei Produkten, Rezepten und im Tagebuch. Nur ein Hinweis aus der Zutatenliste – ersetzt keine ärztliche Beratung.</span>';
+  /* 01.10.2026 (Buch Kap. 3, Ralph: ja): Nierenschwaeche -> Phosphat-Zusatzstoffe auf der Produktkarte markieren */
+  h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:10px"><input type="checkbox" id="pfNiere"'+(niere?' checked':'')+' onchange="niereSpeichern()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">Nierenschwäche <span style="color:var(--k-9aa7a0);font-size:11px">(freiwillig)</span></label>'
+    +'<span id="pfNiereMsg" style="display:block;margin-top:2px;font-size:11px;color:var(--k-9aa7a0);line-height:1.4">Dann markieren wir Phosphat-Zusatzstoffe (E 338–341, 343, 450–452). Keine Diagnose, keine medizinische Empfehlung.</span>';
   host.innerHTML=h;
+}
+async function niereSpeichern(){
+  var el=document.getElementById("pfNiere"), msg=document.getElementById("pfNiereMsg"); if(!el) return;
+  var r=await client.rpc("cb_profil_nierenschwaeche",{p_an:!!el.checked});
+  if(r.error){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+r.error.message; } return; }
+  if(msg){ msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; }
+}
+/* 01.10.2026 (Buch Kap. 3): Gesundheits-Hinweise je Produkt - Salz, Alkohol, Koffein, Schwangerschaft, Phosphat.
+   Regel und Text kommen von cb_produkt_hinweise (eine Quelle fuer Web und App). Nicht Teil des Index. */
+async function hwBoxLaden(){
+  var el=document.getElementById("hwBox"); if(!el) return; var pid=el.dataset.pid;
+  try{
+    var r=await client.rpc("cb_produkt_hinweise",{p_ids:[pid]});
+    if(!document.body.contains(el)||el.dataset.pid!==pid) return;
+    var l=((r.data||[])[0]||{}).hinweise||[];
+    if(!l.length){ el.innerHTML=""; return; }
+    var st={rot:['var(--k-fef2f2)','var(--k-fca5a5)','var(--k-b91c1c)'],warn:['var(--k-fffbeb)','var(--k-fde68a)','var(--k-92400e)'],info:['var(--k-f4f5f4)','var(--line)','var(--ink)']};
+    var ic={salz:'🧂',alkohol:'🍷',koffein:'☕',schwanger:'🤰',phosphat:'⚠︎'};
+    el.innerHTML=l.map(function(h){ var f=st[h.stufe]||st.info;
+      return '<div style="margin-top:10px;font-size:12.5px;line-height:1.5;padding:9px 12px;border-radius:10px;border:1px solid '+f[1]+';background:'+f[0]+';color:'+f[2]+'">'+(ic[h.art]||'ℹ︎')+' '+esc(h.text)+'</div>'; }).join('')
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px">Hinweise – fließen nicht in den Root Index ein. Keine medizinische Beratung.</div>';
+  }catch(e){ el.innerHTML=""; }
 }
 async function unvSpeichern(){
   var l=[].slice.call(document.querySelectorAll(".pfUnv:checked")).map(function(x){return x.value;});
