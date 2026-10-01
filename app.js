@@ -11649,7 +11649,7 @@ function tbMzRezOpen(meal){
   window._tbMzMeal=meal; window._tbMzItems=items;
   let ov=document.getElementById('tbMzOv'); if(ov) ov.remove();
   ov=document.createElement('div'); ov.id='tbMzOv';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:85';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center;z-index:9992';
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
   const datum=(document.getElementById('tbDatum')||{}).value||tbToday();
   let ds=datum; try{ ds=new Date(datum+'T00:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){}
@@ -12052,7 +12052,7 @@ async function tbOpenAdd(meal, prefillId, prefillName){
   catch(e){ window._favSet=null; console.warn("cb_fav_liste:", e); }
   let ov=document.getElementById("tbAddOv"); if(ov) ov.remove();
   ov=document.createElement("div"); ov.id="tbAddOv";
-  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;justify-content:center;z-index:80";
+  ov.style.cssText="position:fixed;inset:0;background:rgba(0,0,0,.5);display:flex;justify-content:center;z-index:9992";
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
   const opt=x=>'<option'+(window._tbAddMeal===x?' selected':'')+'>'+x+'</option>';
   ov.innerHTML='<div style="display:flex;flex-direction:column;width:100%;max-width:560px;height:100%;background:var(--k-f3efe8);color:var(--k-1d3c24);box-shadow:0 0 40px rgba(0,0,0,.5)">'
@@ -12798,7 +12798,7 @@ function editMengeNeu(id,cur,pid,mahl){
   const sg=stkOf(pid);
   const alt=document.getElementById('tbMengeOv'); if(alt) alt.remove();
   const ov=document.createElement('div'); ov.id='tbMengeOv';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:1200;display:flex;align-items:flex-end;justify-content:center';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:9992;display:flex;align-items:flex-end;justify-content:center';
   ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
   const kannZiel = !!mahl && (typeof tbFillItem==='function') && num((window._tbGoal||{}).Kalorienziel_kcal)!=null;
   ov.innerHTML='<div style="background:var(--tb-card,var(--k-ffffff));border-radius:18px 18px 0 0;padding:16px 16px 22px;width:100%;max-width:520px">'
@@ -12816,14 +12816,15 @@ function editMengeNeu(id,cur,pid,mahl){
     +((pid&&typeof hasFeat==='function'&&hasFeat('einkaufsliste'))?('<button onclick="tbMengeEinkauf(this,\''+pid+'\')" title="Dieses Produkt auf die Einkaufsliste setzen" style="margin-top:8px;width:100%;background:none;border:1px solid var(--tb-line,var(--k-e7e0d4));color:var(--tb-muted,var(--k-6b6256));border-radius:12px;padding:10px;font-size:13px;cursor:pointer">🛒 in die Einkaufsliste übernehmen</button>'):'')
   +'</div>';
   document.body.appendChild(ov);
-  try{ var _i=document.getElementById('tbMengeNeuVal'); _i.focus(); _i.select(); }catch(e){}
+  try{ var _i=document.getElementById('tbMengeNeuVal'); _i.focus(); _i.select();
+    _i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); tbMengeNeuSave(id,sg||0); } }); }catch(e){}
 }
 async function tbMengeNeuSave(id,sg){
   const v=parseFloat(String((document.getElementById('tbMengeNeuVal')||{}).value||'').replace(',','.'));
   if(!v||v<=0) return;
   const g=sg?Math.round(v*sg):v;
-  try{ await client.rpc("cb_tb_menge",{p_eintrag:id,p_menge_g:g}); }
-  catch(e){ alert("Speichern fehlgeschlagen: "+e.message); return; }
+  try{ const {error}=await client.rpc("cb_tb_menge",{p_eintrag:id,p_menge_g:g}); if(error) throw error; }
+  catch(e){ if(typeof toast==='function') toast("Speichern fehlgeschlagen: "+e.message,'#b91c1c'); else alert("Speichern fehlgeschlagen: "+e.message); return; }
   const ov=document.getElementById('tbMengeOv'); if(ov) ov.remove();
   loadTagebuch();
 }
@@ -16983,7 +16984,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-1";
+const APP_BUILD = "2026-10-01-2";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
