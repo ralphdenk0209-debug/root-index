@@ -1495,6 +1495,7 @@ async function loginPassword(){
   if(!email||!pass){ msg.style.color="var(--k-dc2626)"; msg.textContent="E-Mail und Passwort eingeben (oder unten Code senden)."; return; }
   msg.style.color="var(--k-374151)"; msg.textContent="⏳ Anmelden…";
   const {error}=await client.auth.signInWithPassword({ email, password:pass });
+  if(error && (Number(error.status)>=500 || /timeout|deadline|fetch|network|unexpected/i.test(String(error.message||'')))){ msg.style.color="var(--k-dc2626)"; msg.textContent="Der Server antwortet gerade nicht (Überlastung). Dein Passwort ist nicht das Problem – bitte in einer Minute nochmal versuchen."; return; }
   if(error){ msg.style.color="var(--k-dc2626)"; msg.textContent="Anmeldung fehlgeschlagen – Passwort falsch oder noch nicht gesetzt. Nutze unten Code senden, oder setze in Mein Profil ein Passwort."; return; }
   document.getElementById("loginPass").value="";
   msg.style.color="var(--k-16a34a)"; msg.textContent="✓ angemeldet"; closeLogin();
@@ -16985,7 +16986,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-3";
+const APP_BUILD = "2026-10-01-4";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
