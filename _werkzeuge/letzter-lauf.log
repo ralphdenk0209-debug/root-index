@@ -1,62 +1,62 @@
-Lauf: 60 · Commit: 67008e57f66a3663ed039caeb73d335b4008f150 · 2026-09-30 20:05 UTC
+Lauf: 61 · Commit: 3af5b8709520009e966c1212f8f2519d01d66b26 · 2026-10-01 06:57 UTC
 ---
-  ... 58080 Produkte (zuletzt P71462)
-  ! nach id P73175: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73175: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73229: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73229: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73276: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73276: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73326: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73326: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73380: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73516: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73516: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73558: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73558: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73597: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73597: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73644: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73644: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73738: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73738: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73769: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73769: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73799: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73799: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73828: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73828: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73860: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73860: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73890: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73890: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73890: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P739: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P739: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73934: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73934: 80 Zeilen gingen nicht, versuche kleiner
-  ... 60020 Produkte (zuletzt P73969)
-  ! nach id P73969: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P73969: 80 Zeilen gingen nicht, versuche kleiner
-  ... 60050 Produkte (zuletzt P74002)
-  ! nach id P74002: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74002: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74002: 30 Zeilen gingen nicht, versuche kleiner
-  ... 60060 Produkte (zuletzt P74015)
-  ! nach id P74015: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74015: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74015: 30 Zeilen gingen nicht, versuche kleiner
-  ... 60070 Produkte (zuletzt P74026)
-  ! nach id P74026: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 3 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 1 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 3 Zeilen gingen nicht, versuche kleiner
-  ! nach id P74026: 1 Zeilen gingen nicht, versuche kleiner
-❌ Produktseiten-Generator: nach id P74026 auch mit 1 Zeilen nicht zu holen - REST 500: {"code":"57014","details":null,"hint":null,"message":"canceling statement due to statement timeout"}
+  ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 10 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 3 Zeilen gingen nicht, versuche kleiner
+  ... 1 Produkte (zuletzt P003)
+  ! nach id P003: 200 Zeilen gingen nicht, versuche kleiner
+  ... 81 Produkte (zuletzt P10035)
+  ... 2081 Produkte (zuletzt P11948)
+  ! nach id P11948: 200 Zeilen gingen nicht, versuche kleiner
+  ... 2161 Produkte (zuletzt P12028)
+  ... 4161 Produkte (zuletzt P13983)
+  ... 6161 Produkte (zuletzt P15931)
+  ... 8161 Produkte (zuletzt P17823)
+  ... 10161 Produkte (zuletzt P19751)
+  ... 12161 Produkte (zuletzt P21762)
+  ... 14161 Produkte (zuletzt P23776)
+  ... 16161 Produkte (zuletzt P25801)
+  ... 18161 Produkte (zuletzt P27818)
+  ... 20161 Produkte (zuletzt P29847)
+  ... 22161 Produkte (zuletzt P31871)
+  ... 24161 Produkte (zuletzt P33926)
+  ... 26161 Produkte (zuletzt P35940)
+  ! nach id P40519: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P40519: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P40519: 30 Zeilen gingen nicht, versuche kleiner
+  ... 28171 Produkte (zuletzt P40929)
+  ... 30171 Produkte (zuletzt P42957)
+  ... 32171 Produkte (zuletzt P44970)
+  ... 34171 Produkte (zuletzt P46998)
+  ! nach id P48012: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 10 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 3 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 1 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 30 Zeilen gingen nicht, versuche kleiner
+  ! nach id P48012: 10 Zeilen gingen nicht, versuche kleiner
+  ... 36174 Produkte (zuletzt P49029)
+  ... 38174 Produkte (zuletzt P51057)
+  ... 40174 Produkte (zuletzt P53078)
+  ... 42174 Produkte (zuletzt P55094)
+  ... 44174 Produkte (zuletzt P57113)
+  ... 46174 Produkte (zuletzt P59123)
+  ... 48174 Produkte (zuletzt P61137)
+  ... 50174 Produkte (zuletzt P63251)
+  ... 52174 Produkte (zuletzt P65285)
+  ... 54174 Produkte (zuletzt P67358)
+  ... 56174 Produkte (zuletzt P69394)
+  ... 58174 Produkte (zuletzt P71470)
+  ... 60174 Produkte (zuletzt P74048)
+Fertig geladen: 61173 Produkte
+↪️  Weiterleitungen alter Adressen: 5262
+✅ Produktseiten: 61173 · Kategorien: 25 · Sitemap-URLs: 2029
+Geladen: 17480 Produkte (UK/US/FR)
+✅ en: 1982 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 46
+✅ fr: 15498 Produktseiten · 20 Kategorien · Zutatennamen ohne Übersetzung: 83
+✅ Sitemap international: 17521 URLs
