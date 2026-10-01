@@ -14851,6 +14851,10 @@ function rezVertZeile(r){
   var unv=window._UNV||[], h="";
   if(unv.length){
     var t=alTreffer(v,unv);
+    /* Kuratierte Eigenschaft (glutenfrei/laktosefrei/nussfrei) schlaegt "unklar" - sonst stuende "glutenfrei" und "? Gluten pruefen" nebeneinander. */
+    var _eig=(r.kategorien||[]).map(function(k){ return String(k.name||'').toLowerCase(); });
+    var _frei={gluten:'glutenfrei',laktose:'laktosefrei',schalenfruechte:'nussfrei',erdnuss:'nussfrei'};
+    t.unklar=t.unklar.filter(function(k){ return !(_frei[k] && _eig.indexOf(_frei[k])>=0); });
     t.enth.forEach(function(k){ h+=_rezPille('⚠︎ '+esc(AL_NAMEN[k]||k),'rot','Enthält, was du meidest'); });
     t.spur.forEach(function(k){ h+=_rezPille('Spuren: '+esc(AL_NAMEN[k]||k),'gelb','Kann Spuren enthalten'); });
     t.unklar.forEach(function(k){ h+=_rezPille('? '+esc(AL_NAMEN[k]||k)+' prüfen','grau','Nicht für alle Zutaten liegt eine Zutatenliste vor'); });
@@ -17135,7 +17139,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-13";
+const APP_BUILD = "2026-10-01-14";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
