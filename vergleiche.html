@@ -51,7 +51,9 @@
 /* Dieselben Zugangsdaten und derselbe storageKey wie app.js - die Admin-Anmeldung gilt hier mit. */
 var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw",
-  { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:window.localStorage, storageKey:"sb-cleanbase-auth" } });
+  { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:window.localStorage, storageKey:"sb-cleanbase-auth" },
+    /* 02.10.: nie aus dem Browser-Cache lesen - sonst zeigt die Tabelle nach Loeschen/Verschieben den alten Stand */
+    global:{ fetch:function(u, o){ return fetch(u, Object.assign({}, o, { cache:"no-store" })); } } });
 
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
 var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["fertig","online"], "In Arbeit":["wartet","wartet"], "Idee":["geplant","geplant"], "Geplant":["geplant","geplant"] };
@@ -62,11 +64,16 @@ async function laden(){
   var rows = r.data || [], ids = [];
   ZEILEN = rows;
   rows.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
-  var P = {};
+  P = {};
   if(ids.length){
     var p = await vg.from("v_web_produkte").select("id,name,marke,clean_score").in("id", ids);
     (p.data||[]).forEach(function(x){ P[x.id] = x; });
   }
+  zeige();
+}
+var P = {};
+function zeige(){
+  var rows = ZEILEN;
   function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
   function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
   var n = {fertig:0, wartet:0, geplant:0};
@@ -94,6 +101,7 @@ async function schiebe(i, d){
   var r2 = r1.error ? r1 : await vg.from("Instagram_Vergleich").update({ Nr: na }).eq("id", b.id);
   BUSY = false;
   if(r1.error || r2.error){ meld("Fehler: " + (r1.error||r2.error).message); return; }
+  a.Nr = nb; b.Nr = na; ZEILEN[i] = b; ZEILEN[i+d] = a; zeige();   // sofort sichtbar
   laden();
 }
 
@@ -105,6 +113,7 @@ async function loesche(i){
   var r = await vg.from("Instagram_Vergleich").update({ Status: "Verworfen" }).eq("id", x.id);
   BUSY = false;
   if(r.error){ meld("Fehler: " + r.error.message); return; }
+  ZEILEN.splice(i, 1); zeige();   // sofort sichtbar
   laden();
 }
 
