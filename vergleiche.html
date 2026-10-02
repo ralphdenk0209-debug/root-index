@@ -5,6 +5,9 @@
      Nur Anzeige. Wahrheit: public."Instagram_Vergleich" (Nr, Zeile1, Produkt_A/B,
      Status, Fehlt, Notiz). Punkte kommen live aus v_web_produkte, nichts wird
      hier gerechnet ausser der Differenz A minus B.
+     02.10.2026 (Ralph): Loeschen + Verschieben. Loeschen = Status 'Verworfen' (ausgeblendet,
+     nicht hart geloescht - per SQL wiederherstellbar). Verschieben = Nr mit Nachbarzeile tauschen.
+     Schreibrecht: RLS ivg_admin_all (cb_ist_admin()).
      Alte Fassung (Kartenplanung mit Bildrechten/Upload): Git-Verlauf vor Commit
      vom 01.10.2026; alte Zeilen gesichert in _sicherung_instagram_vergleich_20261001. -->
 <html lang="de">
@@ -25,6 +28,11 @@
   .st{ display:inline-block; border-radius:12px; padding:1px 9px; font-size:12px; font-weight:600; white-space:nowrap; }
   .fertig{ background:#e6f4ea; color:#1d6b3a; } .wartet{ background:#fdf3d7; color:#7a5406; } .geplant{ background:#eceaf3; color:#6b6592; }
   #msg{ color:#6b6592; font-size:12.5px; margin:8px 0; }
+  td.akt{ white-space:nowrap; }
+  td.akt button{ border:1px solid #dcd8ea; background:#fff; border-radius:6px; padding:2px 7px; margin-right:3px; cursor:pointer; font-size:13px; color:#2a2640; }
+  td.akt button:hover{ background:#f2f0f8; }
+  td.akt button.del{ color:#a3261d; border-color:#f0c9c5; }
+  td.akt button:disabled{ opacity:.3; cursor:default; }
 </style>
 </head>
 <body>
@@ -33,7 +41,7 @@
   <div id="msg">lädt …</div>
   <table>
     <thead><tr>
-      <th>Nr</th><th>Vergleich</th><th>Produkt A</th><th>Pkt</th><th>Produkt B</th><th>Pkt</th><th>Diff</th><th>Status</th><th>Was fehlt</th>
+      <th>Nr</th><th>Vergleich</th><th>Produkt A</th><th>Pkt</th><th>Produkt B</th><th>Pkt</th><th>Diff</th><th>Status</th><th>Was fehlt</th><th></th>
     </tr></thead>
     <tbody id="body"></tbody>
   </table>
@@ -52,6 +60,7 @@ async function laden(){
   var r = await vg.from("Instagram_Vergleich").select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
   if(r.error){ document.getElementById("msg").textContent = "Fehler: " + r.error.message + " (im Admin angemeldet?)"; return; }
   var rows = r.data || [], ids = [];
+  ZEILEN = rows;
   rows.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
   var P = {};
   if(ids.length){
@@ -61,15 +70,44 @@ async function laden(){
   function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
   function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
   var n = {fertig:0, wartet:0, geplant:0};
-  document.getElementById("body").innerHTML = rows.map(function(x){
+  document.getElementById("body").innerHTML = rows.map(function(x, i){
     var a = pkt(x.Produkt_A), b = pkt(x.Produkt_B), s = STATUS[x.Status] || ["geplant", x.Status];
     n[s[0]] = (n[s[0]]||0) + 1;
     return "<tr><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
       +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
-      +"<td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td>"+e(x.Fehlt||"")+"</td></tr>";
+      +"<td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td>"+e(x.Fehlt||"")+"</td>"
+      +"<td class='akt'><button title='nach oben' onclick='schiebe("+i+",-1)'"+(i===0?" disabled":"")+">▲</button>"
+      +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(i===rows.length-1?" disabled":"")+">▼</button>"
+      +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td></tr>";
   }).join("");
   document.getElementById("msg").textContent = rows.length+" Vergleiche · "+n.fertig+" fertig · "+n.wartet+" wartet · "+n.geplant+" geplant";
 }
+var ZEILEN = [], BUSY = false;
+function meld(t){ document.getElementById("msg").textContent = t; }
+
+/* Reihenfolge: Nr mit der Nachbarzeile tauschen (zwei Updates per id). */
+async function schiebe(i, d){
+  if(BUSY) return; var a = ZEILEN[i], b = ZEILEN[i+d]; if(!a || !b) return;
+  BUSY = true; meld("verschiebe …");
+  var na = a.Nr, nb = b.Nr;
+  var r1 = await vg.from("Instagram_Vergleich").update({ Nr: nb }).eq("id", a.id);
+  var r2 = r1.error ? r1 : await vg.from("Instagram_Vergleich").update({ Nr: na }).eq("id", b.id);
+  BUSY = false;
+  if(r1.error || r2.error){ meld("Fehler: " + (r1.error||r2.error).message); return; }
+  laden();
+}
+
+/* Loeschen = ausblenden (Status 'Verworfen'), nicht hart loeschen. */
+async function loesche(i){
+  var x = ZEILEN[i]; if(!x || BUSY) return;
+  if(!confirm("Vergleich Nr " + x.Nr + " „" + (x.Zeile1||"") + "“ löschen?")) return;
+  BUSY = true; meld("lösche …");
+  var r = await vg.from("Instagram_Vergleich").update({ Status: "Verworfen" }).eq("id", x.id);
+  BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); return; }
+  laden();
+}
+
 laden();
 </script>
 </body>
