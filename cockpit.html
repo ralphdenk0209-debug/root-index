@@ -182,6 +182,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
  <div class="kette ii" id="dbKachel"><h4>Datenbank-Last live <span id="dbSt">misst …</span></h4><div class="iiGrid" id="dbGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="dbTakte" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
  <div class="kette ii"><h4>Import international <span id="iiSt"></span></h4><div class="iiGrid" id="iiGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div></div>
  <a class="kette ii" id="nlKachel" href="newsletter.html" target="_blank" style="display:block;color:inherit;text-decoration:none"><h4>Newsletter <span id="nlSt"></span></h4><div class="iiGrid" id="nlGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" style="font-size:11.5px;color:var(--ink3);margin-top:6px">→ Newsletter-Seite öffnen: Ausgaben ansehen, testen, freigeben</div></a>
+ <div class="kette ii" id="soKachel"><h4>Instagram &amp; Facebook <span id="soSt"></span></h4><div class="iiGrid" id="soGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="soTop" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
  <div class="kette ii"><h4>EU-Schwelle 10.000 € <span id="esSt"></span> <button class="qiX" id="esBtn" onclick="esSync()" title="Stripe-Zahlungen jetzt abgleichen">↻ abgleichen</button></h4><div class="iiGrid" id="esGrid" style="grid-template-columns:repeat(2,1fr)"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="esHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
@@ -715,6 +716,26 @@ async function nlLaden(){
   }catch(e){}
 }
 nlLaden(); setInterval(nlLaden,60000);
+/* 02.10.2026 (Ralph): „zahlen aus meta einblenden, follower, beitragsaufrufe usw. eine kachel reicht".
+   Quelle cb_admin_cockpit_social (nur Admins). Meta liefert die Zahlen 2x taeglich (social-meta-sync). */
+async function soLaden(){
+  try{
+    const {data,error}=await client.rpc('cb_admin_cockpit_social');
+    if(error||!data){ $('soGrid').innerHTML='<div class="z">nicht lesbar'+(error?': '+esc(error.message):'')+'</div>'; return; }
+    const ig=data.instagram||{}, fb=data.facebook||{}, s7=data.summe7||{}, b=data.beitraege||{};
+    const z=(n)=>n==null?'–':de(n);
+    const plus=(jetzt,vor)=>(jetzt==null||vor==null)?'':((jetzt-vor>=0?'+':'')+de(jetzt-vor)+' in 7 T');
+    $('soSt').textContent=data.letzter_lauf?'Stand '+vor(data.letzter_lauf):'noch kein Abruf';
+    $('soGrid').innerHTML=
+      `<div class="iiL"><div class="k">Instagram<span>${plus(ig.follower,data.ig_follower_vor7)}</span></div><div class="n">${z(ig.follower)}<small>Follower</small></div><div class="z">${z(ig.beitraege)} Beiträge</div></div>`
+     +`<div class="iiL"><div class="k">Facebook<span>${plus(fb.follower,data.fb_follower_vor7)}</span></div><div class="n">${z(fb.follower)}<small>Follower</small></div><div class="z">Reichweite heute ${z(fb.reichweite)}</div></div>`
+     +`<div class="iiL"><div class="k">Beitragsaufrufe<span>alle Beiträge</span></div><div class="n">${z(b.aufrufe)}<small>Aufrufe</small></div><div class="z">${z(b.likes)} Likes · ${z(b.kommentare)} Kommentare · ${z(b.gespeichert)} gespeichert · ${z(b.geteilt)} geteilt</div></div>`
+     +`<div class="iiL"><div class="k">Instagram 7 Tage</div><div class="n">${z(s7.reichweite)}<small>erreicht</small></div><div class="z">${z(s7.aufrufe)} Aufrufe · ${z(s7.profilaufrufe)} Profilbesuche · ${z(s7.interaktionen)} aktiv</div></div>`;
+    const top=(data.top||[]).filter(t=>t.aufrufe!=null);
+    $('soTop').innerHTML=top.length?'Meistgesehen: '+top.slice(0,3).map(t=>`<a href="${esc(t.permalink)}" target="_blank" rel="noopener" style="color:var(--acc)">${esc(t.titel||'Beitrag')}</a> (${de(t.aufrufe)})`).join(' · '):'Aufrufe je Beitrag erscheinen nach dem nächsten Meta-Abruf.';
+  }catch(e){}
+}
+soLaden(); setInterval(soLaden,300000);
 /* 01.10.2026 (Ralph): Datenbank-Last live. Quelle cb_admin_cockpit_dblast (nur pg_stat_*, ~5 ms).
    Antwortzeit = gemessene Rundreise Cockpit -> Datenbank (so fuehlt es sich fuer die App an).
    Platte/s = gelesene Bloecke pro Sekunde (Mass fuer Disk-IO). Alle 5 s, pausiert im Hintergrund-Tab. */

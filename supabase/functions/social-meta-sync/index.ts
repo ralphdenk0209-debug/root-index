@@ -88,8 +88,14 @@ Deno.serve(async (req: Request) => {
         if (m.name === "reach") igReich = v; if (m.name === "profile_views") igProfil = v; if (m.name === "accounts_engaged") igInter = v;
       }
     } catch (e) { ergebnis.instagram_insights_fehler = (e as Error).message; }
+    // Aufrufe (views) eigener Abruf: wird die Kennzahl abgelehnt, bleiben die drei oberen erhalten (Ralph 02.10.2026).
+    let igAufrufe = null;
+    try {
+      const ins = await graph(`${IG_USER_ID}/insights`, token, { metric: "views", period: "day", metric_type: "total_value" });
+      for (const m of ins.data || []) if (m.name === "views") igAufrufe = m.total_value?.value ?? null;
+    } catch (e) { ergebnis.instagram_aufrufe_fehler = (e as Error).message; }
     const zIg = { tag: heute, kanal: "instagram", follower: ig.followers_count ?? null, beitraege: ig.media_count ?? null,
-      reichweite: igReich, profilaufrufe: igProfil, interaktionen: igInter, aktualisiert_am: new Date().toISOString() };
+      reichweite: igReich, profilaufrufe: igProfil, interaktionen: igInter, aufrufe: igAufrufe, aktualisiert_am: new Date().toISOString() };
     const e1 = await sb.from("social_kennzahlen_taeglich").upsert(zIg);
     if (e1.error) throw new Error(`Upsert instagram: ${e1.error.message}`);
     ergebnis.instagram = zIg;
@@ -130,6 +136,25 @@ Deno.serve(async (req: Request) => {
         });
         if (!ins.error) neu++;
       }
+      // Kennzahlen je Beitrag (Cockpit-Kachel Social, Ralph 02.10.2026): Aufrufe, Reichweite,
+      // Likes, Kommentare, Gespeichert, Geteilt. Ein Fehler bei einem Beitrag stoppt die anderen nicht.
+      let mitZahlen = 0;
+      const zFehler: string[] = [];
+      for (const m of liste) {
+        const z: Record<string, number | null> = { aufrufe: null, reichweite: null, likes: null, kommentare: null, gespeichert: null, geteilt: null };
+        try {
+          const ins = await graph(`${m.id}/insights`, token, { metric: "views,reach,likes,comments,saved,shares" });
+          for (const k of ins.data || []) {
+            const v = (k.values || [])[0]?.value ?? k.total_value?.value ?? null;
+            if (k.name === "views") z.aufrufe = v; if (k.name === "reach") z.reichweite = v; if (k.name === "likes") z.likes = v;
+            if (k.name === "comments") z.kommentare = v; if (k.name === "saved") z.gespeichert = v; if (k.name === "shares") z.geteilt = v;
+          }
+        } catch (e) { if (zFehler.length < 3) zFehler.push((e as Error).message); }
+        const up = await sb.from("social_beitrag").update({ ...z, kennzahlen_am: new Date().toISOString() })
+          .eq("kanal", "instagram").eq("extern_id", String(m.id));
+        if (!up.error) mitZahlen++;
+      }
+      ergebnis.beitrag_kennzahlen = { aktualisiert: mitZahlen, fehler: zFehler };
       const abg = await sb.rpc("cb_social_newsletter_abgleich");
       ergebnis.beitraege = { gelesen: liste.length, neu, abgleich: abg.error ? abg.error.message : abg.data };
     } catch (e) { ergebnis.beitraege_fehler = (e as Error).message; }
