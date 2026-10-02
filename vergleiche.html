@@ -26,7 +26,8 @@
   td.z{ text-align:right; font-weight:700; white-space:nowrap; }
   small{ color:#6b6592; }
   .st{ display:inline-block; border-radius:12px; padding:1px 9px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .fertig{ background:#e6f4ea; color:#1d6b3a; } .wartet{ background:#fdf3d7; color:#7a5406; } .geplant{ background:#eceaf3; color:#6b6592; }
+  .fertig{ background:#e6f4ea; color:#1d6b3a; } .meta{ background:#1d8a4a; color:#fff; }
+  tr.geplant td{ background:#eaf7ef; } .wartet{ background:#fdf3d7; color:#7a5406; } .geplant{ background:#eceaf3; color:#6b6592; }
   #msg{ color:#6b6592; font-size:12.5px; margin:8px 0; }
   td.akt{ white-space:nowrap; }
   td.akt button{ border:1px solid #dcd8ea; background:#fff; border-radius:6px; padding:2px 7px; margin-right:3px; cursor:pointer; font-size:13px; color:#2a2640; }
@@ -76,18 +77,21 @@ function zeige(){
   var rows = ZEILEN;
   function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
   function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
-  var n = {fertig:0, wartet:0, geplant:0};
+  var n = {fertig:0, wartet:0, geplant:0, meta:0};
   document.getElementById("body").innerHTML = rows.map(function(x, i){
     var a = pkt(x.Produkt_A), b = pkt(x.Produkt_B), s = STATUS[x.Status] || ["geplant", x.Status];
+    /* 02.10.: auf Meta eingeplant = gruen mit Termin (Spalte Geplant_am) */
+    var gp = x.Geplant_am && x.Status !== "Veröffentlicht";
+    if(gp){ var dt = new Date(x.Geplant_am); s = ["meta", "Meta · " + dt.toLocaleDateString("de-DE",{weekday:"short", day:"2-digit", month:"2-digit"}) + " " + dt.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2-digit"})]; }
     n[s[0]] = (n[s[0]]||0) + 1;
-    return "<tr><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
+    return "<tr"+(gp?" class='geplant'":"")+"><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
       +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
       +"<td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td>"+e(x.Fehlt||"")+"</td>"
       +"<td class='akt'><button title='nach oben' onclick='schiebe("+i+",-1)'"+(i===0?" disabled":"")+">▲</button>"
       +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(i===rows.length-1?" disabled":"")+">▼</button>"
       +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td></tr>";
   }).join("");
-  document.getElementById("msg").textContent = rows.length+" Vergleiche · "+n.fertig+" fertig · "+n.wartet+" wartet · "+n.geplant+" geplant";
+  document.getElementById("msg").textContent = rows.length+" Vergleiche · "+n.meta+" auf Meta geplant · "+n.fertig+" fertig · "+n.wartet+" wartet · "+n.geplant+" geplant";
 }
 var ZEILEN = [], BUSY = false;
 function meld(t){ document.getElementById("msg").textContent = t; }
