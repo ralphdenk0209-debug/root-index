@@ -1,4 +1,4 @@
-Lauf: 63 · Commit: 12da73e483c8ab3125f3db3777af06350e7d7db6 · 2026-10-01 20:06 UTC
+Lauf: 64 · Commit: 176cf46d6a0ac1dc8d9c301a1379387b085fcd23 · 2026-10-02 09:17 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
@@ -14,38 +14,33 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 18080 Produkte (zuletzt P27736)
   ... 20080 Produkte (zuletzt P29765)
   ... 22080 Produkte (zuletzt P31788)
-  ... 24080 Produkte (zuletzt P33844)
-  ... 26080 Produkte (zuletzt P35859)
-  ... 28080 Produkte (zuletzt P40837)
-  ... 30080 Produkte (zuletzt P42863)
-  ... 32080 Produkte (zuletzt P44877)
-  ... 34080 Produkte (zuletzt P46901)
-  ... 36080 Produkte (zuletzt P48932)
-  ... 38080 Produkte (zuletzt P50962)
-  ... 40080 Produkte (zuletzt P52979)
-  ! nach id P54593: 200 Zeilen gingen nicht, versuche kleiner
-  ... 42160 Produkte (zuletzt P55077)
-  ... 44160 Produkte (zuletzt P57097)
-  ... 46160 Produkte (zuletzt P59107)
-  ... 48160 Produkte (zuletzt P61121)
-  ... 50160 Produkte (zuletzt P63235)
-  ... 52160 Produkte (zuletzt P65267)
-  ... 54160 Produkte (zuletzt P67342)
-  ... 56160 Produkte (zuletzt P69377)
-  ... 58160 Produkte (zuletzt P71454)
-  ... 60160 Produkte (zuletzt P74029)
-Fertig geladen: 61176 Produkte
-↪️  Weiterleitungen alter Adressen: 5263
-✅ Produktseiten: 61176 · Kategorien: 25 · Sitemap-URLs: 2029
-  ! nach id P83833: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P83833: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P83833: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P83833: 10 Zeilen gingen nicht, versuche kleiner
-  ! nach id P84299: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P84299: 80 Zeilen gingen nicht, versuche kleiner
-  ! nach id P84299: 30 Zeilen gingen nicht, versuche kleiner
-  ! nach id P84547: 200 Zeilen gingen nicht, versuche kleiner
-  ! nach id P84547: 80 Zeilen gingen nicht, versuche kleiner
+  ! nach id P33637: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P33637: 80 Zeilen gingen nicht, versuche kleiner
+  ... 24110 Produkte (zuletzt P33874)
+  ... 26110 Produkte (zuletzt P35889)
+  ! nach id P36494: 200 Zeilen gingen nicht, versuche kleiner
+  ... 28190 Produkte (zuletzt P40947)
+  ... 30190 Produkte (zuletzt P42977)
+  ... 32190 Produkte (zuletzt P44988)
+  ... 34190 Produkte (zuletzt P47014)
+  ... 36190 Produkte (zuletzt P49043)
+  ... 38190 Produkte (zuletzt P51071)
+  ... 40190 Produkte (zuletzt P53093)
+  ... 42190 Produkte (zuletzt P55107)
+  ... 44190 Produkte (zuletzt P57127)
+  ... 46190 Produkte (zuletzt P59137)
+  ... 48190 Produkte (zuletzt P61152)
+  ... 50190 Produkte (zuletzt P63266)
+  ... 52190 Produkte (zuletzt P653)
+  ... 54190 Produkte (zuletzt P67373)
+  ... 56190 Produkte (zuletzt P69407)
+  ... 58190 Produkte (zuletzt P71484)
+  ... 60190 Produkte (zuletzt P74066)
+Fertig geladen: 61177 Produkte
+↪️  Weiterleitungen alter Adressen: 5264
+✅ Produktseiten: 61177 · Kategorien: 25 · Sitemap-URLs: 2029
+  ! nach id P79145: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P79145: 80 Zeilen gingen nicht, versuche kleiner
 Geladen: 17480 Produkte (UK/US/FR)
 ✅ en: 1982 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 46
 ✅ fr: 15498 Produktseiten · 20 Kategorien · Zutatennamen ohne Übersetzung: 83
