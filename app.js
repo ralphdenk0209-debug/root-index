@@ -13926,7 +13926,7 @@ async function etikettSend(){
   if(!session || !kiErlaubt('etikett')){
     ETI_SHOTS={}; renderEtiShots();
     etiMsg("&#10003; Danke! "+arr.length+" Foto(s) gespeichert. Wir prüfen das Etikett und nehmen das Produkt auf.<br>"
-      +'<span style="font-size:12px;color:var(--muted)">Angemeldet bekommst du den Wert sofort berechnet.</span>',"var(--k-16a34a)");
+      +'<span style="font-size:12px;color:var(--muted)">'+(session?'Mit Premium berechnet Riki den Wert sofort.':'Angemeldet mit Premium bekommst du den Wert sofort berechnet.')+'</span>',"var(--k-16a34a)");
     setTimeout(etikettClose, 3000);
     return;
   }
@@ -17152,7 +17152,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-02-01";
+const APP_BUILD = "2026-10-02-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
