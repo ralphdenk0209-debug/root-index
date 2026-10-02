@@ -90,8 +90,46 @@ async function frage(
   return { antwort, marke, inTok, outTok };
 }
 
+
+/* 02.10.2026 (Ralph-Freigabe fuer die fixierte Maschine): Nur noch Takt/Service-Schluessel
+   oder Admin. Vorher reichte jeder gueltige JWT (auch der oeffentliche Anon-Key), und eine
+   Anfrage konnte bis zu 50 Modellaufrufe ausloesen. Der Takt ruft ueber cb_edge_rufen mit dem
+   Service-Schluessel aus dem Vault (neues Format sb_secret_...) - der wird hier gegen die
+   Auth-API geprueft, nicht nur gelesen. */
+function jwtRolle(t: string): string {
+  try { const teil = t.split(".")[1] ?? ""; return JSON.parse(atob(teil.replace(/-/g, "+").replace(/_/g, "/")))?.role ?? ""; } catch (_e) { return ""; }
+}
+async function aufruferErlaubt(req: Request): Promise<boolean> {
+  const url = Deno.env.get("SUPABASE_URL")!;
+  const auth = (req.headers.get("Authorization") ?? "").replace(/^Bearer\s+/i, "").trim();
+  const apikey = (req.headers.get("apikey") ?? "").trim();
+  const svc = (Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "").trim();
+  for (const k of [auth, apikey]) {
+    if (!k) continue;
+    if (svc.length > 20 && k === svc) return true;
+    if (k.startsWith("sb_secret_") || jwtRolle(k) === "service_role") {
+      try {
+        const t = createClient(url, k, { auth: { persistSession: false, autoRefreshToken: false } });
+        const { error } = await t.auth.admin.listUsers({ page: 1, perPage: 1 });
+        if (!error) return true;
+      } catch (_e) { /* weiter pruefen */ }
+    }
+  }
+  if (auth && jwtRolle(auth) === "authenticated") {
+    try {
+      const u = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: "Bearer " + auth } } });
+      const { data } = await u.rpc("cb_ist_admin");
+      if (data === true) return true;
+    } catch (_e) { /* nein */ }
+  }
+  return false;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
+  if (!(await aufruferErlaubt(req))) {
+    return new Response(JSON.stringify({ ok: false, fehler: "Nur fuer Takt oder Admin." }), { status: 403, headers: { ...CORS, "Content-Type": "application/json" } });
+  }
   const antworte = (k: unknown, status = 200) =>
     new Response(JSON.stringify(k), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
