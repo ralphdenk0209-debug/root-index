@@ -23,6 +23,12 @@ a{color:var(--acc);text-decoration:none}
 .wrap{max-width:1400px;margin:0 auto;padding:22px;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .zone{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:18px 20px;display:flex;flex-direction:column;gap:10px;min-width:0;color:inherit;border:1px solid transparent;transition:border-color .15s}
 .zone:hover{border-color:var(--acc)}
+/* 02.10.2026 (Ralph): DB-Last, Import, Newsletter, Social, EU-Schwelle in Zonen-Groesse */
+.zone.mini{gap:8px}.zone.mini .iiGrid,.zone.mini #esGrid{grid-template-columns:repeat(2,1fr)!important;gap:8px}
+.zone.mini .iiL{padding:9px 10px}.zone.mini .iiL .n{font-size:20px}.zone.mini .iiL .n small{font-size:11px;margin-left:4px}
+.zone.mini .iiL .k{font-size:10.5px;letter-spacing:.06em;flex-wrap:wrap}.zone.mini .iiL .k span{font-size:10px}
+.zone.mini .iiL .z{font-size:11px;line-height:1.35}.zone.mini .iiL svg{height:24px}
+.zone.mini h4 .qiX{flex:0 0 auto}
 .zone h4{margin:0;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);font-weight:600;display:flex;justify-content:space-between;align-items:center}
 .zone h4 .st,.klein h4 .st,.wall h4 .st,.kette h4 span,.karte h4 .st{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:0;text-transform:none;color:var(--ink3);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0;text-align:right}
 .zone h4,.klein h4,.wall h4,.kette h4{flex-wrap:nowrap;gap:10px}
@@ -179,11 +185,6 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
  <div class="kette qi"><h4>Quick-Import <span id="qiKosten"></span></h4>
   <div class="qiEin"><input id="qiUrl" type="url" placeholder="Link zur Produktseite einfügen – alle Sorten werden angelegt und durch die Maschine geschickt" onkeydown="if(event.key==='Enter')qiLos()"><button onclick="qiLos()">Los</button></div>
   <div id="qiMsg" class="qiMsg"></div><div id="qiListe"></div></div>
- <div class="kette ii" id="dbKachel"><h4>Datenbank-Last live <span id="dbSt">misst …</span></h4><div class="iiGrid" id="dbGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="dbTakte" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
- <div class="kette ii"><h4>Import international <span id="iiSt"></span></h4><div class="iiGrid" id="iiGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div></div>
- <a class="kette ii" id="nlKachel" href="newsletter.html" target="_blank" style="display:block;color:inherit;text-decoration:none"><h4>Newsletter <span id="nlSt"></span></h4><div class="iiGrid" id="nlGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" style="font-size:11.5px;color:var(--ink3);margin-top:6px">→ Newsletter-Seite öffnen: Ausgaben ansehen, testen, freigeben</div></a>
- <div class="kette ii" id="soKachel"><h4>Instagram &amp; Facebook <span id="soSt"></span></h4><div class="iiGrid" id="soGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="soTop" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
- <div class="kette ii"><h4>EU-Schwelle 10.000 € <span id="esSt"></span> <button class="qiX" id="esBtn" onclick="esSync()" title="Stripe-Zahlungen jetzt abgleichen">↻ abgleichen</button></h4><div class="iiGrid" id="esGrid" style="grid-template-columns:repeat(2,1fr)"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="esHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div></div>
 
  <a class="zone" href="https://search.google.com/search-console?resource_id=https%3A%2F%2Froot-index.de%2F" target="_blank" rel="noopener"><h4>Seite <span class="s" id="aS"></span></h4>
   <div class="lead"><span class="n" id="sN">–</span><span class="u">Google-Klicks in 28 Tagen</span><span class="d" id="sD"></span></div>
@@ -205,10 +206,14 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="q">Alle Produkte mit Index, Nährwerten, Zusatzstoffen und Zutaten – direkt bearbeiten und speichern.</div>
   <div class="link">→ Produkttabelle öffnen</div></a>
 
- <a class="zone" href="admin.html"><h4>Menschen <span class="st" id="mnSt"></span></h4>
+ <a class="zone" href="admin.html"><h4>Nutzer <span class="st" id="mnSt"></span></h4>
   <div class="lead"><span class="n" id="mnN">–</span><span class="u" id="mnU">Nutzer</span></div>
   <svg class="ch" id="mnCh" viewBox="0 0 400 60" preserveAspectRatio="none" style="height:60px"></svg><div class="q">Besucher je Tag · 14 Tage</div>
   <div class="hb" id="menschen"></div></a>
+
+ <a class="zone" href="admin.html"><h4>Scans <span class="st" id="scSt"></span></h4>
+  <div class="lead"><span class="n" id="scN">–</span><span class="u">Scans im Cache</span></div>
+  <div class="hb" id="scans"></div></a>
 
  <a class="zone" href="admin.html"><h4>Rückmeldungen <span class="st" id="rmSt"></span></h4>
   <div class="lead"><span class="n" id="rmN">–</span><span class="u" id="rmU">offen</span></div>
@@ -222,6 +227,12 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <div class="hb" id="plRest" hidden></div>
   <div class="q" id="plImport"></div>
   <div class="q">Land = Firmensitz laut Barcode, nicht Verkaufsland.</div></a>
+
+ <div class="zone mini" id="dbKachel"><h4>Datenbank-Last live <span class="st" id="dbSt">misst …</span></h4><div class="iiGrid" id="dbGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="dbTakte" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
+ <div class="zone mini"><h4>Import international <span class="st" id="iiSt"></span></h4><div class="iiGrid" id="iiGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div></div>
+ <a class="zone mini" id="nlKachel" href="newsletter.html" target="_blank" ><h4>Newsletter <span class="st" id="nlSt"></span></h4><div class="iiGrid" id="nlGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" style="font-size:11.5px;color:var(--ink3);margin-top:6px">→ Newsletter-Seite öffnen: Ausgaben ansehen, testen, freigeben</div></a>
+ <div class="zone mini" id="soKachel"><h4>Instagram &amp; Facebook <span class="st" id="soSt"></span></h4><div class="iiGrid" id="soGrid"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="soTop" style="font-size:11.5px;color:var(--ink3);margin-top:8px"></div></div>
+ <div class="zone mini"><h4>EU-Schwelle 10.000 € <span class="st" id="esSt"></span> <button class="qiX" id="esBtn" onclick="esSync()" title="Stripe-Zahlungen jetzt abgleichen">↻ abgleichen</button></h4><div class="iiGrid" id="esGrid" style="grid-template-columns:repeat(2,1fr)"><div class="z" style="color:var(--ink3)">lädt …</div></div><div class="z" id="esHinweis" style="font-size:11.5px;color:var(--ink3);margin-top:6px"></div></div>
 
  <div class="karte">
   <div>
@@ -347,12 +358,15 @@ function zeichnen(){
 
   const mn=M.menschen||{};
   $('mnSt').textContent=mn.social_stand?'Social-Stand '+tagK(mn.social_stand):'';
-  $('mnN').textContent=de(mn.nutzer); $('mnU').textContent='Nutzer · '+de(mn.aktiv_7t)+' aktiv in 7 Tagen · '+de(mn.premium)+' Premium';
+  $('mnN').textContent=de(mn.nutzer); $('mnU').textContent='Nutzer';
   balken('mnCh',(A.seite.besucher||[]).map(x=>Number(x.gesamt)||0));
   const hb=(rows)=>{const m=Math.max(1,...rows.map(r=>r[1]));return rows.map(([l,v,c,txt])=>`<div><span class="lab">${l}</span><i class="${c||''}" style="width:${Math.max(3,100*v/m)}%"></i><span class="n">${txt||de(v)}</span></div>`).join('');};
-  $('menschen').innerHTML=hb([['Scans im Cache',Number(mn.scans_cache)||0],['davon übernommen',Number(mn.scans_uebernommen)||0,'gruen'],['Scans in Warteschlange',Number(mn.scans_warteschlange)||0,'gelb']])
-    +hb([['Tagebuch-Einträge 7 Tage',Number(mn.tagebuch_7t)||0,'',de(mn.tagebuch_7t)+' von '+de(mn.tagebuch_gesamt)]])
-    +hb([['Instagram-Follower',Number(mn.ig_follower)||0],['Facebook-Follower',Number(mn.fb_follower)||0]]);
+  /* 02.10.2026 (Ralph): Nutzer und Scans getrennt, Follower stehen in der Kachel Instagram & Facebook. */
+  $('menschen').innerHTML=hb([['Aktiv in 7 Tagen',Number(mn.aktiv_7t)||0,'gruen'],['Premium',Number(mn.premium)||0]])
+    +hb([['Tagebuch-Einträge 7 Tage',Number(mn.tagebuch_7t)||0,'',de(mn.tagebuch_7t)+' von '+de(mn.tagebuch_gesamt)]]);
+  $('scN').textContent=de(mn.scans_cache);
+  $('scSt').textContent=de(mn.scans_warteschlange)+' warten';
+  $('scans').innerHTML=hb([['davon übernommen',Number(mn.scans_uebernommen)||0,'gruen'],['in Warteschlange',Number(mn.scans_warteschlange)||0,'gelb']]);
   const st=M.stamm||{};
   $('stN').textContent=de(st.zutaten); $('stSt').textContent='Score-Schnitt '+(st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–');
   const pz=(v,g)=>g?Math.round(100*v/g):0;
