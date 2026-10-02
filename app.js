@@ -9243,12 +9243,12 @@ function legalOpen(which){
     +H("Haftung für Links")+P("Unser Angebot enthält ggf. Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Dafür ist stets der jeweilige Anbieter verantwortlich.")
     +H("Urheberrecht")+P("Die erstellten Inhalte unterliegen dem deutschen Urheberrecht.");
   const ds = H("Datenschutzerklärung – Root Index")
-    +P("<i>Stand: September 2026</i>")
+    +P("<i>Stand: Oktober 2026</i>")
     +H("1. Verantwortlicher")
     +P("Verantwortlich für die Verarbeitung personenbezogener Daten ist:")
     +P("Ralph Denk – Root Index<br>Auweg 23<br>84103 Postau<br>Deutschland<br>E-Mail: <a href=\"mailto:kontakt@root-index.de\">kontakt@root-index.de</a>")
     +P("Bei Fragen zum Datenschutz oder zur Ausübung deiner Rechte kannst du dich an diese Adresse wenden.")
-    +P("Diese Datenschutzerklärung betrifft das Webangebot unter root-index.de. Zusätzliche Datenverarbeitungen einer nativen Smartphone-App werden vor deren Nutzung gesondert erläutert.")
+    +P("Diese Datenschutzerklärung gilt für das Webangebot unter root-index.de und für die iPhone-App „Root Index“. Was nur die iPhone-App betrifft, steht in Abschnitt 12a.")
     +H("2. Welche Daten wir verarbeiten")
     +P("Je nach Nutzung verarbeiten wir insbesondere:")
     +P("• <b>Kontodaten:</b> E-Mail-Adresse, Nutzerkennung, Anmelde- und Sicherheitseinstellungen sowie gegebenenfalls deinen Namen.<br>• <b>Profil- und Nutzungsdaten:</b> beispielsweise Geburtsdatum, Ernährungsform, Favoriten, Einkaufslisten, gespeicherte Kundenkarten, eigene Rezepte und Pläne.<br>• <b>Gesundheitsbezogene Daten:</b> beispielsweise Ernährungstagebuch, Gewicht, Körpermaße, Training, Schlaf, Schritte, Supplemente, Zyklus und freiwillige Angaben zu Erkrankungen.<br>• <b>Beiträge und Anfragen:</b> hochgeladene Fotos, Produktangaben, Fragen an RIKI, Kontaktanfragen und zugehörige Verarbeitungsergebnisse.<br>• <b>Vertragsdaten:</b> gewählter Tarif, Abonnementstatus, Zahlungs- und Rechnungsinformationen sowie Kündigungs- und Widerrufserklärungen.<br>• <b>Technische Daten:</b> beispielsweise IP-Adresse, Zeitpunkt und Ziel eines Zugriffs, Browserinformationen und Fehlermeldungen.<br>• <b>Einwilligungsnachweise:</b> Inhalt, Zeitpunkt und Zuordnung erteilter oder widerrufener Einwilligungen.")
@@ -9319,6 +9319,15 @@ function legalOpen(which){
     +P("Stripe verarbeitet bestimmte Daten auch in eigener Verantwortung, beispielsweise zur Betrugsprävention und zur Erfüllung eigener gesetzlicher Verpflichtungen.")
     +P("Vertragspartner ist die Stripe Payments Europe, Ltd., 1 Grand Canal Street Lower, Dublin 2, Irland. Stripe kann Daten an die Stripe, Inc. in den USA übermitteln; diese ist unter dem EU-US Data Privacy Framework zertifiziert, ergänzend gelten EU-Standardvertragsklauseln. Zur Verfügung stehen die im Bezahlvorgang angezeigten Zahlungsarten, zum Beispiel Kreditkarte.")
     +P("Weitere Informationen: <a href=\"https://stripe.com/de/privacy\" target=\"_blank\" rel=\"noopener\">Stripe-Datenschutzerklärung</a>.")
+    +H("12a. Besonderheiten der iPhone-App")
+    +P("Die iPhone-App nutzt dieselben Server und dasselbe Konto wie das Webangebot; die Abschnitte 1 bis 12 und 13 bis Ende gelten entsprechend. Zusätzlich gilt:")
+    +P("<b>Kauf von Premium über Apple:</b> In der iPhone-App wird Premium ausschließlich als In-App-Abo über deine Apple-ID gekauft. Zahlung, Abrechnung, Verlängerung und Kündigung wickelt Apple (Apple Distribution International Ltd., Irland) in eigener Verantwortung ab; wir erhalten keine Zahlungsdaten. Von Apple erhalten wir eine signierte Kaufbestätigung (u. a. Produkt, Kauf- und Ablaufdatum, Transaktionsnummer) sowie Benachrichtigungen über Verlängerung, Kündigung oder Erstattung. Diese Daten speichern wir zusammen mit deiner Nutzerkennung, um Premium freizuschalten und zu beenden. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Weitere Informationen: <a href=\"https://www.apple.com/de/legal/privacy/\" target=\"_blank\" rel=\"noopener\">Apple-Datenschutzrichtlinie</a>.")
+    +P("<b>Anmelden mit Apple:</b> Wenn du „Mit Apple anmelden“ nutzt, erhalten wir von Apple eine Kennung und die E-Mail-Adresse, die du dafür freigibst (gegebenenfalls eine weitergeleitete Apple-Adresse). Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO.")
+    +P("<b>Apple Health:</b> Nur wenn du es in der App ausdrücklich erlaubst, liest die App aus Apple Health deine Schritte, deinen Schlaf, deine Wasseraufnahme und dein Körpergewicht. Die App schreibt nichts in Apple Health. Die gelesenen Werte werden in dein Konto übernommen und nur für dein Tagebuch und deine persönlichen Auswertungen verwendet. Sie werden nicht für Werbung genutzt, nicht verkauft und nicht an Dritte weitergegeben. Es gelten Abschnitt 5 und deine Gesundheitseinwilligung. Den Zugriff kannst du jederzeit in der Health-App unter Profil → Datenschutz → Apps → Root Index widerrufen.")
+    +P("<b>Kamera und Fotos:</b> Die App fragt die Kamera- bzw. Fotoerlaubnis erst, wenn du einen Barcode scannst oder ein Foto aufnimmst bzw. auswählst. Es gilt Abschnitt 8.")
+    +P("<b>Mitteilungen:</b> Wenn du Mitteilungen erlaubst, verarbeiten wir dafür ein Geräte-Token des Apple Push Notification Service (Apple). Es gilt Abschnitt 14. Beim Abmelden oder Löschen des Kontos geben wir das Token zurück.")
+    +P("<b>Kein Tracking:</b> Die App enthält keine Werbung, keine Analyse- oder Tracking-Programme von Drittanbietern und verwendet keine Werbe-ID.")
+    +P("<b>Konto löschen:</b> Du kannst dein Konto in der App unter Menü → Konto → „Konto löschen“ selbst löschen. Ein laufendes Apple-Abo musst du zusätzlich in den Einstellungen deiner Apple-ID kündigen.")
     +H("13. Kontakt, Vertragsnachrichten und Newsletter")
     +P("Wenn du uns kontaktierst, verarbeiten wir deine Kontaktdaten und den Inhalt deiner Nachricht zur Bearbeitung deines Anliegens.")
     +P("Bei vertragsbezogenen Anfragen beruht dies auf Art. 6 Abs. 1 lit. b DSGVO, bei sonstigen Anfragen auf unserem berechtigten Interesse an deren Bearbeitung nach Art. 6 Abs. 1 lit. f DSGVO.")
@@ -17143,7 +17152,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-01-16";
+const APP_BUILD = "2026-10-02-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
