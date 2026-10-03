@@ -1,51 +1,79 @@
 <!DOCTYPE html>
-<!-- VERGLEICHE · neu 01.10.2026 (Ralph: "wirf im vergleich im admin alle raus und
-     erstell dort eine tabelle mit allen vergleichen und den werten. nicht
-     kompliziert, einfache tabelle").
-     Nur Anzeige. Wahrheit: public."Instagram_Vergleich" (Nr, Zeile1, Produkt_A/B,
-     Status, Fehlt, Notiz). Punkte kommen live aus v_web_produkte, nichts wird
-     hier gerechnet ausser der Differenz A minus B.
-     02.10.2026 (Ralph): Loeschen + Verschieben. Loeschen = Status 'Verworfen' (ausgeblendet,
-     nicht hart geloescht - per SQL wiederherstellbar). Verschieben = Nr mit Nachbarzeile tauschen.
-     Schreibrecht: RLS ivg_admin_all (cb_ist_admin()).
-     Alte Fassung (Kartenplanung mit Bildrechten/Upload): Git-Verlauf vor Commit
-     vom 01.10.2026; alte Zeilen gesichert in _sicherung_instagram_vergleich_20261001. -->
+<!-- CONTENT-PLAN (vergleiche.html) · Umbau 03.10.2026 (Ralph: "kannst du den vergleich mal erweitern und
+     etwas uebersichtlicher umbauen" - Reels, Vergleiche, Einzelprodukte, Plan).
+     Wahrheit: public."Instagram_Vergleich" - eine Zeile je Inhalt.
+       Typ: 'Vergleich' (2 Produkte: Bild-Post + Reel) | 'Einzel' (1 Produkt: Reel/Remix, Kommentar)
+       Geplant_am = Termin Bild-Post · Reel_geplant_am = Termin Reel · Reel_Datei = Pfad im Vault
+     Punkte live aus v_web_produkte, nichts wird hier gerechnet ausser A minus B.
+     Takt: Bild Di + Fr, Reel Do + So, jeweils 18:00. Leere Termine werden als "frei" gezeigt.
+     Loeschen = Status 'Verworfen' (ausgeblendet). Verschieben = Nr mit Nachbarzeile gleichen Typs tauschen.
+     Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). Vorfassung: Git-Verlauf vom 02.10.2026. -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>Vergleiche · Root Index</title>
+<title>Content-Plan · Root Index</title>
 <style>
   body{ margin:0; font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif; color:#2a2640; background:#f2f0f8; }
-  h1{ font-size:18px; margin:0; padding:14px 18px; background:#16233d; color:#fff; }
-  .wrap{ max-width:1300px; margin:0 auto; padding:14px 18px 60px; }
-  table{ width:100%; border-collapse:collapse; background:#fff; border:1px solid #dcd8ea; border-radius:10px; overflow:hidden; }
+  header{ background:#16233d; color:#fff; padding:14px 18px; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
+  header h1{ font-size:18px; margin:0; }
+  .chips{ display:flex; gap:8px; flex-wrap:wrap; }
+  .chip{ background:rgba(255,255,255,.12); border-radius:14px; padding:2px 10px; font-size:12.5px; }
+  .chip b{ color:#7CFF9B; }
+  nav{ display:flex; gap:4px; padding:12px 18px 0; max-width:1300px; margin:0 auto; }
+  nav button{ border:1px solid #dcd8ea; border-bottom:none; background:#e8e5f3; color:#4b4570; padding:8px 16px; border-radius:10px 10px 0 0; font-weight:600; cursor:pointer; font-size:14px; }
+  nav button.an{ background:#fff; color:#16233d; }
+  .wrap{ max-width:1300px; margin:0 auto; padding:0 18px 60px; }
+  .tab{ display:none; background:#fff; border:1px solid #dcd8ea; border-radius:0 10px 10px 10px; padding:14px; overflow-x:auto; }
+  .tab.an{ display:block; }
+  table{ width:100%; border-collapse:collapse; }
   th{ text-align:left; font-size:11.5px; text-transform:uppercase; letter-spacing:.4px; color:#6b6592; background:#f8f7fc; border-bottom:1px solid #dcd8ea; padding:8px; }
   td{ border-bottom:1px solid #eeecf6; padding:8px; vertical-align:top; }
   td.z{ text-align:right; font-weight:700; white-space:nowrap; }
   small{ color:#6b6592; }
   .st{ display:inline-block; border-radius:12px; padding:1px 9px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .fertig{ background:#e6f4ea; color:#1d6b3a; } .meta{ background:#1d8a4a; color:#fff; }
-  tr.geplant td{ background:#eaf7ef; } .wartet{ background:#fdf3d7; color:#7a5406; } .geplant{ background:#eceaf3; color:#6b6592; }
-  #msg{ color:#6b6592; font-size:12.5px; margin:8px 0; }
+  .fertig{ background:#e6f4ea; color:#1d6b3a; } .meta{ background:#1d8a4a; color:#fff; } .online{ background:#16233d; color:#fff; }
+  .wartet{ background:#fdf3d7; color:#7a5406; } .idee{ background:#eceaf3; color:#6b6592; } .fehlt{ background:#f6e7e5; color:#a3261d; }
+  tr.geplant td{ background:#f3faf5; }
+  #msg{ color:#6b6592; font-size:12.5px; margin:10px 0; }
   td.akt{ white-space:nowrap; }
   td.akt button{ border:1px solid #dcd8ea; background:#fff; border-radius:6px; padding:2px 7px; margin-right:3px; cursor:pointer; font-size:13px; color:#2a2640; }
-  td.akt button:hover{ background:#f2f0f8; }
-  td.akt button.del{ color:#a3261d; border-color:#f0c9c5; }
-  td.akt button:disabled{ opacity:.3; cursor:default; }
+  td.akt button:hover{ background:#f2f0f8; } td.akt button.del{ color:#a3261d; border-color:#f0c9c5; } td.akt button:disabled{ opacity:.3; cursor:default; }
+  .woche{ margin-bottom:16px; }
+  .woche h3{ margin:0 0 6px; font-size:13px; color:#6b6592; text-transform:uppercase; letter-spacing:.5px; }
+  .tage{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .slot{ border:1px solid #dcd8ea; border-radius:10px; padding:8px 10px; min-height:62px; }
+  .slot .k{ font-size:12px; color:#6b6592; display:flex; justify-content:space-between; gap:6px; }
+  .slot .t{ font-weight:600; margin-top:3px; }
+  .slot.bild{ border-left:5px solid #5AB6FF; } .slot.reel{ border-left:5px solid #B79BFF; }
+  .slot.belegt{ background:#f3faf5; } .slot.online{ background:#eef0f6; }
+  .slot.frei{ background:#fbfaf6; border-style:dashed; } .slot.frei .t{ color:#b0aac6; font-weight:400; }
+  .leg{ font-size:12px; color:#6b6592; margin:0 0 12px; } .leg i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:middle; }
+  @media (max-width:800px){ .tage{ grid-template-columns:repeat(2,1fr); } table{ font-size:13px; } }
 </style>
 </head>
 <body>
-<h1>Vergleiche · Instagram &amp; Facebook</h1>
+<header><h1>Content-Plan · Instagram &amp; Facebook</h1><div class="chips" id="chips"></div></header>
+<nav>
+  <button data-t="plan" class="an">📅 Wochenplan</button>
+  <button data-t="vgl">⚖️ Vergleiche</button>
+  <button data-t="ein">🔎 Einzelprodukte</button>
+</nav>
 <div class="wrap">
+  <div class="tab an" id="t-plan">
+    <p class="leg">Takt: <i style="background:#5AB6FF"></i>Bild-Post Di + Fr <i style="background:#B79BFF"></i>Reel Do + So · jeweils 18:00 · grün = in Meta geplant · gestrichelt = noch frei</p>
+    <div id="plan"></div>
+  </div>
+  <div class="tab" id="t-vgl">
+    <table><thead><tr><th>Nr</th><th>Vergleich</th><th>Produkt A</th><th>Pkt</th><th>Produkt B</th><th>Pkt</th><th>Diff</th><th>Bild-Post</th><th>Reel</th><th>Was fehlt</th><th></th></tr></thead>
+    <tbody id="vgl"></tbody></table>
+  </div>
+  <div class="tab" id="t-ein">
+    <table><thead><tr><th>Nr</th><th>Produkt</th><th>Pkt</th><th>Reel / Remix</th><th>Status</th><th>Notiz</th><th></th></tr></thead>
+    <tbody id="ein"></tbody></table>
+  </div>
   <div id="msg">lädt …</div>
-  <table>
-    <thead><tr>
-      <th>Nr</th><th>Vergleich</th><th>Produkt A</th><th>Pkt</th><th>Produkt B</th><th>Pkt</th><th>Diff</th><th>Status</th><th>Was fehlt</th><th></th>
-    </tr></thead>
-    <tbody id="body"></tbody>
-  </table>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -53,71 +81,135 @@
 var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw",
   { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:window.localStorage, storageKey:"sb-cleanbase-auth" },
-    /* 02.10.: nie aus dem Browser-Cache lesen - sonst zeigt die Tabelle nach Loeschen/Verschieben den alten Stand */
     global:{ fetch:function(u, o){ return fetch(u, Object.assign({}, o, { cache:"no-store" })); } } });
 
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
-var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["fertig","online"], "In Arbeit":["wartet","wartet"], "Idee":["geplant","geplant"], "Geplant":["geplant","geplant"] };
+var ZEILEN = [], P = {}, BUSY = false;
+var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["online","online"], "In Arbeit":["wartet","wartet"], "Idee":["idee","Idee"] };
+function meld(t){ document.getElementById("msg").textContent = t; }
+function datum(d){ return d.toLocaleDateString("de-DE",{weekday:"short", day:"2-digit", month:"2-digit"}); }
+function tm(d){ return d.toLocaleDateString("de-DE",{day:"2-digit", month:"2-digit"}); }
+function zeit(d){ return d.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2-digit"}); }
+function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
+function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
+function titel(x){ return x.Typ==="Einzel" ? (P[x.Produkt_A] ? P[x.Produkt_A].marke+" "+P[x.Produkt_A].name : x.Zeile1) : x.Zeile1; }
+
+document.querySelectorAll("nav button").forEach(function(b){ b.onclick = function(){
+  document.querySelectorAll("nav button").forEach(function(x){ x.classList.toggle("an", x===b); });
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("an", t.id==="t-"+b.dataset.t); });
+  try{ localStorage.setItem("cp_tab", b.dataset.t); }catch(_){}
+}; });
+try{ var mt = localStorage.getItem("cp_tab"); if(mt){ var bt = document.querySelector("nav button[data-t='"+mt+"']"); if(bt) bt.click(); } }catch(_){}
 
 async function laden(){
   var r = await vg.from("Instagram_Vergleich").select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
-  if(r.error){ document.getElementById("msg").textContent = "Fehler: " + r.error.message + " (im Admin angemeldet?)"; return; }
-  var rows = r.data || [], ids = [];
-  ZEILEN = rows;
-  rows.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
+  if(r.error){ meld("Fehler: " + r.error.message + " (im Admin angemeldet?)"); return; }
+  ZEILEN = r.data || [];
+  var ids = []; ZEILEN.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
   P = {};
-  if(ids.length){
-    var p = await vg.from("v_web_produkte").select("id,name,marke,clean_score").in("id", ids);
-    (p.data||[]).forEach(function(x){ P[x.id] = x; });
-  }
+  if(ids.length){ var p = await vg.from("v_web_produkte").select("id,name,marke,clean_score").in("id", ids); (p.data||[]).forEach(function(x){ P[x.id] = x; }); }
   zeige();
 }
-var P = {};
-function zeige(){
-  var rows = ZEILEN;
-  function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
-  function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
-  var n = {fertig:0, wartet:0, geplant:0, meta:0};
-  document.getElementById("body").innerHTML = rows.map(function(x, i){
-    var a = pkt(x.Produkt_A), b = pkt(x.Produkt_B), s = STATUS[x.Status] || ["geplant", x.Status];
-    /* 02.10.: auf Meta eingeplant = gruen mit Termin (Spalte Geplant_am) */
-    var gp = x.Geplant_am && x.Status !== "Veröffentlicht";
-    if(gp){ var dt = new Date(x.Geplant_am); s = ["meta", "Meta · " + dt.toLocaleDateString("de-DE",{weekday:"short", day:"2-digit", month:"2-digit"}) + " " + dt.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2-digit"})]; }
-    n[s[0]] = (n[s[0]]||0) + 1;
-    return "<tr"+(gp?" class='geplant'":"")+"><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
-      +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
-      +"<td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td>"+e(x.Fehlt||"")+"</td>"
-      +"<td class='akt'><button title='nach oben' onclick='schiebe("+i+",-1)'"+(i===0?" disabled":"")+">▲</button>"
-      +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(i===rows.length-1?" disabled":"")+">▼</button>"
-      +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td></tr>";
-  }).join("");
-  document.getElementById("msg").textContent = rows.length+" Vergleiche · "+n.meta+" auf Meta geplant · "+n.fertig+" fertig · "+n.wartet+" wartet · "+n.geplant+" geplant";
-}
-var ZEILEN = [], BUSY = false;
-function meld(t){ document.getElementById("msg").textContent = t; }
 
-/* Reihenfolge: Nr mit der Nachbarzeile tauschen (zwei Updates per id). */
+function termin(ts, online){
+  if(online) return "<span class='st online'>online</span>";
+  if(!ts) return "";
+  var d = new Date(ts); return "<span class='st meta'>Meta · "+datum(d)+" "+zeit(d)+"</span>";
+}
+
+function zeige(){
+  var V = ZEILEN.filter(function(x){ return x.Typ!=="Einzel"; }), E = ZEILEN.filter(function(x){ return x.Typ==="Einzel"; });
+  var jetzt = new Date();
+  var nBild = ZEILEN.filter(function(x){ return x.Geplant_am && new Date(x.Geplant_am) > jetzt; }).length;
+  var nReel = ZEILEN.filter(function(x){ return x.Reel_geplant_am && new Date(x.Reel_geplant_am) > jetzt; }).length;
+  var nFertig = V.filter(function(x){ return x.Status==="Bereit" && !x.Geplant_am; }).length;
+  var nReelOhne = ZEILEN.filter(function(x){ return x.Reel_Datei && !x.Reel_geplant_am; }).length;
+  var alle = []; ZEILEN.forEach(function(x){ if(x.Geplant_am) alle.push(new Date(x.Geplant_am)); if(x.Reel_geplant_am) alle.push(new Date(x.Reel_geplant_am)); });
+  alle.sort(function(a,b){ return b-a; }); var bis = alle[0];
+  document.getElementById("chips").innerHTML =
+    "<span class='chip'>geplant bis <b>"+(bis?datum(bis):"–")+"</b></span>"+
+    "<span class='chip'><b>"+nBild+"</b> Bild-Posts geplant</span><span class='chip'><b>"+nReel+"</b> Reels geplant</span>"+
+    "<span class='chip'><b>"+nFertig+"</b> Vergleiche fertig ohne Termin</span><span class='chip'><b>"+nReelOhne+"</b> Reels fertig ohne Termin</span>"+
+    "<span class='chip'><b>"+E.length+"</b> Einzelprodukte</span>";
+
+  /* Wochenplan: 6 Wochen ab dieser Woche, Takt-Slots Di/Do/Fr/So */
+  var ev = [];
+  ZEILEN.forEach(function(x){
+    if(x.Geplant_am) ev.push({d:new Date(x.Geplant_am), art:"bild", x:x});
+    if(x.Reel_geplant_am) ev.push({d:new Date(x.Reel_geplant_am), art:"reel", x:x});
+  });
+  var mo = new Date(jetzt); mo.setHours(0,0,0,0); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7));
+  var heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
+  var SL = [[1,"bild","Di"],[3,"reel","Do"],[4,"bild","Fr"],[6,"reel","So"]], html = "";
+  function slot(v, tagname){
+    var x = v.x, online = x.Status==="Veröffentlicht" && v.art==="bild";
+    var pk = x.Typ==="Einzel" ? (pkt(x.Produkt_A)!=null ? pkt(x.Produkt_A)+" Pkt" : "") : (pkt(x.Produkt_A)!=null && pkt(x.Produkt_B)!=null ? pkt(x.Produkt_A)+" : "+pkt(x.Produkt_B)+" Pkt" : "");
+    return "<div class='slot belegt "+v.art+(online?" online":"")+"'><div class='k'><span>"+tagname+" "+tm(v.d)+" · "+zeit(v.d)+"</span><span>"+(v.art==="bild"?"🖼 Bild":"🎬 Reel")+"</span></div>"
+      +"<div class='t'>"+(x.Typ==="Einzel"?"🔎 ":"Nr "+e(x.Nr)+" · ")+e(titel(x))+"</div><small>"+pk+(online?" · online":"")+"</small></div>";
+  }
+  for(var w=0; w<6; w++){
+    var ws = new Date(mo); ws.setDate(mo.getDate()+7*w); var we = new Date(ws); we.setDate(ws.getDate()+7);
+    var t0 = new Date(Date.UTC(ws.getFullYear(),ws.getMonth(),ws.getDate())); var dn = t0.getUTCDay()||7; t0.setUTCDate(t0.getUTCDate()+4-dn);
+    var kw = Math.ceil(((t0 - new Date(Date.UTC(t0.getUTCFullYear(),0,1)))/864e5+1)/7);
+    var inWoche = ev.filter(function(v){ return v.d>=ws && v.d<we; }), benutzt = [];
+    var zellen = SL.map(function(s){
+      var tag = new Date(ws); tag.setDate(ws.getDate()+s[0]);
+      var hit = inWoche.filter(function(v){ return v.art===s[1] && v.d.toDateString()===tag.toDateString() && benutzt.indexOf(v)<0; })[0];
+      if(hit){ benutzt.push(hit); return slot(hit, s[2]); }
+      return "<div class='slot frei "+s[1]+"'><div class='k'><span>"+s[2]+" "+tm(tag)+"</span><span>"+(s[1]==="bild"?"🖼 Bild":"🎬 Reel")+"</span></div><div class='t'>"+(tag<heute?"–":"frei")+"</div></div>";
+    });
+    inWoche.filter(function(v){ return benutzt.indexOf(v)<0; }).forEach(function(v){ zellen.push(slot(v, datum(v.d).split(",")[0])); });
+    html += "<div class='woche'><h3>KW "+kw+" · "+tm(ws)+" – "+tm(new Date(we-864e5))+"</h3><div class='tage'>"+zellen.join("")+"</div></div>";
+  }
+  document.getElementById("plan").innerHTML = html;
+
+  document.getElementById("vgl").innerHTML = V.map(function(x){
+    var i = ZEILEN.indexOf(x), a = pkt(x.Produkt_A), b = pkt(x.Produkt_B), s = STATUS[x.Status] || ["idee", x.Status];
+    var bild = x.Status==="Veröffentlicht" ? termin(null,true) : (x.Geplant_am ? termin(x.Geplant_am) : "<span class='st "+s[0]+"'>"+e(s[1])+"</span>");
+    var reel = x.Reel_geplant_am ? termin(x.Reel_geplant_am) : (x.Reel_Datei ? "<span class='st fertig'>fertig</span>" : "<small>–</small>");
+    return "<tr"+(x.Geplant_am?" class='geplant'":"")+"><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
+      +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
+      +"<td>"+bild+"</td><td>"+reel+"</td><td>"+e(x.Fehlt||"")+"</td>"+knoepfe(i)+"</tr>";
+  }).join("");
+
+  document.getElementById("ein").innerHTML = E.length ? E.map(function(x){
+    var i = ZEILEN.indexOf(x), a = pkt(x.Produkt_A), s = STATUS[x.Status] || ["idee", x.Status];
+    var reel = x.Reel_geplant_am ? termin(x.Reel_geplant_am) : (x.Reel_Datei ? "<span class='st fertig'>fertig</span> <small>"+e(x.Reel_Datei.split("/").pop())+"</small>" : "<small>–</small>");
+    return "<tr><td>"+e(x.Nr)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td><td>"+reel+"</td><td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td><small>"+e(x.Notiz||"")+"</small>"+(x.Fehlt?"<br><span class='st fehlt'>"+e(x.Fehlt)+"</span>":"")+"</td>"+knoepfe(i)+"</tr>";
+  }).join("") : "<tr><td colspan='7'><small>Noch keine Einzelprodukte.</small></td></tr>";
+
+  meld(ZEILEN.length+" Einträge · "+V.length+" Vergleiche · "+E.length+" Einzelprodukte");
+}
+
+function gruppe(x){ return ZEILEN.filter(function(z){ return (z.Typ==="Einzel")===(x.Typ==="Einzel"); }); }
+function knoepfe(i){
+  var x = ZEILEN[i], gl = gruppe(x), j = gl.indexOf(x);
+  return "<td class='akt'><button title='nach oben' onclick='schiebe("+i+",-1)'"+(j===0?" disabled":"")+">▲</button>"
+    +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(j===gl.length-1?" disabled":"")+">▼</button>"
+    +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td>";
+}
+
 async function schiebe(i, d){
-  if(BUSY) return; var a = ZEILEN[i], b = ZEILEN[i+d]; if(!a || !b) return;
+  if(BUSY) return; var a = ZEILEN[i]; if(!a) return;
+  var gl = gruppe(a), b = gl[gl.indexOf(a)+d]; if(!b) return;
   BUSY = true; meld("verschiebe …");
   var na = a.Nr, nb = b.Nr;
   var r1 = await vg.from("Instagram_Vergleich").update({ Nr: nb }).eq("id", a.id);
   var r2 = r1.error ? r1 : await vg.from("Instagram_Vergleich").update({ Nr: na }).eq("id", b.id);
   BUSY = false;
   if(r1.error || r2.error){ meld("Fehler: " + (r1.error||r2.error).message); return; }
-  a.Nr = nb; b.Nr = na; ZEILEN[i] = b; ZEILEN[i+d] = a; zeige();   // sofort sichtbar
+  a.Nr = nb; b.Nr = na; ZEILEN.sort(function(p,q){ return (p.Nr||0)-(q.Nr||0); }); zeige();
   laden();
 }
 
-/* Loeschen = ausblenden (Status 'Verworfen'), nicht hart loeschen. */
 async function loesche(i){
   var x = ZEILEN[i]; if(!x || BUSY) return;
-  if(!confirm("Vergleich Nr " + x.Nr + " „" + (x.Zeile1||"") + "“ löschen?")) return;
+  if(!confirm("Nr " + x.Nr + " „" + titel(x) + "“ löschen?")) return;
   BUSY = true; meld("lösche …");
   var r = await vg.from("Instagram_Vergleich").update({ Status: "Verworfen" }).eq("id", x.id);
   BUSY = false;
   if(r.error){ meld("Fehler: " + r.error.message); return; }
-  ZEILEN.splice(i, 1); zeige();   // sofort sichtbar
+  ZEILEN.splice(i, 1); zeige();
   laden();
 }
 
