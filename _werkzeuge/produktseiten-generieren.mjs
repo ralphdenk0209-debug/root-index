@@ -326,6 +326,9 @@ p.einordnung{margin:26px 0 0;padding:14px 16px;border-left:3px solid var(--acc);
 h2{font-size:1rem;margin-top:24px}
 .quelle{font-size:.78rem;color:var(--mut);margin-top:26px;line-height:1.7}
 .krit{color:#ff8a7a}
+.sozial{margin:6px 0 14px;font-size:.85rem;color:var(--mut);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.sozial a{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-weight:600}
+.sozial a:hover{color:var(--acc)}
 .fuss{margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
 .rm{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:.86rem;color:var(--mut)}
 .rm b{color:var(--cream);font-weight:600}
@@ -377,6 +380,7 @@ ${inhalt}
 ${rueckmeldung ? RM_BLOCK + UNT_BLOCK : ""}
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
+<p class="sozial">Folge uns: <a href="https://www.instagram.com/root_index.de/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>root_index.de</a> <a href="https://www.facebook.com/profile.php?id=61594758504822" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21h3z"/></svg>Root Index</a></p>
 </main>
 <script src="/produkt/seite.js?v=${AKTIVA_V}" defer></script>
 </body>
