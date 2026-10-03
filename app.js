@@ -9019,7 +9019,8 @@ function buildFan(){
   if(_mfanGruppe){
     var g=MFAN_GRUPPEN.filter(function(x){ return x[0]===_mfanGruppe; })[0];
     if(g){ liste=g[4].map(function(w){ return {art:'weg', txt:w[0], ico:w[1], col:w[2], tun:w[3]}; }); }
-    liste.push({art:'zurueck', txt:'Zurück', ico:'book', col:'#8fa79a'});
+    /* 03.10.2026 (Ralph): "zurück soll im menü unten sein" - erster Eintrag = unten am Knopf. */
+    liste.unshift({art:'zurueck', txt:'Zurück', ico:'book', col:'#8fa79a'});
   } else {
     liste=MFAN_GRUPPEN.map(function(g){
       /* Eine Gruppe mit genau einem Weg braucht kein zweites Blatt - sonst
@@ -17167,7 +17168,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-03-01";
+const APP_BUILD = "2026-10-03-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
