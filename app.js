@@ -10879,6 +10879,21 @@ async function einkaufToggle(id,checked){
   }
   await loadEinkauf();
   _einkZeigen(id);
+  if(checked) einkRueckgaengigZeigen(id);
+}
+/* 03.10.2026 (App = Web, wie EinkaufView in der App): nach dem Abhaken 6 s eine
+   Leiste "Rueckgaengig" - ein Fehltipp im Laden ist sonst nur muehsam zu finden. */
+function einkRueckgaengigZeigen(id){
+  try{
+    var alt=document.getElementById('einkUndoBar'); if(alt) alt.remove();
+    clearTimeout(window._einkUndoT);
+    var b=document.createElement('div'); b.id='einkUndoBar';
+    b.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:9999;display:flex;align-items:center;gap:14px;background:#1f2a33;color:#fff;border-radius:999px;padding:10px 12px 10px 18px;font-size:14px;box-shadow:0 4px 16px rgba(0,0,0,.25);max-width:calc(100vw - 32px)';
+    b.innerHTML='<span>Abgehakt</span><button style="border:0;background:transparent;color:#4ade80;font-weight:700;font-size:14px;cursor:pointer;padding:4px 6px">Rückgängig</button>';
+    b.querySelector('button').onclick=function(){ clearTimeout(window._einkUndoT); b.remove(); einkaufToggle(id,false); };
+    document.body.appendChild(b);
+    window._einkUndoT=setTimeout(function(){ try{ b.remove(); }catch(e){} },6000);
+  }catch(e){}
 }
 async function einkaufDel(id){
   const el=document.getElementById('einkRow'+id);
@@ -17152,7 +17167,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-02-02";
+const APP_BUILD = "2026-10-03-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
