@@ -1,13 +1,15 @@
 <!DOCTYPE html>
-<!-- CONTENT-PLAN (vergleiche.html) · Umbau 03.10.2026 (Ralph: "kannst du den vergleich mal erweitern und
-     etwas uebersichtlicher umbauen" - Reels, Vergleiche, Einzelprodukte, Plan).
-     Wahrheit: public."Instagram_Vergleich" - eine Zeile je Inhalt.
-       Typ: 'Vergleich' (2 Produkte: Bild-Post + Reel) | 'Einzel' (1 Produkt: Reel/Remix, Kommentar)
-       Geplant_am = Termin Bild-Post · Reel_geplant_am = Termin Reel · Reel_Datei = Pfad im Vault
-     Punkte live aus v_web_produkte, nichts wird hier gerechnet ausser A minus B.
-     Takt: Bild Di + Fr, Reel Do + So, jeweils 18:00. Leere Termine werden als "frei" gezeigt.
-     Loeschen = Status 'Verworfen' (ausgeblendet). Verschieben = Nr mit Nachbarzeile gleichen Typs tauschen.
-     Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). Vorfassung: Git-Verlauf vom 02.10.2026. -->
+<!-- CONTENT-PLAN (vergleiche.html) · gemeinsamer Plan von Ralph und Claude
+     03.10.2026 Umbau 1: Reiter Wochenplan / Vergleiche / Einzelprodukte.
+     03.10.2026 Umbau 2 (Ralph: "wochenplan bitte als komplette woche darstellen und die beitraege verschiebbar
+       machen. neu anlegen waere gut, das ist dann unser gemeinsamer plan"):
+       - Woche Mo-So, Beitraege per Ziehen verschieben (Uhrzeit bleibt), Klick = Bearbeiten (auch am Handy)
+       - "+" je Tag: vorhandenen Inhalt einplanen oder neue Idee anlegen
+       - Ablage "Ohne Termin": fertige Inhalte ohne Termin, in einen Tag ziehen
+       - Bild_in_Meta / Reel_in_Meta: gruen = in Meta eingeplant, gelb = nur im Plan (Ralph muss in Meta noch planen)
+         Wird ein Meta-Beitrag verschoben, faellt er auf gelb zurueck (in Meta auch verschieben!).
+     Wahrheit: public."Instagram_Vergleich" - Typ 'Vergleich' | 'Einzel', Geplant_am (Bild), Reel_geplant_am, Reel_Datei.
+     Punkte live aus v_web_produkte. Loeschen = Status 'Verworfen'. Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). -->
 <html lang="de">
 <head>
 <meta charset="utf-8">
@@ -15,16 +17,17 @@
 <meta name="robots" content="noindex">
 <title>Content-Plan · Root Index</title>
 <style>
+  :root{ --bild:#5AB6FF; --reel:#B79BFF; --meta:#1d8a4a; --plan:#e0a300; }
   body{ margin:0; font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif; color:#2a2640; background:#f2f0f8; }
   header{ background:#16233d; color:#fff; padding:14px 18px; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; }
   header h1{ font-size:18px; margin:0; }
   .chips{ display:flex; gap:8px; flex-wrap:wrap; }
   .chip{ background:rgba(255,255,255,.12); border-radius:14px; padding:2px 10px; font-size:12.5px; }
-  .chip b{ color:#7CFF9B; }
-  nav{ display:flex; gap:4px; padding:12px 18px 0; max-width:1300px; margin:0 auto; }
+  .chip b{ color:#7CFF9B; } .chip.warn b{ color:#ffd34d; }
+  nav{ display:flex; gap:4px; padding:12px 18px 0; max-width:1400px; margin:0 auto; }
   nav button{ border:1px solid #dcd8ea; border-bottom:none; background:#e8e5f3; color:#4b4570; padding:8px 16px; border-radius:10px 10px 0 0; font-weight:600; cursor:pointer; font-size:14px; }
   nav button.an{ background:#fff; color:#16233d; }
-  .wrap{ max-width:1300px; margin:0 auto; padding:0 18px 60px; }
+  .wrap{ max-width:1400px; margin:0 auto; padding:0 18px 60px; }
   .tab{ display:none; background:#fff; border:1px solid #dcd8ea; border-radius:0 10px 10px 10px; padding:14px; overflow-x:auto; }
   .tab.an{ display:block; }
   table{ width:100%; border-collapse:collapse; }
@@ -33,24 +36,54 @@
   td.z{ text-align:right; font-weight:700; white-space:nowrap; }
   small{ color:#6b6592; }
   .st{ display:inline-block; border-radius:12px; padding:1px 9px; font-size:12px; font-weight:600; white-space:nowrap; }
-  .fertig{ background:#e6f4ea; color:#1d6b3a; } .meta{ background:#1d8a4a; color:#fff; } .online{ background:#16233d; color:#fff; }
-  .wartet{ background:#fdf3d7; color:#7a5406; } .idee{ background:#eceaf3; color:#6b6592; } .fehlt{ background:#f6e7e5; color:#a3261d; }
-  tr.geplant td{ background:#f3faf5; }
-  #msg{ color:#6b6592; font-size:12.5px; margin:10px 0; }
+  .fertig{ background:#e6f4ea; color:#1d6b3a; } .meta{ background:var(--meta); color:#fff; } .online{ background:#16233d; color:#fff; }
+  .plan{ background:#fff3c4; color:#7a5406; } .wartet{ background:#fdf3d7; color:#7a5406; } .idee{ background:#eceaf3; color:#6b6592; } .fehlt{ background:#f6e7e5; color:#a3261d; }
+  #msg{ color:#6b6592; font-size:12.5px; margin:10px 0; min-height:18px; }
   td.akt{ white-space:nowrap; }
   td.akt button{ border:1px solid #dcd8ea; background:#fff; border-radius:6px; padding:2px 7px; margin-right:3px; cursor:pointer; font-size:13px; color:#2a2640; }
-  td.akt button:hover{ background:#f2f0f8; } td.akt button.del{ color:#a3261d; border-color:#f0c9c5; } td.akt button:disabled{ opacity:.3; cursor:default; }
-  .woche{ margin-bottom:16px; }
+  td.akt button.del{ color:#a3261d; border-color:#f0c9c5; } td.akt button:disabled{ opacity:.3; cursor:default; }
+
+  /* ---- Wochenplan ---- */
+  .kopf{ display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; margin-bottom:12px; }
+  .kopf button{ border:1px solid #dcd8ea; background:#fff; border-radius:8px; padding:5px 11px; cursor:pointer; font-size:13px; }
+  .leg{ font-size:12px; color:#6b6592; } .leg i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:middle; }
+  .planbox{ display:grid; grid-template-columns:230px 1fr; gap:14px; }
+  .ablage{ border:1px dashed #cfc9e3; border-radius:10px; padding:10px; background:#faf9fd; align-self:start; position:sticky; top:8px; max-height:calc(100vh - 20px); overflow-y:auto; display:flex; flex-direction:column; gap:5px; }
+  .ablage h4{ margin:0 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#6b6592; }
+  .ablage .grp{ margin:10px 0 4px; font-size:11.5px; color:#8a84a8; }
+  .woche{ margin-bottom:14px; }
   .woche h3{ margin:0 0 6px; font-size:13px; color:#6b6592; text-transform:uppercase; letter-spacing:.5px; }
-  .tage{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .slot{ border:1px solid #dcd8ea; border-radius:10px; padding:8px 10px; min-height:62px; }
-  .slot .k{ font-size:12px; color:#6b6592; display:flex; justify-content:space-between; gap:6px; }
-  .slot .t{ font-weight:600; margin-top:3px; }
-  .slot.bild{ border-left:5px solid #5AB6FF; } .slot.reel{ border-left:5px solid #B79BFF; }
-  .slot.belegt{ background:#f3faf5; } .slot.online{ background:#eef0f6; }
-  .slot.frei{ background:#fbfaf6; border-style:dashed; } .slot.frei .t{ color:#b0aac6; font-weight:400; }
-  .leg{ font-size:12px; color:#6b6592; margin:0 0 12px; } .leg i{ display:inline-block; width:10px; height:10px; border-radius:2px; margin:0 4px 0 10px; vertical-align:middle; }
-  @media (max-width:800px){ .tage{ grid-template-columns:repeat(2,1fr); } table{ font-size:13px; } }
+  .tage{ display:grid; grid-template-columns:repeat(7,minmax(118px,1fr)); gap:6px; }
+  .tag{ border:1px solid #e3e0ef; border-radius:10px; min-height:96px; padding:6px; background:#fff; display:flex; flex-direction:column; gap:5px; }
+  .tag.vorbei{ background:#f6f5f9; } .tag.heute{ border-color:#16233d; box-shadow:0 0 0 1px #16233d inset; }
+  .tag.ueber{ background:#eef7ff; border-color:var(--bild); }
+  .tag .kz{ display:flex; justify-content:space-between; align-items:center; font-size:12px; color:#6b6592; }
+  .tag .kz b{ color:#2a2640; } .tag .takt{ font-size:10.5px; color:#a7a1c2; }
+  .tag .plus{ border:none; background:none; color:#8a84a8; font-size:17px; line-height:1; cursor:pointer; padding:0 2px; }
+  .tag .plus:hover{ color:#16233d; }
+  .it{ border:1px solid #dcd8ea; border-left:5px solid var(--bild); border-radius:8px; padding:4px 6px; font-size:12.5px; background:#fff; cursor:grab; user-select:none; }
+  .it.reel{ border-left-color:var(--reel); }
+  .it .z1{ display:flex; justify-content:space-between; gap:4px; font-size:11px; color:#6b6592; }
+  .it .t{ font-weight:600; line-height:1.25; }
+  .it.m{ background:#eaf7ef; } .it.p{ background:#fff8dc; } .it.o{ background:#eef0f6; opacity:.85; }
+  .it.ziehen{ opacity:.4; }
+  .it .ok{ font-size:10.5px; font-weight:700; } .it.m .ok{ color:var(--meta); } .it.p .ok{ color:#a07400; } .it.o .ok{ color:#16233d; }
+  @media (max-width:900px){ .planbox{ grid-template-columns:1fr; } .ablage{ position:static; } }
+
+  /* ---- Dialog ---- */
+  dialog{ border:none; border-radius:14px; padding:0; width:min(440px,94vw); box-shadow:0 20px 60px rgba(0,0,0,.25); }
+  dialog form{ padding:16px 18px; display:flex; flex-direction:column; gap:10px; }
+  dialog h3{ margin:0; font-size:16px; }
+  dialog label{ font-size:12.5px; color:#6b6592; display:flex; flex-direction:column; gap:3px; }
+  dialog input, dialog select, dialog textarea{ font:inherit; padding:6px 8px; border:1px solid #dcd8ea; border-radius:8px; color:#2a2640; }
+  dialog .reihe{ display:flex; gap:10px; } dialog .reihe > *{ flex:1; }
+  dialog .chk{ flex-direction:row; align-items:center; gap:8px; color:#2a2640; }
+  dialog .kn{ display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; margin-top:4px; }
+  dialog .kn button{ border:1px solid #dcd8ea; background:#fff; border-radius:8px; padding:6px 12px; cursor:pointer; font:inherit; }
+  dialog .kn .haupt{ background:#16233d; color:#fff; border-color:#16233d; }
+  dialog .kn .rot{ color:#a3261d; border-color:#f0c9c5; margin-right:auto; }
+  .hinweis{ font-size:12px; background:#fff8dc; border-radius:8px; padding:6px 8px; color:#7a5406; }
+  .neu-teil[hidden], .alt-teil[hidden]{ display:none; }
 </style>
 </head>
 <body>
@@ -62,8 +95,15 @@
 </nav>
 <div class="wrap">
   <div class="tab an" id="t-plan">
-    <p class="leg">Takt: <i style="background:#5AB6FF"></i>Bild-Post Di + Fr <i style="background:#B79BFF"></i>Reel Do + So · jeweils 18:00 · grün = in Meta geplant · gestrichelt = noch frei</p>
-    <div id="plan"></div>
+    <div class="kopf">
+      <button id="zurueck">◀ früher</button><button id="heute">Diese Woche</button><button id="vor">später ▶</button>
+      <span class="leg">Takt: <i style="background:var(--bild)"></i>Bild Di + Fr <i style="background:var(--reel)"></i>Reel Do + So · 18:00
+        <i style="background:#eaf7ef;border:1px solid var(--meta)"></i>in Meta geplant <i style="background:#fff8dc;border:1px solid var(--plan)"></i>nur im Plan</span>
+    </div>
+    <div class="planbox">
+      <div class="ablage" id="ablage"></div>
+      <div id="plan"></div>
+    </div>
   </div>
   <div class="tab" id="t-vgl">
     <table><thead><tr><th>Nr</th><th>Vergleich</th><th>Produkt A</th><th>Pkt</th><th>Produkt B</th><th>Pkt</th><th>Diff</th><th>Bild-Post</th><th>Reel</th><th>Was fehlt</th><th></th></tr></thead>
@@ -75,6 +115,32 @@
   </div>
   <div id="msg">lädt …</div>
 </div>
+
+<!-- Bearbeiten -->
+<dialog id="dlgEdit"><form method="dialog" id="fEdit">
+  <h3 id="eTitel"></h3>
+  <div id="eArt" style="font-size:12.5px;color:#6b6592"></div>
+  <div class="reihe"><label>Datum<input type="date" id="eDatum" required></label><label>Uhrzeit<input type="time" id="eZeit" value="18:00" required></label></div>
+  <label class="chk"><input type="checkbox" id="eMeta"> in der Meta Business Suite eingeplant</label>
+  <div class="hinweis" id="eHinweis" hidden>Dieser Beitrag ist schon in Meta eingeplant. Wenn du den Termin hier änderst, bitte auch in Meta ändern und danach den Haken wieder setzen.</div>
+  <div class="kn"><button type="button" class="rot" id="eRaus">Termin entfernen</button><button value="abbr">Abbrechen</button><button type="button" class="haupt" id="eSpeichern">Speichern</button></div>
+</form></dialog>
+
+<!-- Neu einplanen / neu anlegen -->
+<dialog id="dlgNeu"><form method="dialog" id="fNeu">
+  <h3>Neu einplanen</h3>
+  <div class="reihe"><label>Datum<input type="date" id="nDatum" required></label><label>Uhrzeit<input type="time" id="nZeit" value="18:00" required></label></div>
+  <label>Format<select id="nArt"><option value="bild">🖼 Bild-Post</option><option value="reel">🎬 Reel</option></select></label>
+  <label>Inhalt<select id="nWas"></select></label>
+  <div class="neu-teil" id="nNeu" hidden>
+    <label>Art<select id="nTyp"><option value="Vergleich">Vergleich (2 Produkte)</option><option value="Einzel">Einzelprodukt</option></select></label>
+    <label>Titel / Idee<input id="nTitel" placeholder="z. B. Zweimal Müsli."></label>
+    <div class="reihe"><label>Produkt A (P-ID)<input id="nA" placeholder="P1234"></label><label id="nBlab">Produkt B (P-ID)<input id="nB" placeholder="P5678"></label></div>
+    <label>Notiz<textarea id="nNotiz" rows="2" placeholder="Was fehlt noch, Fotos, Idee …"></textarea></label>
+  </div>
+  <div class="kn"><button value="abbr">Abbrechen</button><button type="button" class="haupt" id="nSpeichern">Einplanen</button></div>
+</form></dialog>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* Dieselben Zugangsdaten und derselbe storageKey wie app.js - die Admin-Anmeldung gilt hier mit. */
@@ -82,27 +148,39 @@ var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw",
   { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:window.localStorage, storageKey:"sb-cleanbase-auth" },
     global:{ fetch:function(u, o){ return fetch(u, Object.assign({}, o, { cache:"no-store" })); } } });
-
+var T = "Instagram_Vergleich";
+function $(id){ return document.getElementById(id); }
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
-var ZEILEN = [], P = {}, BUSY = false;
+var ZEILEN = [], P = {}, BUSY = false, WOFF = 0;
 var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["online","online"], "In Arbeit":["wartet","wartet"], "Idee":["idee","Idee"] };
-function meld(t){ document.getElementById("msg").textContent = t; }
-function datum(d){ return d.toLocaleDateString("de-DE",{weekday:"short", day:"2-digit", month:"2-digit"}); }
+var F = { bild:{ d:"Geplant_am", m:"Bild_in_Meta", n:"🖼 Bild" }, reel:{ d:"Reel_geplant_am", m:"Reel_in_Meta", n:"🎬 Reel" } };
+function meld(t){ $("msg").textContent = t; }
 function tm(d){ return d.toLocaleDateString("de-DE",{day:"2-digit", month:"2-digit"}); }
+function datum(d){ return d.toLocaleDateString("de-DE",{weekday:"short", day:"2-digit", month:"2-digit"}); }
 function zeit(d){ return d.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2-digit"}); }
+function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function hm(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
+function ausFeldern(dat, z){ var p = dat.split("-"), q = (z||"18:00").split(":"); return new Date(+p[0], +p[1]-1, +p[2], +q[0], +q[1]); }
 function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
 function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
-function titel(x){ return x.Typ==="Einzel" ? (P[x.Produkt_A] ? P[x.Produkt_A].marke+" "+P[x.Produkt_A].name : x.Zeile1) : x.Zeile1; }
+function titel(x){ if(x.Typ==="Einzel" && P[x.Produkt_A]) return P[x.Produkt_A].marke+" "+P[x.Produkt_A].name; return x.Zeile1 || ("Nr "+x.Nr); }
+function punkteText(x){ var a = pkt(x.Produkt_A), b = pkt(x.Produkt_B);
+  if(x.Typ==="Einzel") return a!=null ? a+" Pkt" : ""; return a!=null && b!=null ? a+" : "+b+" Pkt" : ""; }
+function zeile(id){ return ZEILEN.filter(function(z){ return z.id===id; })[0]; }
 
+/* ---- Reiter ---- */
 document.querySelectorAll("nav button").forEach(function(b){ b.onclick = function(){
   document.querySelectorAll("nav button").forEach(function(x){ x.classList.toggle("an", x===b); });
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.toggle("an", t.id==="t-"+b.dataset.t); });
   try{ localStorage.setItem("cp_tab", b.dataset.t); }catch(_){}
 }; });
 try{ var mt = localStorage.getItem("cp_tab"); if(mt){ var bt = document.querySelector("nav button[data-t='"+mt+"']"); if(bt) bt.click(); } }catch(_){}
+$("zurueck").onclick = function(){ WOFF -= 4; zeigePlan(); };
+$("vor").onclick = function(){ WOFF += 4; zeigePlan(); };
+$("heute").onclick = function(){ WOFF = 0; zeigePlan(); };
 
 async function laden(){
-  var r = await vg.from("Instagram_Vergleich").select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
+  var r = await vg.from(T).select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
   if(r.error){ meld("Fehler: " + r.error.message + " (im Admin angemeldet?)"); return; }
   ZEILEN = r.data || [];
   var ids = []; ZEILEN.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
@@ -111,76 +189,199 @@ async function laden(){
   zeige();
 }
 
-function termin(ts, online){
-  if(online) return "<span class='st online'>online</span>";
-  if(!ts) return "";
-  var d = new Date(ts); return "<span class='st meta'>Meta · "+datum(d)+" "+zeit(d)+"</span>";
+/* Zustand eines Termins: m = in Meta, p = nur Plan, o = online (Bild veroeffentlicht) */
+function zustand(x, art){ if(art==="bild" && x.Status==="Veröffentlicht") return "o"; return x[F[art].m] ? "m" : "p"; }
+function badge(x, art){
+  var d = x[F[art].d]; if(!d) return null;
+  var z = zustand(x, art), dt = new Date(d);
+  if(z==="o") return "<span class='st online'>online</span>";
+  return "<span class='st "+(z==="m"?"meta":"plan")+"'>"+(z==="m"?"Meta":"Plan")+" · "+datum(dt)+" "+zeit(dt)+"</span>";
 }
 
-function zeige(){
-  var V = ZEILEN.filter(function(x){ return x.Typ!=="Einzel"; }), E = ZEILEN.filter(function(x){ return x.Typ==="Einzel"; });
-  var jetzt = new Date();
-  var nBild = ZEILEN.filter(function(x){ return x.Geplant_am && new Date(x.Geplant_am) > jetzt; }).length;
-  var nReel = ZEILEN.filter(function(x){ return x.Reel_geplant_am && new Date(x.Reel_geplant_am) > jetzt; }).length;
-  var nFertig = V.filter(function(x){ return x.Status==="Bereit" && !x.Geplant_am; }).length;
-  var nReelOhne = ZEILEN.filter(function(x){ return x.Reel_Datei && !x.Reel_geplant_am; }).length;
-  var alle = []; ZEILEN.forEach(function(x){ if(x.Geplant_am) alle.push(new Date(x.Geplant_am)); if(x.Reel_geplant_am) alle.push(new Date(x.Reel_geplant_am)); });
-  alle.sort(function(a,b){ return b-a; }); var bis = alle[0];
-  document.getElementById("chips").innerHTML =
-    "<span class='chip'>geplant bis <b>"+(bis?datum(bis):"–")+"</b></span>"+
-    "<span class='chip'><b>"+nBild+"</b> Bild-Posts geplant</span><span class='chip'><b>"+nReel+"</b> Reels geplant</span>"+
-    "<span class='chip'><b>"+nFertig+"</b> Vergleiche fertig ohne Termin</span><span class='chip'><b>"+nReelOhne+"</b> Reels fertig ohne Termin</span>"+
-    "<span class='chip'><b>"+E.length+"</b> Einzelprodukte</span>";
+function zeige(){ zeigeKopf(); zeigePlan(); zeigeTabellen(); }
 
-  /* Wochenplan: 6 Wochen ab dieser Woche, Takt-Slots Di/Do/Fr/So */
+function zeigeKopf(){
+  var jetzt = new Date(), E = ZEILEN.filter(function(x){ return x.Typ==="Einzel"; });
+  var zuk = []; ZEILEN.forEach(function(x){ ["bild","reel"].forEach(function(a){ var d = x[F[a].d]; if(d && new Date(d) > jetzt) zuk.push({x:x, a:a, d:new Date(d)}); }); });
+  var nMeta = zuk.filter(function(v){ return v.x[F[v.a].m]; }).length, nPlan = zuk.length - nMeta;
+  var bis = zuk.map(function(v){ return v.d; }).sort(function(a,b){ return b-a; })[0];
+  $("chips").innerHTML = "<span class='chip'>geplant bis <b>"+(bis?datum(bis):"–")+"</b></span>"
+    + "<span class='chip'><b>"+nMeta+"</b> in Meta eingeplant</span>"
+    + "<span class='chip warn'><b>"+nPlan+"</b> nur im Plan – in Meta noch planen</span>"
+    + "<span class='chip'><b>"+E.length+"</b> Einzelprodukte</span>";
+}
+
+/* ---- Wochenplan ---- */
+function karte(x, art){
+  var d = x[F[art].d] ? new Date(x[F[art].d]) : null, z = d ? zustand(x, art) : "";
+  var ok = z==="m" ? "✓ in Meta" : z==="p" ? "in Meta planen" : z==="o" ? "online" : "";
+  return "<div class='it "+(art==="reel"?"reel ":"")+z+"' draggable='"+(z!=="o")+"' data-id='"+x.id+"' data-art='"+art+"'>"
+    + "<div class='z1'><span>"+F[art].n+(d?" · "+zeit(d):"")+"</span><span>"+(x.Typ==="Einzel"?"🔎":"Nr "+e(x.Nr))+"</span></div>"
+    + "<div class='t'>"+e(titel(x))+"</div>"
+    + "<div class='z1'><span>"+e(punkteText(x))+"</span><span class='ok'>"+ok+"</span></div></div>";
+}
+function zeigePlan(){
+  var jetzt = new Date(), heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
   var ev = [];
-  ZEILEN.forEach(function(x){
-    if(x.Geplant_am) ev.push({d:new Date(x.Geplant_am), art:"bild", x:x});
-    if(x.Reel_geplant_am) ev.push({d:new Date(x.Reel_geplant_am), art:"reel", x:x});
-  });
-  var mo = new Date(jetzt); mo.setHours(0,0,0,0); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7));
-  var heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
-  var SL = [[1,"bild","Di"],[3,"reel","Do"],[4,"bild","Fr"],[6,"reel","So"]], html = "";
-  function slot(v, tagname){
-    var x = v.x, online = x.Status==="Veröffentlicht" && v.art==="bild";
-    var pk = x.Typ==="Einzel" ? (pkt(x.Produkt_A)!=null ? pkt(x.Produkt_A)+" Pkt" : "") : (pkt(x.Produkt_A)!=null && pkt(x.Produkt_B)!=null ? pkt(x.Produkt_A)+" : "+pkt(x.Produkt_B)+" Pkt" : "");
-    return "<div class='slot belegt "+v.art+(online?" online":"")+"'><div class='k'><span>"+tagname+" "+tm(v.d)+" · "+zeit(v.d)+"</span><span>"+(v.art==="bild"?"🖼 Bild":"🎬 Reel")+"</span></div>"
-      +"<div class='t'>"+(x.Typ==="Einzel"?"🔎 ":"Nr "+e(x.Nr)+" · ")+e(titel(x))+"</div><small>"+pk+(online?" · online":"")+"</small></div>";
-  }
+  ZEILEN.forEach(function(x){ ["bild","reel"].forEach(function(a){ if(x[F[a].d]) ev.push({x:x, a:a, d:new Date(x[F[a].d])}); }); });
+  ev.sort(function(p,q){ return p.d-q.d; });
+  var mo = new Date(heute); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7) + 7*WOFF);
+  var TAKT = { 2:"Bild-Tag", 4:"Reel-Tag", 5:"Bild-Tag", 0:"Reel-Tag" }, html = "";
   for(var w=0; w<6; w++){
-    var ws = new Date(mo); ws.setDate(mo.getDate()+7*w); var we = new Date(ws); we.setDate(ws.getDate()+7);
+    var ws = new Date(mo); ws.setDate(mo.getDate()+7*w);
     var t0 = new Date(Date.UTC(ws.getFullYear(),ws.getMonth(),ws.getDate())); var dn = t0.getUTCDay()||7; t0.setUTCDate(t0.getUTCDate()+4-dn);
     var kw = Math.ceil(((t0 - new Date(Date.UTC(t0.getUTCFullYear(),0,1)))/864e5+1)/7);
-    var inWoche = ev.filter(function(v){ return v.d>=ws && v.d<we; }), benutzt = [];
-    var zellen = SL.map(function(s){
-      var tag = new Date(ws); tag.setDate(ws.getDate()+s[0]);
-      var hit = inWoche.filter(function(v){ return v.art===s[1] && v.d.toDateString()===tag.toDateString() && benutzt.indexOf(v)<0; })[0];
-      if(hit){ benutzt.push(hit); return slot(hit, s[2]); }
-      return "<div class='slot frei "+s[1]+"'><div class='k'><span>"+s[2]+" "+tm(tag)+"</span><span>"+(s[1]==="bild"?"🖼 Bild":"🎬 Reel")+"</span></div><div class='t'>"+(tag<heute?"–":"frei")+"</div></div>";
-    });
-    inWoche.filter(function(v){ return benutzt.indexOf(v)<0; }).forEach(function(v){ zellen.push(slot(v, datum(v.d).split(",")[0])); });
-    html += "<div class='woche'><h3>KW "+kw+" · "+tm(ws)+" – "+tm(new Date(we-864e5))+"</h3><div class='tage'>"+zellen.join("")+"</div></div>";
+    var tage = "";
+    for(var k=0; k<7; k++){
+      var tag = new Date(ws); tag.setDate(ws.getDate()+k);
+      var drin = ev.filter(function(v){ return v.d.toDateString()===tag.toDateString(); });
+      var kl = "tag" + (tag<heute?" vorbei":"") + (tag.getTime()===heute.getTime()?" heute":"");
+      tage += "<div class='"+kl+"' data-tag='"+ymd(tag)+"'><div class='kz'><span><b>"+tag.toLocaleDateString("de-DE",{weekday:"short"})+"</b> "+tm(tag)+"</span>"
+        + "<span><span class='takt'>"+(TAKT[tag.getDay()]||"")+"</span> <button class='plus' title='neu einplanen' data-neu='"+ymd(tag)+"'>+</button></span></div>"
+        + drin.map(function(v){ return karte(v.x, v.a); }).join("") + "</div>";
+    }
+    html += "<div class='woche'><h3>KW "+kw+" · "+tm(ws)+" – "+tm(new Date(ws.getTime()+6*864e5))+"</h3><div class='tage'>"+tage+"</div></div>";
   }
-  document.getElementById("plan").innerHTML = html;
+  $("plan").innerHTML = html;
 
-  document.getElementById("vgl").innerHTML = V.map(function(x){
+  /* Ablage: fertige Inhalte ohne Termin */
+  var ohneBild = ZEILEN.filter(function(x){ return x.Typ!=="Einzel" && !x.Geplant_am && x.Status!=="Veröffentlicht" && (x.Status==="Bereit" || x.Status==="Idee" || x.Status==="In Arbeit"); });
+  var ohneReel = ZEILEN.filter(function(x){ return x.Reel_Datei && !x.Reel_geplant_am; });
+  var fertigB = ohneBild.filter(function(x){ return x.Status==="Bereit"; }), restB = ohneBild.filter(function(x){ return x.Status!=="Bereit"; });
+  var offenE = ZEILEN.filter(function(x){ return x.Typ==="Einzel" && !x.Reel_Datei && !x.Reel_geplant_am && x.Status!=="Veröffentlicht"; });
+  $("ablage").innerHTML = "<h4>Noch nicht geplant</h4><small>In einen Tag ziehen oder anklicken.</small>"
+    + "<div class='grp'>🎬 Reels fertig ("+ohneReel.length+")</div>" + ohneReel.map(function(x){ return karte(x,"reel"); }).join("")
+    + "<div class='grp'>🖼 Bild-Posts fertig ("+fertigB.length+")</div>" + fertigB.map(function(x){ return karte(x,"bild"); }).join("")
+    + "<div class='grp'>⏳ Offen – Ideen / in Arbeit ("+(restB.length+offenE.length)+")</div>" + restB.map(function(x){ return karte(x,"bild"); }).join("") + offenE.map(function(x){ return karte(x,"reel"); }).join("");
+  verdrahten();
+}
+
+/* ---- Ziehen & Klicken ---- */
+var ZIEH = null;
+function verdrahten(){
+  document.querySelectorAll(".it").forEach(function(el){
+    el.addEventListener("dragstart", function(ev){ ZIEH = { id:+el.dataset.id, art:el.dataset.art }; el.classList.add("ziehen"); ev.dataTransfer.effectAllowed = "move"; try{ ev.dataTransfer.setData("text/plain", el.dataset.id); }catch(_){} });
+    el.addEventListener("dragend", function(){ el.classList.remove("ziehen"); });
+    el.addEventListener("click", function(){ bearbeiten(+el.dataset.id, el.dataset.art); });
+  });
+  document.querySelectorAll(".tag").forEach(function(t){
+    t.addEventListener("dragover", function(ev){ if(ZIEH){ ev.preventDefault(); t.classList.add("ueber"); } });
+    t.addEventListener("dragleave", function(){ t.classList.remove("ueber"); });
+    t.addEventListener("drop", function(ev){ ev.preventDefault(); t.classList.remove("ueber"); if(ZIEH){ var z = ZIEH; ZIEH = null; verschiebeAuf(z.id, z.art, t.dataset.tag); } });
+  });
+  document.querySelectorAll(".plus").forEach(function(b){ b.addEventListener("click", function(ev){ ev.stopPropagation(); neu(b.dataset.neu); }); });
+}
+
+async function speichern(id, werte, text){
+  if(BUSY) return false; BUSY = true; meld(text||"speichere …");
+  var r = await vg.from(T).update(werte).eq("id", id);
+  BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); return false; }
+  var x = zeile(id); if(x) Object.assign(x, werte);
+  zeige(); meld("gespeichert ✓"); return true;
+}
+
+async function verschiebeAuf(id, art, tagYmd){
+  var x = zeile(id); if(!x) return;
+  var alt = x[F[art].d] ? new Date(x[F[art].d]) : null;
+  var neuD = ausFeldern(tagYmd, alt ? hm(alt) : "18:00");
+  if(alt && alt.getTime()===neuD.getTime()) return;
+  var warMeta = x[F[art].m];
+  var w = {}; w[F[art].d] = neuD.toISOString(); w[F[art].m] = false;
+  if(await speichern(id, w, "verschiebe …") && warMeta)
+    meld("Verschoben. Achtung: „"+titel(x)+"“ war schon in Meta eingeplant – bitte dort auch auf "+datum(neuD)+" "+zeit(neuD)+" ändern, dann hier anklicken und Haken setzen.");
+}
+
+/* Bearbeiten-Dialog */
+var EDIT = null;
+function bearbeiten(id, art){
+  var x = zeile(id); if(!x) return; EDIT = { id:id, art:art };
+  var d = x[F[art].d] ? new Date(x[F[art].d]) : null;
+  $("eTitel").textContent = titel(x);
+  $("eArt").textContent = F[art].n + " · " + (x.Typ==="Einzel" ? "Einzelprodukt" : "Vergleich Nr "+x.Nr) + (punkteText(x) ? " · "+punkteText(x) : "") + (art==="reel" && x.Reel_Datei ? " · "+x.Reel_Datei.split("/").pop() : "");
+  $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "18:00";
+  $("eMeta").checked = !!x[F[art].m]; $("eMeta").disabled = !d;
+  $("eHinweis").hidden = !x[F[art].m];
+  $("eRaus").hidden = !d;
+  $("dlgEdit").showModal();
+}
+$("eSpeichern").onclick = async function(){
+  if(!EDIT || !$("eDatum").value){ $("eDatum").reportValidity(); return; }
+  var x = zeile(EDIT.id), art = EDIT.art, neuD = ausFeldern($("eDatum").value, $("eZeit").value);
+  var alt = x[F[art].d] ? new Date(x[F[art].d]).getTime() : null, meta = $("eMeta").checked;
+  if(alt!==null && alt!==neuD.getTime() && x[F[art].m] && meta) meta = false;   // Termin geaendert -> in Meta nachziehen
+  var w = {}; w[F[art].d] = neuD.toISOString(); w[F[art].m] = meta;
+  $("dlgEdit").close(); await speichern(EDIT.id, w);
+};
+$("eRaus").onclick = async function(){
+  if(!EDIT) return; var x = zeile(EDIT.id), art = EDIT.art;
+  if(x[F[art].m] && !confirm("Dieser Termin ist in Meta eingeplant. Hier entfernen? (In Meta bitte selbst löschen.)")) return;
+  var w = {}; w[F[art].d] = null; w[F[art].m] = false;
+  $("dlgEdit").close(); await speichern(EDIT.id, w, "entferne Termin …");
+};
+
+/* Neu-Dialog: vorhandenen Inhalt einplanen oder neue Idee anlegen */
+function neuOptionen(){
+  var art = $("nArt").value, o = "<option value='neu'>➕ Neue Idee anlegen …</option>";
+  var frei = ZEILEN.filter(function(x){ return !x[F[art].d] && x.Status!=="Veröffentlicht" && (art==="bild" ? x.Typ!=="Einzel" : true); });
+  var gr = [["Fertig","Bereit"],["In Arbeit","In Arbeit"],["Ideen","Idee"]];
+  gr.forEach(function(g){
+    var l = frei.filter(function(x){ return x.Status===g[1]; }); if(!l.length) return;
+    o += "<optgroup label='"+g[0]+"'>" + l.map(function(x){ return "<option value='"+x.id+"'>"+(x.Typ==="Einzel"?"🔎 ":"Nr "+e(x.Nr)+" · ")+e(titel(x))+(art==="reel" && !x.Reel_Datei ? " (Reel noch bauen)" : "")+"</option>"; }).join("") + "</optgroup>";
+  });
+  $("nWas").innerHTML = o;
+  var erst = $("nWas").querySelector("optgroup option"); if(erst) $("nWas").value = erst.value;
+  $("nNeu").hidden = $("nWas").value!=="neu";
+}
+function neu(tagYmd){
+  $("nDatum").value = tagYmd; $("nZeit").value = "18:00";
+  var wd = ausFeldern(tagYmd).getDay(); $("nArt").value = (wd===4 || wd===0) ? "reel" : "bild";
+  ["nTitel","nA","nB","nNotiz"].forEach(function(i){ $(i).value = ""; }); $("nTyp").value = "Vergleich"; $("nBlab").hidden = false;
+  neuOptionen(); $("dlgNeu").showModal();
+}
+$("nArt").onchange = neuOptionen;
+$("nWas").onchange = function(){ $("nNeu").hidden = $("nWas").value!=="neu"; };
+$("nTyp").onchange = function(){ $("nBlab").hidden = $("nTyp").value==="Einzel"; };
+$("nSpeichern").onclick = async function(){
+  if(!$("nDatum").value){ $("nDatum").reportValidity(); return; }
+  var art = $("nArt").value, d = ausFeldern($("nDatum").value, $("nZeit").value);
+  if($("nWas").value !== "neu"){
+    var w = {}; w[F[art].d] = d.toISOString(); w[F[art].m] = false;
+    $("dlgNeu").close(); await speichern(+$("nWas").value, w, "plane ein …"); return;
+  }
+  var typ = $("nTyp").value, tit = $("nTitel").value.trim();
+  if(!tit && !$("nA").value.trim()){ $("nTitel").focus(); meld("Bitte Titel oder Produkt angeben."); return; }
+  var gl = ZEILEN.filter(function(x){ return (x.Typ==="Einzel")===(typ==="Einzel"); }).map(function(x){ return x.Nr||0; });
+  var nr = Math.max.apply(null, gl.concat([typ==="Einzel"?100:0])) + 1;
+  var neuZ = { Nr:nr, Typ:typ, Zeile1:tit || null, Produkt_A:$("nA").value.trim().toUpperCase() || null,
+               Produkt_B: typ==="Einzel" ? null : ($("nB").value.trim().toUpperCase() || null),
+               Status:"Idee", Notiz:$("nNotiz").value.trim() || null, Fehlt:"Claude: bauen (Grafik/Reel, Text)" };
+  neuZ[F[art].d] = d.toISOString(); neuZ[F[art].m] = false;
+  if(BUSY) return; BUSY = true; meld("lege an …");
+  var r = await vg.from(T).insert(neuZ).select("*");
+  BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); return; }
+  $("dlgNeu").close(); meld("angelegt ✓ – Claude baut den Inhalt"); laden();
+};
+
+/* ---- Tabellen ---- */
+function zeigeTabellen(){
+  var V = ZEILEN.filter(function(x){ return x.Typ!=="Einzel"; }), E = ZEILEN.filter(function(x){ return x.Typ==="Einzel"; });
+  $("vgl").innerHTML = V.map(function(x){
     var i = ZEILEN.indexOf(x), a = pkt(x.Produkt_A), b = pkt(x.Produkt_B), s = STATUS[x.Status] || ["idee", x.Status];
-    var bild = x.Status==="Veröffentlicht" ? termin(null,true) : (x.Geplant_am ? termin(x.Geplant_am) : "<span class='st "+s[0]+"'>"+e(s[1])+"</span>");
-    var reel = x.Reel_geplant_am ? termin(x.Reel_geplant_am) : (x.Reel_Datei ? "<span class='st fertig'>fertig</span>" : "<small>–</small>");
-    return "<tr"+(x.Geplant_am?" class='geplant'":"")+"><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
+    var bild = badge(x,"bild") || "<span class='st "+s[0]+"'>"+e(s[1])+"</span>";
+    var reel = badge(x,"reel") || (x.Reel_Datei ? "<span class='st fertig'>fertig</span>" : "<small>–</small>");
+    return "<tr><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
       +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
       +"<td>"+bild+"</td><td>"+reel+"</td><td>"+e(x.Fehlt||"")+"</td>"+knoepfe(i)+"</tr>";
   }).join("");
-
-  document.getElementById("ein").innerHTML = E.length ? E.map(function(x){
+  $("ein").innerHTML = E.length ? E.map(function(x){
     var i = ZEILEN.indexOf(x), a = pkt(x.Produkt_A), s = STATUS[x.Status] || ["idee", x.Status];
-    var reel = x.Reel_geplant_am ? termin(x.Reel_geplant_am) : (x.Reel_Datei ? "<span class='st fertig'>fertig</span> <small>"+e(x.Reel_Datei.split("/").pop())+"</small>" : "<small>–</small>");
+    var reel = badge(x,"reel") || (x.Reel_Datei ? "<span class='st fertig'>fertig</span> <small>"+e(x.Reel_Datei.split("/").pop())+"</small>" : "<small>–</small>");
     return "<tr><td>"+e(x.Nr)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td><td>"+reel+"</td><td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td><small>"+e(x.Notiz||"")+"</small>"+(x.Fehlt?"<br><span class='st fehlt'>"+e(x.Fehlt)+"</span>":"")+"</td>"+knoepfe(i)+"</tr>";
   }).join("") : "<tr><td colspan='7'><small>Noch keine Einzelprodukte.</small></td></tr>";
-
   meld(ZEILEN.length+" Einträge · "+V.length+" Vergleiche · "+E.length+" Einzelprodukte");
 }
-
 function gruppe(x){ return ZEILEN.filter(function(z){ return (z.Typ==="Einzel")===(x.Typ==="Einzel"); }); }
 function knoepfe(i){
   var x = ZEILEN[i], gl = gruppe(x), j = gl.indexOf(x);
@@ -188,29 +389,25 @@ function knoepfe(i){
     +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(j===gl.length-1?" disabled":"")+">▼</button>"
     +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td>";
 }
-
 async function schiebe(i, d){
   if(BUSY) return; var a = ZEILEN[i]; if(!a) return;
   var gl = gruppe(a), b = gl[gl.indexOf(a)+d]; if(!b) return;
   BUSY = true; meld("verschiebe …");
   var na = a.Nr, nb = b.Nr;
-  var r1 = await vg.from("Instagram_Vergleich").update({ Nr: nb }).eq("id", a.id);
-  var r2 = r1.error ? r1 : await vg.from("Instagram_Vergleich").update({ Nr: na }).eq("id", b.id);
+  var r1 = await vg.from(T).update({ Nr: nb }).eq("id", a.id);
+  var r2 = r1.error ? r1 : await vg.from(T).update({ Nr: na }).eq("id", b.id);
   BUSY = false;
   if(r1.error || r2.error){ meld("Fehler: " + (r1.error||r2.error).message); return; }
   a.Nr = nb; b.Nr = na; ZEILEN.sort(function(p,q){ return (p.Nr||0)-(q.Nr||0); }); zeige();
-  laden();
 }
-
 async function loesche(i){
   var x = ZEILEN[i]; if(!x || BUSY) return;
   if(!confirm("Nr " + x.Nr + " „" + titel(x) + "“ löschen?")) return;
   BUSY = true; meld("lösche …");
-  var r = await vg.from("Instagram_Vergleich").update({ Status: "Verworfen" }).eq("id", x.id);
+  var r = await vg.from(T).update({ Status: "Verworfen" }).eq("id", x.id);
   BUSY = false;
   if(r.error){ meld("Fehler: " + r.error.message); return; }
   ZEILEN.splice(i, 1); zeige();
-  laden();
 }
 
 laden();
