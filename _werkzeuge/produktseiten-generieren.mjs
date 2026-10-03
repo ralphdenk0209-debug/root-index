@@ -326,8 +326,8 @@ p.einordnung{margin:26px 0 0;padding:14px 16px;border-left:3px solid var(--acc);
 h2{font-size:1rem;margin-top:24px}
 .quelle{font-size:.78rem;color:var(--mut);margin-top:26px;line-height:1.7}
 .krit{color:#ff8a7a}
-.sozial{margin:6px 0 14px;font-size:.85rem;color:var(--mut);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
-.sozial a{display:inline-flex;align-items:center;gap:6px;color:inherit;text-decoration:none;font-weight:600}
+.sozial{margin:10px 0 16px;font-size:1rem;font-weight:600;color:var(--mut);display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center}
+.sozial a{display:inline-flex;align-items:center;gap:8px;font-size:1rem;color:inherit;text-decoration:none;font-weight:600}
 .sozial a:hover{color:var(--acc)}
 .fuss{margin:34px 0 10px;padding-top:14px;border-top:1px solid var(--line);font-size:.78rem;color:var(--mut)}
 .rm{margin-top:30px;padding-top:16px;border-top:1px solid var(--line);font-size:.86rem;color:var(--mut)}
@@ -380,7 +380,7 @@ ${inhalt}
 ${rueckmeldung ? RM_BLOCK + UNT_BLOCK : ""}
 <p class="fuss">Bewertet wird die Zusammensetzung, nicht die Werbung. Keine medizinische oder ernährungstherapeutische Beratung.
 · <a href="/">Zur App</a> · <a href="/produkt/">Produktverzeichnis</a></p>
-<p class="sozial">Folge uns: <a href="https://www.instagram.com/root_index.de/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.3" cy="6.7" r="1.1" fill="currentColor" stroke="none"/></svg>root_index.de</a> <a href="https://www.facebook.com/profile.php?id=61594758504822" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="currentColor"><path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.6V4.4c-.3 0-1.2-.1-2.3-.1-2.3 0-3.9 1.4-3.9 4v2.2H7.9v3h2.6V21h3z"/></svg>Root Index</a></p>
+<p class="sozial">Folge uns: <a href="https://www.instagram.com/root_index.de/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="34" height="34" aria-label="Instagram" role="img"><defs><radialGradient id="ri-ig-g" cx="0.3" cy="1.07" r="1.15"><stop offset="0" stop-color="#FFD600"/><stop offset=".25" stop-color="#FF7A00"/><stop offset=".5" stop-color="#FF0069"/><stop offset=".75" stop-color="#D300C5"/><stop offset="1" stop-color="#7638FA"/></radialGradient></defs><rect width="24" height="24" rx="6.5" fill="url(#ri-ig-g)"/><rect x="5" y="5" width="14" height="14" rx="4.2" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="12" cy="12" r="3.4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.3" cy="7.7" r="1.05" fill="#fff"/></svg>root_index.de</a> <a href="https://www.facebook.com/profile.php?id=61594758504822" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" width="34" height="34" aria-label="Facebook" role="img"><circle cx="12" cy="12" r="12" fill="#0866FF"/><path fill="#fff" d="M9.1 23.69v-7.98H6.63v-3.67H9.1v-1.58c0-4.08 1.85-5.98 5.86-5.98.4 0 .95.04 1.47.1.39.04.78.11 1.14.2v3.32c-.21-.02-.43-.03-.65-.04-.25 0-.49-.01-.73-.01-.71 0-1.26.1-1.68.31-.29.15-.52.36-.68.62-.26.42-.37 1-.37 1.75v1.3h3.92l-.39 2.1-.29 1.56h-3.25v8.25A12.1 12.1 0 0 1 9.1 23.69z"/></svg>Root Index</a></p>
 </main>
 <script src="/produkt/seite.js?v=${AKTIVA_V}" defer></script>
 </body>
