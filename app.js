@@ -2827,7 +2827,7 @@ const SCORE_REGELN = {
   },
   "Nährwert": {
     farbe:ACHS_FARBE.naehr,
-    regel:"Zucker, gesättigte Fettsäuren, Salz, Ballaststoffe, Eiweiß und <b>Blutzucker</b> – jeweils auf 100 g normiert, damit Produkte vergleichbar bleiben. Blutzucker heißt: Wie viele Kohlenhydrate kommen auf ein Gramm Ballaststoffe? Höchstens 5 g = volle Punkte, höchstens 10 g = halbe, mehr = keine. Eiweißreiche Produkte rücken eine Stufe besser, bei sehr wenig Kohlenhydraten (höchstens 5 g) zählt der Teil nicht.",
+    regel:"Zucker, gesättigte Fettsäuren, Salz, Ballaststoffe, Eiweiß und <b>Blutzucker</b> – jeweils auf 100 g normiert, damit Produkte vergleichbar bleiben. Blutzucker heißt: Wie viele Kohlenhydrate kommen auf ein Gramm Ballaststoffe? Höchstens 5 g = volle Punkte, höchstens 10 g = halbe, mehr = keine. Eiweißreiche Produkte rücken eine Stufe besser, bei sehr wenig Kohlenhydraten (höchstens 5 g) zählt der Teil nicht. Bei Milchprodukten ohne nennenswerte Ballaststoffe (Sahne, Milch, Käse, Quark) zählt die Ballaststoff-Zeile nicht mit – ob „0 g“ auf dem Etikett steht oder gar nichts, macht so keinen Unterschied.",
     quelle:"DGE-Referenzwerte · EU-Verordnung 1169/2011 · Blutzucker: Verhältnis Kohlenhydrate zu Ballaststoffen (Mozaffarian et al. 2013), glykämischer Index von Hülsenfrüchten (Atkinson et al. 2021). Bei reinen Nahrungsergänzungsmitteln entfällt diese Achse (dort ist ein Makro-Profil pro 100 g nicht sinnvoll)."
   }
 };
@@ -9562,6 +9562,9 @@ function wikiOpen(){
         • mehr → keine Punkte (z. B. Reiswaffeln, Cornflakes, weißer Reis)<br>
         <b>Eiweißreiche</b> Produkte (ab 6 g Eiweiß je 100 kcal, z. B. Linsen) rücken eine Stufe besser – Eiweiß bremst den Anstieg. Bei sehr wenig Kohlenhydraten (höchstens 5 g je 100 g, z. B. Käse, Fleisch, Milch) zählt dieser Teil nicht. Er ist einer von sechs Teilen der Nährwertqualität; die Achse bleibt bei 40 Punkten.<br>
         <i>Grenze: Ob Getreide gepufft oder gemahlen ist, steht nicht auf dem Etikett – den echten glykämischen Index gibt es nur aus Messtabellen, und den nutzen wir bewusst nicht.</i>`)}
+
+      ${box(`<b>Ballaststoffe bei Milchprodukten (seit 04.10.2026).</b> Sahne, Milch, Käse, Quark oder Naturjoghurt haben von Natur aus keine Ballaststoffe. Manche Etiketten schreiben „0 g“, andere lassen die Zeile weg – gleiche Sahne bekam dadurch unterschiedliche Punkte. Deshalb gilt: Bei Milchprodukten mit höchstens 5 g Kohlenhydraten und kaum Ballaststoffen zählt die Ballaststoff-Zeile <b>nicht mit</b>. Die übrigen Teile (Zucker, gesättigtes Fett, Salz, Eiweiß) tragen die Nährwertqualität allein.<br>
+        Hat ein Milchprodukt <b>nennenswert Ballaststoffe</b> (z. B. mit Hafer oder Inulin), zählen sie weiter als Plus. Fruchtjoghurts und Desserts sind nicht betroffen.`)}
 
       ${H("Zusatzstoffe – wissenschaftlich bewertet")}
       ${box(`Die Zusatzstoff-Wertung misst die <b>gesundheitliche Bedenklichkeit</b> – nicht den Verarbeitungsgrad (den zeigt die Achse „Verarbeitung“). Grundlage: <b>EU-Verordnung (EG) Nr. 1333/2008</b> und <b>EFSA</b>-Bewertungen. Wir prüfen die Studienlage regelmäßig.<br><br>
@@ -17217,7 +17220,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-04";
+const APP_BUILD = "2026-10-04-05";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
