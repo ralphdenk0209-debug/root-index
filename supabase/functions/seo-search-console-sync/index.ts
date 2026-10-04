@@ -219,6 +219,7 @@ Deno.serve(async (req: Request) => {
   }
 
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+  const startZeit = Date.now();
   const ergebnis: Record<string, unknown> = { ok: true };
 
   try {
@@ -229,27 +230,25 @@ Deno.serve(async (req: Request) => {
 
     // 1) Klicks/Impressionen je Tag
     const zeilen = await suchdatenHolen(token, siteUrl);
-    for (const z of zeilen) {
-      const { error } = await sb.from("seo_suchdaten_taeglich").upsert({
-        tag: z.tag,
-        klicks: z.klicks,
-        impressionen: z.impressionen,
-        ctr: z.ctr,
-        position: z.position,
-        aktualisiert_am: new Date().toISOString(),
-      });
-      if (error) throw new Error(`Upsert seo_suchdaten_taeglich (${z.tag}): ${error.message}`);
+    // 04.10.2026 (Ralph jaja): in einem Rutsch speichern statt Zeile fuer Zeile (Lauf lag bei 146-150 s, Grenze 150 s)
+    const jetztIso = new Date().toISOString();
+    if (zeilen.length) {
+      const { error } = await sb.from("seo_suchdaten_taeglich").upsert(zeilen.map((z) => ({
+        tag: z.tag, klicks: z.klicks, impressionen: z.impressionen, ctr: z.ctr, position: z.position, aktualisiert_am: jetztIso,
+      })));
+      if (error) throw new Error(`Upsert seo_suchdaten_taeglich: ${error.message}`);
     }
     ergebnis.tage_aktualisiert = zeilen.length;
 
     // 1b) je Land
     try {
       const laender = await laenderHolen(token, siteUrl);
-      for (const z of laender) {
-        const { error } = await sb.from("seo_suchdaten_land").upsert({
-          tag: z.tag, land: z.land, klicks: z.klicks, impressionen: z.impressionen, aktualisiert_am: new Date().toISOString(),
-        });
-        if (error) throw new Error(`Upsert seo_suchdaten_land (${z.tag}/${z.land}): ${error.message}`);
+      for (let i = 0; i < laender.length; i += 500) {
+        const teil = laender.slice(i, i + 500).map((z) => ({
+          tag: z.tag, land: z.land, klicks: z.klicks, impressionen: z.impressionen, aktualisiert_am: jetztIso,
+        }));
+        const { error } = await sb.from("seo_suchdaten_land").upsert(teil);
+        if (error) throw new Error(`Upsert seo_suchdaten_land (Block ${i}): ${error.message}`);
       }
       ergebnis.laender_zeilen = laender.length;
     } catch (e) { ergebnis.laender_fehler = (e as Error).message; }
@@ -277,6 +276,8 @@ Deno.serve(async (req: Request) => {
     let geprueft = 0;
     const fehlerListe: string[] = [];
     for (const url of stichprobe) {
+      // 04.10.2026: Zeitbudget - nach 110 s aufhoeren, der naechste Lauf macht weiter
+      if (Date.now() - startZeit > 110_000) { ergebnis.stichprobe_abgebrochen = "Zeitbudget 110 s"; break; }
       try {
         const check = await urlPruefen(token, siteUrl, url);
         const istBekannt = bekannteMap.has(url);
@@ -299,6 +300,7 @@ Deno.serve(async (req: Request) => {
     ergebnis.stichprobe_kandidaten = kandidaten.length;
     if (fehlerListe.length) ergebnis.stichprobe_fehler = fehlerListe.slice(0, 5);
 
+    ergebnis.dauer_ms = Date.now() - startZeit;
     return new Response(JSON.stringify(ergebnis), { headers: { "Content-Type": "application/json" } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, fehler: (e as Error).message, teilergebnis: ergebnis }), {
