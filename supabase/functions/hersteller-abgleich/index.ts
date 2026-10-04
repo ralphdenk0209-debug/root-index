@@ -206,9 +206,15 @@ function naehrwerteText(text: string): Record<string, number> | null {
   if (start < 0) return null;
   const block = text.slice(start, start + 1500);
   const o: Record<string, number> = {};
-  const km = block.match(NW_MUSTER[0][1]);
-  if (km) o.kcal = Number(km[1].replace(",", "."));
   const zeilen = block.split(/\n/).map((z) => z.trim()).filter((z) => z !== "");
+  // kcal: nur aus der Brennwert-/Energie-Zeile (+ naechste Zeile), nie aus "Referenzmenge ... 2000 kcal"
+  for (let i = 0; i < zeilen.length && o.kcal == null; i++) {
+    if (!/Brennwert|Energie|(?:É|E)nergie|Energy|Energia|Valore energetico/i.test(zeilen[i])) continue;
+    const zz = zeilen[i] + " " + (zeilen[i + 1] ?? "");
+    if (/Referenz|reference|r(?:é|e)f(?:é|e)rence|riferimento/i.test(zz)) continue;
+    const km = zz.match(NW_MUSTER[0][1]);
+    if (km) o.kcal = Number(km[1].replace(",", "."));
+  }
   for (let i = 0; i < zeilen.length; i++) {
     const z = zeilen[i];
     for (const [key, re] of NW_MUSTER.slice(1)) {
