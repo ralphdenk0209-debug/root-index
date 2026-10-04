@@ -502,8 +502,19 @@ async function rmLaden(){
       .map(([l,v,c])=>`<div><span class="lab">${l}</span><i class="${c}" style="width:${Math.max(3,100*(Number(v)||0)/mx)}%"></i><span class="n">${de(v)}</span></div>`).join('');
     const kurz=(t)=>String(t).replace(/^\/produkt\//,'').replace(/-p\d+\.html$/,'').replace(/-/g,' ');
     $('rmListe').innerHTML=(d.texte||[]).length
-      ? (d.texte||[]).slice(0,8).map(t=>`<div class="z"><div class="k"><b>${esc(kurz(t.seite))}</b><span>${t.urteil==='meldung'?'Angabe gemeldet':'nicht hilfreich'} · ${esc(String(t.tag))}</span></div>${t.hinweis?`<div class="t">${esc(t.hinweis)}</div>`:''}</div>`).join('')
+      ? (d.texte||[]).slice(0,12).map(t=>`<div class="z"><div class="k"><b>${esc(kurz(t.seite))}</b><span>${t.urteil==='meldung'?'Angabe gemeldet':'nicht hilfreich'} · ${esc(String(t.tag))} <button class="rmOk" data-typ="${esc(t.quelle_typ||'seite')}" data-id="${esc(String(t.id))}" title="als erledigt abhaken" style="margin-left:6px;border:1px solid var(--line,#ccc);background:transparent;color:inherit;border-radius:8px;padding:1px 8px;font-size:11px;cursor:pointer">✓ erledigt</button></span></div>${t.hinweis?`<div class="t">${esc(t.hinweis)}</div>`:''}</div>`).join('')
       : '<div class="leer">Keine offenen Rückmeldungen.</div>';
+    /* 04.10.2026 (Ralph): abhaken - Produkt-, Rezept- und Seitenmeldungen je ueber ihre Funktion. */
+    $('rmListe').querySelectorAll('.rmOk').forEach(btn=>btn.onclick=async (ev)=>{
+      ev.preventDefault(); ev.stopPropagation(); btn.disabled=true;
+      const id=Number(btn.dataset.id), typ=btn.dataset.typ;
+      const fn= typ==='produkt' ? ['cb_admin_produkt_meldung_erledigt',{p_id:id}]
+              : typ==='rezept'  ? ['cb_admin_rezept_meldung_erledigt',{p_id:id}]
+              :                   ['cb_admin_rueckmeldung_erledigt',{p_id:id}];
+      const {error}=await client.rpc(fn[0],fn[1]);
+      if(error){ btn.disabled=false; btn.textContent='Fehler'; return; }
+      rmLaden();
+    });
   }catch(e){}
 }
 
