@@ -3368,7 +3368,8 @@ function detail2(d){
     var e=String((p&&p.braten_eignung)||"").trim();
     if(!e) return "";
     var kat=String((p&&p.kategorie)||"").trim();
-    if(e==="ungeprueft" && kat!=="Öle & Fette") return "";
+    /* 04.10.2026: nur bei Ölen & Fetten (Ralph 12.09.: "braten ist generell nur bei oelen erforderlich") - wie die App. */
+    if(kat!=="Öle & Fette") return "";
     var m={
       geeignet:              ["✅","zum Braten geeignet","var(--k-e7f4ec)","var(--k-1f5e34)"],
       /* 04.10.2026 (Ralph): Grauzone 190–209 °C eigene gelbe Stufe statt "ungeprueft". */
@@ -17177,7 +17178,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-01";
+const APP_BUILD = "2026-10-04-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
