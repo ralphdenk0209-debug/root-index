@@ -16840,6 +16840,15 @@ async function meldeRezept(id){
   const {error}=await client.rpc("cb_rezept_melden",{p_rezept:id,p_grund:g||""});
   alert(error?("Fehler: "+error.message):"Danke – das Rezept wurde gemeldet und wird geprüft.");
 }
+async function rezAutorAusblenden(id){
+  if(!confirm("Rezepte dieses Nutzers nicht mehr anzeigen?")) return;
+  const {error}=await client.rpc("cb_rezept_autor_ausblenden",{p_rezept:id});
+  if(error){ alert("Nicht ausgeblendet: "+error.message); return; }
+  try{ closeP(); }catch(e){}
+  if(typeof toast==='function') toast('Nutzer ausgeblendet – seine Rezepte erscheinen nicht mehr.');
+  try{ await loadRezepte(); }catch(e){}
+}
+if(typeof window!=="undefined") window.rezAutorAusblenden=rezAutorAusblenden;
 async function sperreRezept(id,sp){
   const {error}=await client.rpc("cb_rezept_sperren",{p_rezept:id,p_sperren:sp});
   if(error){ alert("Fehler: "+error.message); return; }
@@ -16995,6 +17004,9 @@ function rezeptDetail(r){
   let modParts=[];
   if(ME && !r.is_own && (r.quelle||"")!=="CleanBase")
     modParts.push(`<button onclick="meldeRezept('${r.id}')" style="padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--k-b45309);cursor:pointer;font-size:12.5px">⚐ Melden</button>`);
+  /* 04.10.2026 (Apple 1.2): Autor eines fremden Community-Rezepts fuer mich ausblenden. */
+  if(ME && !r.is_own && /^Community/.test(r.quelle||""))
+    modParts.push(`<button onclick="rezAutorAusblenden('${r.id}')" style="padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;font-size:12.5px">🚫 Nutzer ausblenden</button>`);
   if(isAdmin){
     if(!r.is_own) modParts.push(`<button onclick="editRezept('${r.id}')" style="padding:6px 11px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:12.5px">✏️ Bearbeiten</button>`);
     modParts.push(`<span style="font-size:12.5px;color:var(--muted)">${r.gemeldet||0} Meldung(en)</span>`);
@@ -17255,7 +17267,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-05";
+const APP_BUILD = "2026-10-04-06";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
