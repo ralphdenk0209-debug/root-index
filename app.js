@@ -2321,6 +2321,40 @@ async function prodInsTagebuch(id){
   try{ await tbOpenAdd(tbGuessMeal(), id); }catch(e){ console.error("prodInsTagebuch:", e); }
 }
 if(typeof window!=="undefined") window.prodInsTagebuch=prodInsTagebuch;
+/* 04.10.2026 (Ralph): "auf die produktkarte muss ein button melden" - falsche Zuordnung
+   zum Barcode, fehlende Zutaten (z. B. Nutella), falsche Naehrwerte. Speichert ueber
+   cb_produkt_melden (Produkt_Meldungen), erscheint im Cockpit unter Rueckmeldungen.
+   Gleiches Blatt in der App (ErgebnisView). */
+function prodMelden(id){
+  if(!ME){ openLogin(); return; }
+  const alt=document.getElementById('prodMeldOv'); if(alt) alt.remove();
+  const ov=document.createElement('div'); ov.id='prodMeldOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10050;display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  const arten=[['falsches_produkt','Falsches Produkt zum Barcode'],['zutaten','Zutaten fehlen oder sind falsch'],['naehrwerte','Nährwerte stimmen nicht'],['sonstiges','Etwas anderes']];
+  ov.innerHTML='<div style="background:var(--card,#fff);border-radius:18px 18px 0 0;padding:16px 16px 22px;width:100%;max-width:520px;color:var(--ink)">'
+    +'<div style="font-weight:800;font-size:15px;margin-bottom:4px">Fehler melden</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Danke! Wir prüfen das Produkt und korrigieren es.</div>'
+    +arten.map(function(a,i){ return '<label style="display:flex;gap:9px;align-items:center;padding:8px 0;font-size:14px;cursor:pointer"><input type="radio" name="pmArt" value="'+a[0]+'"'+(i===0?' checked':'')+'>'+a[1]+'</label>'; }).join('')
+    +'<textarea id="pmText" maxlength="500" rows="3" placeholder="Was stimmt nicht? (freiwillig)" style="width:100%;box-sizing:border-box;margin-top:8px;padding:10px;border:1px solid var(--line);border-radius:11px;font-size:14px;background:var(--card);color:var(--ink)"></textarea>'
+    +'<div id="pmMeld" style="font-size:12.5px;margin-top:6px"></div>'
+    +'<button id="pmSenden" style="margin-top:10px;width:100%;background:var(--k-16a34a,#16a34a);color:#fff;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Melden</button>'
+    +'<button onclick="document.getElementById(\'prodMeldOv\').remove()" style="margin-top:8px;width:100%;background:none;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:10px;font-size:13px;cursor:pointer">Abbrechen</button>'
+  +'</div>';
+  document.body.appendChild(ov);
+  document.getElementById('pmSenden').onclick=async function(){
+    const b=this; b.disabled=true;
+    const art=(ov.querySelector('input[name=pmArt]:checked')||{}).value||'sonstiges';
+    const txt=(document.getElementById('pmText')||{}).value||'';
+    try{
+      const {error}=await client.rpc('cb_produkt_melden',{p_produkt:id,p_art:art,p_text:txt,p_quelle:'web'});
+      if(error) throw error;
+      ov.remove();
+      if(typeof toast==='function') toast('Danke – gemeldet.');
+    }catch(e){ b.disabled=false; document.getElementById('pmMeld').innerHTML='<span style="color:#b91c1c">Nicht gesendet: '+esc(e.message||String(e))+'</span>'; }
+  };
+}
+if(typeof window!=="undefined") window.prodMelden=prodMelden;
 /* 30.09.2026 Webtest P7: Esc schliesst die Produktkarte (nur wenn kein Dialog darueber liegt). */
 document.addEventListener("keydown", function(e){
   if(e.key!=="Escape") return;
@@ -3572,6 +3606,7 @@ function detail2(d){
       /* 30.09.2026 Webtest P6: wie in der App - direkt aus der Karte ins Tagebuch */
       + '<button onclick="prodInsTagebuch(\''+d.id+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen,#fff);cursor:pointer;font-size:12.5px;font-weight:700">📒 Ins Tagebuch</button>'
       + '<button onclick="prodToEinkauf(\''+d.id+'\')" style="padding:7px 11px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:12.5px;font-weight:600">🛒 Einkaufsliste</button>'
+      + '<button onclick="prodMelden(\''+d.id+'\')" title="Falsches Produkt zum Barcode, fehlende Zutaten, falsche Nährwerte" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;font-size:12.5px;font-weight:600">⚠️ Fehler melden</button>'
       + amazonBtn(d,true)
     + '</div>'
     + (amazonUrl(d)?AMZ_HINWEIS:'')
@@ -5287,7 +5322,7 @@ async function detail(d){
     ${adminTestBtn}
     <h2>${esc(d.name)}</h2>
     <div class="marke">${(mkLabel(d.marke)?esc(mkLabel(d.marke))+" · ":"")}${esc(d.kategorie||"")}${d.unterkategorie?(" · "+esc(d.unterkategorie)):""} ${efChip(d.ernaehrungsform)}</div>
-    <div style="margin:8px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button onclick="prodToEinkauf('${d.id}')" style="padding:7px 12px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:13px;font-weight:600">🛒 Zur Einkaufsliste</button>${amazonBtn(d)}${(ME&&ME.is_admin)?`<button onclick="adminDeleteProdukt('${d.id}','${esc(d.name||"").replace(/'/g,"")}')" style="padding:7px 12px;border:1px solid var(--k-fca5a5);border-radius:8px;background:var(--card);color:var(--k-dc2626);cursor:pointer;font-size:13px">🗑️ Produkt ausblenden</button>`:""}</div>
+    <div style="margin:8px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center"><button onclick="prodToEinkauf('${d.id}')" style="padding:7px 12px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:13px;font-weight:600">🛒 Zur Einkaufsliste</button>${amazonBtn(d)}<button onclick="prodMelden('${d.id}')" style="padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;font-size:13px">⚠️ Fehler melden</button>${(ME&&ME.is_admin)?`<button onclick="adminDeleteProdukt('${d.id}','${esc(d.name||"").replace(/'/g,"")}')" style="padding:7px 12px;border:1px solid var(--k-fca5a5);border-radius:8px;background:var(--card);color:var(--k-dc2626);cursor:pointer;font-size:13px">🗑️ Produkt ausblenden</button>`:""}</div>
     ${amazonUrl(d)?AMZ_HINWEIS:""}
     ${BILD[d.id]?`<div style="text-align:center;margin:8px 0"><img src="${esc(BILD[d.id])}" alt="" style="max-height:170px;max-width:100%;border-radius:12px" onerror="this.style.display='none'"></div>`:""}
     ${(d.dosis_text||d.inhalt_menge)?`<div style="background:var(--greenlt);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:8px 0;font-size:13px;color:var(--ink);line-height:1.5">${d.dosis_text?`<div><b>Angegebene Dosis:</b> ${esc(d.dosis_text)}</div>`:""}${d.inhalt_menge?`<div><b>Inhalt:</b> ${esc(String(d.inhalt_menge).replace(/\.0+$/,""))}${d.inhalt_einheit?(" "+esc(d.inhalt_einheit)):""}${d.form?(" · "+esc(d.form)):""}</div>`:""}</div>`:""}
