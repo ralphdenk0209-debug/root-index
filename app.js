@@ -1147,7 +1147,7 @@ function fetchAlleProdukte(){
 /* Work #187, Ralph 22.08.2026: zutaten und enthaelt_alkohol kosten Faktor 7
    (1000 Zeilen 2263 ms mit, 300 ms ohne). Die Liste braucht sie nicht - beide
    Felder kommen beim Oeffnen eines Produkts ueber cb_web_produkt_detail. */
-const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand,salmiak_stufe,salmiak_beleg,spuren_hinweis";
+const PROD_LISTE_FELDER = "id,name,marke,kategorie,unterkategorie,geschmack,clean_score,bewertung,score_vollstaendig,p_zutaten,p_naehrwert,p_zusatzstoffe,p_preis,p_transparenz,p_alltag,warum,schwaechen,ki_nutzbar,p_nova,m_kcal,m_protein,m_fett,m_ges_fett,m_kh,m_zucker,m_ballast,m_salz,ernaehrungsform,variante_von,zusatz,dosis_text,inhalt_menge,inhalt_einheit,form,naehrstoffe,portion_g,portion_einheit,produktlink,ean,quelle,verifiziert,verifiziert_am,synonyme,stueck,mengen_einheit,mengen_einheit_quelle,ohne_index,bio,bio_quelle,braten_eignung,braten_grund,braten_beleg,braten_stand,braten_temp_min,braten_temp_max,salmiak_stufe,salmiak_beleg,spuren_hinweis";
 const PROD_LISTE_NICHT = ["zutaten","enthaelt_alkohol"];
 let _fapWaechterLief = false;
 /* Eine Liste, die von Hand gepflegt wird, veraltet still (§10). Der Waechter
@@ -3371,10 +3371,19 @@ function detail2(d){
     if(e==="ungeprueft" && kat!=="Öle & Fette") return "";
     var m={
       geeignet:              ["✅","zum Braten geeignet","var(--k-e7f4ec)","var(--k-1f5e34)"],
+      /* 04.10.2026 (Ralph): Grauzone 190–209 °C eigene gelbe Stufe statt "ungeprueft". */
+      mittlere_hitze:        ["🟡","zum Anbraten, mittlere Hitze","var(--k-fff7e6)","var(--k-b45309)"],
       nicht_scharf_anbraten: ["⚠️","nicht scharf anbraten","var(--k-fdeceb,#fdeceb)","var(--k-b91c1c)"],
       ungeprueft:            ["○","Erhitzen noch nicht geprüft","var(--k-eef2f6)","var(--k-475569)"]
     }[e];
     if(!m) return "";
+    /* 04.10.2026 (Ralph): belegten Temperaturbereich bei allen anzeigen. */
+    var tMin=Number(p&&p.braten_temp_min), tMax=Number(p&&p.braten_temp_max);
+    var tText="";
+    if(p&&p.braten_temp_min!=null&&isFinite(tMin)){
+      var r0=Math.round(tMin), r1=(p.braten_temp_max!=null&&isFinite(tMax))?Math.round(tMax):r0;
+      tText=" · "+(r1>r0?(r0+"–"+r1):r0)+" °C";
+    }
     var grund=String((p&&p.braten_grund)||"").trim();
     var beleg=String((p&&p.braten_beleg)||"").trim();
     var stand=String((p&&p.braten_stand)||"").trim();
@@ -3382,7 +3391,7 @@ function detail2(d){
     var tip=(grund||"Kein Grund hinterlegt.")
       +(beleg?("\n\nBeleg: "+beleg):"\n\nKein Beleg hinterlegt.")
       +(stand?("\nStand: "+stand):"");
-    return '<span title="'+esc(tip)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:'+m[2]+';color:'+m[3]+';cursor:help"><span aria-hidden="true">'+m[0]+'</span>'+esc(m[1])+'</span>';
+    return '<span title="'+esc(tip)+'" style="display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 10px;border-radius:999px;background:'+m[2]+';color:'+m[3]+';cursor:help"><span aria-hidden="true">'+m[0]+'</span>'+esc(m[1]+tText)+'</span>';
   }
 
   function kachel(k,label,unit){
@@ -17168,7 +17177,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-03-02";
+const APP_BUILD = "2026-10-04-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
