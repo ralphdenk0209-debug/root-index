@@ -11115,9 +11115,12 @@ async function loadTagebuch(){
     Promise.resolve(client.rpc("cb_profil")).catch(function(){ return {data:null}; }),
     Promise.resolve(ladeTrainingstag(datum)).catch(function(){}),
     (typeof feat==='function' && feat('tagebuch_neu')) ? Promise.resolve(einstLaden()).catch(function(){}) : null,
-    stueckLaden()
+    stueckLaden(),
+    /* 04.10.2026: Satz "gesättigte Fette" kommt vom Server (cb_tagebuch_kopf) - dieselbe Quelle wie die App. */
+    Promise.resolve(client.rpc("cb_tagebuch_kopf",{p_datum:datum})).catch(function(){ return {data:null}; })
   ]);
   const eintraege=_res[0].data, summe=_res[2].data, profil=_res[3].data;
+  window._tbKopf=(_res[7]&&_res[7].data)||null;
   window._tbRezTags=_res[1].data||[];
   window._tbItems = eintraege||[];   /* 29a: der Infoboard-Satz braucht die Eintraege - renderZiel laeuft VOR renderTbListe */
   renderZiel(summe&&summe[0], profil&&profil[0]);
@@ -11456,6 +11459,17 @@ function tbSatzKandidaten(s, items, kcalZ, kcalBasis){
         +SALZ_ZIEL_G.toFixed(1).replace('.',',')+' g.'
         +(tS?(' Größter Posten: '+tbNennung(tS,'salz',1)+'.'):'')});
   }
+
+  /* --- Rang 3a: gesättigte Fette (DGE max. 10 % der Energie). Regel und Text stehen
+         auf dem Server (cb_tagebuch_kopf), damit Web und App denselben Satz zeigen. --- */
+  try{
+    var kopfS=(window._tbKopf&&window._tbKopf.saetze)||[];
+    var gf=kopfS.filter(function(x){ return x&&x.schluessel==='gesfett'; })[0];
+    if(gf&&gf.satz){
+      out.push({k:'gesfett', chip:gf.chip||'Gesättigte Fette', warum:gf.warum||'Rang 3',
+        satz:esc(String(gf.satz)).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')});
+    }
+  }catch(e){}
 
   /* --- Rang 3: auffaelliger Wert MIT HERKUNFT. Der Richtwert dient hier nur als
          Ausloeser, er wird NICHT angezeigt - Entscheid 11.08. gilt weiter. --- */
@@ -17178,7 +17192,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-02";
+const APP_BUILD = "2026-10-04-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
