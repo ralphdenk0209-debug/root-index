@@ -2248,45 +2248,70 @@ function quelleKurz(q){
 /* Kategorie-Einordnung: Ein Score ohne Maßstab verführt zu sinnlosen Vergleichen
    (Olivenöl 85 vs. Vollkornbrot 88 – niemand entscheidet zwischen den beiden).
    Deshalb: Platz innerhalb der eigenen Kategorie sichtbar machen. */
+/* 04.10.2026 (Ralph): Platz kam aus der lokal geladenen Liste (ALL) - die ist nur ein
+   Ausschnitt des Katalogs, daher z. B. "Platz 2 von 59" statt "42 von 3.773".
+   Jetzt wie in der App vom Server (cb_produkt_rang, ~0,2 s). Die Stelle wird sofort
+   mit fester Hoehe reserviert und gefuellt, sobald die Zahl da ist - nichts springt. */
+window._rangCache=window._rangCache||{};
 function katRang(d){
-  if(!d||!d.kategorie||d.clean_score==null) return null;
-  const gruppe=(ALL||[]).filter(function(x){ return x.kategorie===d.kategorie && x.clean_score!=null; });
-  if(gruppe.length<3) return null;
-  const sortiert=gruppe.slice().sort(function(a,b){ return num(b.clean_score)-num(a.clean_score); });
-  const platz=sortiert.findIndex(function(x){ return x.id===d.id; })+1;
-  if(platz<1) return null;
-  const besser=sortiert.slice(0,platz-1).filter(function(x){ return num(x.clean_score)>num(d.clean_score); });
-  return { platz:platz, gesamt:gruppe.length, kategorie:d.kategorie,
-           top: sortiert.slice(0,3).filter(function(x){ return x.id!==d.id; }).slice(0,2) };
+  if(!d||!d.id) return null;
+  const r=window._rangCache[d.id];
+  if(!r||!r.platz||!r.gesamt) return null;
+  return { platz:r.platz, gesamt:r.gesamt, kategorie:r.kategorie,
+           top:(r.top||[]).map(function(x){ return {id:x.id, name:x.name, clean_score:x.score}; }) };
 }
-function katRangHtml(d){
+async function rangHolen(id){
+  if(!id || window._rangCache[id]!==undefined) return;
+  window._rangCache[id]=null;
+  try{
+    const res=await client.rpc("cb_produkt_rang",{p_produkt:id});
+    const row=(res&&res.data&&res.data[0])||null;
+    window._rangCache[id]=row||false;
+  }catch(e){ window._rangCache[id]=false; }
+  document.querySelectorAll('[data-rang-id="'+String(id).replace(/"/g,'')+'"]').forEach(function(el){
+    const d={id:id};
+    el.innerHTML = el.dataset.rangArt==='chip' ? platzChipInnen(d) : katRangInnen(d);
+    if(!el.innerHTML) el.style.minHeight='0';
+  });
+}
+function rangSlot(d,art,minH){
+  if(!d||!d.id) return '';
+  const id=esc(String(d.id));
+  const innen = art==='chip' ? platzChipInnen(d) : katRangInnen(d);
+  if(window._rangCache[d.id]===undefined) setTimeout(function(){ rangHolen(d.id); },0);
+  const leer = window._rangCache[d.id]===false;
+  return '<div data-rang-id="'+id+'" data-rang-art="'+art+'" style="'+((innen||leer)?'':'min-height:'+minH+'px')+'">'+innen+'</div>';
+}
+function katRangHtml(d){ return rangSlot(d,'box',0); }
+function katRangInnen(d){
   const r=katRang(d); if(!r) return "";
   const anteil=r.platz/r.gesamt;
   const farbe = anteil<=0.25 ? "var(--k-166534)" : (anteil<=0.6 ? "var(--k-8a5a0b)" : "var(--k-b45309)");
   const bg    = anteil<=0.25 ? "var(--greenlt,var(--k-eaf5ee))" : "var(--k-fff7ea)";
   const bd    = anteil<=0.25 ? "var(--line)" : "var(--k-e4a343)";
   return '<div style="margin-top:10px;background:'+bg+';border:1px solid '+bd+';border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55">'
-    +'<b style="color:'+farbe+'">Platz '+r.platz+' von '+r.gesamt+' in „'+esc(r.kategorie)+'"</b>'
+    +'<b style="color:'+farbe+'">Platz '+r.platz.toLocaleString('de-DE')+' von '+r.gesamt.toLocaleString('de-DE')+' in „'+esc(r.kategorie)+'"</b>'
     +'<div style="color:var(--muted);margin-top:3px">Vergleiche den Index <b>innerhalb der Kategorie</b>. Ein Öl mit einem Brot zu vergleichen ergibt keinen Sinn – niemand entscheidet zwischen beidem. Ein Öl mit einem anderen Öl zu vergleichen schon.</div>'
     +(r.top.length?('<div style="margin-top:5px;color:var(--muted)">Vorne in dieser Kategorie: '
         +r.top.map(function(x){ return '<a href="#" onclick="event.preventDefault();detailById(\''+x.id+'\')" style="color:var(--greendk,var(--k-166534));font-weight:600;text-decoration:none">'+esc(x.name)+' ('+x.clean_score+')</a>'; }).join(' · ')+'</div>'):'')
     +'</div>';
 }
-/* 28z27: Platz-Chip direkt am Index (Ralph #20: "der platz eines produkts wird
-   angegeben, aber etwas versteckt" -> jetzt sichtbar unter dem Flux).
-   Nur mit Recht pk_platzierung - sonst wuerde der Chip die Premium-Sperre aushebeln. */
+/* 28z27: Platz-Chip direkt am Index (Ralph #20). Nur mit Recht pk_platzierung. */
 function platzChip(d){
   try{
     if(typeof hasFeat!=='function' || !hasFeat('pk_platzierung')) return '';
-    const r=katRang(d); if(!r) return '';
-    const anteil=r.platz/r.gesamt;
-    const top=anteil<=0.25;
-    const fg=top?'var(--greendk,var(--k-166534))':'var(--k-8a5a0b)';
-    const bg=top?'var(--greenlt,var(--k-eaf5ee))':'var(--k-fff7ea)';
-    const bd=top?'var(--k-16a34a)':'var(--k-e4a343)';
-    return '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:'+bg+';border:1px solid '+bd+';color:'+fg+';font-size:12.5px;font-weight:700">'
-      +(top?'\u{1F3C6}':'\u{1F4CA}')+' Platz '+r.platz+' von '+r.gesamt+' in \u201E'+esc(r.kategorie)+'\u201C</div>';
+    return rangSlot(d,'chip',38);
   }catch(e){ return ''; }
+}
+function platzChipInnen(d){
+  const r=katRang(d); if(!r) return '';
+  const anteil=r.platz/r.gesamt;
+  const top=anteil<=0.25;
+  const fg=top?'var(--greendk,var(--k-166534))':'var(--k-8a5a0b)';
+  const bg=top?'var(--greenlt,var(--k-eaf5ee))':'var(--k-fff7ea)';
+  const bd=top?'var(--k-16a34a)':'var(--k-e4a343)';
+  return '<div style="margin-top:8px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:'+bg+';border:1px solid '+bd+';color:'+fg+';font-size:12.5px;font-weight:700">'
+    +(top?'\u{1F3C6}':'\u{1F4CA}')+' Platz '+r.platz.toLocaleString('de-DE')+' von '+r.gesamt.toLocaleString('de-DE')+' in „'+esc(r.kategorie)+'“</div>';
 }
 /* GL-5: Haftungsausschluss sichtbar dort, wo bewertet wird – nicht nur im Kleingedruckten. */
 const MED_HINWEIS='<div style="margin-top:8px;font-size:11.5px;color:var(--muted);line-height:1.5">Der Root Index bewertet <b>Zusammensetzung und Verarbeitungsgrad</b> eines Lebensmittels. Er ist keine Aussage darüber, ob ein Produkt für <b>dich persönlich</b> geeignet ist, und ersetzt <b>keine ärztliche oder ernährungstherapeutische Beratung</b>. Bei Beschwerden, Allergien, Erkrankungen, Schwangerschaft oder Medikamenteneinnahme: bitte ärztlich abklären.</div>';
@@ -17192,7 +17217,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-03";
+const APP_BUILD = "2026-10-04-04";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
