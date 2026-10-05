@@ -2355,6 +2355,34 @@ function prodMelden(id){
   };
 }
 if(typeof window!=="undefined") window.prodMelden=prodMelden;
+/* 05.10.2026 (Ralph): "Fehlt dir etwas in der App?" - cb_app_wunsch, erscheint im Cockpit unter Rueckmeldungen. */
+function wunschOpen(){
+  if(!ME){ openLogin(); return; }
+  const alt=document.getElementById('wunschOv'); if(alt) alt.remove();
+  const ov=document.createElement('div'); ov.id='wunschOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10050;display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div style="background:var(--card,#fff);border-radius:18px 18px 0 0;padding:16px 16px 22px;width:100%;max-width:520px;color:var(--ink)">'
+    +'<div style="font-weight:800;font-size:15px;margin-bottom:4px">Fehlt dir etwas?</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Sag uns, welche Funktion oder welches Produkt dir fehlt. Wir lesen jeden Wunsch.</div>'
+    +'<textarea id="wuText" maxlength="1000" rows="4" placeholder="Mir fehlt …" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:11px;font-size:14px;background:var(--card);color:var(--ink)"></textarea>'
+    +'<div id="wuMeld" style="font-size:12.5px;margin-top:6px"></div>'
+    +'<button id="wuSenden" style="margin-top:10px;width:100%;background:var(--k-16a34a,#16a34a);color:#fff;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Senden</button>'
+    +'<button onclick="document.getElementById(\'wunschOv\').remove()" style="margin-top:8px;width:100%;background:none;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:10px;font-size:13px;cursor:pointer">Abbrechen</button>'
+  +'</div>';
+  document.body.appendChild(ov);
+  document.getElementById('wuSenden').onclick=async function(){
+    const b=this; b.disabled=true;
+    const txt=(document.getElementById('wuText')||{}).value||'';
+    try{
+      const {error}=await client.rpc('cb_app_wunsch',{p_text:txt,p_quelle:'web'});
+      if(error) throw error;
+      ov.remove();
+      if(typeof toast==='function') toast('Danke – dein Wunsch ist angekommen.');
+    }catch(e){ b.disabled=false; document.getElementById('wuMeld').innerHTML='<span style="color:#b91c1c">Nicht gesendet: '+esc(e.message||String(e))+'</span>'; }
+  };
+}
+if(typeof window!=="undefined") window.wunschOpen=wunschOpen;
 /* 30.09.2026 Webtest P7: Esc schliesst die Produktkarte (nur wenn kein Dialog darueber liegt). */
 document.addEventListener("keydown", function(e){
   if(e.key!=="Escape") return;
@@ -9059,6 +9087,8 @@ var MFAN_GRUPPEN=[
      eigener Weg - er steht jetzt mit einem Tipp erreichbar ueber dem Recht. */
   ['kontakt','Kontakt','mail','#5ab6ff',[
     ['Kontakt','mail','#5ab6ff',function(){ kontaktOpen(); }],
+    /* 05.10.2026 (Ralph): Wuensche der Nutzer sammeln - landen im Cockpit. */
+    ['Fehlt dir etwas?','star','#5ab6ff',function(){ wunschOpen(); }],
     ['Newsletter','mail','#5ab6ff',function(){ riNewsletterFormular(); }]
   ]],
   ['rootindex','Root Index','book','#5ef2a0',[
@@ -17267,7 +17297,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-04-06";
+const APP_BUILD = "2026-10-05-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

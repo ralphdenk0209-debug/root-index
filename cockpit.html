@@ -510,6 +510,7 @@ async function rmLaden(){
       const id=Number(btn.dataset.id), typ=btn.dataset.typ;
       const fn= typ==='produkt' ? ['cb_admin_produkt_meldung_erledigt',{p_id:id}]
               : typ==='rezept'  ? ['cb_admin_rezept_meldung_erledigt',{p_id:id}]
+              : typ==='wunsch'  ? ['cb_admin_app_wunsch_erledigt',{p_id:id}]
               :                   ['cb_admin_rueckmeldung_erledigt',{p_id:id}];
       const {error}=await client.rpc(fn[0],fn[1]);
       if(error){ btn.disabled=false; btn.textContent='Fehler'; return; }
