@@ -17297,7 +17297,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-05-02";
+const APP_BUILD = "2026-10-05-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17731,8 +17731,12 @@ function alBoxHtml(a, unv, art){
     h+='<div style="margin-top:8px;font-size:12px;color:var(--muted)">Tipp: Unverträglichkeiten in <a href="#" onclick="event.preventDefault();try{closeP();}catch(e){} try{navTo(\'profil\'); setTimeout(function(){ try{ pfOeffnen(\'gesund\'); }catch(e){} },400);}catch(e){}" style="color:var(--green)">Mein Profil</a> angeben – dann warnen wir dich hier.</div>';
   }
   var lak={enthaelt:"enthält Laktose",laktosefrei:"laktosefrei",unklar:"Laktose unklar"}[a.laktose]||"";
-  var zeile='<b>Allergene:</b> '+((a.enthaelt&&a.enthaelt.length)?esc(_alNamen(a.enthaelt)):'keine erkannt')+(lak?' · '+esc(lak):'');
-  if(a.spuren&&a.spuren.length) zeile+='<br><b>Spuren:</b> '+esc(_alNamen(a.spuren));
+  /* 05.10.2026 (Ralph): was der Nutzer meidet, steht rot (Treffer) bzw. orange (Spuren). */
+  var _tr=(ME&&unv&&unv.length)?alTreffer(a,unv):{enth:[],spur:[]};
+  var _rot=function(k,txt,liste,farbe){ return liste.indexOf(k)>=0?'<b style="color:'+farbe+'">'+esc(txt)+'</b>':esc(txt); };
+  var _namenRot=function(l,liste,farbe){ return (l||[]).map(function(k){ return _rot(k,AL_NAMEN[k]||k,liste,farbe); }).join(", "); };
+  var zeile='<b>Allergene:</b> '+((a.enthaelt&&a.enthaelt.length)?_namenRot(a.enthaelt,_tr.enth,'var(--k-b91c1c,#b91c1c)'):'keine erkannt')+(lak?' · '+_rot('laktose',lak,_tr.enth,'var(--k-b91c1c,#b91c1c)'):'');
+  if(a.spuren&&a.spuren.length) zeile+='<br><b>Spuren:</b> '+_namenRot(a.spuren,_tr.spur,'var(--k-92400e,#92400e)');
   var fuss=(a.datenlage==="name")?'Aus dem Produktnamen abgeleitet.':(art==="rezept"&&a.unvollstaendig?((a.unklar_zutaten&&a.unklar_zutaten.length)?'Ohne Zutatenliste: '+esc(a.unklar_zutaten.join(', '))+'.':'Nicht für alle Zutaten liegt eine Zutatenliste vor.'):'Automatisch aus der Zutatenliste gelesen.');
   h+='<div style="margin-top:8px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+zeile+'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+fuss+' Nur ein Hinweis, fließt nicht in den Root Index ein. Ersetzt keine ärztliche Beratung – maßgeblich ist das Etikett.</div></div>';
   return h;
