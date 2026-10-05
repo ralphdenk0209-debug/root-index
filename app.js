@@ -17297,7 +17297,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-05-01";
+const APP_BUILD = "2026-10-05-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17743,7 +17743,24 @@ async function alBoxLaden(){
     var r=await client.rpc("cb_produkt_allergene",{p_ids:[pid]}); var unv=await unvHolen();
     if(!document.body.contains(el)||el.dataset.pid!==pid) return;
     el.innerHTML=alBoxHtml((r.data||[])[0], unv, "produkt");
+    /* 05.10.2026 (Ralph): Warnung zum aktiven Wegklicken - der Kasten allein kann uebersehen werden. */
+    if(ME && unv && unv.length){ var _t=alTreffer((r.data||[])[0], unv); if(_t.enth.length||_t.spur.length) alMeidWarnung(_t); }
   }catch(e){ el.innerHTML=""; }
+}
+function alMeidWarnung(t){
+  var alt=document.getElementById('alWarnOv'); if(alt) alt.remove();
+  var ov=document.createElement('div'); ov.id='alWarnOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:10060;display:flex;align-items:center;justify-content:center;padding:16px';
+  ov.innerHTML='<div role="alertdialog" aria-modal="true" style="background:var(--card,#fff);border-radius:16px;padding:18px;max-width:380px;width:100%;color:var(--ink);text-align:center">'
+    +'<div style="font-size:30px;line-height:1">⚠️</div>'
+    +'<div style="font-weight:800;font-size:16px;margin:8px 0 6px">Achtung</div>'
+    +(t.enth.length?'<div style="font-size:14px;line-height:1.5">Dieses Produkt <b>enthält, was du meidest:</b> '+esc(_alNamen(t.enth))+'.</div>':'')
+    +(t.spur.length?'<div style="font-size:14px;line-height:1.5;margin-top:4px">Kann Spuren enthalten: '+esc(_alNamen(t.spur))+'.</div>':'')
+    +'<div style="font-size:12px;color:var(--muted);margin-top:8px">Maßgeblich ist das Etikett.</div>'
+    +'<button id="alWarnOk" style="margin-top:14px;width:100%;background:var(--k-b91c1c,#b91c1c);color:#fff;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Verstanden</button>'
+  +'</div>';
+  document.body.appendChild(ov);
+  document.getElementById('alWarnOk').onclick=function(){ ov.remove(); };
 }
 async function alRezeptLaden(){
   var el=document.getElementById("alRzBox"); if(!el) return; var rid=el.dataset.rid;
