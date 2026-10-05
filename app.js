@@ -17297,7 +17297,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-05-03";
+const APP_BUILD = "2026-10-05-04";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17850,7 +17850,7 @@ async function hwBoxLaden(){
     var l=((r.data||[])[0]||{}).hinweise||[];
     if(!l.length){ el.innerHTML=""; return; }
     var st={rot:['var(--k-fef2f2)','var(--k-fca5a5)','var(--k-b91c1c)'],warn:['var(--k-fffbeb)','var(--k-fde68a)','var(--k-92400e)'],info:['var(--k-f4f5f4)','var(--line)','var(--ink)']};
-    var ic={salz:'🧂',alkohol:'🍷',koffein:'☕',schwanger:'🤰',phosphat:'⚠︎'};
+    var ic={salz:'🧂',alkohol:'🍷',koffein:'☕',schwanger:'🤰',phosphat:'⚠︎',zucker:'🩸'};
     el.innerHTML=l.map(function(h){ var f=st[h.stufe]||st.info;
       return '<div style="margin-top:10px;font-size:12.5px;line-height:1.5;padding:9px 12px;border-radius:10px;border:1px solid '+f[1]+';background:'+f[0]+';color:'+f[2]+'">'+(ic[h.art]||'ℹ︎')+' '+esc(h.text)+'</div>'; }).join('')
       +'<div style="font-size:11px;color:var(--muted);margin-top:4px">Hinweise – fließen nicht in den Root Index ein. Keine medizinische Beratung.</div>';
