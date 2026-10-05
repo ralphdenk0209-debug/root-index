@@ -65,6 +65,11 @@
   .it.reel{ border-left-color:var(--reel); }
   .it .z1{ display:flex; justify-content:space-between; gap:4px; font-size:11px; color:#6b6592; }
   .it .t{ font-weight:600; line-height:1.25; }
+  .it .hs{ font-size:11.5px; color:#6b6592; line-height:1.25; margin-top:1px; }
+  .prod{ border:1px solid #e6e3f0; border-radius:10px; padding:8px 10px; display:flex; flex-direction:column; gap:3px; font-size:13px; }
+  .prod b{ font-size:13.5px; } .prod small{ color:#6b6592; }
+  .prod button{ align-self:flex-start; border:1px solid #cfe9d8; background:#f1faf4; color:#1d6b3a; border-radius:8px; padding:4px 10px; cursor:pointer; font:inherit; font-size:12.5px; }
+  .prod button:disabled{ opacity:.7; cursor:default; }
   .it.m{ background:#eaf7ef; } .it.p{ background:#fff8dc; } .it.o{ background:#eef0f6; opacity:.85; }
   .it.ziehen{ opacity:.4; }
   .it .ok{ font-size:10.5px; font-weight:700; } .it.m .ok{ color:var(--meta); } .it.p .ok{ color:#a07400; } .it.o .ok{ color:#16233d; }
@@ -120,10 +125,11 @@
 <dialog id="dlgEdit"><form method="dialog" id="fEdit">
   <h3 id="eTitel"></h3>
   <div id="eArt" style="font-size:12.5px;color:#6b6592"></div>
+  <div id="eProd" style="display:flex;flex-direction:column;gap:6px"></div>
   <div class="reihe"><label>Datum<input type="date" id="eDatum" required></label><label>Uhrzeit<input type="time" id="eZeit" value="18:00" required></label></div>
   <label class="chk"><input type="checkbox" id="eMeta"> in der Meta Business Suite eingeplant</label>
   <div class="hinweis" id="eHinweis" hidden>Dieser Beitrag ist schon in Meta eingeplant. Wenn du den Termin hier änderst, bitte auch in Meta ändern und danach den Haken wieder setzen.</div>
-  <div class="kn"><button type="button" class="rot" id="eRaus">Termin entfernen</button><button value="abbr">Abbrechen</button><button type="button" class="haupt" id="eSpeichern">Speichern</button></div>
+  <div class="kn"><button type="button" class="rot" id="eRaus">Termin entfernen</button><button type="button" class="abbr">Abbrechen</button><button type="button" class="haupt" id="eSpeichern">Speichern</button></div>
 </form></dialog>
 
 <!-- Neu einplanen / neu anlegen -->
@@ -138,7 +144,7 @@
     <div class="reihe"><label>Produkt A (P-ID)<input id="nA" placeholder="P1234"></label><label id="nBlab">Produkt B (P-ID)<input id="nB" placeholder="P5678"></label></div>
     <label>Notiz<textarea id="nNotiz" rows="2" placeholder="Was fehlt noch, Fotos, Idee …"></textarea></label>
   </div>
-  <div class="kn"><button value="abbr">Abbrechen</button><button type="button" class="haupt" id="nSpeichern">Einplanen</button></div>
+  <div class="kn"><button type="button" class="abbr">Abbrechen</button><button type="button" class="haupt" id="nSpeichern">Einplanen</button></div>
 </form></dialog>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -161,9 +167,13 @@ function zeit(d){ return d.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2
 function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function hm(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
 function ausFeldern(dat, z){ var p = dat.split("-"), q = (z||"18:00").split(":"); return new Date(+p[0], +p[1]-1, +p[2], +q[0], +q[1]); }
-function pkt(id){ var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
-function prod(id){ if(!id) return "–"; var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
-function titel(x){ if(x.Typ==="Einzel" && P[x.Produkt_A]) return P[x.Produkt_A].marke+" "+P[x.Produkt_A].name; return x.Zeile1 || ("Nr "+x.Nr); }
+function pid(s){ return s ? String(s).trim().split(/\s+/)[0] : null; }
+function pkt(id){ id = pid(id); var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
+function prod(id){ if(!id) return "–"; id = pid(id); var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
+function titel(x){ var a = P[pid(x.Produkt_A)]; if(x.Typ==="Einzel" && a) return a.marke+" "+a.name; return x.Zeile1 || ("Nr "+x.Nr); }
+function hersteller(x){ var a = P[pid(x.Produkt_A)], b = P[pid(x.Produkt_B)];
+  if(x.Typ==="Einzel") return "";
+  var t = []; if(a) t.push(a.marke+" "+a.name); if(b) t.push(b.marke+" "+b.name); return t.join(" vs. "); }
 function punkteText(x){ var a = pkt(x.Produkt_A), b = pkt(x.Produkt_B);
   if(x.Typ==="Einzel") return a!=null ? a+" Pkt" : ""; return a!=null && b!=null ? a+" : "+b+" Pkt" : ""; }
 function zeile(id){ return ZEILEN.filter(function(z){ return z.id===id; })[0]; }
@@ -183,9 +193,9 @@ async function laden(){
   var r = await vg.from(T).select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
   if(r.error){ meld("Fehler: " + r.error.message + " (im Admin angemeldet?)"); return; }
   ZEILEN = r.data || [];
-  var ids = []; ZEILEN.forEach(function(x){ if(x.Produkt_A) ids.push(x.Produkt_A); if(x.Produkt_B) ids.push(x.Produkt_B); });
+  var ids = []; ZEILEN.forEach(function(x){ if(pid(x.Produkt_A)) ids.push(pid(x.Produkt_A)); if(pid(x.Produkt_B)) ids.push(pid(x.Produkt_B)); });
   P = {};
-  if(ids.length){ var p = await vg.from("v_web_produkte").select("id,name,marke,clean_score").in("id", ids); (p.data||[]).forEach(function(x){ P[x.id] = x; }); }
+  if(ids.length){ var p = await vg.from("v_web_produkte").select("id,name,marke,ean,clean_score,bewertung").in("id", ids); (p.data||[]).forEach(function(x){ P[x.id] = x; }); }
   zeige();
 }
 
@@ -218,6 +228,7 @@ function karte(x, art){
   return "<div class='it "+(art==="reel"?"reel ":"")+z+"' draggable='"+(z!=="o")+"' data-id='"+x.id+"' data-art='"+art+"'>"
     + "<div class='z1'><span>"+F[art].n+(d?" · "+zeit(d):"")+"</span><span>"+(x.Typ==="Einzel"?"🔎":"Nr "+e(x.Nr))+"</span></div>"
     + "<div class='t'>"+e(titel(x))+"</div>"
+    + (hersteller(x) ? "<div class='hs'>"+e(hersteller(x))+"</div>" : "")
     + "<div class='z1'><span>"+e(punkteText(x))+"</span><span class='ok'>"+ok+"</span></div></div>";
 }
 function zeigePlan(){
@@ -299,12 +310,25 @@ function bearbeiten(id, art){
   var d = x[F[art].d] ? new Date(x[F[art].d]) : null;
   $("eTitel").textContent = titel(x);
   $("eArt").textContent = F[art].n + " · " + (x.Typ==="Einzel" ? "Einzelprodukt" : "Vergleich Nr "+x.Nr) + (punkteText(x) ? " · "+punkteText(x) : "") + (art==="reel" && x.Reel_Datei ? " · "+x.Reel_Datei.split("/").pop() : "");
+  $("eProd").innerHTML = [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).map(function(id){
+    var p = P[id]; if(!p) return "<div class='prod'><b>"+e(id)+"</b><small>nicht im Index gefunden</small></div>";
+    return "<div class='prod'><b>"+e(p.marke)+" · "+e(p.name)+"</b><small>"+e(id)+(p.ean?" · EAN "+e(p.ean):"")+" · "+(p.clean_score!=null?Math.round(Number(p.clean_score))+" Pkt":"–")+(p.bewertung?" · "+e(p.bewertung):"")+"</small>"
+      + "<button type='button' data-ek='"+e(id)+"'>🛒 auf die Einkaufsliste</button></div>";
+  }).join("");
   $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "18:00";
   $("eMeta").checked = !!x[F[art].m]; $("eMeta").disabled = !d;
   $("eHinweis").hidden = !x[F[art].m];
   $("eRaus").hidden = !d;
   $("dlgEdit").showModal();
 }
+document.querySelectorAll("dialog .abbr").forEach(function(b){ b.onclick = function(){ b.closest("dialog").close(); }; });
+$("eProd").onclick = async function(ev){
+  var b = ev.target.closest("button[data-ek]"); if(!b) return;
+  b.disabled = true; b.textContent = "übernehme …";
+  var r = await vg.rpc("cb_einkauf_add", { p_titel:null, p_menge:null, p_produkt_id:b.dataset.ek });
+  if(r.error){ b.disabled = false; b.textContent = "🛒 auf die Einkaufsliste"; meld("Einkaufsliste: " + r.error.message); return; }
+  b.textContent = "✓ steht auf der Einkaufsliste";
+};
 $("eSpeichern").onclick = async function(){
   if(!EDIT || !$("eDatum").value){ $("eDatum").reportValidity(); return; }
   var x = zeile(EDIT.id), art = EDIT.art, neuD = ausFeldern($("eDatum").value, $("eZeit").value);
