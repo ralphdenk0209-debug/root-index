@@ -11727,7 +11727,14 @@ function renderZielNeu(s,ben){
      Die Spur bleibt deshalb gestrichelt und leer: gleiche Form, ehrliche
      Aussage - gemessen, aber nicht bewertbar. Sobald zugesetzter Zucker
      getrennt ist, laeuft dort ein Balken, ohne dass etwas umgebaut wird. */
-  const zuckerZelle=zelle({n:'Zucker', art:'gesamt', col:'#9ca3af', span:1, ohneZiel:true,
+  /* 06.10.2026 (Ralph): bei Diabetes liefert cb_tagebuch_kopf ein Zucker-Tagesziel
+     (Gesamtzucker, max. 10 % der Energie) - dann Balken und rot wie beim Salz. */
+  const zZiel=num(window._tbKopf&&window._tbKopf.zucker_ziel), zUeber=(zZiel!=null&&zIst!=null&&zIst>zZiel);
+  const zuckerZelle=(zZiel!=null)
+   ? zelle({n:'Zucker', art:'max.', col:(zUeber?'#c0392b':'#d97706'), span:1, warn:zUeber,
+    v:(zIst==null?'–':Math.round(zIst)), ziel:'/'+Math.round(zZiel), pct:(zIst!=null&&zZiel>0)?(zIst/zZiel):null,
+    klick:' id="tbKlTrig_zucker" role="button" tabindex="0" aria-expanded="false" aria-controls="tbKl_zucker" onclick="tbKlappe(\'zucker\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tbKlappe(\'zucker\')}" title="Antippen: woher der Zucker kommt"'})
+   : zelle({n:'Zucker', art:'gesamt', col:'#9ca3af', span:1, ohneZiel:true,
     v:(zIst==null?'–':Math.round(zIst)), ziel:' g', pct:null,
     klick:' id="tbKlTrig_zucker" role="button" tabindex="0" aria-expanded="false" aria-controls="tbKl_zucker" onclick="tbKlappe(\'zucker\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tbKlappe(\'zucker\')}" title="Antippen: woher der Zucker kommt"'});
 
@@ -11743,7 +11750,7 @@ function renderZielNeu(s,ben){
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:13px;padding-top:12px;border-top:1px solid var(--tb-line)">'
       +salzZelle+zuckerZelle
     +'</div>'
-    +'<div style="font-size:9.5px;color:var(--tb-muted);text-align:center;padding-top:10px;line-height:1.4">zugesetzter Zucker noch nicht bestimmbar — deshalb kein Richtwert</div>'
+    +'<div style="font-size:9.5px;color:var(--tb-muted);text-align:center;padding-top:10px;line-height:1.4">'+(zZiel!=null?'Diabetes: Zucker gesamt höchstens 10 % der Energie (DGE/DAG/DDG)':'zugesetzter Zucker noch nicht bestimmbar — deshalb kein Richtwert')+'</div>'
   +'</div>';
 
   /* Die beiden Klapp-Panels bleiben LEER, bis jemand tippt - tbKlappe() fuellt
@@ -17297,7 +17304,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-06-01";
+const APP_BUILD = "2026-10-06-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
