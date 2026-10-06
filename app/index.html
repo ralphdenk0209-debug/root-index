@@ -2,16 +2,19 @@
 <html lang="de">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b1710">
 <title>Root Index App</title>
 <meta name="description" content="Root Index – die App. iPhone, Android und Browser.">
 <link rel="icon" href="/favicon-96.png">
 <style>
   :root{--g:#16a34a;--d:#0b1710;--t:#f1f5f3;--m:rgba(255,255,255,.7)}
   *{box-sizing:border-box}
-  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
-       background:radial-gradient(circle at 30% 10%,#2a7a4b,#0b1710 70%);color:#fff;
-       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
+  /* 06.10.2026: Hintergrund an html + 100dvh, sonst bleibt unter der Safari-Leiste ein weisser Streifen */
+  html{background:#0b1710;min-height:100%}
+  body{margin:0;min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;
+       background:radial-gradient(circle at 30% 10%,#2a7a4b,#0b1710 70%) fixed #0b1710;color:#fff;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px;padding-bottom:calc(16px + env(safe-area-inset-bottom))}
   .k{max-width:420px;width:100%;text-align:center}
   img{width:96px;height:96px}
   h1{font-size:26px;margin:14px 0 6px}
