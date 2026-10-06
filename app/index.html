@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Root Index App</title>
+<meta name="description" content="Root Index – die App. iPhone, Android und Browser.">
+<link rel="icon" href="/favicon-96.png">
+<style>
+  :root{--g:#16a34a;--d:#0b1710;--t:#f1f5f3;--m:rgba(255,255,255,.7)}
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+       background:radial-gradient(circle at 30% 10%,#2a7a4b,#0b1710 70%);color:#fff;
+       font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;padding:16px}
+  .k{max-width:420px;width:100%;text-align:center}
+  img{width:96px;height:96px}
+  h1{font-size:26px;margin:14px 0 6px}
+  p{color:var(--m);line-height:1.5;margin:0 0 22px}
+  a.b{display:block;padding:14px;border-radius:14px;font-weight:700;text-decoration:none;margin:10px 0}
+  .h{background:#5ef2a0;color:#0b1710}
+  .n{border:1px solid rgba(255,255,255,.35);color:#fff}
+  .s{font-size:13px;color:var(--m);margin-top:16px}
+</style>
+</head>
+<body>
+<div class="k">
+  <img src="/logo.svg" alt="Root Index">
+  <h1>Root Index</h1>
+  <p>Nährwert, Zutaten, Zusatzstoffe und Verarbeitung – jedes Produkt auf einen Blick. Unabhängig und ohne Werbung.</p>
+  <div id="knoepfe"></div>
+  <div class="s" id="hinweis"></div>
+</div>
+<script>
+/* 06.10.2026: Ziel des QR-Codes. Am Tag der Apple-Freigabe APPSTORE_LIVE auf true setzen,
+   bei Play-Store-Start PLAY_LINK eintragen - der QR-Code bleibt gleich. */
+var APPSTORE_LIVE = false;
+var APPSTORE_LINK = "https://apps.apple.com/de/app/id6818112011";
+var PLAY_LINK = "";               /* z. B. https://play.google.com/store/apps/details?id=de.rootindex.app */
+var WEB_LINK = "https://root-index.de/";
+
+var ua = navigator.userAgent || "";
+var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+var android = /Android/.test(ua);
+
+if (ios && APPSTORE_LIVE) { location.replace(APPSTORE_LINK); }
+else if (android && PLAY_LINK) { location.replace(PLAY_LINK); }
+
+var k = document.getElementById("knoepfe"), h = document.getElementById("hinweis"), html = "";
+if (APPSTORE_LIVE) html += '<a class="b h" href="' + APPSTORE_LINK + '">Im App Store laden</a>';
+if (PLAY_LINK) html += '<a class="b h" href="' + PLAY_LINK + '">Bei Google Play laden</a>';
+html += '<a class="b ' + (APPSTORE_LIVE || PLAY_LINK ? 'n' : 'h') + '" href="' + WEB_LINK + '">Jetzt im Browser nutzen</a>';
+k.innerHTML = html;
+if (!APPSTORE_LIVE) h.textContent = "Die iPhone-App kommt in Kürze in den App Store.";
+else if (!PLAY_LINK) h.textContent = "Die Android-App ist in Vorbereitung.";
+</script>
+</body>
+</html>
