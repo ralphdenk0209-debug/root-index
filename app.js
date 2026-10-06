@@ -8477,7 +8477,7 @@ async function renderStart(){
       +'<div class="leafwind" style="width:auto;height:auto;margin:0 auto 10px"><svg viewBox="0 0 120 120" width="76" height="76" aria-hidden="true"><g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="7.5"><path d="M22 26 L44 26 L56 40" stroke="#3DDB7A"/><path d="M98 26 L76 26 L64 40" stroke="#5AB6FF"/><path d="M22 94 L44 94 L56 80" stroke="#B79BFF"/><path d="M98 94 L76 94 L64 80" stroke="#FFC24B"/></g><circle cx="20" cy="26" r="6.5" fill="#3DDB7A"/><circle cx="100" cy="26" r="6.5" fill="#5AB6FF"/><circle cx="20" cy="94" r="6.5" fill="#B79BFF"/><circle cx="100" cy="94" r="6.5" fill="#FFC24B"/><circle cx="60" cy="60" r="15" fill="#0A1710" stroke="#5EF2A0" stroke-width="3"/><circle cx="60" cy="60" r="5" fill="#7CFF9B"/></svg></div>'
       +'<h2 style="margin:.1em 0 .2em;color:#fff;font-size:21px;letter-spacing:.5px">Willkommen bei Root&nbsp;Index</h2>'
       +'<p style="color:#5EF2A0;font-size:14px;font-weight:600;margin:0 0 .55em">Die Vorderseite verkauft. Wir lesen die Rückseite.</p>'
-      +'<p style="color:rgba(255,255,255,.62);font-size:13.5px;line-height:1.55;margin:0 auto 1.1em;max-width:420px">Vier Prüfungen für jedes Produkt: Zutaten, Zusatzstoffe, Verarbeitung, Nährwert. Jede Zahl mit Quelle &ndash; oder gar keine Zahl.</p>'
+      +'<p style="color:rgba(255,255,255,.62);font-size:13.5px;line-height:1.55;margin:0 auto 1.1em;max-width:420px">Vier Prüfungen für jedes Produkt: Nährwert, Zutaten, Zusatzstoffe, Verarbeitung. Jede Zahl mit Quelle &ndash; oder gar keine Zahl.</p>'
       +'<div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center">'
       +'<button onclick="openLogin()" style="padding:12px 20px;border:0;border-radius:11px;background:#5EF2A0;color:#0A1710;font-size:15px;font-weight:700;cursor:pointer">Anmelden / Registrieren</button>'
       +'<button onclick="navTo(\'produkte\')" style="padding:12px 20px;border:1px solid rgba(255,255,255,.32);border-radius:11px;background:rgba(255,255,255,.08);color:#fff;font-size:15px;cursor:pointer">Produkte ansehen</button>'
@@ -17297,7 +17297,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-05-04";
+const APP_BUILD = "2026-10-06-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
