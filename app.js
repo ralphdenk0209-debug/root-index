@@ -898,6 +898,36 @@ function rikiWarteFluxHtml(){
     +'<div style="min-width:0"><b>Root Index rechnet</b><br><span id="rwfText" style="color:var(--muted)">'+RWF_SAETZE[0]+'</span>'
     +'<div id="rwfNach" style="color:var(--muted);font-size:12px;margin-top:4px"></div></div></div>';
 }
+/* 07.10.2026 (Ralph): "stelle mir da eher irgend eine art stempel vor, der klarer ist." */
+function rikiStempelHtml(art){
+  var f = art==="fehler" ? "#dc2626" : (art==="fertig" ? "#16a34a" : "#d97706");
+  var o = art==="fehler" ? "NICHT GELESEN" : (art==="fertig" ? "AUFGENOMMEN" : "IN PRÜFUNG");
+  var u = art==="fehler" ? "BITTE NEUE FOTOS" : (art==="fertig" ? "INDEX STEHT" : "INDEX FOLGT");
+  return '<div aria-label="'+o+'" style="flex:0 0 auto;transform:rotate(-7deg);opacity:.9;padding:3px;border:1.5px solid '+f+'99;border-radius:12px">'
+    +'<div style="border:3px solid '+f+';border-radius:9px;padding:6px 10px;text-align:center;color:'+f+';font-family:ui-rounded,-apple-system,sans-serif">'
+    +'<div style="font-weight:900;font-size:15px;letter-spacing:2px;white-space:nowrap">'+o+'</div>'
+    +'<div style="font-weight:700;font-size:9px;letter-spacing:1.5px;white-space:nowrap">'+u+'</div></div></div>';
+}
+/* 07.10.2026 (Ralph): "wenn so ein produkt wie ich erfasst habe ... info wie popup, wenn der index
+   vorhanden ist." Der Server merkt sich, was neu fertig ist (cb_riki_scan_index_neu); gezeigt wird
+   einmal, beim Start und bei jeder Rueckkehr in die Seite. Dasselbe Fenster hat die App. */
+async function rikiIndexNeuPruefen(){
+  if(typeof client==="undefined" || !ME) return;
+  if(window._rikiIndexNeuLaeuft) return; window._rikiIndexNeuLaeuft=true;
+  try{
+    var r=await client.rpc("cb_riki_scan_index_neu"); var l=(typeof r.data==="string")?JSON.parse(r.data):r.data;
+    if(!Array.isArray(l) || !l.length) return;
+    var n=l[0];
+    rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml("fertig")
+      +'<div style="min-width:0"><b>Der Index ist da'+(l.length>1?' ('+l.length+' Produkte)':'')+'</b><br>'
+      +esc(n.name||"Dein Produkt")+' &middot; Root Index <b>'+esc(String(n.score))+'</b>'+(n.bewertung?' – '+esc(n.bewertung):'')
+      +'<br><span style="color:var(--muted);font-size:12px">Danke, dass du es erfasst hast. Tippen zum Öffnen.</span></div></div>',
+      function(){ if(typeof prodOeffnen==="function") prodOeffnen(n.produkt_id); });
+    try{ await client.rpc("cb_riki_scan_index_gezeigt",{p_job_ids:l.map(function(x){ return x.job_id; })}); }catch(e){}
+  }catch(e){ console.warn("rikiIndexNeuPruefen:", e); }
+  finally{ window._rikiIndexNeuLaeuft=false; }
+}
+if(typeof window!=="undefined") window.rikiIndexNeuPruefen=rikiIndexNeuPruefen;
 function rikiWarteFluxZeigen(){
   try{ clearTimeout(window._rikiWarteUhr); }catch(e){}
   rikiScanHinweis(rikiWarteFluxHtml(), null);
@@ -942,10 +972,14 @@ function rikiScanNachfassen(jobId, ean){
       clearInterval(window._rikiNachfassUhr);
       /* 07.10.2026: laeuft es nicht durch, steht da, was jetzt passiert - und wie es weitergeht. */
       if(!(st.freigegeben && st.produkt_id) && !schnellGemeldet){
-        var grund=(Array.isArray(st.warnungen) && st.warnungen.length) ? esc(String(st.warnungen[0]))+' ' : '';
-        rikiScanHinweis('&#9888;&#65039; <b>Noch kein Index.</b> '+grund
-          +'Wir prüfen das Produkt im Hintergrund. <span style="color:var(--muted)">Tippen für neue Fotos.</span>',
-          function(){ if(typeof etikettOpen==="function") etikettOpen(ean||null); });
+        var grund=(Array.isArray(st.warnungen) && st.warnungen.length) ? '<br><span style="color:var(--muted);font-size:12px">Grund: '+esc(String(st.warnungen[0]))+'</span>' : '';
+        var pidT=String(st.produkt_id||"").replace(/[^A-Za-z0-9]/g,"");
+        rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml(st.status==="fehler"?"fehler":"pruefung")
+          +'<div style="min-width:0"><b>Noch kein Index.</b> Wir prüfen das Produkt im Hintergrund. Sobald der Index steht, bekommst du eine Mitteilung.'+grund
+          +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+          +(pidT?'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();prodInsTagebuch(\''+pidT+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green,#16a34a);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">📒 Ins Tagebuch</button>':'')
+          +'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();if(typeof etikettOpen===\'function\')etikettOpen(\''+String(ean||"").replace(/[^0-9]/g,"")+'\')" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;cursor:pointer">📷 Neue Fotos</button>'
+          +'</div></div></div>', null);
       }
       if(st.freigegeben && st.produkt_id){
         try{ rikiWartegrenzeStoppen(); }catch(e){}
@@ -1599,6 +1633,7 @@ async function refreshMe(){
     try{ betaBadge(); }catch(e){}   /* Version/Entwickler-Badge hängt an ME */
     if(ME&&ME.benutzer_id) TB_USER=ME.benutzer_id;
     if(ME){ try{ riEinwilligungPruefen(); }catch(e){} }   /* GL-B7 24.09.2026 */
+    if(ME){ setTimeout(function(){ try{ rikiIndexNeuPruefen(); }catch(e){} }, 3000); }   /* 07.10.2026 */
   }catch(e){ ME=null; }
   await refreshMyFeatures();   /* auch ohne Login: die Gast-Stufe */
 }
@@ -17424,7 +17459,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-07-03";
+const APP_BUILD = "2026-10-07-04";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17604,7 +17639,7 @@ async function adminNeuLaden(btn){
 setTimeout(pruefeUpdate, 2500);
 setInterval(pruefeUpdate, 5*60*1000);
 document.addEventListener("visibilitychange", function(){
-  if(document.visibilityState === "visible") pruefeUpdate();
+  if(document.visibilityState === "visible"){ pruefeUpdate(); try{ rikiIndexNeuPruefen(); }catch(e){} }
 });
 
 /* ===== Empfehlungen fuer dich (Ralph, 11.09.2026) =========================
