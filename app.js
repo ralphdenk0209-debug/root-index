@@ -2385,6 +2385,32 @@ function wunschOpen(){
   };
 }
 if(typeof window!=="undefined") window.wunschOpen=wunschOpen;
+/* 07.10.2026 (Apple 1.4.1): Quellen-Seite - Liste vom Server (cb_quellen_gesundheit), gleiche wie App. */
+async function quellenOpen(){
+  const alt=document.getElementById('quellenOv'); if(alt) alt.remove();
+  const ov=document.createElement('div'); ov.id='quellenOv';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10050;display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div style="background:var(--card,#fff);border-radius:18px 18px 0 0;padding:16px 16px 22px;width:100%;max-width:640px;max-height:88vh;overflow:auto;color:var(--ink)">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center"><div style="font-weight:800;font-size:16px">Quellen &amp; Studien</div><button onclick="document.getElementById(\'quellenOv\').remove()" style="border:1px solid var(--line);background:none;border-radius:10px;padding:6px 10px;cursor:pointer;color:var(--ink)">Schließen ✕</button></div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin:6px 0 10px;line-height:1.5">Alle Richtwerte, Berechnungen und Hinweise in Root Index stützen sich auf diese Quellen. Root Index ersetzt keine ärztliche Beratung.</div>'
+    +'<div id="quellenListe" style="font-size:13px">Lädt …</div></div>';
+  document.body.appendChild(ov);
+  try{
+    const {data,error}=await client.rpc('cb_quellen_gesundheit');
+    if(error) throw error;
+    let h='', b='';
+    (data||[]).forEach(function(q){
+      if(q.bereich!==b){ b=q.bereich; h+='<div style="font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin:14px 0 4px">'+esc(b)+'</div>'; }
+      h+='<a href="'+esc(q.url)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;border-top:1px solid var(--line);padding:8px 0">'
+        +'<div style="font-weight:700">'+esc(q.wofuer)+'</div>'
+        +'<div style="color:var(--green)">'+esc(q.titel)+' ↗</div>'
+        +'<div style="font-size:11.5px;color:var(--muted)">'+esc(q.herausgeber)+(q.jahr?', '+q.jahr:'')+'</div></a>';
+    });
+    document.getElementById('quellenListe').innerHTML=h||'Keine Quellen gefunden.';
+  }catch(e){ document.getElementById('quellenListe').textContent='Quellen konnten nicht geladen werden.'; }
+}
+if(typeof window!=="undefined") window.quellenOpen=quellenOpen;
 /* 30.09.2026 Webtest P7: Esc schliesst die Produktkarte (nur wenn kein Dialog darueber liegt). */
 document.addEventListener("keydown", function(e){
   if(e.key!=="Escape") return;
@@ -9096,7 +9122,9 @@ var MFAN_GRUPPEN=[
   ['rootindex','Root Index','book','#5ef2a0',[
     ['Über uns','info','#5ef2a0',function(){ ueberUnsOpen(); }],
     ['So funktioniert Root Index','book','#5ef2a0',function(){ wikiOpen(); }],
-    ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }]
+    ['Methode & Zahlen','leaf','#4fd6c0',function(){ methodikGo(); }],
+    /* 07.10.2026 (Apple 1.4.1): Quellen aller Gesundheitswerte, wie in der App. */
+    ['Quellen & Studien','book','#4fd6c0',function(){ quellenOpen(); }]
   ]],
   ['recht','Rechtliches','shield','#8fa79a',[
     ['Impressum','book','#8fa79a',function(){ legalOpen('impressum'); }],
@@ -11752,7 +11780,7 @@ function renderZielNeu(s,ben){
     +'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:13px;padding-top:12px;border-top:1px solid var(--tb-line)">'
       +salzZelle+zuckerZelle
     +'</div>'
-    +'<div style="font-size:9.5px;color:var(--tb-muted);text-align:center;padding-top:10px;line-height:1.4">'+(zZiel!=null?'Diabetes: Zucker gesamt höchstens 10 % der Energie (DGE/DAG/DDG)':'zugesetzter Zucker noch nicht bestimmbar — deshalb kein Richtwert')+'</div>'
+    +'<div style="font-size:9.5px;color:var(--tb-muted);text-align:center;padding-top:10px;line-height:1.4">'+(zZiel!=null?'Diabetes: Zucker gesamt höchstens 10 % der Energie (DGE/DAG/DDG)':'zugesetzter Zucker noch nicht bestimmbar — deshalb kein Richtwert')+' · <a href="#" onclick="event.preventDefault();quellenOpen()" style="color:var(--green)">Quellen der Richtwerte</a></div>'
   +'</div>';
 
   /* Die beiden Klapp-Panels bleiben LEER, bis jemand tippt - tbKlappe() fuellt
@@ -17306,7 +17334,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-07-01";
+const APP_BUILD = "2026-10-07-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -17862,7 +17890,7 @@ async function hwBoxLaden(){
     var ic={salz:'🧂',alkohol:'🍷',koffein:'☕',schwanger:'🤰',phosphat:'⚠︎',zucker:'🩸'};
     el.innerHTML=l.map(function(h){ var f=st[h.stufe]||st.info;
       return '<div style="margin-top:10px;font-size:12.5px;line-height:1.5;padding:9px 12px;border-radius:10px;border:1px solid '+f[1]+';background:'+f[0]+';color:'+f[2]+'">'+(ic[h.art]||'ℹ︎')+' '+esc(h.text)+'</div>'; }).join('')
-      +'<div style="font-size:11px;color:var(--muted);margin-top:4px">Hinweise – fließen nicht in den Root Index ein. Keine medizinische Beratung.</div>';
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px">Hinweise – fließen nicht in den Root Index ein. Keine medizinische Beratung. <a href="#" onclick="event.preventDefault();quellenOpen()" style="color:var(--green)">Quellen</a></div>';
   }catch(e){ el.innerHTML=""; }
 }
 async function unvSpeichern(){
