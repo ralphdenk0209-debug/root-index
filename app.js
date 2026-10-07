@@ -870,12 +870,59 @@ function rikiScanHinweis(html, onClick){
   d.onclick=function(){ d.remove(); if(typeof onClick==="function"){ try{ onClick(); }catch(e){} } };
   document.body.appendChild(d);
 }
+/* 07.10.2026 (Ralph): "die wartezeit laeuft aktuell die sekunden mit. koennte man genau bei der
+   zeit den flux einblenden, und die einzelnen achsen voll laufen lassen?"
+   Die vier Bahnen laufen nacheinander an und bleiben bei gut zwei Dritteln stehen - das heisst
+   "wird gelesen", nicht "so gut ist es". Den echten Wert zeigt erst die Produktkarte. */
+var RWF_SAETZE=["Zutaten werden gelesen …","Zusatzstoffe werden geprüft …","Verarbeitung wird eingeordnet …","Nährwerte werden gerechnet …"];
+function rikiWarteFluxHtml(){
+  if(!document.getElementById("rwfStil")){
+    var st=document.createElement("style"); st.id="rwfStil";
+    st.textContent="@keyframes rwfFill{from{stroke-dashoffset:92}to{stroke-dashoffset:30}}"
+      +"@keyframes rwfAtem{0%,100%{opacity:.7}50%{opacity:1}}"
+      +".rwf-b{stroke-dasharray:92;stroke-dashoffset:92;animation:rwfFill 3.2s ease-out forwards,rwfAtem 1.6s ease-in-out infinite}";
+    document.head.appendChild(st);
+  }
+  var bahn=["M26 34 H74 L106 64","M274 34 H226 L194 64","M26 142 H74 L106 112","M274 142 H226 L194 112"];
+  var farb=["#3DDB7A","#5AB6FF","#B79BFF","#FFC24B"], kap=[[26,34],[274,34],[26,142],[274,142]];
+  return '<div style="display:flex;align-items:center;gap:12px">'
+    +'<svg viewBox="0 0 300 176" style="width:118px;height:auto;flex:0 0 118px" aria-label="Root Index rechnet">'
+    +'<g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="9">'
+    + bahn.map(function(d){ return '<path d="'+d+'" stroke="rgba(120,120,120,.16)"/>'; }).join('')
+    + bahn.map(function(d,i){ return '<path class="rwf-b" d="'+d+'" stroke="'+farb[i]+'" style="animation-delay:'+(i*3.5)+'s,'+(i*3.5)+'s"/>'; }).join('')
+    +'</g>'
+    + kap.map(function(k,i){ return '<circle cx="'+k[0]+'" cy="'+k[1]+'" r="7" fill="'+farb[i]+'" opacity=".85"/>'; }).join('')
+    +'<circle cx="150" cy="88" r="42" fill="var(--card)" stroke="#9aa7a0" stroke-width="5"/>'
+    +'<text id="rwfSek" x="150" y="100" text-anchor="middle" style="font-size:34px;font-weight:700" fill="var(--muted)">0 s</text>'
+    +'</svg>'
+    +'<div style="min-width:0"><b>Root Index rechnet</b><br><span id="rwfText" style="color:var(--muted)">'+RWF_SAETZE[0]+'</span>'
+    +'<div id="rwfNach" style="color:var(--muted);font-size:12px;margin-top:4px"></div></div></div>';
+}
+function rikiWarteFluxZeigen(){
+  try{ clearTimeout(window._rikiWarteUhr); }catch(e){}
+  rikiScanHinweis(rikiWarteFluxHtml(), null);
+}
+function rikiWarteFluxTakt(start){
+  var s=Math.max(0,Math.round((Date.now()-start)/1000));
+  var e=document.getElementById("rwfSek"); if(e) e.textContent=s+" s";
+  var t=document.getElementById("rwfText"); if(t) t.textContent=RWF_SAETZE[Math.min(3,Math.floor(s/3.5))];
+  var n=document.getElementById("rwfNach"); if(n && s>=12) n.textContent="Du musst nicht warten – das Produkt steht danach in der Suche.";
+}
 function rikiScanNachfassen(jobId, ean){
   if(!jobId || typeof client==="undefined") return;
   var start=Date.now(), schnellGemeldet=false;
   try{ clearInterval(window._rikiNachfassUhr); }catch(e){}
+  rikiWarteFluxZeigen();
   window._rikiNachfassUhr=setInterval(async function(){
-    if(Date.now()-start>25000){ clearInterval(window._rikiNachfassUhr); return; }
+    if(!schnellGemeldet) rikiWarteFluxTakt(start);
+    if(Date.now()-start>60000){
+      clearInterval(window._rikiNachfassUhr);
+      if(!schnellGemeldet && document.getElementById("rwfSek")){
+        rikiScanHinweis('&#9203; <b>Dauert länger.</b> Wir prüfen das Produkt im Hintergrund – beim nächsten Scan steht der Index da. '
+          +'<span style="color:var(--muted)">Tippen zum Schließen.</span>', null);
+      }
+      return;
+    }
     var st=null;
     try{ var r=await client.rpc("cb_riki_scan_job_stand",{p_job_id:jobId}); st=(typeof r.data==="string")?JSON.parse(r.data):r.data; }catch(e){ return; }
     if(!st || !st.ok) return;
@@ -893,6 +940,13 @@ function rikiScanNachfassen(jobId, ean){
     }
     if(st.status==="fertig" || st.status==="gehalten" || st.status==="fehler"){
       clearInterval(window._rikiNachfassUhr);
+      /* 07.10.2026: laeuft es nicht durch, steht da, was jetzt passiert - und wie es weitergeht. */
+      if(!(st.freigegeben && st.produkt_id) && !schnellGemeldet){
+        var grund=(Array.isArray(st.warnungen) && st.warnungen.length) ? esc(String(st.warnungen[0]))+' ' : '';
+        rikiScanHinweis('&#9888;&#65039; <b>Noch kein Index.</b> '+grund
+          +'Wir prüfen das Produkt im Hintergrund. <span style="color:var(--muted)">Tippen für neue Fotos.</span>',
+          function(){ if(typeof etikettOpen==="function") etikettOpen(ean||null); });
+      }
       if(st.freigegeben && st.produkt_id){
         try{ rikiWartegrenzeStoppen(); }catch(e){}
         try{ if(typeof rikiFabZustand==="function") rikiFabZustand("bereit"); }catch(e){}
@@ -13921,6 +13975,41 @@ function renderEtiShots(){
   if(b){ b.style.display=n?"block":"none";
          b.textContent=(typeof etiImTagebuch==="function" && etiImTagebuch())
            ? ("Weiter zur Menge ("+n+")") : ("Fotos senden ("+n+")"); }
+  try{ etiVorlesenPruefen(); }catch(e){}
+}
+/* 07.10.2026 (Ralph jaja: "wir starten die maschine, sobald das erste foto gemacht wurde"):
+   Das Zutatenfoto geht sofort zu Riki (cb_riki_scan_vorlesen). Waehrend Naehrwerte und
+   Vorderseite fotografiert werden, liest Riki schon die Zutaten. Der Auftrag beim Absenden
+   erkennt dasselbe Foto und uebernimmt sie - die Wartezeit danach wird deutlich kuerzer.
+   Hier wird nur der Schnell-Check abgeholt und als Satz gezeigt. */
+function etiVorlesenPruefen(){
+  var f=ETI_SHOTS.zutaten||null;
+  if(f===window._etiVorFoto) return;
+  window._etiVorFoto=f;
+  if(!f) return;
+  var ean=String(ETI_EAN||"").replace(/[^0-9]/g,"");
+  if(ean.length<8 || typeof client==="undefined" || typeof session==="undefined" || !session) return;
+  etiVorlesen(f, ean);
+}
+async function etiVorlesen(foto, ean){
+  var r=null;
+  try{ var a=await client.rpc("cb_riki_scan_vorlesen",{p_ean:ean,p_foto:foto}); r=(typeof a.data==="string")?JSON.parse(a.data):a.data; }catch(e){ return; }
+  if(!r || !r.ok || !r.vorlesung_id) return;
+  for(var i=0;i<20;i++){
+    await new Promise(function(ok){ setTimeout(ok,1000); });
+    if(ETI_SHOTS.zutaten!==foto) return;
+    var st=null;
+    try{ var b=await client.rpc("cb_riki_scan_vorlesung_stand",{p_id:r.vorlesung_id}); st=(typeof b.data==="string")?JSON.parse(b.data):b.data; }catch(e){ continue; }
+    if(!st || !st.ok) continue;
+    var sc=st.schnellcheck||null;
+    if(sc && sc.antwort && sc.antwort!=="unklar"){
+      if(sc.antwort==="nein") etiMsg("&#9888;&#65039; Auf dem Foto ist keine Zutatenliste. Bitte die Zutatenliste fotografieren.","var(--k-b45309)");
+      else if(sc.lesbar===false) etiMsg("&#9888;&#65039; Die Zutatenliste ist nicht scharf. Bitte näher und gerade nochmal fotografieren.","var(--k-b45309)");
+      else etiMsg("&#10003; Zutatenliste gut lesbar – Riki liest schon. Jetzt die Nährwerte fotografieren.","var(--k-166534)");
+      return;
+    }
+    if(st.status==="fehler") return;
+  }
 }
 async function etikettCam(slot){
   try{ const d=await camCapture(); if(!d) return; ETI_SHOTS[slot]=await _compressSrc(d); renderEtiShots(); }
@@ -14020,7 +14109,8 @@ async function etikettSend(){
       /* Der Orb uebernimmt ab hier: er zeigt, dass gearbeitet wird, und meldet
          sich, wenn es fertig ist. Deshalb darf das Fenster sofort zu. */
       try{ rikiFabZustand("denkt"); }catch(x){}
-      try{ rikiWartegrenzeStarten(); }catch(x){}   /* Work #441: nach 10 s hoert das Warten auf, nicht der Lauf */
+      /* 07.10.2026: statt der 10-s-Wartegrenze zeigt rikiScanNachfassen den Flux mit Sekunden und
+         sagt nach 12 s selbst, dass niemand warten muss. */
       try{ rikiScanNachfassen(e.job_id, _eanZiffern); }catch(x){}   /* 23.09.2026: Schnell-Check/Ergebnis nachfassen */
       etikettClose();
       return;
@@ -17334,7 +17424,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-07-02";
+const APP_BUILD = "2026-10-07-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

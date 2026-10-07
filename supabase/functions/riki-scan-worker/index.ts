@@ -192,8 +192,12 @@ async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, jo
     if (n.naehrwerte_100g && Object.values(n.naehrwerte_100g).some((x) => typeof x === "number")) m.naehrwerte_100g = n.naehrwerte_100g;
     if (Array.isArray(n.wirkstoffe) && n.wirkstoffe.length) m.wirkstoffe = n.wirkstoffe;
     if (Array.isArray(n.mikronaehrstoffe_100g) && n.mikronaehrstoffe_100g.length) m.mikronaehrstoffe_100g = n.mikronaehrstoffe_100g;
-    vor.warnungen = [...(r2.d.warnungen ?? []), ...(vor.warnungen ?? [])]
-      .filter((w: unknown) => !/kein Zutatenverzeichnis/i.test(String(w))).slice(0, 6);
+    // Jede Lesung spricht nur fuer ihren Teil: die Zweitlesung fuer Name/Naehrwerte/Barcode,
+    // die Vorlesung fuer die Zutaten. Sonst meldet das Zutatenfoto „Naehrwerte nicht lesbar".
+    vor.warnungen = [
+      ...(r2.d.warnungen ?? []).filter((w: unknown) => !/zutat/i.test(String(w))),
+      ...(vor.warnungen ?? []).filter((w: unknown) => !/n(ä|ae)hrwert|kalorien|eiwei|kohlenhydrat|barcode|ean|portion/i.test(String(w))),
+    ].slice(0, 6);
     if (typeof r2.d.score_erlaubt === "boolean") vor.score_erlaubt = r2.d.score_erlaubt;
     vor.meta = { ...(vor.meta ?? {}), zweitlesung: r2.d.meta ?? null };
   }
@@ -429,7 +433,7 @@ Deno.serve(async (req: Request) => {
           p_job_id: job.job_id,
           p_ok: false,
           p_ergebnis_meta: { worker: WORKER, riki_http: readStatus, dauer_ms: Date.now() - jobStarted,
-            ean_pruefung: eanPruefung, lesung_wiederverwendet: lesungWiederverwendet, lesung_abgelegt: lesungAbgelegt },
+            ean_pruefung: eanPruefung, lesung_wiederverwendet: lesungWiederverwendet, lesung_abgelegt: lesungAbgelegt, vorlesung },
           p_fehler: `Barcode auf dem Foto (${eanPruefung.foto}) passt nicht zum gescannten (${eanPruefung.scan}). Nichts gespeichert.`,
         });
         results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "ean_widerspruch" });
