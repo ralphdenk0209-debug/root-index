@@ -1,5 +1,13 @@
 // RIKI-SCAN-WORKER
 //
+// v15 (2026-10-07, Ralph jaja „Maschine starten, sobald das erste Foto gemacht wurde"): VORLESUNG.
+//   App/Web schicken das Zutatenfoto sofort (cb_riki_scan_vorlesen). Modus body.vorlesung_id liest es
+//   allein: Schnell-Check + Zutaten (nur_zeilen) -> shadow_v1.riki_scan_vorlesung. Kommt danach der
+//   Auftrag mit allen Fotos und ist dasselbe Foto (SHA-256 der Daten-URL) dabei, uebernimmt der Worker
+//   die Zutaten daraus und liest nur die uebrigen Fotos (riki-etikett ohne_zutaten: Name, Naehrwerte),
+//   parallel zum Warten auf die Vorlesung. Passt etwas nicht (anderes Foto, keine Zutaten, Fehler),
+//   laeuft alles wie in v14 - die Vorlesung ist nur eine Abkuerzung, nie eine zweite Wahrheit.
+//
 // v9 (2026-09-18, #214, Ralph jaja): BARCODE AUF DEM FOTO PRUEFEN. Ersatz fuer die am 13.09. verlorene
 //   EAN-Pruefung aus v5 (Quelltext nie abgelegt, neu entworfen, nicht nachgebaut). riki-etikett bekommt
 //   ean_pruefen=true und liest die Nummer selbst ab (ean_auf_foto). Nur wenn Foto-Nummer UND Scan-Nummer
@@ -71,7 +79,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v14";
+const WORKER = "riki-scan-worker v15";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -129,6 +137,68 @@ async function schnellCheck(images: string[]): Promise<any> {
   } catch (e) {
     return { antwort: "unklar", lesbar: null, marke: null, grund: String(e).slice(0, 120), ms: Date.now() - t0 };
   }
+}
+
+// v15: gleiche Pruefsumme wie in cb_riki_scan_vorlesen (digest(text,'sha256')).
+async function sha256Hex(x: string): Promise<string> {
+  const h = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(x));
+  return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function rikiLesen(url: string, serviceKey: string, body: Record<string, unknown>): Promise<{ http: number; d: any }> {
+  try {
+    const r = await fetch(`${url}/functions/v1/riki-etikett`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    return { http: r.status, d: await r.json().catch(() => null) };
+  } catch (e) {
+    return { http: 0, d: { error: String(e) } };
+  }
+}
+
+/* v15: Vorlesung zum Auftrag uebernehmen. null = nicht passend -> normaler Weg. */
+async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, job: any, images: string[]): Promise<any> {
+  const { data: v0 } = await sb.rpc("cb_riki_scan_vorlesung_fuer_job", { p_job_id: job.job_id, p_ean: String(job.ean ?? "") });
+  if (!v0 || !v0.foto_sha) return null;
+  if (v0.schnellcheck?.antwort === "nein") return null;
+  const shas = await Promise.all(images.map(sha256Hex));
+  const idx = shas.indexOf(v0.foto_sha);
+  if (idx < 0) return null;
+  const rest = images.filter((_, i) => i !== idx);
+  const t0 = Date.now();
+  // Die uebrigen Fotos sofort lesen - parallel zum Warten auf die Vorlesung.
+  const p2 = rest.length
+    ? rikiLesen(url, serviceKey, { bilder: rest, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, ohne_zutaten: true })
+    : Promise.resolve(null);
+  let v = v0;
+  while ((v?.status === "offen" || v?.status === "laeuft") && Date.now() - t0 < 30000) {
+    await new Promise((r) => setTimeout(r, 700));
+    const { data } = await sb.rpc("cb_riki_scan_vorlesung_holen", { p_id: v0.id });
+    if (!data) break;
+    v = data;
+  }
+  const vz = v?.lesung?.vorschlag;
+  if (v?.status !== "fertig" || !vz || !Array.isArray(vz.zutaten) || vz.zutaten.length === 0) { await p2; return null; }
+  const r2: any = await p2;
+  if (rest.length && (!r2 || r2.http !== 200 || !r2.d?.vorschlag)) return null;
+  const vor = JSON.parse(JSON.stringify(v.lesung));
+  if (r2) {
+    const n = r2.d.vorschlag, m = vor.vorschlag;
+    for (const k of ["name", "marke", "kategorie_vorschlag", "bezug", "ean_auf_foto", "name_etikett", "bio", "nur_portionswerte"]) {
+      if (n[k] !== null && n[k] !== undefined && n[k] !== "") m[k] = n[k];
+    }
+    if (n.naehrwerte_100g && Object.values(n.naehrwerte_100g).some((x) => typeof x === "number")) m.naehrwerte_100g = n.naehrwerte_100g;
+    if (Array.isArray(n.wirkstoffe) && n.wirkstoffe.length) m.wirkstoffe = n.wirkstoffe;
+    if (Array.isArray(n.mikronaehrstoffe_100g) && n.mikronaehrstoffe_100g.length) m.mikronaehrstoffe_100g = n.mikronaehrstoffe_100g;
+    vor.warnungen = [...(r2.d.warnungen ?? []), ...(vor.warnungen ?? [])]
+      .filter((w: unknown) => !/kein Zutatenverzeichnis/i.test(String(w))).slice(0, 6);
+    if (typeof r2.d.score_erlaubt === "boolean") vor.score_erlaubt = r2.d.score_erlaubt;
+    vor.meta = { ...(vor.meta ?? {}), zweitlesung: r2.d.meta ?? null };
+  }
+  return { read: vor, http: 200, schnell: v.schnellcheck ?? null,
+    info: { vorlesung_id: v.id, foto_nr: idx + 1, weitere_fotos: rest.length, warte_ms: Date.now() - t0 } };
 }
 
 // v9: GTIN-Pruefziffer (EAN-8/UPC-12/EAN-13/GTIN-14).
@@ -225,6 +295,29 @@ Deno.serve(async (req: Request) => {
       await sb.rpc("cb_riki_probe_ablegen", { p_auftrag_id: auftrag.auftrag_id, p_ergebnis: ergebnis });
       return response({ ok: true, probe: auftrag.auftrag_id, anzahl: ergebnis.length, ms: Date.now() - started });
     }
+    // v15: Vorlesung - nur das Zutatenfoto, noch ohne Auftrag.
+    if (body?.vorlesung_id) {
+      const { data: vl } = await sb.rpc("cb_riki_scan_vorlesung_claim", { p_id: Number(body.vorlesung_id) });
+      if (!vl) return response({ ok: true, vorlesung: "nicht offen" });
+      const bilder = [String(vl.foto)];
+      const sc = await schnellCheck(bilder);
+      try { await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: sc, p_lesung: null, p_riki_http: null, p_fehler: null }); } catch (_) { /* nur Anzeige */ }
+      try {
+        if (sc?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: sc.in ?? 0, p_out: sc.out ?? 0, p_kosten: sc.kosten_usd, p_produkt_id: null, p_erfolg: true, p_fehler: null });
+      } catch (_) { /* Buchung ist nicht lebenswichtig */ }
+      if (sc?.antwort === "nein") {
+        // Keine Zutatenliste auf dem Foto: nicht teuer lesen. Der Auftrag liest spaeter alles normal.
+        await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: null, p_lesung: { vorschlag: { zutaten: [] }, leer: true }, p_riki_http: null, p_fehler: null });
+        return response({ ok: true, vorlesung: vl.id, ergebnis: "keine_zutatenliste", ms: Date.now() - started });
+      }
+      const r = await rikiLesen(url, serviceKey, { bilder, ean: vl.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN,
+        gegenprobe: (sc && (sc.antwort === "ja" || sc.antwort === "nein")) ? { antwort: sc.antwort, marke: null } : undefined });
+      const gut = r.http === 200 && !!r.d?.vorschlag;
+      await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: gut, p_schnellcheck: null, p_lesung: gut ? r.d : null, p_riki_http: r.http,
+        p_fehler: gut ? null : String(r.d?.error ?? r.d?.fehler ?? `riki-etikett HTTP ${r.http}`) });
+      return response({ ok: true, vorlesung: vl.id, gelesen: gut, zutaten: gut ? (r.d.vorschlag.zutaten?.length ?? 0) : 0, ms: Date.now() - started });
+    }
+
     const maxJobs = Math.max(1, Math.min(Number(body?.max_jobs ?? 2), 4));
     const results: any[] = [];
 
@@ -260,16 +353,32 @@ Deno.serve(async (req: Request) => {
           lesungWiederverwendet = true;
         }
       } catch (_) { /* ohne Ablage wird normal gelesen */ }
-      // v10: Schnell-Check (nur bei neuer Lesung). Ergebnis sofort am Auftrag ablegen.
+      // v15: liegt eine passende Vorlesung, Zutaten daraus nehmen und nur den Rest lesen.
       let schnell: any = null;
+      let vorlesung: any = null;
       if (!lesungWiederverwendet) {
+        try {
+          const vr = await vorlesungUebernehmen(sb, url, serviceKey, job, images);
+          if (vr) {
+            read = vr.read; readStatus = vr.http; schnell = vr.schnell; vorlesung = vr.info;
+            try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
+            try {
+              const ab = await sb.rpc("cb_riki_scan_lesung_ablegen", { p_job_id: job.job_id, p_lesung: read, p_modell: LESE_MODELL, p_riki_http: 200 });
+              lesungAbgelegt = ab.error ? { fehler: fehlerText(ab.error) } : ab.data;
+            } catch (e) { lesungAbgelegt = { fehler: fehlerText(e) }; }
+            try { await sb.rpc("cb_riki_scan_vorlesung_verbraucht", { p_id: vr.info.vorlesung_id, p_job_id: job.job_id }); } catch (_) { /* nur Buchfuehrung */ }
+          }
+        } catch (_) { vorlesung = null; }
+      }
+      // v10: Schnell-Check (nur bei neuer Lesung). Ergebnis sofort am Auftrag ablegen.
+      if (!lesungWiederverwendet && !vorlesung) {
         schnell = await schnellCheck(images);
         try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
         try {
           if (schnell?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: schnell.in ?? 0, p_out: schnell.out ?? 0, p_kosten: schnell.kosten_usd, p_produkt_id: job.produkt_id ?? null, p_erfolg: true, p_fehler: null });
         } catch (_) { /* Buchung ist nicht lebenswichtig */ }
       }
-      if (!lesungWiederverwendet) try {
+      if (!lesungWiederverwendet && !vorlesung) try {
         const r = await fetch(`${url}/functions/v1/riki-etikett`, {
           method: "POST",
           headers: {
@@ -475,6 +584,7 @@ Deno.serve(async (req: Request) => {
       const meta = {
         schnellcheck: schnell,
         worker: WORKER,
+        vorlesung,
         ean_pruefung: eanPruefung,
         lesung_wiederverwendet: lesungWiederverwendet,
         lesung_abgelegt: lesungAbgelegt,
