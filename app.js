@@ -700,7 +700,9 @@ function scoreBew(s){ if(s==null) return null; if(s>=90) return "Sehr gut"; if(s
    nicht sieht, ist keine Luecke, sondern eine Falle. */
 function rezeptScoreInfo(r){
   const z=Array.isArray(r.zutaten)?r.zutaten:[];
-  const mitMenge=z.filter(i=>num(i.menge_g)!=null&&num(i.menge_g)>0);
+  /* 07.10.2026 (Ralph): Wasser und Salz sind neutral (Server: Rezept_Neutrale_Zutat, Feld neutral) -
+     sie blockieren den Wert nicht und zaehlen nicht ins Gewicht. Gleiche Regel wie cb_rezept_index. */
+  const mitMenge=z.filter(i=>num(i.menge_g)!=null&&num(i.menge_g)>0&&!i.neutral);
   if(!mitMenge.length) return {score:null, grund:"keine Zutaten mit Mengenangabe", fehlend:[]};
   const fehlend=mitMenge.filter(i=>num(i.clean_score)==null);
   if(fehlend.length) return {score:null, grund:"unbewertete Zutaten", fehlend:fehlend.map(i=>i.name||"?")};
@@ -17304,7 +17306,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-06-02";
+const APP_BUILD = "2026-10-07-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
