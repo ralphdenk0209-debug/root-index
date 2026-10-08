@@ -1,8 +1,9 @@
-Lauf: 80 · Commit: dee352604e61675b8583d1f7600230b570015698 · 2026-10-08 09:20 UTC
+Lauf: 81 · Commit: 59763473db452c4e262befd090c836aff43e5116 · 2026-10-08 09:41 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
-  ... 2000 Produkte (zuletzt P11893)
-  ! nach id P1349: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
+  ... 80 Produkte (zuletzt P10031)
+  ... 2080 Produkte (zuletzt P11975)
   ... 4080 Produkte (zuletzt P1395)
   ... 6080 Produkte (zuletzt P15919)
   ... 8080 Produkte (zuletzt P17826)
@@ -36,7 +37,7 @@ Fertig geladen: 60589 Produkte
 Herstellerbilder: 5 mit Freigabe.
 ↪️  Weiterleitungen alter Adressen: 5231
 ✅ Produktseiten: 60589 · Kategorien: 23 · Sitemap-URLs: 10027
-Geladen: 17698 Produkte (UK/US/FR)
+Geladen: 17700 Produkte (UK/US/FR)
 ✅ en: 1962 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 46
-✅ fr: 15736 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 100
-✅ Sitemap international: 17740 URLs
+✅ fr: 15738 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 100
+✅ Sitemap international: 17742 URLs
