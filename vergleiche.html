@@ -8,6 +8,9 @@
        - Ablage "Ohne Termin": fertige Inhalte ohne Termin, in einen Tag ziehen
        - Bild_in_Meta / Reel_in_Meta: gruen = in Meta eingeplant, gelb = nur im Plan (Ralph muss in Meta noch planen)
          Wird ein Meta-Beitrag verschoben, faellt er auf gelb zurueck (in Meta auch verschieben!).
+     08.10.2026 Umbau 3 (Ralph: "keine bilder mehr, sondern reels" + "checkbox einmal vergleich und einmal einzeln"):
+       - Takt 3 Reels Di/Do/So, Ablage nur noch Reels; Reiter Produkte mit Haken Vergleich/Einzeln je Produkt
+       - Art umstellen (Vergleich <-> Einzel) je Eintrag; Hinweis "lieber Einzel?" bei weniger als 10 Punkten Unterschied
      Wahrheit: public."Instagram_Vergleich" - Typ 'Vergleich' | 'Einzel', Geplant_am (Bild), Reel_geplant_am, Reel_Datei.
      Punkte live aus v_web_produkte. Loeschen = Status 'Verworfen'. Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). -->
 <html lang="de">
@@ -97,12 +100,13 @@
   <button data-t="plan" class="an">📅 Wochenplan</button>
   <button data-t="vgl">⚖️ Vergleiche</button>
   <button data-t="ein">🔎 Einzelprodukte</button>
+  <button data-t="prod">🧺 Produkte</button>
 </nav>
 <div class="wrap">
   <div class="tab an" id="t-plan">
     <div class="kopf">
       <button id="zurueck">◀ früher</button><button id="heute">Diese Woche</button><button id="vor">später ▶</button>
-      <span class="leg">Takt: <i style="background:var(--bild)"></i>Bild Di + Fr <i style="background:var(--reel)"></i>Reel Do + So · 18:00
+      <span class="leg">Takt: <i style="background:var(--reel)"></i>3 Reels Di · Do · So · 18:00
         <i style="background:#eaf7ef;border:1px solid var(--meta)"></i>in Meta geplant <i style="background:#fff8dc;border:1px solid var(--plan)"></i>nur im Plan</span>
     </div>
     <div class="planbox">
@@ -117,6 +121,12 @@
   <div class="tab" id="t-ein">
     <table><thead><tr><th>Nr</th><th>Produkt</th><th>Pkt</th><th>Reel / Remix</th><th>Status</th><th>Notiz</th><th></th></tr></thead>
     <tbody id="ein"></tbody></table>
+  </div>
+  <div class="tab" id="t-prod">
+    <div class="kopf"><span class="leg">Wie wird jedes Produkt verwendet? Haken setzen legt eine Idee an, Haken entfernen verwirft eine Idee (nur solange sie noch Idee ist).</span>
+      <span style="margin-left:auto"><input id="pNeu" placeholder="P-ID hinzufügen, z. B. P095" style="padding:5px 8px;border:1px solid #dcd8ea;border-radius:8px;width:200px"> <button id="pNeuOk">hinzufügen</button></span></div>
+    <table><thead><tr><th>Produkt</th><th>Pkt</th><th>⚖️ Vergleich</th><th>🔎 Einzeln</th><th>Wo verwendet</th></tr></thead>
+    <tbody id="prodt"></tbody></table>
   </div>
   <div id="msg">lädt …</div>
 </div>
@@ -208,7 +218,7 @@ function badge(x, art){
   return "<span class='st "+(z==="m"?"meta":"plan")+"'>"+(z==="m"?"Meta":"Plan")+" · "+datum(dt)+" "+zeit(dt)+"</span>";
 }
 
-function zeige(){ zeigeKopf(); zeigePlan(); zeigeTabellen(); }
+function zeige(){ zeigeKopf(); zeigePlan(); zeigeTabellen(); zeigeProdukte(); }
 
 function zeigeKopf(){
   var jetzt = new Date(), E = ZEILEN.filter(function(x){ return x.Typ==="Einzel"; });
@@ -237,7 +247,7 @@ function zeigePlan(){
   ZEILEN.forEach(function(x){ ["bild","reel"].forEach(function(a){ if(x[F[a].d]) ev.push({x:x, a:a, d:new Date(x[F[a].d])}); }); });
   ev.sort(function(p,q){ return p.d-q.d; });
   var mo = new Date(heute); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7) + 7*WOFF);
-  var TAKT = { 2:"Bild-Tag", 4:"Reel-Tag", 5:"Bild-Tag", 0:"Reel-Tag" }, html = "";
+  var TAKT = { 2:"Reel-Tag", 4:"Reel-Tag", 0:"Reel-Tag" }, html = "";
   for(var w=0; w<6; w++){
     var ws = new Date(mo); ws.setDate(mo.getDate()+7*w);
     var t0 = new Date(Date.UTC(ws.getFullYear(),ws.getMonth(),ws.getDate())); var dn = t0.getUTCDay()||7; t0.setUTCDate(t0.getUTCDate()+4-dn);
@@ -260,10 +270,13 @@ function zeigePlan(){
   var ohneReel = ZEILEN.filter(function(x){ return x.Reel_Datei && !x.Reel_geplant_am; });
   var fertigB = ohneBild.filter(function(x){ return x.Status==="Bereit"; }), restB = ohneBild.filter(function(x){ return x.Status!=="Bereit"; });
   var offenE = ZEILEN.filter(function(x){ return x.Typ==="Einzel" && !x.Reel_Datei && !x.Reel_geplant_am && x.Status!=="Veröffentlicht"; });
+  /* seit 08.10.: nur noch Reels – alles ohne Reel-Termin erscheint als Reel-Karte */
+  var bauen = ZEILEN.filter(function(x){ return !x.Reel_Datei && !x.Reel_geplant_am && x.Status==="Bereit"; });
+  var offen = ZEILEN.filter(function(x){ return !x.Reel_Datei && !x.Reel_geplant_am && (x.Status==="Idee" || x.Status==="In Arbeit"); });
   $("ablage").innerHTML = "<h4>Noch nicht geplant</h4><small>In einen Tag ziehen oder anklicken.</small>"
     + "<div class='grp'>🎬 Reels fertig ("+ohneReel.length+")</div>" + ohneReel.map(function(x){ return karte(x,"reel"); }).join("")
-    + "<div class='grp'>🖼 Bild-Posts fertig ("+fertigB.length+")</div>" + fertigB.map(function(x){ return karte(x,"bild"); }).join("")
-    + "<div class='grp'>⏳ Offen – Ideen / in Arbeit ("+(restB.length+offenE.length)+")</div>" + restB.map(function(x){ return karte(x,"bild"); }).join("") + offenE.map(function(x){ return karte(x,"reel"); }).join("");
+    + "<div class='grp'>🛠 Reel noch bauen ("+bauen.length+")</div>" + bauen.map(function(x){ return karte(x,"reel"); }).join("")
+    + "<div class='grp'>⏳ Offen – Ideen / in Arbeit ("+offen.length+")</div>" + offen.map(function(x){ return karte(x,"reel"); }).join("");
   verdrahten();
 }
 
@@ -359,7 +372,7 @@ function neuOptionen(){
 }
 function neu(tagYmd){
   $("nDatum").value = tagYmd; $("nZeit").value = "18:00";
-  var wd = ausFeldern(tagYmd).getDay(); $("nArt").value = (wd===4 || wd===0) ? "reel" : "bild";
+  $("nArt").value = "reel";
   ["nTitel","nA","nB","nNotiz"].forEach(function(i){ $(i).value = ""; }); $("nTyp").value = "Vergleich"; $("nBlab").hidden = false;
   neuOptionen(); $("dlgNeu").showModal();
 }
@@ -396,7 +409,7 @@ function zeigeTabellen(){
     var bild = badge(x,"bild") || "<span class='st "+s[0]+"'>"+e(s[1])+"</span>";
     var reel = badge(x,"reel") || (x.Reel_Datei ? "<span class='st fertig'>fertig</span>" : "<small>–</small>");
     return "<tr><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
-      +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b):"–")+"</td>"
+      +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b)+(Math.abs(a-b)<10?"<br><small title='Unterschied unter 10 Punkten'>lieber Einzel?</small>":""):"–")+"</td>"
       +"<td>"+bild+"</td><td>"+reel+"</td><td>"+e(x.Fehlt||"")+"</td>"+knoepfe(i)+"</tr>";
   }).join("");
   $("ein").innerHTML = E.length ? E.map(function(x){
@@ -411,6 +424,7 @@ function knoepfe(i){
   var x = ZEILEN[i], gl = gruppe(x), j = gl.indexOf(x);
   return "<td class='akt'><button title='nach oben' onclick='schiebe("+i+",-1)'"+(j===0?" disabled":"")+">▲</button>"
     +"<button title='nach unten' onclick='schiebe("+i+",1)'"+(j===gl.length-1?" disabled":"")+">▼</button>"
+    +"<button title='Art umstellen (Vergleich ⇄ Einzel)' onclick='umstellen("+i+")'>⇄</button>"
     +"<button class='del' title='löschen' onclick='loesche("+i+")'>✕</button></td>";
 }
 async function schiebe(i, d){
@@ -433,6 +447,85 @@ async function loesche(i){
   if(r.error){ meld("Fehler: " + r.error.message); return; }
   ZEILEN.splice(i, 1); zeige();
 }
+
+/* ---- Art umstellen (08.10.2026) ---- */
+function naechsteNr(typ){ var gl = ZEILEN.filter(function(x){ return (x.Typ==="Einzel")===(typ==="Einzel"); }).map(function(x){ return x.Nr||0; });
+  return Math.max.apply(null, gl.concat([typ==="Einzel"?100:0])) + 1; }
+async function einfuegen(zeilen, text){
+  if(BUSY) return false; BUSY = true; meld(text||"lege an …");
+  var r = await vg.from(T).insert(zeilen).select("*"); BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); return false; }
+  return true;
+}
+async function umstellen(i){
+  var x = ZEILEN[i]; if(!x || BUSY) return;
+  if(x.Typ==="Einzel"){
+    var b = prompt("Zum Vergleich machen – mit welchem Produkt? (P-ID, z. B. P1234)"); if(!b) return;
+    b = b.trim().toUpperCase();
+    var w = { Typ:"Vergleich", Nr:naechsteNr("Vergleich"), Produkt_B:b, Status:"Idee", Fehlt:"Claude: Vergleichs-Reel bauen" };
+    if(await speichern(x.id, w, "stelle um …")) laden();
+    return;
+  }
+  var a = pid(x.Produkt_A), bb = pid(x.Produkt_B);
+  if(!confirm("„"+titel(x)+"“ als Einzel-Reel(s) weiterführen? Aus dem Vergleich werden Einzel-Ideen für jedes Produkt; der Vergleich wird verworfen.")) return;
+  var nr = naechsteNr("Einzel"), neuZ = [];
+  [a, bb].filter(Boolean).forEach(function(id){
+    if(ZEILEN.some(function(z){ return z.Typ==="Einzel" && pid(z.Produkt_A)===id; })) return;
+    neuZ.push({ Nr:nr++, Typ:"Einzel", Produkt_A:id, Status:"Idee", Fehlt:"Claude: Einzel-Reel bauen", Notiz:"aus Vergleich Nr "+x.Nr });
+  });
+  if(neuZ.length && !(await einfuegen(neuZ, "lege Einzel-Ideen an …"))) return;
+  BUSY = true; var r = await vg.from(T).update({ Status:"Verworfen" }).eq("id", x.id); BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); return; }
+  meld("umgestellt ✓"); laden();
+}
+
+/* ---- Reiter Produkte: Haken Vergleich / Einzeln (08.10.2026) ---- */
+var EXTRA = [];
+function zeigeProdukte(){
+  var ids = {};
+  ZEILEN.forEach(function(x){ [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).forEach(function(id){ ids[id] = 1; }); });
+  EXTRA.forEach(function(id){ ids[id] = 1; });
+  var liste = Object.keys(ids).sort(function(p,q){ var a = P[p], b = P[q];
+    return ((a?a.marke+" "+a.name:p)).localeCompare(b?b.marke+" "+b.name:q, "de"); });
+  $("prodt").innerHTML = liste.map(function(id){
+    var V = ZEILEN.filter(function(x){ return x.Typ!=="Einzel" && (pid(x.Produkt_A)===id || pid(x.Produkt_B)===id); });
+    var E = ZEILEN.filter(function(x){ return x.Typ==="Einzel" && pid(x.Produkt_A)===id; });
+    var wo = V.map(function(x){ return "Nr "+x.Nr+" "+(x.Status==="Veröffentlicht"?"✅":x.Reel_geplant_am?"📅":x.Reel_Datei?"🎬":"·"); })
+      .concat(E.map(function(x){ return "🔎 "+x.Nr+" "+(x.Status==="Veröffentlicht"?"✅":x.Reel_geplant_am?"📅":x.Reel_Datei?"🎬":"·"); }));
+    var a = pkt(id);
+    return "<tr><td>"+prod(id)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
+      + "<td><label style='cursor:pointer'><input type='checkbox' data-pv='"+e(id)+"'"+(V.length?" checked":"")+"> Vergleich</label></td>"
+      + "<td><label style='cursor:pointer'><input type='checkbox' data-pe='"+e(id)+"'"+(E.length?" checked":"")+"> Einzeln</label></td>"
+      + "<td><small>"+e(wo.join(" · ") || "noch nicht verwendet")+"</small></td></tr>";
+  }).join("") || "<tr><td colspan='5'><small>Noch keine Produkte.</small></td></tr>";
+}
+$("prodt").onchange = async function(ev){
+  var cb = ev.target; if(cb.type!=="checkbox") return;
+  var id = cb.dataset.pv || cb.dataset.pe, typ = cb.dataset.pv ? "Vergleich" : "Einzel";
+  var treffer = ZEILEN.filter(function(x){ return typ==="Einzel" ? (x.Typ==="Einzel" && pid(x.Produkt_A)===id)
+      : (x.Typ!=="Einzel" && (pid(x.Produkt_A)===id || pid(x.Produkt_B)===id)); });
+  if(cb.checked){
+    var z = { Nr:naechsteNr(typ), Typ:typ, Produkt_A:id, Status:"Idee" };
+    if(typ==="Vergleich"){
+      var b = prompt("Vergleich mit welchem Produkt? (P-ID, leer = später festlegen)");
+      if(b===null){ cb.checked = false; return; }
+      z.Produkt_B = b.trim().toUpperCase() || null; z.Fehlt = z.Produkt_B ? "Claude: Vergleichs-Reel bauen" : "Partnerprodukt fehlt";
+    } else z.Fehlt = "Claude: Einzel-Reel bauen";
+    if(await einfuegen([z])) { meld("Idee angelegt ✓"); laden(); } else cb.checked = false;
+    return;
+  }
+  var ideen = treffer.filter(function(x){ return x.Status==="Idee"; });
+  if(ideen.length < treffer.length){ cb.checked = true; meld("Schon in Arbeit oder fertig – bitte in der Tabelle ändern (✕)."); return; }
+  if(!confirm("Idee(n) verwerfen?")){ cb.checked = true; return; }
+  BUSY = true; var r = await vg.from(T).update({ Status:"Verworfen" }).in("id", ideen.map(function(x){ return x.id; })); BUSY = false;
+  if(r.error){ meld("Fehler: " + r.error.message); cb.checked = true; return; }
+  meld("verworfen ✓"); laden();
+};
+$("pNeuOk").onclick = async function(){
+  var id = $("pNeu").value.trim().toUpperCase(); if(!/^P\d+$/.test(id)){ meld("Bitte eine P-ID eingeben, z. B. P095."); return; }
+  if(!P[id]){ var r = await vg.from("v_web_produkte").select("id,name,marke,ean,clean_score,bewertung").eq("id", id); (r.data||[]).forEach(function(x){ P[x.id] = x; }); }
+  if(EXTRA.indexOf(id)<0) EXTRA.push(id); $("pNeu").value = ""; zeigeProdukte(); meld(P[id] ? "hinzugefügt – jetzt Haken setzen" : id+" hat noch keine Punkte");
+};
 
 laden();
 </script>
