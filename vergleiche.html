@@ -10,6 +10,7 @@
          Wird ein Meta-Beitrag verschoben, faellt er auf gelb zurueck (in Meta auch verschieben!).
      08.10.2026 Umbau 3 (Ralph: "keine bilder mehr, sondern reels" + "checkbox einmal vergleich und einmal einzeln"):
        - Takt 3 Reels Di/Do/So, Ablage nur noch Reels; Reiter Produkte mit Haken Vergleich/Einzeln je Produkt
+       - Spalte Foto (Tabelle content_produkt_foto) + Loeschen je Produkt (Ralph 08.10.)
        - Art umstellen (Vergleich <-> Einzel) je Eintrag; Hinweis "lieber Einzel?" bei weniger als 10 Punkten Unterschied
      Wahrheit: public."Instagram_Vergleich" - Typ 'Vergleich' | 'Einzel', Geplant_am (Bild), Reel_geplant_am, Reel_Datei.
      Punkte live aus v_web_produkte. Loeschen = Status 'Verworfen'. Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). -->
@@ -125,7 +126,7 @@
   <div class="tab" id="t-prod">
     <div class="kopf"><span class="leg">Wie wird jedes Produkt verwendet? Haken setzen legt eine Idee an, Haken entfernen verwirft eine Idee (nur solange sie noch Idee ist).</span>
       <span style="margin-left:auto"><input id="pNeu" placeholder="P-ID hinzufügen, z. B. P095" style="padding:5px 8px;border:1px solid #dcd8ea;border-radius:8px;width:200px"> <button id="pNeuOk">hinzufügen</button></span></div>
-    <table><thead><tr><th>Produkt</th><th>Pkt</th><th>⚖️ Vergleich</th><th>🔎 Einzeln</th><th>Wo verwendet</th></tr></thead>
+    <table><thead><tr><th>Produkt</th><th>Pkt</th><th>📷 Foto</th><th>⚖️ Vergleich</th><th>🔎 Einzeln</th><th>Wo verwendet</th><th></th></tr></thead>
     <tbody id="prodt"></tbody></table>
   </div>
   <div id="msg">lädt …</div>
@@ -167,7 +168,7 @@ var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
 var T = "Instagram_Vergleich";
 function $(id){ return document.getElementById(id); }
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
-var ZEILEN = [], P = {}, BUSY = false, WOFF = 0;
+var ZEILEN = [], P = {}, FOTO = {}, BUSY = false, WOFF = 0;
 var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["online","online"], "In Arbeit":["wartet","wartet"], "Idee":["idee","Idee"] };
 var F = { bild:{ d:"Geplant_am", m:"Bild_in_Meta", n:"🖼 Bild" }, reel:{ d:"Reel_geplant_am", m:"Reel_in_Meta", n:"🎬 Reel" } };
 function meld(t){ $("msg").textContent = t; }
@@ -204,8 +205,13 @@ async function laden(){
   if(r.error){ meld("Fehler: " + r.error.message + " (im Admin angemeldet?)"); return; }
   ZEILEN = r.data || [];
   var ids = []; ZEILEN.forEach(function(x){ if(pid(x.Produkt_A)) ids.push(pid(x.Produkt_A)); if(pid(x.Produkt_B)) ids.push(pid(x.Produkt_B)); });
+  FOTO = {}; var f = await vg.from("content_produkt_foto").select("*");
+  (f.data||[]).forEach(function(x){ FOTO[x.produkt_id] = x; ids.push(x.produkt_id); });
   P = {};
   if(ids.length){ var p = await vg.from("v_web_produkte").select("id,name,marke,ean,clean_score,bewertung").in("id", ids); (p.data||[]).forEach(function(x){ P[x.id] = x; }); }
+  var fehlt = ids.filter(function(id){ return !P[id]; });
+  if(fehlt.length){ var q2 = await vg.from("Produkte").select("Produkt_ID,Produktname,Marke").in("Produkt_ID", fehlt);
+    (q2.data||[]).forEach(function(x){ P[x.Produkt_ID] = { id:x.Produkt_ID, name:x.Produktname, marke:x.Marke||"", clean_score:null }; }); }
   zeige();
 }
 
@@ -485,6 +491,7 @@ function zeigeProdukte(){
   var ids = {};
   ZEILEN.forEach(function(x){ [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).forEach(function(id){ ids[id] = 1; }); });
   EXTRA.forEach(function(id){ ids[id] = 1; });
+  Object.keys(FOTO).forEach(function(id){ ids[id] = 1; });
   var liste = Object.keys(ids).sort(function(p,q){ var a = P[p], b = P[q];
     return ((a?a.marke+" "+a.name:p)).localeCompare(b?b.marke+" "+b.name:q, "de"); });
   $("prodt").innerHTML = liste.map(function(id){
@@ -493,14 +500,37 @@ function zeigeProdukte(){
     var wo = V.map(function(x){ return "Nr "+x.Nr+" "+(x.Status==="Veröffentlicht"?"✅":x.Reel_geplant_am?"📅":x.Reel_Datei?"🎬":"·"); })
       .concat(E.map(function(x){ return "🔎 "+x.Nr+" "+(x.Status==="Veröffentlicht"?"✅":x.Reel_geplant_am?"📅":x.Reel_Datei?"🎬":"·"); }));
     var a = pkt(id);
+    var fo = FOTO[id], ft = fo && fo.foto_frei ? "✅ freigestellt" : fo && fo.foto_vorne ? "📷 Foto da" : "❌ fehlt";
     return "<tr><td>"+prod(id)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
+      + "<td style='white-space:nowrap'><label style='cursor:pointer' title='Foto vorne vorhanden'><input type='checkbox' data-pf='"+e(id)+"'"+(fo&&fo.foto_vorne?" checked":"")+"> "+ft+"</label></td>"
       + "<td><label style='cursor:pointer'><input type='checkbox' data-pv='"+e(id)+"'"+(V.length?" checked":"")+"> Vergleich</label></td>"
       + "<td><label style='cursor:pointer'><input type='checkbox' data-pe='"+e(id)+"'"+(E.length?" checked":"")+"> Einzeln</label></td>"
-      + "<td><small>"+e(wo.join(" · ") || "noch nicht verwendet")+"</small></td></tr>";
-  }).join("") || "<tr><td colspan='5'><small>Noch keine Produkte.</small></td></tr>";
+      + "<td><small>"+e(wo.join(" · ") || "noch nicht verwendet")+"</small></td>"
+      + "<td class='akt'><button class='del' title='Produkt aus der Liste löschen' data-pdel='"+e(id)+"'>✕</button></td></tr>";
+  }).join("") || "<tr><td colspan='7'><small>Noch keine Produkte.</small></td></tr>";
 }
+$("prodt").onclick = async function(ev){
+  var b = ev.target.closest("button[data-pdel]"); if(!b || BUSY) return;
+  var id = b.dataset.pdel;
+  var alle = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===id || pid(x.Produkt_B)===id; });
+  var fest = alle.filter(function(x){ return x.Status!=="Idee"; });
+  if(fest.length){ meld(id+" steckt in Nr "+fest.map(function(x){ return x.Nr; }).join(", ")+" (fertig/in Arbeit) – dort zuerst löschen (✕ in der Tabelle)."); return; }
+  if(!confirm("„"+(P[id] ? P[id].marke+" "+P[id].name : id)+"“ aus der Produktliste löschen?"+(alle.length?" Die "+alle.length+" Idee(n) dazu werden verworfen.":""))) return;
+  BUSY = true; meld("lösche …");
+  if(alle.length){ var r1 = await vg.from(T).update({ Status:"Verworfen" }).in("id", alle.map(function(x){ return x.id; })); if(r1.error){ BUSY = false; meld("Fehler: "+r1.error.message); return; } }
+  var r2 = await vg.from("content_produkt_foto").delete().eq("produkt_id", id);
+  BUSY = false; if(r2.error){ meld("Fehler: "+r2.error.message); return; }
+  EXTRA = EXTRA.filter(function(x){ return x!==id; }); meld("gelöscht ✓"); laden();
+};
 $("prodt").onchange = async function(ev){
   var cb = ev.target; if(cb.type!=="checkbox") return;
+  if(cb.dataset.pf){
+    var fid = cb.dataset.pf, alt = FOTO[fid];
+    var w = { produkt_id:fid, foto_vorne:cb.checked, foto_frei: cb.checked ? !!(alt && alt.foto_frei) : false, aktualisiert_am:new Date().toISOString() };
+    BUSY = true; var rf = await vg.from("content_produkt_foto").upsert(w); BUSY = false;
+    if(rf.error){ meld("Fehler: "+rf.error.message); cb.checked = !cb.checked; return; }
+    FOTO[fid] = Object.assign({}, alt||{}, w); zeigeProdukte(); meld("Foto gespeichert ✓"); return;
+  }
   var id = cb.dataset.pv || cb.dataset.pe, typ = cb.dataset.pv ? "Vergleich" : "Einzel";
   var treffer = ZEILEN.filter(function(x){ return typ==="Einzel" ? (x.Typ==="Einzel" && pid(x.Produkt_A)===id)
       : (x.Typ!=="Einzel" && (pid(x.Produkt_A)===id || pid(x.Produkt_B)===id)); });
@@ -524,6 +554,7 @@ $("prodt").onchange = async function(ev){
 $("pNeuOk").onclick = async function(){
   var id = $("pNeu").value.trim().toUpperCase(); if(!/^P\d+$/.test(id)){ meld("Bitte eine P-ID eingeben, z. B. P095."); return; }
   if(!P[id]){ var r = await vg.from("v_web_produkte").select("id,name,marke,ean,clean_score,bewertung").eq("id", id); (r.data||[]).forEach(function(x){ P[x.id] = x; }); }
+  if(!FOTO[id]){ var ri = await vg.from("content_produkt_foto").upsert({ produkt_id:id }); if(!ri.error) FOTO[id] = { produkt_id:id, foto_vorne:false, foto_frei:false }; }
   if(EXTRA.indexOf(id)<0) EXTRA.push(id); $("pNeu").value = ""; zeigeProdukte(); meld(P[id] ? "hinzugefügt – jetzt Haken setzen" : id+" hat noch keine Punkte");
 };
 
