@@ -722,7 +722,7 @@ async function main() {
   // Sitemap + robots
   /* 29.09.2026: Google liest je Sitemap hoechstens 50.000 URLs (Search Console meldete 1 Fehler,
      60.676 URLs -> 10.676 fehlten). Jetzt Teile zu je 40.000 (sitemap-de-N.xml) und sitemap.xml als Index. */
-  const TOP = Number(process.env.SITEMAP_TOP || 2000);
+  const TOP = Number(process.env.SITEMAP_TOP || 10000); // 08.10.2026: 2000 -> 10000 (Ralph A), Google indexiert 24.200
   for (const f of readdirSync(WEB)) if (/^sitemap-de-\d+\.xml$/.test(f)) unlinkSync(join(WEB, f));
   const auswahl = kandidaten.filter((k) => k.q >= 0)
     .sort((a, b) => b.q - a.q || b.score - a.score || a.url.localeCompare(b.url))
