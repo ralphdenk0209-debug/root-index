@@ -31,6 +31,7 @@
 
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync, mkdirSync, readdirSync, unlinkSync, existsSync } from "node:fs";
+// 08.10.2026: Herstellerbilder mit Freigabe (Tabelle Produkt_Bild_Freigabe) - siehe bilderLaden().
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -68,6 +69,61 @@ function ausAppJs() {
    dann nur diese 200 aus, gleich am Anfang wie am Ende der Liste. Das ist
    zwangslaeufig der Reihe nach - rund zehn Minuten fuer den ganzen Bestand,
    einmal am Tag. */
+/* ---------- Herstellerbilder mit schriftlicher Freigabe (08.10.2026) ----------
+   Erster Fall: Sunday Natural (Mail 08.10.2026, widerruflich). Bedingungen:
+   Bild direkt vom Hersteller nehmen, sichtbarer Link mit Produktname darunter.
+   Der Lauf holt jedes Bild bei bild_url und legt es unter /produkt/bilder/ ab -
+   ausgeliefert wird von uns, damit kein Besucher an fremde Server geht
+   (keine Daten an Dritte, kein Cookie-Hinweis noetig).
+   Widerruf = widerrufen_am in der Tabelle setzen; der naechste Lauf loescht
+   das Bild und den Link. Faellt der Abruf aus, bleibt ein schon vorhandenes
+   Bild stehen; ohne Bild gibt es keinen Kasten. */
+const BILDER = new Map();
+async function bilderLaden() {
+  const ordner = join(ZIEL, "bilder");
+  mkdirSync(ordner, { recursive: true });
+  let zeilen = [];
+  try {
+    if (process.env.RI_FREIGABEN_DATEI) zeilen = JSON.parse(readFileSync(process.env.RI_FREIGABEN_DATEI, "utf8"));
+    else {
+      const { url, key } = ausAppJs();
+      const r = await fetch(`${url}/rest/v1/Produkt_Bild_Freigabe?select=produkt_id,rechteinhaber,bild_url,link_url,link_text&widerrufen_am=is.null`,
+        { headers: { apikey: key, Authorization: `Bearer ${key}` } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      zeilen = await r.json();
+    }
+  } catch (e) {
+    console.log("Bildfreigaben nicht lesbar (" + e.message + ") - Seiten ohne Herstellerbilder.");
+    return;
+  }
+  const behalten = new Set();
+  for (const z of zeilen) {
+    const stamm = String(z.produkt_id).toLowerCase().replace(/[^a-z0-9]/g, "");
+    let datei = readdirSync(ordner).find((f) => f.startsWith(stamm + "."));
+    try {
+      const r = await fetch(z.bild_url);
+      const typ = (r.headers.get("content-type") || "").split(";")[0].trim();
+      const endung = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[typ];
+      if (!r.ok || !endung) throw new Error(`HTTP ${r.status} ${typ}`);
+      const daten = Buffer.from(await r.arrayBuffer());
+      if (daten.length < 2000 || daten.length > 3_000_000) throw new Error("Groesse " + daten.length);
+      if (datei && datei !== `${stamm}.${endung}`) unlinkSync(join(ordner, datei));
+      datei = `${stamm}.${endung}`;
+      writeFileSync(join(ordner, datei), daten);
+    } catch (e) {
+      console.log(`Bild ${z.produkt_id}: Abruf fehlgeschlagen (${e.message})` + (datei ? " - altes Bild bleibt." : " - ohne Bild."));
+    }
+    if (!datei) continue;
+    behalten.add(datei);
+    BILDER.set(String(z.produkt_id).toUpperCase(), {
+      pfad: `/produkt/bilder/${datei}`, link: z.link_url, text: z.link_text, von: z.rechteinhaber,
+    });
+  }
+  // Widerrufene oder entfernte Freigaben: Bild weg.
+  for (const f of readdirSync(ordner)) if (!behalten.has(f)) unlinkSync(join(ordner, f));
+  console.log(`Herstellerbilder: ${BILDER.size} mit Freigabe.`);
+}
+
 const STUFEN = [200, 80, 30, 10, 3, 1];   // faellt eine Anfrage aus, wird sie kleiner
 
 async function holeAb(url, key, letzteId) {
@@ -347,13 +403,17 @@ h2{font-size:1rem;margin-top:24px}
 .unt .kasten p{margin:.4em auto .9em;max-width:440px;font-size:.82rem;color:var(--mut)}
 .unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
 .unt .btn:hover{background:rgba(124,255,155,.1)}
-.unt .kasten+.kasten{margin-top:12px}`;
+.unt .kasten+.kasten{margin-top:12px}
+.pbild{margin:14px 0 8px;text-align:center}
+.pbild img{display:block;margin:0 auto;width:240px;max-width:70%;height:auto;border-radius:12px;background:#fff}
+.pbild figcaption{margin-top:8px;font-size:.82rem;color:var(--mut)}
+.pbild figcaption a{color:var(--acc)}`;
 const SEITE_JS = [zaehlerJs(), rueckmeldungJs()]
   .map((s) => s.replace(/^<script>/, "").replace(/<\/script>$/, ""))
   .join("\n");
 const AKTIVA_V = createHash("sha1").update(CSS + SEITE_JS).digest("hex").slice(0, 10);
 
-function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung }) {
+function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung, bild }) {
   return `<!doctype html>
 <html lang="de">
 <head>
@@ -369,7 +429,7 @@ function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung })
 <meta property="og:url" content="${kanonisch}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Root Index">
-<link rel="preload" href="/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
+${bild ? `<meta property="og:image" content="${DOMAIN}${bild}">\n` : ""}<link rel="preload" href="/fonts/inter-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 ${jsonld ? `<script type="application/ld+json">${JSON.stringify(jsonld)}</script>` : ""}
 <link rel="stylesheet" href="/produkt/stil.css?v=${AKTIVA_V}">
 </head>
@@ -527,13 +587,14 @@ function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
     .map(([f, l, e, davon]) => `<div class="zeile${davon ? " davon" : ""}"><span>${l}</span><b>${f === "m_kcal" ? Math.round(num(p[f])) : zahl(p[f])} ${e}</b></div>`).join(""))
     .filter(Boolean).map((h) => `<div>${h}</div>`).join("");
 
+  const bild = BILDER.get(String(p.id).toUpperCase());
   const zusatz = [p.kategorie, p.inhalt_menge ? `${zahl(p.inhalt_menge)} ${esc(p.inhalt_einheit || "")}`.trim() : null, p.bio === true ? "Bio" : null].filter(Boolean);
 
   const inhalt = `
 <nav class="krumen"><a href="/produkt/">Produkte</a>${p.kategorie ? ` › <a href="/produkt/${katDatei}">${esc(p.kategorie)}</a>` : ""}</nav>
 ${markeVoll ? `<div class="mk">${esc(markeVoll)}</div>` : ""}
 <h1>${esc(name)}</h1>
-${zusatz.length ? `<p class="zs">${esc(zusatz.join(" · "))}</p>` : ""}
+${zusatz.length ? `<p class="zs">${esc(zusatz.join(" · "))}</p>` : ""}${bild ? `\n<figure class="pbild"><img src="${bild.pfad}" alt="${esc(name)}${marke ? " von " + esc(marke) : ""} – Produktbild" width="240" height="240" loading="lazy"><figcaption>Bild: ${esc(bild.von)} · <a href="${esc(bild.link)}" target="_blank" rel="noopener">${esc(bild.text)}</a></figcaption></figure>` : ""}
 ${pille(p.ernaehrungsform)}
 <div class="bal">
   <div class="kt"><div class="flux">${fluxSvg(p, score, ringfarbe)}</div>
@@ -553,7 +614,7 @@ ${alternativen && alternativen.length ? `<span class="lab">Besser bewertet${kat 
 }</div>` : ""}
 <div class="quelle">Quelle: ${esc(p.quelle || "nicht angegeben")}${p.ean && !String(p.quelle||"").includes(String(p.ean)) ? ` · EAN ${esc(p.ean)}` : ""}${p.verifiziert_am ? ` · geprüft am ${esc(String(p.verifiziert_am).slice(0, 10))}` : ""}${p.warum ? `<br>${esc(p.warum)}` : ""}</div>`;
 
-  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung: true });
+  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung: true, bild: bild && bild.pfad });
 }
 
 /* Produktnamen tragen im Stamm manchmal den Kassenbon mit - "Tortilla Chips
@@ -587,6 +648,7 @@ async function main() {
   // Stil und Skript einmal schreiben - die Loeschschleife unten fasst nur .html an.
   writeFileSync(join(ZIEL, "stil.css"), CSS + "\n");
   writeFileSync(join(ZIEL, "seite.js"), SEITE_JS + "\n");
+  await bilderLaden();
 
   // Vollstaendige Neuerzeugung: alte generierte Seiten entfernen (keine Waisen).
   // 23.09.2026 (Marken-Bereinigung): alte Adressen merken. Aendert sich Marke oder Name, aendert sich die
