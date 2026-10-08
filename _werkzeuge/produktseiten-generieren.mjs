@@ -101,7 +101,12 @@ async function bilderLaden() {
     const stamm = String(z.produkt_id).toLowerCase().replace(/[^a-z0-9]/g, "");
     let datei = readdirSync(ordner).find((f) => f.startsWith(stamm + "."));
     try {
-      const r = await fetch(z.bild_url);
+      // 08.10.2026: ohne Browser-Kennung antwortet Sunday dem GitHub-Server mit 403.
+      const r = await fetch(z.bild_url, { headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36 (+https://root-index.de; Bildfreigabe)",
+        "Accept": "image/jpeg,image/png,image/webp,image/*;q=0.8",
+        "Referer": new URL(z.link_url).origin + "/",
+      } });
       const typ = (r.headers.get("content-type") || "").split(";")[0].trim();
       const endung = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" }[typ];
       if (!r.ok || !endung) throw new Error(`HTTP ${r.status} ${typ}`);
