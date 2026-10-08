@@ -17258,6 +17258,7 @@ function rezeptDetail(r){
       <div style="font-size:13.5px;line-height:1.6" id="rzMakros"></div>
     </div>
     ${rsc!=null?`<div style="font-size:12.5px;margin:-4px 0 2px">Rezept-Index <b style="color:${farbe(rbew)}">${rsc} · ${rbew}</b> <span style="color:var(--k-9aa7a0)">(Ø der Zutaten-Indizes, nach Gewicht)</span></div>`:rezeptScoreHinweis(r)}
+    <div style="font-size:11px;color:var(--muted);margin:4px 0 6px">Quellen: <a href="https://pubmed.ncbi.nlm.nih.gov/30744710/" target="_blank" rel="noopener" style="color:var(--green)">NOVA (Monteiro 2019)</a> · <a href="https://www.blsdb.de/" target="_blank" rel="noopener" style="color:var(--green)">BLS 4.0</a> · <a href="https://www.who.int/publications/i/item/9789241549028" target="_blank" rel="noopener" style="color:var(--green)">WHO Zucker</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/salt-reduction" target="_blank" rel="noopener" style="color:var(--green)">WHO Salz</a> · <a href="#" onclick="event.preventDefault();quellenOpen()" style="color:var(--green)">alle Quellen</a></div>
     ${ownerBar}
     ${modBar}
     ${controls}
@@ -17459,7 +17460,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-07-04";
+const APP_BUILD = "2026-10-08-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
