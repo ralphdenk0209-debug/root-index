@@ -78,3 +78,7 @@ h2{font-size:1rem;margin-top:24px}
 .unt .btn{display:inline-block;padding:8px 18px;border-radius:999px;border:1px solid var(--acc);color:var(--acc);text-decoration:none;font-size:.85rem;font-weight:600}
 .unt .btn:hover{background:rgba(124,255,155,.1)}
 .unt .kasten+.kasten{margin-top:12px}
+.pbild{margin:14px 0 8px;text-align:center}
+.pbild img{display:block;margin:0 auto;width:240px;max-width:70%;height:auto;border-radius:12px;background:#fff}
+.pbild figcaption{margin-top:8px;font-size:.82rem;color:var(--mut)}
+.pbild figcaption a{color:var(--acc)}
