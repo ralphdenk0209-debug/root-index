@@ -15255,8 +15255,8 @@ function rezKachelnEinfuegen(g, q){
   kat.forEach(function(k,i){
     var u=bild[k.id];
     h+='<button class="'+(i===0?'weit':'')+'" onclick="rezGerichtSetzen(\''+esc(String(k.id))+'\')" aria-label="'+esc(k.name)+', '+k.anzahl+' Rezepte">'
-      +(u?'<img src="'+esc(u)+'" alt="" loading="lazy">':'<span class="sy">'+esc(k.symbol||"🍽")+'</span>')
-      +'<div class="tx"><span>'+esc(k.name)+'</span><small>'+k.anzahl+' Rezepte</small></div></button>';
+      +(u?'<img src="'+esc(u)+'" alt=""'+(i<6?'':' loading="lazy"')+'>':'<span class="sy">'+esc(k.symbol||"🍽")+'</span>')
+      +'<div class="tx"><span>'+esc(k.name)+'</span><small>'+k.anzahl+(k.anzahl===1?' Rezept':' Rezepte')+'</small></div></button>';
   });
   box.innerHTML=h+'</div>';
   g.appendChild(box);
@@ -17509,7 +17509,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-09-01";
+const APP_BUILD = "2026-10-09-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
