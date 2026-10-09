@@ -107,6 +107,7 @@
   <div class="tab an" id="t-plan">
     <div class="kopf">
       <button id="zurueck">◀ früher</button><button id="heute">Diese Woche</button><button id="vor">später ▶</button>
+      <label style="margin-left:8px">Zeitraum <select id="wanz"><option value="6">6 Wochen</option><option value="12">12 Wochen</option><option value="26">26 Wochen</option></select></label>
       <span class="leg">Takt: <i style="background:var(--reel)"></i>3 Reels Di · Do · So · 18:00
         <i style="background:#eaf7ef;border:1px solid var(--meta)"></i>in Meta geplant <i style="background:#fff8dc;border:1px solid var(--plan)"></i>nur im Plan</span>
     </div>
@@ -169,6 +170,8 @@ var T = "Instagram_Vergleich";
 function $(id){ return document.getElementById(id); }
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
 var ZEILEN = [], P = {}, FOTO = {}, BUSY = false, WOFF = 0;
+/* 09.10.2026 Ralph: Wochenplan weiter voraus – Zeitraum waehlbar, Vorgabe 12 Wochen */
+var WANZ = 12; try{ var _w = +localStorage.getItem("ri_wanz"); if([6,12,26].indexOf(_w)>=0) WANZ = _w; }catch(_){}
 var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["online","online"], "In Arbeit":["wartet","wartet"], "Idee":["idee","Idee"] };
 var F = { bild:{ d:"Geplant_am", m:"Bild_in_Meta", n:"🖼 Bild" }, reel:{ d:"Reel_geplant_am", m:"Reel_in_Meta", n:"🎬 Reel" } };
 function meld(t){ $("msg").textContent = t; }
@@ -196,8 +199,10 @@ document.querySelectorAll("nav button").forEach(function(b){ b.onclick = functio
   try{ localStorage.setItem("cp_tab", b.dataset.t); }catch(_){}
 }; });
 try{ var mt = localStorage.getItem("cp_tab"); if(mt){ var bt = document.querySelector("nav button[data-t='"+mt+"']"); if(bt) bt.click(); } }catch(_){}
-$("zurueck").onclick = function(){ WOFF -= 4; zeigePlan(); };
-$("vor").onclick = function(){ WOFF += 4; zeigePlan(); };
+$("zurueck").onclick = function(){ WOFF -= Math.max(4, WANZ-2); zeigePlan(); };
+$("vor").onclick = function(){ WOFF += Math.max(4, WANZ-2); zeigePlan(); };
+$("wanz").value = String(WANZ);
+$("wanz").onchange = function(){ WANZ = +this.value; try{ localStorage.setItem("ri_wanz", String(WANZ)); }catch(_){} zeigePlan(); };
 $("heute").onclick = function(){ WOFF = 0; zeigePlan(); };
 
 async function laden(){
@@ -254,7 +259,7 @@ function zeigePlan(){
   ev.sort(function(p,q){ return p.d-q.d; });
   var mo = new Date(heute); mo.setDate(mo.getDate() - ((mo.getDay()+6)%7) + 7*WOFF);
   var TAKT = { 2:"Reel-Tag", 4:"Reel-Tag", 0:"Reel-Tag" }, html = "";
-  for(var w=0; w<6; w++){
+  for(var w=0; w<WANZ; w++){
     var ws = new Date(mo); ws.setDate(mo.getDate()+7*w);
     var t0 = new Date(Date.UTC(ws.getFullYear(),ws.getMonth(),ws.getDate())); var dn = t0.getUTCDay()||7; t0.setUTCDate(t0.getUTCDate()+4-dn);
     var kw = Math.ceil(((t0 - new Date(Date.UTC(t0.getUTCFullYear(),0,1)))/864e5+1)/7);
