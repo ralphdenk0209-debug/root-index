@@ -15048,6 +15048,8 @@ async function rezKatLoad(){
     var r=await client.rpc("cb_rezept_kategorien");
     if(r&&r.error) throw new Error(r.error.message);
     window._rezKat=r.data||[];
+    /* 09.10.2026 (Ralph, Variante A): Bild je Kategorie fuer die Kacheln. */
+    try{ var rb=await client.rpc("cb_rezept_kategorie_bilder"); window._rezKatBild=(rb&&rb.data)||{}; }catch(e){ window._rezKatBild={}; }
   }catch(e){ window._rezKat=[]; }
   rezKatBarRender();
 }
@@ -15215,6 +15217,50 @@ async function rezVertToggle(k){
     if(r2&&r2.data) window._UNV=r2.data;
   }catch(e){ try{ toast("Filter konnte nicht gespeichert werden: "+(e.message||e),'#b91c1c'); }catch(_){} }
 }
+function rezGerichtSetzen(id){
+  var sel=rezKatSelLoad(); sel.gericht = id ? [id] : []; rezKatSelSave();
+  try{ rezKatBarRender(); }catch(e){}
+  renderRezeptList();
+  if(id){ try{ document.getElementById("rezeptGrid").scrollIntoView({behavior:"smooth",block:"start"}); }catch(e){} }
+}
+if(typeof window!=="undefined") window.rezGerichtSetzen=rezGerichtSetzen;
+function rezKachelnEinfuegen(g, q){
+  if(!rezKatAktiv()) return;
+  var sel=rezKatSelLoad(), gew=(sel.gericht||[]);
+  var kat=(window._rezKat||[]).filter(function(k){ return k.art==="gericht" && (k.anzahl||0)>0; });
+  if(!kat.length) return;
+  var box=document.createElement("div"); box.style.cssText="grid-column:1/-1";
+  if(gew.length){
+    var k0=kat.find(function(k){ return k.id===gew[0]; });
+    box.innerHTML='<button onclick="rezGerichtSetzen(null)" style="border:0;background:none;color:var(--green);font-weight:700;font-size:14px;cursor:pointer;padding:4px 0">‹ Alle Kategorien'+(k0?' · '+esc(k0.name):'')+'</button>';
+    g.appendChild(box); return;
+  }
+  if(q || window._rezFavOnly) return;
+  if(!document.getElementById("rezKachelStil")){
+    var st=document.createElement("style"); st.id="rezKachelStil";
+    st.textContent=".rzk{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin:2px 0 14px}"
+      +".rzk b.t{display:block;font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;grid-column:1/-1;margin:0 0 -4px}"
+      +".rzk button{position:relative;border:0;padding:0;border-radius:16px;overflow:hidden;aspect-ratio:1.25;cursor:pointer;background:#1d2a22;text-align:left}"
+      +".rzk button.weit{grid-column:span 2;aspect-ratio:2.5}"
+      +".rzk img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .35s}"
+      +".rzk button:hover img{transform:scale(1.04)}"
+      +".rzk .sy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:44px}"
+      +".rzk .tx{position:absolute;inset:auto 0 0 0;padding:28px 12px 10px;background:linear-gradient(transparent,rgba(0,0,0,.72));color:#fff}"
+      +".rzk .tx span{display:block;font-weight:700;font-size:16px}.rzk .tx small{font-size:12px;opacity:.85}"
+      +"@media (max-width:520px){.rzk{grid-template-columns:1fr 1fr}.rzk button.weit{grid-column:1/-1}}";
+    document.head.appendChild(st);
+  }
+  var bild=window._rezKatBild||{};
+  var h='<div class="rzk"><b class="t">Was möchtest du kochen?</b>';
+  kat.forEach(function(k,i){
+    var u=bild[k.id];
+    h+='<button class="'+(i===0?'weit':'')+'" onclick="rezGerichtSetzen(\''+esc(String(k.id))+'\')" aria-label="'+esc(k.name)+', '+k.anzahl+' Rezepte">'
+      +(u?'<img src="'+esc(u)+'" alt="" loading="lazy">':'<span class="sy">'+esc(k.symbol||"🍽")+'</span>')
+      +'<div class="tx"><span>'+esc(k.name)+'</span><small>'+k.anzahl+' Rezepte</small></div></button>';
+  });
+  box.innerHTML=h+'</div>';
+  g.appendChild(box);
+}
 /* Innerhalb einer Gruppe ODER, zwischen den Gruppen UND. */
 function rezKatMatch(r){
   if(!rezKatAktiv()) return true;
@@ -15374,6 +15420,9 @@ function renderRezeptList(){
   const mine=all.filter(r=>r.is_own).length, favN=(window._rezFav?window._rezFav.size:0);
   document.getElementById("rezeptStats").textContent=`${data.length} Rezept${data.length===1?"":"e"}`+(window._rezFavOnly?" · nur ♥":"")+(_katAn?` · ${_katAn} Kategorie-Filter`:"")+(_vertAn?` · ${_vertAn} Unverträglichkeits-Filter`:"")+(mine?` · ${mine} eigene`:"")+(favN?` · ${favN} ♥`:"");
   const g=document.getElementById("rezeptGrid"); g.innerHTML="";
+  /* 09.10.2026 (Ralph: „a, schöne bilder dafür verwenden"): Kategorien als Bildkacheln oben.
+     Antippen waehlt genau diese Art des Gerichts. Gleich in der App (RezeptKacheln). */
+  try{ rezKachelnEinfuegen(g, q); }catch(e){ console.warn("rezKacheln:",e); }
   data.forEach(r=>{
     const c=document.createElement("div");c.className="card";c.style.position="relative";c.dataset.rid=r.id;c.onclick=()=>rezeptDetail(r);
     const rsc=rezeptScore(r), rbew=scoreBew(rsc);
@@ -17460,7 +17509,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-08-01";
+const APP_BUILD = "2026-10-09-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
