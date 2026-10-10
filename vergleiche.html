@@ -7,6 +7,7 @@
        - "+" je Tag: vorhandenen Inhalt einplanen oder neue Idee anlegen
        - Ablage "Ohne Termin": fertige Inhalte ohne Termin, in einen Tag ziehen
        - Bild_in_Meta / Reel_in_Meta: gruen = in Meta eingeplant, gelb = nur im Plan (Ralph muss in Meta noch planen)
+       - Threads_gepostet / Substack_gepostet (seit 10.10.2026): je Reel, ob Threads und Substack-Note mitgeplant sind
          Wird ein Meta-Beitrag verschoben, faellt er auf gelb zurueck (in Meta auch verschieben!).
      08.10.2026 Umbau 3 (Ralph: "keine bilder mehr, sondern reels" + "checkbox einmal vergleich und einmal einzeln"):
        - Takt 3 Reels Di/Do/So, Ablage nur noch Reels; Reiter Produkte mit Haken Vergleich/Einzeln je Produkt
@@ -96,7 +97,7 @@
 </style>
 </head>
 <body>
-<header><h1>Content-Plan · Instagram &amp; Facebook</h1><div class="chips" id="chips"></div></header>
+<header><h1>Content-Plan · Instagram, Facebook, Threads &amp; Substack</h1><div class="chips" id="chips"></div></header>
 <nav>
   <button data-t="plan" class="an">📅 Wochenplan</button>
   <button data-t="vgl">⚖️ Vergleiche</button>
@@ -229,6 +230,12 @@ function badge(x, art){
   return "<span class='st "+(z==="m"?"meta":"plan")+"'>"+(z==="m"?"Meta":"Plan")+" · "+datum(dt)+" "+zeit(dt)+"</span>";
 }
 
+function kanaele(x){ /* Threads + Substack je Reel (seit 10.10.2026) */
+  if(!x.Reel_geplant_am) return "";
+  var t = x.Threads_gepostet ? "<b style='color:#7CFF9B'>Threads ✓</b>" : "<b style='color:#ffd34d'>Threads ✗</b>";
+  var s = x.Substack_gepostet ? "<b style='color:#7CFF9B'>Substack ✓</b>" : "<b style='color:#ffd34d'>Substack ✗</b>";
+  return "<br><small>"+t+" · "+s+"</small>";
+}
 function zeige(){ zeigeKopf(); zeigePlan(); zeigeTabellen(); zeigeProdukte(); }
 
 function zeigeKopf(){
@@ -239,6 +246,7 @@ function zeigeKopf(){
   $("chips").innerHTML = "<span class='chip'>geplant bis <b>"+(bis?datum(bis):"–")+"</b></span>"
     + "<span class='chip'><b>"+nMeta+"</b> in Meta eingeplant</span>"
     + "<span class='chip warn'><b>"+nPlan+"</b> nur im Plan – in Meta noch planen</span>"
+    + "<span class='chip warn'><b>"+zuk.filter(function(v){ return v.a==="reel" && v.x[F.reel.m] && !(v.x.Threads_gepostet && v.x.Substack_gepostet); }).length+"</b> Reels: Threads/Substack noch planen</span>"
     + "<span class='chip'><b>"+E.length+"</b> Einzelprodukte</span>";
 }
 
@@ -250,7 +258,9 @@ function karte(x, art){
     + "<div class='z1'><span>"+F[art].n+(d?" · "+zeit(d):"")+"</span><span>"+(x.Typ==="Einzel"?"🔎":"Nr "+e(x.Nr))+"</span></div>"
     + "<div class='t'>"+e(titel(x))+"</div>"
     + (hersteller(x) ? "<div class='hs'>"+e(hersteller(x))+"</div>" : "")
-    + "<div class='z1'><span>"+e(punkteText(x))+"</span><span class='ok'>"+ok+"</span></div></div>";
+    + "<div class='z1'><span>"+e(punkteText(x))+"</span><span class='ok'>"+ok+"</span></div>"
+    + (art==="reel" && d ? "<div class='z1'><span>"+(x.Threads_gepostet?"✓":"✗")+" Threads · "+(x.Substack_gepostet?"✓":"✗")+" Substack</span></div>" : "")
+    + "</div>";
 }
 function zeigePlan(){
   var jetzt = new Date(), heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
@@ -421,12 +431,12 @@ function zeigeTabellen(){
     var reel = badge(x,"reel") || (x.Reel_Datei ? "<span class='st fertig'>fertig</span>" : "<small>–</small>");
     return "<tr><td>"+e(x.Nr)+"</td><td>"+e(x.Zeile1)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td>"
       +"<td>"+prod(x.Produkt_B)+"</td><td class='z'>"+(b==null?"–":b)+"</td><td class='z'>"+(a!=null&&b!=null?(a-b)+(Math.abs(a-b)<10?"<br><small title='Unterschied unter 10 Punkten'>lieber Einzel?</small>":""):"–")+"</td>"
-      +"<td>"+bild+"</td><td>"+reel+"</td><td>"+e(x.Fehlt||"")+"</td>"+knoepfe(i)+"</tr>";
+      +"<td>"+bild+"</td><td>"+reel+kanaele(x)+"</td><td>"+e(x.Fehlt||"")+"</td>"+knoepfe(i)+"</tr>";
   }).join("");
   $("ein").innerHTML = E.length ? E.map(function(x){
     var i = ZEILEN.indexOf(x), a = pkt(x.Produkt_A), s = STATUS[x.Status] || ["idee", x.Status];
     var reel = badge(x,"reel") || (x.Reel_Datei ? "<span class='st fertig'>fertig</span> <small>"+e(x.Reel_Datei.split("/").pop())+"</small>" : "<small>–</small>");
-    return "<tr><td>"+e(x.Nr)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td><td>"+reel+"</td><td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td><small>"+e(x.Notiz||"")+"</small>"+(x.Fehlt?"<br><span class='st fehlt'>"+e(x.Fehlt)+"</span>":"")+"</td>"+knoepfe(i)+"</tr>";
+    return "<tr><td>"+e(x.Nr)+"</td><td>"+prod(x.Produkt_A)+"</td><td class='z'>"+(a==null?"–":a)+"</td><td>"+reel+kanaele(x)+"</td><td><span class='st "+s[0]+"'>"+e(s[1])+"</span></td><td><small>"+e(x.Notiz||"")+"</small>"+(x.Fehlt?"<br><span class='st fehlt'>"+e(x.Fehlt)+"</span>":"")+"</td>"+knoepfe(i)+"</tr>";
   }).join("") : "<tr><td colspan='7'><small>Noch keine Einzelprodukte.</small></td></tr>";
   meld(ZEILEN.length+" Einträge · "+V.length+" Vergleiche · "+E.length+" Einzelprodukte");
 }
