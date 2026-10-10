@@ -753,7 +753,10 @@ async function main() {
     const ziel = neueAdresse.get(pid);
     if (!ziel || ziel === f || vergeben.has(f)) continue;
     const href = `/produkt/${ziel}`;
-    writeFileSync(join(ZIEL, f), `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Weitergeleitet</title><meta name="robots" content="noindex"><link rel="canonical" href="${DOMAIN}${href}"><meta http-equiv="refresh" content="0; url=${href}"></head><body><a href="${href}">Zur Produktseite</a></body></html>\n`);
+    // 10.10.2026: kein noindex mehr. noindex + Weiterleitung sagt Google "vergessen" statt "umgezogen";
+    // ab 05.10. brachen die Einblendungen um ~87 % ein, als Google die 5.200 alten Adressen neu abrief.
+    // Sofort-Refresh + canonical wertet Google wie eine dauerhafte Weiterleitung.
+    writeFileSync(join(ZIEL, f), `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Weitergeleitet</title><link rel="canonical" href="${DOMAIN}${href}"><meta http-equiv="refresh" content="0; url=${href}"></head><body><a href="${href}">Zur Produktseite</a></body></html>\n`);
     umgeleitet++;
   }
 
