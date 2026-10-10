@@ -109,7 +109,7 @@
     <div class="kopf">
       <button id="zurueck">◀ früher</button><button id="heute">Diese Woche</button><button id="vor">später ▶</button>
       <label style="margin-left:8px">Zeitraum <select id="wanz"><option value="6">6 Wochen</option><option value="12">12 Wochen</option><option value="26">26 Wochen</option></select></label>
-      <span class="leg">Takt: <i style="background:var(--reel)"></i>3 Reels Di · Do · So · 18:00
+      <span class="leg">Takt: <i style="background:var(--reel)"></i>3 Reels Di · Do · So · 19:00
         <i style="background:#eaf7ef;border:1px solid var(--meta)"></i>in Meta geplant <i style="background:#fff8dc;border:1px solid var(--plan)"></i>nur im Plan</span>
     </div>
     <div class="planbox">
@@ -139,7 +139,7 @@
   <h3 id="eTitel"></h3>
   <div id="eArt" style="font-size:12.5px;color:#6b6592"></div>
   <div id="eProd" style="display:flex;flex-direction:column;gap:6px"></div>
-  <div class="reihe"><label>Datum<input type="date" id="eDatum" required></label><label>Uhrzeit<input type="time" id="eZeit" value="18:00" required></label></div>
+  <div class="reihe"><label>Datum<input type="date" id="eDatum" required></label><label>Uhrzeit<input type="time" id="eZeit" value="19:00" required></label></div>
   <label class="chk"><input type="checkbox" id="eMeta"> in der Meta Business Suite eingeplant</label>
   <div class="hinweis" id="eHinweis" hidden>Dieser Beitrag ist schon in Meta eingeplant. Wenn du den Termin hier änderst, bitte auch in Meta ändern und danach den Haken wieder setzen.</div>
   <div class="kn"><button type="button" class="rot" id="eRaus">Termin entfernen</button><button type="button" class="abbr">Abbrechen</button><button type="button" class="haupt" id="eSpeichern">Speichern</button></div>
@@ -148,7 +148,7 @@
 <!-- Neu einplanen / neu anlegen -->
 <dialog id="dlgNeu"><form method="dialog" id="fNeu">
   <h3>Neu einplanen</h3>
-  <div class="reihe"><label>Datum<input type="date" id="nDatum" required></label><label>Uhrzeit<input type="time" id="nZeit" value="18:00" required></label></div>
+  <div class="reihe"><label>Datum<input type="date" id="nDatum" required></label><label>Uhrzeit<input type="time" id="nZeit" value="19:00" required></label></div>
   <label>Format<select id="nArt"><option value="bild">🖼 Bild-Post</option><option value="reel">🎬 Reel</option></select></label>
   <label>Inhalt<select id="nWas"></select></label>
   <div class="neu-teil" id="nNeu" hidden>
@@ -181,7 +181,7 @@ function datum(d){ return d.toLocaleDateString("de-DE",{weekday:"short", day:"2-
 function zeit(d){ return d.toLocaleTimeString("de-DE",{hour:"2-digit", minute:"2-digit"}); }
 function ymd(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
 function hm(d){ return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0"); }
-function ausFeldern(dat, z){ var p = dat.split("-"), q = (z||"18:00").split(":"); return new Date(+p[0], +p[1]-1, +p[2], +q[0], +q[1]); }
+function ausFeldern(dat, z){ var p = dat.split("-"), q = (z||"19:00").split(":"); return new Date(+p[0], +p[1]-1, +p[2], +q[0], +q[1]); }
 function pid(s){ return s ? String(s).trim().split(/\s+/)[0] : null; }
 function pkt(id){ id = pid(id); var x = id && P[id]; return x && x.clean_score!=null ? Math.round(Number(x.clean_score)) : null; }
 function prod(id){ if(!id) return "–"; id = pid(id); var x = P[id]; return x ? e(x.marke)+" · "+e(x.name)+" <small>"+e(id)+"</small>" : e(id)+" <small>keine Punkte</small>"; }
@@ -329,7 +329,7 @@ async function speichern(id, werte, text){
 async function verschiebeAuf(id, art, tagYmd){
   var x = zeile(id); if(!x) return;
   var alt = x[F[art].d] ? new Date(x[F[art].d]) : null;
-  var neuD = ausFeldern(tagYmd, alt ? hm(alt) : "18:00");
+  var neuD = ausFeldern(tagYmd, alt ? hm(alt) : "19:00");
   if(alt && alt.getTime()===neuD.getTime()) return;
   var warMeta = x[F[art].m];
   var w = {}; w[F[art].d] = neuD.toISOString(); w[F[art].m] = false;
@@ -349,7 +349,7 @@ function bearbeiten(id, art){
     return "<div class='prod'><b>"+e(p.marke)+" · "+e(p.name)+"</b><small>"+e(id)+(p.ean?" · EAN "+e(p.ean):"")+" · "+(p.clean_score!=null?Math.round(Number(p.clean_score))+" Pkt":"–")+(p.bewertung?" · "+e(p.bewertung):"")+"</small>"
       + "<button type='button' data-ek='"+e(id)+"'>🛒 auf die Einkaufsliste</button></div>";
   }).join("");
-  $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "18:00";
+  $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "19:00";
   $("eMeta").checked = !!x[F[art].m]; $("eMeta").disabled = !d;
   $("eHinweis").hidden = !x[F[art].m];
   $("eRaus").hidden = !d;
@@ -392,7 +392,7 @@ function neuOptionen(){
   $("nNeu").hidden = $("nWas").value!=="neu";
 }
 function neu(tagYmd){
-  $("nDatum").value = tagYmd; $("nZeit").value = "18:00";
+  $("nDatum").value = tagYmd; $("nZeit").value = "19:00";
   $("nArt").value = "reel";
   ["nTitel","nA","nB","nNotiz"].forEach(function(i){ $(i).value = ""; }); $("nTyp").value = "Vergleich"; $("nBlab").hidden = false;
   neuOptionen(); $("dlgNeu").showModal();
