@@ -41,8 +41,11 @@ async function apfelWurzeln(): Promise<Buffer[]> {
 
 async function pruefer(): Promise<SignedDataVerifier[]> {
   const w = await apfelWurzeln();
-  const v: SignedDataVerifier[] = [new SignedDataVerifier(w, true, Environment.SANDBOX, BUNDLE)];
-  if (APP_ID) v.unshift(new SignedDataVerifier(w, true, Environment.PRODUCTION, BUNDLE, APP_ID));
+  // 11.10.2026 (Apple 2.1(b): Premium nach Kauf nicht frei): Online-Pruefung (OCSP) aus.
+  // Sie scheitert in der Edge-Laufzeit; jeder Kauf aus der Pruefung kam mit 400 zurueck und
+  // wurde nie gebucht. Die Signaturkette bis zum Apple-Root wird weiterhin voll geprueft.
+  const v: SignedDataVerifier[] = [new SignedDataVerifier(w, false, Environment.SANDBOX, BUNDLE)];
+  if (APP_ID) v.unshift(new SignedDataVerifier(w, false, Environment.PRODUCTION, BUNDLE, APP_ID));
   return v;
 }
 
@@ -113,6 +116,8 @@ Deno.serve(async (req) => {
     if (error) throw error;
     return json({ ok: true, ergebnis: data });
   } catch (e) {
-    return json({ error: String((e as Error)?.message || e) }, 400);
+    const s: any = e;
+    console.error("apple-kauf Fehler", s?.constructor?.name, s?.status ?? "", String(s?.message || s));
+    return json({ error: "Freischaltung fehlgeschlagen: " + String(s?.message || s?.status || s) }, 400);
   }
 });
