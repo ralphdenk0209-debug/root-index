@@ -749,6 +749,7 @@ async function main() {
   const neueAdresse = new Map();
   for (const [, { eintraege }] of proKat) for (const { p, datei } of eintraege) neueAdresse.set(String(p.id).toUpperCase(), datei);
   let umgeleitet = 0;
+  const umleitungen = [];   // 11.10.2026: echte 301 ueber produkt/.htaccess (Apache bei INWX)
   for (const [f, pid] of alteAdressen) {
     const ziel = neueAdresse.get(pid);
     if (!ziel || ziel === f || vergeben.has(f)) continue;
@@ -757,8 +758,18 @@ async function main() {
     // ab 05.10. brachen die Einblendungen um ~87 % ein, als Google die 5.200 alten Adressen neu abrief.
     // Sofort-Refresh + canonical wertet Google wie eine dauerhafte Weiterleitung.
     writeFileSync(join(ZIEL, f), `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Weitergeleitet</title><link rel="canonical" href="${DOMAIN}${href}"><meta http-equiv="refresh" content="0; url=${href}"></head><body><a href="${href}">Zur Produktseite</a></body></html>\n`);
+    umleitungen.push(`Redirect 301 /produkt/${f} ${DOMAIN}${href}`);
     umgeleitet++;
   }
+  /* 11.10.2026: Die Huellen allein reichten Google nicht - es behielt die alten Adressen
+     im Index, sah dort nur noch eine leere Seite und liess sie im Ranking fallen
+     (Einblendungen 3.000 -> 53 am Tag). Ein echter 301 vom Server uebertraegt die Position
+     auf die neue Adresse. Die Huellen bleiben als Rueckfall, falls .htaccess nicht greift. */
+  writeFileSync(join(ZIEL, ".htaccess"),
+    "# Automatisch erzeugt vom Produktseiten-Generator - nicht von Hand aendern.\n" +
+    "# Alte Produktadressen (Marke/Name geaendert) -> neue Adresse, dauerhaft.\n" +
+    umleitungen.join("\n") + "\n");
+  console.log(`Umleitungen (301): ${umleitungen.length}`);
 
   // Kategorieseiten
   const kats = [...proKat.entries()].sort((a, b) => a[0].localeCompare(b[0], "de"));
