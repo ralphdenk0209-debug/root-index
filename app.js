@@ -2593,17 +2593,19 @@ async function altSektionFuellen(d, box, _alleAlt){
   var r; try{ r=await client.rpc('cb_produkt_alternativen',{p_produkt:d.id, p_max:3}); }catch(e){ return; }
   el=document.getElementById(box); if(!el || !r || r.error || !(r.data||[]).length) return;
   var alts=r.data;
+  /* 12.10.2026 (Ralph): bei Unvertraeglichkeit liefert der Server die besten vertraeglichen (Grund „für dich verträglich"). */
+  var _vertr=alts.some(function(a){ return /^für dich verträglich/.test(a.grund||''); });
   var _verdeckt=0;
   if(!_alleAlt){ _verdeckt=Math.max(0, alts.length-1); alts=alts.slice(0,1); }
   el.innerHTML='<div style="margin-top:14px">'
-    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 Bessere Alternativen</div>'
+    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 '+(_vertr?'Alternativen, die du verträgst':'Bessere Alternativen')+'</div>'
     + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, score:num(a.clean_score), delta:num(a.plus),
-          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:(_alleAlt?(a.grund||''):'') }); }).join('')
+          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:((_alleAlt||/^für dich verträglich/.test(a.grund||''))?(a.grund||''):'') }); }).join('')
     + (_alleAlt ? '' : '<div onclick="premiumInfo()" style="cursor:pointer;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45">'
         + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> bessere '+(_verdeckt===1?'Wahl':'Wahlen')+' und die Begründung, warum – mit <b>Premium</b>.'
                        : '🔒 Die <b>Begründung</b>, warum das besser ist – mit <b>Premium</b>.')
         + '</div>')
-    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">Besser heißt hier: dieselbe Produktart mit höherem Root Index. Keine Werbung, keine bezahlten Plätze.</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">'+(_vertr?'Du verträgst das Produkt laut Profil nicht. Hier die besten Produkte derselben Art ohne deine Unverträglichkeiten – auch wenn ihr Index nicht höher ist.':'Besser heißt hier: dieselbe Produktart mit höherem Root Index.')+' Keine Werbung, keine bezahlten Plätze.</div>'
     + '</div>';
 }
 /* Dezente Ein-Zeilen-Fassung fuer den Tagebuch-Hinzufuegen-Dialog (Ralph-Entscheid "auch im Tagebuch"). */
@@ -17509,7 +17511,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-12-01";
+const APP_BUILD = "2026-10-12-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
