@@ -2617,7 +2617,7 @@ function altHinweisZeile(d){
     var alts=r.data, b=alts[0];
     var mehr = alts.length > 1 ? (hasFeat('pk_alternativen') ? ' · +' + (alts.length - 1) + ' weitere' : ' · 🔒 +' + (alts.length - 1)) : '';
     el.outerHTML='<div onclick="detailById(\'' + b.id + '\')" style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:7px 10px;margin-bottom:11px;cursor:pointer">'
-      + '<span>🌿</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Bessere Wahl: <b>' + esc(b.name) + '</b> (Index ' + num(b.clean_score) + ', +' + num(b.plus) + ')' + mehr + '</span><span style="font-weight:800">›</span></div>';
+      + '<span>🌿</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Bessere Wahl: <b>' + esc(b.name) + '</b> (Index ' + num(b.clean_score) + (num(b.plus)>0 ? ', +' + num(b.plus) : (b.grund ? ', ' + esc(b.grund) : '')) + ')' + mehr + '</span><span style="font-weight:800">›</span></div>';
   }, 0);
   return '<div id="'+box+'"></div>';
 }
@@ -17509,7 +17509,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-09-02";
+const APP_BUILD = "2026-10-12-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
