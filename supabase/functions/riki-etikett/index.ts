@@ -81,6 +81,10 @@ Wenn du eine Zutat nicht bewerten kannst, gib sie NICHT aus.
 === DIE WICHTIGSTE FALLE: PORTION STATT 100 g ===
 Nährwerttabellen haben oft ZWEI Spalten. Du MUSST die 100-g-Spalte nehmen. Steht NUR Portion da: nicht umrechnen, naehrwerte_100g=null, nur_portionswerte=true.
 
+=== ZUSATZZEILEN DER NAEHRWERTTABELLE (13.10.2026) ===
+Steht unter Kohlenhydrate "davon mehrwertige Alkohole" (auch "Polyole", "davon Erythrit"): Wert in "polyole". Sonst polyole=null.
+"ballaststoffe_angegeben": true, wenn eine Zeile Ballaststoffe in der Tabelle steht; false, wenn die Tabelle vollständig sichtbar ist und KEINE Ballaststoff-Zeile hat; null, wenn die Tabelle abgeschnitten oder unlesbar ist.
+
 === BEZUG: 100 g ODER 100 ml ===
 Setze \"bezug\" exakt nach sichtbarer Spaltenueberschrift: \"100g\" | \"100ml\" | null. Nicht nach Produktart raten.
 
@@ -163,7 +167,7 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
   \"portion_g\": number|null,
   \"ean_auf_foto\": string|null,
   \"etikett_sprachen\": string[],
-  \"naehrwerte_100g\": { \"kcal\": number|null, \"protein\": number|null, \"kh\": number|null, \"zucker\": number|null, \"fett\": number|null, \"ges_fett\": number|null, \"ballaststoffe\": number|null, \"salz\": number|null },
+  \"naehrwerte_100g\": { \"kcal\": number|null, \"protein\": number|null, \"kh\": number|null, \"zucker\": number|null, \"fett\": number|null, \"ges_fett\": number|null, \"ballaststoffe\": number|null, \"salz\": number|null, \"polyole\": number|null, \"ballaststoffe_angegeben\": true|false|null },
   \"zutaten\": [ {
     \"name\": string,
     \"original_text\": string,
@@ -479,7 +483,11 @@ function pruefe(v: any): { warnungen: string[]; score_erlaubt: boolean } {
   if(v?.nur_portionswerte===true){w.push("Auf dem Etikett stehen nur Portionswerte. Wir rechnen NICHT um — bitte die 100-g-Spalte fotografieren.");return{warnungen:w,score_erlaubt:false};}
   const fehlend:string[]=[]; if(kcal===null)fehlend.push("Kalorien");if(prot===null)fehlend.push("Eiweiß");if(kh===null)fehlend.push("Kohlenhydrate");if(fett===null)fehlend.push("Fett");
   if(fehlend.length){w.push(`Auf dem Foto nicht lesbar: ${fehlend.join(", ")}. Bitte die Nährwerttabelle noch einmal fotografieren — gern näher dran.`);return{warnungen:w,score_erlaubt:false};}
-  const berechnet=4*prot!+4*kh!+9*fett!+2*(ball??0),abw=Math.abs(kcal!-berechnet);
+  /* 13.10.2026 (Ralph jaja, Pudding mit Erythrit): mehrwertige Alkohole stecken in den Kohlenhydraten,
+     haben aber 0 (Erythrit) bis 2,4 kcal/g. Unstimmig ist es erst, wenn die Angabe ausserhalb beider Rechnungen liegt. */
+  const poly=Math.min(Math.max(z(n.polyole)??0,0),kh!);
+  const berechnet=4*prot!+4*(kh!-poly)+2.4*poly+9*fett!+2*(ball??0),berechnetMin=berechnet-2.4*poly;
+  const abw=Math.min(Math.abs(kcal!-berechnet),Math.abs(kcal!-berechnetMin),(kcal!>=berechnetMin&&kcal!<=berechnet)?0:Infinity);
   if(kcal!>0&&abw>20&&abw/kcal!>0.30)w.push(`Die Kalorienangabe (${Math.round(kcal!)}) passt nicht zu den Nährwerten — rechnerisch wären es ${Math.round(berechnet)}.`);
   if(zuck!==null&&zuck>kh!+0.5)w.push(`Zucker (${zuck} g) liegt über den Kohlenhydraten (${kh} g) — das ist unmöglich.`);
   if(gesf!==null&&gesf>fett!+0.5)w.push("Gesättigtes Fett liegt über dem Gesamtfett — das ist unmöglich.");

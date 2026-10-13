@@ -480,6 +480,8 @@ Deno.serve(async (req: Request) => {
         quelle: `Etikettfoto (RIKI-Hintergrundlauf), Job ${job.job_id}`,
         quelle_typ: "Etikettfoto",
         naehrwerte: v.naehrwerte_100g ?? null,
+        /* 13.10.2026 (Ralph jaja): Tabelle ganz sichtbar, aber keine Ballaststoff-Zeile -> "nicht deklariert". */
+        ballast_nichtdekl: v.naehrwerte_100g?.ballaststoffe_angegeben === false && v.naehrwerte_100g?.ballaststoffe == null ? true : null,
         zutaten: Array.isArray(v.zutaten) ? v.zutaten : [],
         /* v14 (28.09.2026, Ralph jaja „im Laden entscheidet Geschwindigkeit"): Ohne lesbare
            Zutatenliste auf dem Foto duerfen leere Zutaten NICHTS ersetzen - parallel liest
