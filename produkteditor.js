@@ -9310,12 +9310,15 @@ function _feStreifenBewertung(){
     if(si && si.produkt_id===pid && si.index!=null){
       var _a=si.achsen||{};
       var _t=function(k,lbl,max){ var o=_a[k]; if(!o) return "";
-        return lbl+": "+String(Math.round(Number(o.punkte)*10)/10).replace(".",",")+" von "+max+"\n"; };
+        return lbl+": "+String(Math.round(Number(o.punkte)*10)/10).replace(".",",")+" von "+(o.max||max)+"\n"; };
       return '<span class="feStBew supp" title="'+esc(
           "Reinheits-Index fuer Nahrungsergaenzung, Regelversion "+(si.regelversion||"")+".\n"
           +"Nicht der Root Index - eigene Skala, eigene Achsen.\n\n"
-          +_t("dosis","Dosis",35)+_t("wirkform","Wirkform",25)
-          +_t("transparenz","Transparenz",20)+_t("zusatzstoffe","Zusatzstoffe",20))+'">'
+          +(_a.bedarf
+             ? _t("bedarf","Bedarf & Dosis",40)+_t("wirkstoffqualitaet","Wirkstoffqualitaet",30)
+               +_t("zusatzstoffe","Zusatzstoffe",15)+_t("transparenz","Transparenz",15)
+             : _t("dosis","Dosis",35)+_t("wirkform","Wirkform",25)
+               +_t("transparenz","Transparenz",20)+_t("zusatzstoffe","Zusatzstoffe",20)))+'">'
         +'<em>Reinheits-Index</em>'
         +'<b>'+esc(String(Math.round(Number(si.index))))+'</b>'
         +'<i>von 100</i></span>';

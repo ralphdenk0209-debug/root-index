@@ -3192,6 +3192,14 @@ function suppKarte(d){
      darstellen bei supplements." Die Karte zeigte gar keine Zahl, die Liste eine falsche.
      Ab jetzt steht hier dieselbe Zahl wie in Liste und Editor: der abgelegte Reinheits-Index.
      Nichts wird hier gerechnet - nur geholt und gezeigt. */
+  /* 14.10.2026 (Ralph jaja, v7): Achsen kommen mit Titel und Maximum aus der Datenbank.
+     Die Seite rechnet nichts, sie zeigt nur, was gespeichert ist. Alte Achsen (v6) bleiben lesbar. */
+  var _suppAchsenText=function(a){
+    var reihe=[["bedarf","Bedarf & Dosis",40],["wirkstoffqualitaet","Wirkstoffqualität",30],["zusatzstoffe","Zusatzstoffe",15],["transparenz","Transparenz",15]];
+    if(!a.bedarf) reihe=[["dosis","Dosis",35],["wirkform","Wirkform",25],["transparenz","Transparenz",20],["zusatzstoffe","Zusatzstoffe",20]];
+    return reihe.map(function(r){ var o=a[r[0]]; var pt=(o&&o.punkte!=null)?String(Math.round(Number(o.punkte)*10)/10).replace(".",","):"–";
+      return esc((o&&o.titel)||r[1])+' '+pt+'/'+((o&&o.max)||r[2]); }).join(" · ");
+  };
   client.rpc("cb_supplement_index_gespeichert",{p_id:d.id}).then(function(ri){
     var box=document.getElementById("suppIdx"); if(!box) return;
     var v=ri&&ri.data; if(typeof v==="string"){ try{ v=JSON.parse(v); }catch(e){} }
@@ -3204,7 +3212,7 @@ function suppKarte(d){
       +'<div style="font-size:11px;color:var(--muted)">von 100</div></div>'
       +'<div style="min-width:0"><div style="font-size:13px;font-weight:700;color:var(--ink)">Reinheits-Index</div>'
       +'<div style="font-size:11.5px;color:var(--muted);line-height:1.45">Eigene Skala für Nahrungsergänzung – nicht der Root Index.<br>'
-      +'Dosis '+pk("dosis")+'/35 · Wirkform '+pk("wirkform")+'/25 · Transparenz '+pk("transparenz")+'/20 · Zusatzstoffe '+pk("zusatzstoffe")+'/20</div></div></div>';
+      +_suppAchsenText(a)+'</div></div></div>';
   },function(e){ console.log("cb_supplement_index_gespeichert:",e); });
   client.rpc("cb_supplement_karte",{p_produkt_id:d.id}).then(function(r){
     var body=document.getElementById("suppBody"); if(body){ body.innerHTML=suppKarteFill(r&&r.data,d); try{ body.querySelectorAll(".suCnt").forEach(suppCountUp); }catch(e){} }
@@ -17511,7 +17519,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-12-02";
+const APP_BUILD = "2026-10-14-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
