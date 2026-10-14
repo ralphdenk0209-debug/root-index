@@ -2591,21 +2591,35 @@ function altSektion(d){
 async function altSektionFuellen(d, box, _alleAlt){
   var el=document.getElementById(box); if(!el) return;
   var r; try{ r=await client.rpc('cb_produkt_alternativen',{p_produkt:d.id, p_max:3}); }catch(e){ return; }
-  el=document.getElementById(box); if(!el || !r || r.error || !(r.data||[]).length) return;
+  el=document.getElementById(box); if(!el || !r || r.error) return;
+  /* 14.10.2026 (Ralph „passt genau“): Supplement mit Vitamin D, Jod, B12 oder Folsaeure -> Hinweis statt Lebensmittel. */
+  var _hinweisHtml='';
+  if(String(d.kategorie||'').toLowerCase()==='supplement'){
+    var h; try{ h=await client.rpc('cb_supplement_essen',{p_produkt:d.id}); }catch(e){ h=null; }
+    var aus=((h&&h.data)||[]).filter(function(x){ return x.ausnahme; });
+    if(aus.length){
+      _hinweisHtml='<div style="margin-top:14px;font-size:12.5px;line-height:1.5;background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:9px 11px;color:var(--ink)">'
+        + aus.map(function(x){ return '💊 '+esc(x.satz); }).join('<br>')
+        + '<div style="font-size:11px;color:var(--muted);margin-top:4px">Quelle: '+aus.map(function(x){return esc(x.quelle);}).join(', ')+'</div></div>';
+    }
+  }
+  el=document.getElementById(box); if(!el) return;
+  if(!(r.data||[]).length){ if(_hinweisHtml) el.innerHTML=_hinweisHtml; return; }
   var alts=r.data;
+  var _supp=alts.some(function(a){ return /^Statt Kapsel:/.test(a.grund||''); });
   /* 12.10.2026 (Ralph): bei Unvertraeglichkeit liefert der Server die besten vertraeglichen (Grund „für dich verträglich"). */
   var _vertr=alts.some(function(a){ return /^für dich verträglich/.test(a.grund||''); });
   var _verdeckt=0;
   if(!_alleAlt){ _verdeckt=Math.max(0, alts.length-1); alts=alts.slice(0,1); }
-  el.innerHTML='<div style="margin-top:14px">'
-    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 '+(_vertr?'Alternativen, die du verträgst':'Bessere Alternativen')+'</div>'
+  el.innerHTML=_hinweisHtml+'<div style="margin-top:14px">'
+    + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 '+(_supp?'Statt Kapsel: aus dem Essen':(_vertr?'Alternativen, die du verträgst':'Bessere Alternativen'))+'</div>'
     + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, score:num(a.clean_score), delta:num(a.plus),
-          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:((_alleAlt||/^für dich verträglich/.test(a.grund||''))?(a.grund||''):'') }); }).join('')
+          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:((_alleAlt||/^(für dich verträglich|Statt Kapsel:)/.test(a.grund||''))?String(a.grund||'').replace(/^Statt Kapsel: /,''):'') }); }).join('')
     + (_alleAlt ? '' : '<div onclick="premiumInfo()" style="cursor:pointer;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45">'
         + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> bessere '+(_verdeckt===1?'Wahl':'Wahlen')+' und die Begründung, warum – mit <b>Premium</b>.'
                        : '🔒 Die <b>Begründung</b>, warum das besser ist – mit <b>Premium</b>.')
         + '</div>')
-    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">'+(_vertr?'Du verträgst das Produkt laut Profil nicht. Hier die besten Produkte derselben Art ohne deine Unverträglichkeiten – auch wenn ihr Index nicht höher ist.':'Besser heißt hier: dieselbe Produktart mit höherem Root Index.')+' Keine Werbung, keine bezahlten Plätze.</div>'
+    + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">'+(_supp?'Lebensmittel mit dem Wirkstoff (DGE-Referenzwerte). Bei ärztlich festgestelltem Mangel kann ein Präparat sinnvoll sein.':_vertr?'Du verträgst das Produkt laut Profil nicht. Hier die besten Produkte derselben Art ohne deine Unverträglichkeiten – auch wenn ihr Index nicht höher ist.':'Besser heißt hier: dieselbe Produktart mit höherem Root Index.')+' Keine Werbung, keine bezahlten Plätze.</div>'
     + '</div>';
 }
 /* Dezente Ein-Zeilen-Fassung fuer den Tagebuch-Hinzufuegen-Dialog (Ralph-Entscheid "auch im Tagebuch"). */
@@ -17519,7 +17533,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-14-01";
+const APP_BUILD = "2026-10-14-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
