@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>App Store — Root Index</title>
+<!-- appstore.html · 14.10.2026 · Ralph: "dann bau das ins cockpit ein oder ins dashboard ins linke menü".
+     Liest nur cb_admin_appstore (Tabellen appstore_rezension/appstore_tag, taeglich gefuellt von der
+     Edge-Funktion appstore-sync). Knopf "Jetzt abrufen" ruft appstore-sync direkt (nur Admin). -->
+<style>
+  :root{--bg:#0f1412;--card:#181f1b;--line:#2a3530;--text:#e9ece9;--muted:#9fb0a6;--gruen:#3ddc84;--gelb:#f5c451;--blau:#7cb3ff;--rot:#ff7b7b}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .wrap{max-width:1100px;margin:0 auto;padding:24px 18px 60px}
+  h1{font-size:28px;margin:0 0 4px} h2{font-size:19px;margin:28px 0 8px}
+  .lead,.muted{color:var(--muted)}
+  .filter{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:14px 0}
+  select,button{background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font-size:14px}
+  button{cursor:pointer}
+  .karten{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}
+  .karte{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+  .karte .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+  .karte .v{font-size:24px;font-weight:800;margin-top:2px}
+  .karte .s{font-size:12.5px;color:var(--muted)}
+  .up{color:var(--gruen)} .down{color:var(--rot)}
+  .zwei{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px}
+  .tab{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 12px 10px}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--muted);font-weight:600} td.n,th.n{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .bars{display:flex;align-items:flex-end;gap:2px;height:150px;padding:8px 0 0}
+  .bars div{flex:1;background:var(--gruen);border-radius:3px 3px 0 0;min-height:1px;position:relative}
+  .bars div.u{background:var(--blau)}
+  .achse{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted)}
+  .rez{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+  .st{color:var(--gelb);letter-spacing:1px}
+  .antw{margin-top:8px;padding:8px 10px;border-left:3px solid var(--gruen);background:#1d2622;border-radius:6px;font-size:13.5px}
+  .hinweis{background:#2a2414;border:1px solid #5a4a1c;border-radius:12px;padding:12px 14px;margin:12px 0}
+  a{color:var(--blau)}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>📱 App Store</h1>
+<p class="lead">Downloads und Rezensionen der iPhone-App. Apple liefert die Zahlen mit etwa einem Tag Verzögerung; abgerufen wird jeden Morgen automatisch.</p>
+<div class="filter">
+  <label>Zeitraum <select id="zeit" onchange="laden()"><option value="30">30 Tage</option><option value="90" selected>90 Tage</option><option value="365">1 Jahr</option></select></label>
+  <button id="abruf" onclick="abrufen()">Jetzt abrufen</button>
+  <a href="https://appstoreconnect.apple.com/apps/6818112011/distribution/ios/ratings" target="_blank" rel="noopener">In App Store Connect antworten ↗</a>
+  <span id="stand" class="muted"></span>
+</div>
+<div id="inhalt">lädt …</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const zahl = x => x==null ? '–' : Number(x).toLocaleString('de-DE');
+const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const sterne = n => '★'.repeat(n||0)+'<span style="opacity:.25">'+'★'.repeat(5-(n||0))+'</span>';
+const LAND = {DEU:'Deutschland',DE:'Deutschland',AUT:'Österreich',AT:'Österreich',CHE:'Schweiz',CH:'Schweiz',USA:'USA',US:'USA',GBR:'Großbritannien',GB:'Großbritannien',FRA:'Frankreich',FR:'Frankreich',ITA:'Italien',IT:'Italien',NLD:'Niederlande',NL:'Niederlande',ESP:'Spanien',ES:'Spanien'};
+function karte(k,v,s){ return '<div class="karte"><div class="k">'+esc(k)+'</div><div class="v">'+v+'</div><div class="s">'+(s||'')+'</div></div>'; }
+function balken(tage){
+  const max=Math.max(1,...tage.map(t=>t.downloads+t.updates));
+  const b=tage.map(t=>'<div title="'+datum(t.datum)+': '+t.downloads+' Downloads, '+t.updates+' Updates" style="height:'+(100*(t.downloads+t.updates)/max)+'%;display:flex;flex-direction:column;justify-content:flex-end;background:none">'
+     +'<div class="u" style="flex:'+t.updates+' 0 0;min-height:'+(t.updates?2:0)+'px"></div><div style="flex:'+t.downloads+' 0 0;min-height:'+(t.downloads?2:0)+'px"></div></div>').join('');
+  return '<div class="tab"><div class="bars">'+b+'</div><div class="achse"><span>'+datum(tage[0]&&tage[0].datum)+'</span><span><span style="color:var(--gruen)">■</span> Downloads &nbsp; <span style="color:var(--blau)">■</span> Updates</span><span>'+datum(tage.length&&tage[tage.length-1].datum)+'</span></div></div>';
+}
+async function laden(){
+  $('inhalt').innerHTML='lädt …';
+  const {data:d,error}=await client.rpc('cb_admin_appstore',{p_tage:Number($('zeit').value)});
+  if(error){ $('inhalt').innerHTML='<div class="down">Fehler: '+esc(error.message)+'</div>'; return; }
+  const ls=d.letzter_sync, st=d.sterne||{};
+  $('stand').textContent = ls ? 'zuletzt abgerufen '+new Date(ls.zeit).toLocaleString('de-DE') : 'noch nie abgerufen';
+  let h='';
+  if(!ls || (ls.fehler||'').startsWith('Secrets fehlen')) h+='<div class="hinweis"><b>Einrichtung fehlt.</b> In Supabase → Edge Functions → Secrets vier Einträge anlegen: <code>ASC_KEY_ID</code> (Schlüssel-ID), <code>ASC_ISSUER_ID</code> (Aussteller-ID), <code>ASC_PRIVATE_KEY</code> (ganzer Inhalt der .p8-Datei) und <code>ASC_VENDOR_NUMBER</code> (App Store Connect → Zahlungen und Finanzberichte, oben links). Danach „Jetzt abrufen“.</div>';
+  else if(ls.fehler) h+='<div class="hinweis"><b>Letzter Abruf mit Fehler:</b> '+esc(ls.fehler)+'</div>';
+  h+='<div class="karten">'
+    +karte('Downloads gesamt', zahl(d.downloads_gesamt), d.erster_tag?('seit '+datum(d.erster_tag)):'')
+    +karte('Letzte 7 Tage', zahl(d.downloads_7), 'neue Downloads')
+    +karte('Letzte 30 Tage', zahl(d.downloads_30), zahl(d.updates_30)+' Updates')
+    +karte('Abo-Käufe 30 Tage', zahl(d.kaeufe_30), d.erloes_30?(Number(d.erloes_30).toLocaleString('de-DE',{style:'currency',currency:'EUR'})+' Erlös'):'')
+    +karte('Bewertung', st.anzahl?('<span class="st">★</span> '+Number(st.schnitt).toLocaleString('de-DE')):'–', zahl(st.anzahl||0)+' Rezensionen')
+    +'</div>';
+  h+='<h2>Downloads pro Tag</h2>'+balken(d.tage||[]);
+  const la=d.laender||[];
+  h+='<div class="zwei"><div><h2>Länder</h2><div class="tab">'+(la.length?'<table><tr><th>Land</th><th class="n">Downloads</th></tr>'+la.map(l=>'<tr><td>'+esc(LAND[l.land]||l.land||'–')+'</td><td class="n">'+zahl(l.n)+'</td></tr>').join('')+'</table>':'<div class="muted" style="padding:6px 0">noch keine Daten</div>')+'</div></div>';
+  const v=st.verteilung||{};
+  h+='<div><h2>Sterne</h2><div class="tab"><table>'+[5,4,3,2,1].map(s=>'<tr><td class="st">'+'★'.repeat(s)+'</td><td class="n">'+zahl(v[s]||0)+'</td></tr>').join('')+'</table></div></div></div>';
+  const rz=d.rezensionen||[];
+  h+='<h2>Rezensionen</h2>'+(rz.length?rz.map(r=>'<div class="rez"><div><span class="st">'+sterne(r.sterne)+'</span> <b>'+esc(r.titel)+'</b></div>'
+      +'<div class="muted" style="font-size:12.5px">'+esc(r.autor)+' · '+esc(LAND[r.land]||r.land)+' · '+datum(r.erstellt)+'</div>'
+      +'<div style="margin-top:6px;white-space:pre-wrap">'+esc(r.text)+'</div>'
+      +(r.antwort?'<div class="antw"><b>Deine Antwort:</b> '+esc(r.antwort)+'</div>':'<div class="muted" style="font-size:12.5px;margin-top:6px">noch nicht beantwortet</div>')+'</div>').join('')
+    :'<div class="muted">Noch keine Rezensionen.</div>');
+  $('inhalt').innerHTML=h;
+}
+async function abrufen(){
+  const b=$('abruf'); b.disabled=true; b.textContent='ruft ab …';
+  try{
+    const ersterLauf = !(await client.rpc('cb_admin_appstore',{p_tage:7})).data?.erster_tag;
+    const {data,error}=await client.functions.invoke('appstore-sync',{body:{tage: ersterLauf?60:10}});
+    if(error){ let m=error.message; try{ const j=await error.context.json(); m=j.fehler||m; }catch(e){} alert('Abruf: '+m); }
+  }catch(e){ alert('Abruf: '+e.message); }
+  b.disabled=false; b.textContent='Jetzt abrufen'; laden();
+}
+client.auth.getSession().then(({data})=>{ if(!data.session){ $('inhalt').innerHTML='Bitte zuerst im Admin anmelden.'; return; } laden(); });
+</script>
+</body>
+</html>

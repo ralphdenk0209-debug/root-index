@@ -61,6 +61,8 @@ function applyAdminMode(){
          empfehlungen raus aus dem menü nutzt keiner" + "maschine und steuerung auch raus". Nur die Knoepfe
          sind weg - die Seiten und Funktionen bleiben aufrufbar. Neu: Monatsbericht. */
       +_an('monatsbericht','📅','Monatsbericht',"window.open('monatsbericht.html?cb='+Date.now(),'_blank')")
+      /* 14.10.2026, Ralph: App-Store-Downloads und Rezensionen ins linke Menü - eigene Seite. */
+      +_an('appstore','📱','App Store',"window.open('appstore.html?cb='+Date.now(),'_blank')")
       /* 09.09.2026 (#217, Ralph): Riki-Kosten je Aufruf und Produkt - eigene Seite. */
       +_an('rikikosten','💸','Kosten',"window.open('riki-kosten.html?cb='+Date.now(),'_blank')")
       /* 16.09.2026, Ralph: "Benchmark im Menü löschen." Wie schon bei bewerten/
