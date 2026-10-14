@@ -10684,10 +10684,18 @@ function einkRow(r,done){
         +'<input id="einkM'+id+'" value="'+esc(r.menge||'')+'" placeholder="eigene Menge…" style="flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:8px">'
         +'<button onclick="einkSetMenge('+id+',document.getElementById(\'einkM'+id+'\').value)" style="padding:9px 14px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen);cursor:pointer;font-weight:600">OK</button>'
         +'<button onclick="einkSetMenge('+id+',\'\')" style="padding:9px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer">leeren</button>'
+      +'</div>'
+      /* 14.10.2026 (Ralph jaja): Laden je Eintrag - Eigenmarken setzt der Server selbst. */
+      +'<div style="font-size:12px;color:var(--muted);margin:12px 0 8px">Laden</div>'
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      +EINK_LAEDEN.map(function(l){ var an=(r.laden||'')===l; return '<button onclick="einkSetLaden('+id+',\''+l+'\')" style="padding:8px 13px;border:1px solid '+(an?'var(--green)':'var(--line)')+';border-radius:999px;background:'+(an?'var(--greenlt)':'var(--bg)')+';color:var(--ink);font-size:13px;cursor:pointer;'+(an?'font-weight:700':'')+'">'+l+'</button>'; }).join('')
+      +'<button onclick="einkSetLaden('+id+',\'\')" style="padding:8px 13px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--muted);font-size:13px;cursor:pointer">egal</button>'
       +'</div></div>';
   }
   return h;
 }
+const EINK_LAEDEN=['dm','Rossmann','Edeka','Rewe','Aldi','Lidl','Kaufland','Online'];
+async function einkSetLaden(id,l){ try{ const r=await client.rpc("cb_einkauf_laden",{p_eintrag:id,p_laden:(l||'').trim()||null}); if(r&&r.error) throw r.error; }catch(e){ alert("Fehler: "+e.message); } await loadEinkauf(); }
 function einkGrid(inner){ return '<div style="display:grid;grid-template-columns:1fr;gap:8px">'+inner+'</div>'; }
 /* Eingabeleiste mit dem Produktkatalog verknüpft: Vorschläge beim Tippen, Klick legt den Eintrag MIT Produkt-ID an (→ Kategorie + Score). */
 async function einkSuggest(q){
@@ -10978,7 +10986,7 @@ async function loadEinkauf(){
   /* 01.10.2026: Liste und Haushalts-Status gleichzeitig holen statt nacheinander */
   const _hhAn=!!(ME && typeof feat==='function' && feat('haushalt'));
   const _er=await Promise.all([
-    Promise.resolve(client.rpc("cb_einkauf_list")).catch(function(){ return {}; }),
+    Promise.resolve(client.rpc("cb_einkauf_list_v2")).then(function(r){ return (r&&r.error)?client.rpc("cb_einkauf_list"):r; }).catch(function(){ return {}; }),
     _hhAn ? Promise.resolve(client.rpc("cb_haushalt_status")).catch(function(){ return {}; }) : null
   ]);
   let rows=(_er[0]&&_er[0].data)||[];
@@ -11014,8 +11022,18 @@ async function loadEinkauf(){
   /* 30.09.2026: Reihenfolge kommt vom Server (cb_einkauf_list: eigene Ladenreihenfolge,
      sonst alphabetisch) - hier wurde sie nochmal alphabetisch umsortiert und die eigene
      Reihenfolge damit ueberschrieben. Jetzt: Server-Reihenfolge, "Sonstiges" ans Ende. */
+  /* 14.10.2026 (Ralph jaja): Sobald ein Eintrag einen Laden hat, kommt erst der Laden,
+     darin die Kategorien wie bisher. Ohne Laden bleibt alles wie vorher. */
+  const _mitLaden=offen.some(function(r){ return r.laden; });
+  const _laeden=[]; const _proLaden={};
+  offen.forEach(function(r){ const l=_mitLaden?(r.laden||''):'#'; if(!_proLaden[l]){ _proLaden[l]=[]; _laeden.push(l); } _proLaden[l].push(r); });
+  _laeden.sort(function(a,b){ if(a===''||b==='') return (a==='')-(b===''); var ia=EINK_LAEDEN.indexOf(a), ib=EINK_LAEDEN.indexOf(b); return (ia<0?99:ia)-(ib<0?99:ib); });
+  _laeden.forEach(function(_l){
+  if(_mitLaden) h+='<div style="display:flex;align-items:center;gap:8px;margin:26px 0 2px;padding:9px 12px;border-radius:10px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534))">'
+      +'<span style="font-size:17px">🏪</span><span style="font-size:15px;font-weight:800">'+esc(_l||'Ohne Laden')+'</span>'
+      +'<span style="margin-left:auto;font-size:13px;font-weight:600">'+_proLaden[_l].length+'</span></div>';
   const groups={}, _reihe=[], _anz={};
-  offen.forEach(function(r){ const k=r.kategorie||'Sonstiges'; if(!groups[k]){ groups[k]=[]; _reihe.push(k); } groups[k].push(r); if(r.anzeigename) _anz[k]=r.anzeigename; });
+  _proLaden[_l].forEach(function(r){ const k=r.kategorie||'Sonstiges'; if(!groups[k]){ groups[k]=[]; _reihe.push(k); } groups[k].push(r); if(r.anzeigename) _anz[k]=r.anzeigename; });
   _reihe.sort(function(a,b){ return (a==='Sonstiges')-(b==='Sonstiges'); }).forEach(function(k){
     const m=(typeof katMeta==='function')?katMeta(k):{e:'🏷️'};
     /* 28z31: Kategorie-Ueberschrift war 11.5px versal - lesbar am Schreibtisch,
@@ -11025,6 +11043,7 @@ async function loadEinkauf(){
       +'<span style="font-size:13.5px;font-weight:800;text-transform:uppercase;letter-spacing:.7px;color:var(--muted)">'+esc(_anz[k]||k)+'</span>'
       +'<span style="flex:1;height:1px;background:var(--line)"></span></div>';
     h+=einkGrid(groups[k].map(function(r){ return einkRow(r,false); }).join(''));
+  });
   });
   if(erl.length){
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 6px"><span style="font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">Erledigt ('+erl.length+')</span><button onclick="einkaufClearDone()" style="font-size:12.5px;color:var(--k-dc2626);background:none;border:0;cursor:pointer">entfernen</button></div>';
@@ -17533,7 +17552,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-14-02";
+const APP_BUILD = "2026-10-14-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
