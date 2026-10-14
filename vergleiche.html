@@ -56,6 +56,9 @@
   .ablage{ border:1px dashed #cfc9e3; border-radius:10px; padding:10px; background:#faf9fd; align-self:start; position:sticky; top:8px; max-height:calc(100vh - 20px); overflow-y:auto; display:flex; flex-direction:column; gap:5px; }
   .ablage h4{ margin:0 0 4px; font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:#6b6592; }
   .ablage .grp{ margin:10px 0 4px; font-size:11.5px; color:#8a84a8; }
+  .ablage .ber{ margin:8px 0 3px 2px; font-size:11px; font-weight:700; color:#5a5480; }
+  .ablage .ber .mf, .mfz{ color:#b45309; font-weight:700; }
+  .mfz{ font-size:11px; margin:2px 0; }
   .woche{ margin-bottom:14px; }
   .woche h3{ margin:0 0 6px; font-size:13px; color:#6b6592; text-transform:uppercase; letter-spacing:.5px; }
   .tage{ display:grid; grid-template-columns:repeat(7,minmax(118px,1fr)); gap:6px; }
@@ -170,7 +173,7 @@ var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
 var T = "Instagram_Vergleich";
 function $(id){ return document.getElementById(id); }
 function e(s){ return String(s==null?"":s).replace(/[&<>"]/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[c]; }); }
-var ZEILEN = [], P = {}, FOTO = {}, BUSY = false, WOFF = 0;
+var ZEILEN = [], P = {}, KAT = {}, FOTO = {}, BUSY = false, WOFF = 0;
 /* 09.10.2026 Ralph: Wochenplan weiter voraus – Zeitraum waehlbar, Vorgabe 12 Wochen */
 var WANZ = 12; try{ var _w = +localStorage.getItem("ri_wanz"); if([6,12,26].indexOf(_w)>=0) WANZ = _w; }catch(_){}
 var STATUS = { "Bereit":["fertig","fertig"], "Veröffentlicht":["online","online"], "In Arbeit":["wartet","wartet"], "Idee":["idee","Idee"] };
@@ -218,6 +221,8 @@ async function laden(){
   var fehlt = ids.filter(function(id){ return !P[id]; });
   if(fehlt.length){ var q2 = await vg.from("Produkte").select("Produkt_ID,Produktname,Marke").in("Produkt_ID", fehlt);
     (q2.data||[]).forEach(function(x){ P[x.Produkt_ID] = { id:x.Produkt_ID, name:x.Produktname, marke:x.Marke||"", clean_score:null }; }); }
+  KAT = {};
+  if(ids.length){ var q3 = await vg.from("Produkte").select("Produkt_ID,Kategorie").in("Produkt_ID", ids); (q3.data||[]).forEach(function(x){ KAT[x.Produkt_ID] = x.Kategorie||""; }); }
   zeige();
 }
 
@@ -250,6 +255,26 @@ function zeigeKopf(){
     + "<span class='chip'><b>"+E.length+"</b> Einzelprodukte</span>";
 }
 
+/* ---- Bereich und fehlende Medien (Ralph 14.10.2026) ---- */
+var BEREICHE = [["supp","💊 Supplements"],["vergleich","⚖️ Produktvergleiche"],["einzel","🔎 Einzelprodukte"],["rezept","🍳 Rezepte"],["erklaer","💡 Erklärung & Haltung"],["app","📱 App-Tipps"]];
+function bereich(x){
+  var t = [x.Zeile1, x.Notiz].join(" ");
+  var ka = String(KAT[pid(x.Produkt_A)]||"").toLowerCase(), kb = String(KAT[pid(x.Produkt_B)]||"").toLowerCase();
+  if(ka==="supplement" || kb==="supplement" || /supplement|reinheits-index/i.test(t)) return "supp";
+  if(/app-tipp|app-reel|app-folge|in einer app|android|app store/i.test(t+" "+(x.Fehlt||""))) return "app";
+  if(/rezept/i.test(t)) return "rezept";
+  if(/erkl[aä]r|haltung|werbespot/i.test(t)) return "erklaer";
+  if(x.Typ==="Einzel") return "einzel";
+  if(!x.Produkt_A && !x.Produkt_B) return "erklaer";
+  return "vergleich";
+}
+function medienFehlen(x){ return !x.Reel_Datei && /foto|fotograf|bildschirm|aufnahme|video|dreh|kaufen/i.test(x.Fehlt||""); }
+function nachBereich(liste){
+  return BEREICHE.map(function(b){ var l = liste.filter(function(x){ return bereich(x)===b[0]; }); if(!l.length) return "";
+    return "<div class='ber'>"+b[1]+" · "+l.length+(l.some(medienFehlen)?" <span class='mf'>📷 "+l.filter(medienFehlen).length+"</span>":"")+"</div>"
+      + l.map(function(x){ return karte(x,"reel"); }).join(""); }).join("");
+}
+
 /* ---- Wochenplan ---- */
 function karte(x, art){
   var d = x[F[art].d] ? new Date(x[F[art].d]) : null, z = d ? zustand(x, art) : "";
@@ -257,6 +282,7 @@ function karte(x, art){
   return "<div class='it "+(art==="reel"?"reel ":"")+z+"' draggable='"+(z!=="o")+"' data-id='"+x.id+"' data-art='"+art+"'>"
     + "<div class='z1'><span>"+F[art].n+(d?" · "+zeit(d):"")+"</span><span>"+(x.Typ==="Einzel"?"🔎":"Nr "+e(x.Nr))+"</span></div>"
     + "<div class='t'>"+e(titel(x))+"</div>"
+    + (medienFehlen(x) ? "<div class='mfz'>📷 Foto/Video fehlt</div>" : "")
     + (hersteller(x) ? "<div class='hs'>"+e(hersteller(x))+"</div>" : "")
     + "<div class='z1'><span>"+e(punkteText(x))+"</span><span class='ok'>"+ok+"</span></div>"
     + (art==="reel" && d ? "<div class='z1'><span>"+(x.Threads_gepostet?"✓":"✗")+" Threads · "+(x.Substack_gepostet?"✓":"✗")+" Substack</span></div>" : "")
@@ -295,9 +321,9 @@ function zeigePlan(){
   var bauen = ZEILEN.filter(function(x){ return !x.Reel_Datei && !x.Reel_geplant_am && x.Status==="Bereit"; });
   var offen = ZEILEN.filter(function(x){ return !x.Reel_Datei && !x.Reel_geplant_am && (x.Status==="Idee" || x.Status==="In Arbeit"); });
   $("ablage").innerHTML = "<h4>Noch nicht geplant</h4><small>In einen Tag ziehen oder anklicken.</small>"
-    + "<div class='grp'>🎬 Reels fertig ("+ohneReel.length+")</div>" + ohneReel.map(function(x){ return karte(x,"reel"); }).join("")
-    + "<div class='grp'>🛠 Reel noch bauen ("+bauen.length+")</div>" + bauen.map(function(x){ return karte(x,"reel"); }).join("")
-    + "<div class='grp'>⏳ Offen – Ideen / in Arbeit ("+offen.length+")</div>" + offen.map(function(x){ return karte(x,"reel"); }).join("");
+    + "<div class='grp'>🎬 Reels fertig ("+ohneReel.length+")</div>" + nachBereich(ohneReel)
+    + "<div class='grp'>🛠 Reel noch bauen ("+bauen.length+")</div>" + nachBereich(bauen)
+    + "<div class='grp'>⏳ Offen – Ideen / in Arbeit ("+offen.length+")</div>" + nachBereich(offen);
   verdrahten();
 }
 
