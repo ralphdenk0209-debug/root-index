@@ -71,22 +71,22 @@ const M = () => (A&&A.mehr)||{}, MN = () => M().menschen||{}, ST = () => M().sta
 
 /* ---------- Planeten: Werte, die beim Ändern leuchten (gemerkt je Browser) ---------- */
 const PLANETEN = [
-  {id:'merkur', name:'Merkur', thema:'Riki-Kosten', farbe:['#d9cbb8','#8a7d6c'], r:7,  bahn:.26, tempo:1.9,
+  {id:'merkur', name:'Merkur', thema:'Riki-Kosten', farbe:['#d9cbb8','#8a7d6c'], r:12, bahn:.26, tempo:1.9,
     wert:()=>ICH().riki_heute_usd, zeilen:()=>[['heute',de(ICH().riki_heute_usd,2)+' $'],['Monat',de(ICH().riki_monat_usd,2)+' $'],['Tagesdeckel',de(ICH().riki_tagesbudget_usd,2)+' $'],['Monatsbudget',de(ICH().riki_budget_usd,0)+' $']], link:['riki-kosten.html','Kosten']},
-  {id:'venus', name:'Venus', thema:'Besucher', farbe:['#f6dfae','#b98a45'], r:10, bahn:.35, tempo:1.4,
+  {id:'venus', name:'Venus', thema:'Besucher', farbe:['#f6dfae','#b98a45'], r:18, bahn:.35, tempo:1.4,
     wert:()=>{ const b=SE().besucher||[]; return b.length?b[b.length-1].gesamt:null; },
     zeilen:()=>{ const b=SE().besucher||[]; const h=b[b.length-1]||{}; return [['Besucher heute',de(h.gesamt)],['davon Google',de(h.google)],['direkt',de(h.direkt)],['Klicks 7 Tage',de(SE().klicks_7t)],['indexiert',de(SE().indexiert)]]; }, link:['monatsbericht.html','Monatsbericht']},
-  {id:'erde', name:'Erde', thema:'Nutzer', farbe:['#7fb6f2','#1f4d8c'], r:12, bahn:.45, tempo:1.0, erde:true,
+  {id:'erde', name:'Erde', thema:'Nutzer', farbe:['#7fb6f2','#1f4d8c'], r:23.4, bahn:.45, tempo:1.0, erde:true,
     wert:()=>MN().nutzer, zeilen:()=>[['Nutzer',de(MN().nutzer)],['Premium',de(MN().premium)],['aktiv 7 Tage',de(MN().aktiv_7t)],['Tagebuch 7 Tage',de(MN().tagebuch_7t)]], karte:true, links:[['admin:nutzer','Nutzer verwalten'],['appstore.html','App Store']]},
-  {id:'mars', name:'Mars', thema:'Rückmeldungen', farbe:['#f29a72','#8c3a22'], r:9, bahn:.55, tempo:.8,
+  {id:'mars', name:'Mars', thema:'Rückmeldungen', farbe:['#f29a72','#8c3a22'], r:15, bahn:.55, tempo:.8,
     wert:()=>RM?RM.offen:null, zeilen:()=>RM?[['offen',de(RM.offen)],['hilfreich (30 T)',de(RM.ja)],['nicht hilfreich',de(RM.nein)],['Angabe gemeldet',de(RM.meldung)]]:[['–','lädt']], link:['cockpit.html','im Cockpit beantworten']},
-  {id:'jupiter', name:'Jupiter', thema:'Produkte', farbe:['#e8c9a0','#9b6b3e'], r:20, bahn:.66, tempo:.55, baender:true,
+  {id:'jupiter', name:'Jupiter', thema:'Produkte', farbe:['#e8c9a0','#9b6b3e'], r:34, bahn:.66, tempo:.55, baender:true,
     wert:()=>ST().produkte_aktiv, zeilen:()=>[['aktiv',de(ST().produkte_aktiv)],['Entwürfe',de(ST().entwuerfe)],['Ø Index',de(ST().schnitt_score,1)],['heute freigegeben',de(A&&A.delta&&A.delta.frei_heute)]], link:['produkte-tabelle.html','Produkttabelle']},
-  {id:'saturn', name:'Saturn', thema:'Social', farbe:['#efdcae','#a8874e'], r:16, bahn:.77, tempo:.42, ring:true,
+  {id:'saturn', name:'Saturn', thema:'Social', farbe:['#efdcae','#a8874e'], r:27, bahn:.77, tempo:.42, ring:true,
     wert:()=>(Number(MN().ig_follower)||0)+(Number(MN().fb_follower)||0), zeilen:()=>[['Instagram Follower',de(MN().ig_follower)],['Facebook Follower',de(MN().fb_follower)],['Beiträge',de(MN().ig_beitraege)]], link:['https://www.instagram.com/root_index.de/','Instagram']},
-  {id:'uranus', name:'Uranus', thema:'Aufgaben', farbe:['#a9e6ea','#3f8f99'], r:13, bahn:.87, tempo:.3, ringSteil:true,
+  {id:'uranus', name:'Uranus', thema:'Aufgaben', farbe:['#a9e6ea','#3f8f99'], r:21, bahn:.87, tempo:.3, ringSteil:true,
     wert:()=>ICH().bei_ralph, zeilen:()=>{ const p=M().projekte||[]; return [['bei dir',de(ICH().bei_ralph)]].concat(p.filter(x=>x.offen>0).slice(0,8).map(x=>[x.p,de(x.offen)+' offen'])); }, link:['steuerung.html','Steuerung']},
-  {id:'neptun', name:'Neptun', thema:'Zutaten-Stamm', farbe:['#7f9cf2','#283f99'], r:12, bahn:.97, tempo:.22,
+  {id:'neptun', name:'Neptun', thema:'Zutaten-Stamm', farbe:['#7f9cf2','#283f99'], r:20, bahn:.97, tempo:.22,
     wert:()=>ST().zutaten, zeilen:()=>[['Zutaten',de(ST().zutaten)],['bewertet',de(ST().bewertet)],['nie gebunden',de(ST().nie_gebunden)],['Zusatzstoffe',de(ST().zusatzstoffe)]]},
 ];
 const MOND = {id:'mond', name:'Mond', thema:'Scans', wert:()=>MN().scans_cache,
@@ -246,7 +246,7 @@ function kette(t){
   /* Kette = eine Raumstation am Rand. Ruhig, solange nichts haengt; haengt etwas, blinkt sie gelb/rot mit Zahl. */
   const st=(A&&A.kette&&A.kette.stationen)||[]; if(!st.length) return;
   const h=st.reduce((a,s)=>a+(Number(s.haengt)||0),0), rot=st.some(s=>s.ampel==='rot'&&Number(s.haengt)>0);
-  const f=h?(rot?'#f2716c':'#f2cd6c'):'#9fb4d6'; const x=W*.70+Math.sin(t*.07)*W*.01, y=H*.91+Math.cos(t*.09)*H*.006; const k=Math.min(W,H)/900;
+  const f=h?(rot?'#f2716c':'#f2cd6c'):'#9fb4d6'; const x=W*.70+Math.sin(t*.07)*W*.01, y=H*.91+Math.cos(t*.09)*H*.006; const k=Math.min(W,H)/900*.8;
   cx.save(); cx.translate(x,y); cx.rotate(-.18+Math.sin(t*.1)*.05); cx.scale(k,k);
   /* ISS: Gittertraeger, 8 Solarfluegel, Module in der Mitte, Radiatoren */
   cx.fillStyle='#8d96a3'; cx.fillRect(-52,-1.6,104,3.2);
@@ -259,7 +259,7 @@ function kette(t){
   cx.fillStyle='#f4f6f9'; cx.fillRect(-14,9,6,9); cx.fillRect(8,9,6,9);
   cx.fillStyle=f; cx.globalAlpha=h?(.6+.4*Math.sin(t*4)):.9; cx.beginPath(); cx.arc(0,0,2,0,6.283); cx.fill(); cx.globalAlpha=1;
   cx.restore();
-  if(h){ cx.fillStyle=f+'26'; cx.beginPath(); cx.arc(x,y,40*k+4*Math.sin(t*4),0,6.283); cx.fill(); beschriftung(de(h)+' hängen', x, y-36*k, f, 11); }
+  if(h){ cx.fillStyle=f+'14'; cx.beginPath(); cx.arc(x,y,44*k+4*Math.sin(t*4),0,6.283); cx.fill(); beschriftung(de(h)+' hängen', x, y-36*k, f, 11); }
   beschriftung('ISS · Kette', x, y+38*k, '#8fa6c8', 10.5);
   HIT.push({x,y,r:48*k,tip:'ISS = Kette · '+de(h)+' Produkte hängen',klick:()=>popKette(st)});
 }
