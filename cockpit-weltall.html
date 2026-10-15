@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex">
+<title>Weltall-Cockpit — Root Index</title>
+<!-- cockpit-weltall.html · 15.10.2026 · Ralph: "das cockpit soll wie das weltall aussehen" (A).
+     Erster Entwurf neben cockpit.html. Gleiche Daten (cb_admin_cockpit_ampel, cb_admin_cockpit_dblast,
+     cb_admin_rueckmeldungen, cb_admin_cockpit_karte, cb_admin_cockpit_waechter_faelle), nichts wird hier nachgerechnet.
+     Sonne = Datenbank-Last · Planeten = interne Zahlen (leuchten bei Aenderung, bis geoeffnet) · Erde + Mond = Nutzer/Scans ·
+     Sternbilder = Waechter (Farbe wie Cockpit) · Raumstationen-Bahn = Kette · Galaxien = Links. -->
+<style>
+:root{--ink:#f1ede4;--ink2:#b9b2a5;--ink3:#7d776c;--g:#7fd99a;--y:#f2cd6c;--r:#f2716c;--b:#8fb8f2;--v:#b48cf2;--acc:#e6a15a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#04050b;color:var(--ink);font:13px/1.45 "IBM Plex Sans",-apple-system,"Segoe UI",Roboto,sans-serif}
+canvas{display:block;position:fixed;inset:0;cursor:default}
+#kopf{position:fixed;left:16px;top:12px;z-index:3;pointer-events:none}
+#kopf h1{margin:0;font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+#kopf .st{font-size:11.5px;color:var(--ink3);margin-top:2px}
+#links{position:fixed;right:14px;top:10px;z-index:3;display:flex;gap:10px;font-size:12px}
+#links a{color:var(--ink3);text-decoration:none;border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:3px 10px;background:rgba(10,12,22,.6)}
+#links a:hover{color:var(--ink)}
+#tip{position:fixed;z-index:4;pointer-events:none;background:rgba(14,16,28,.92);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:5px 9px;font-size:12px;display:none;max-width:280px}
+#pop{position:fixed;z-index:5;display:none;width:min(440px,calc(100vw - 32px));max-height:calc(100vh - 80px);overflow:auto;background:rgba(14,16,28,.96);border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:16px 18px;box-shadow:0 20px 70px rgba(0,0,0,.7);backdrop-filter:blur(6px)}
+#pop.an{display:block}
+#pop h2{margin:0 0 2px;font-size:16px;display:flex;align-items:center;gap:8px}
+#pop .unter{color:var(--ink3);font-size:12px;margin-bottom:10px}
+#pop .zx{position:absolute;right:12px;top:10px;background:none;border:0;color:var(--ink3);font-size:20px;cursor:pointer}
+#pop table{width:100%;border-collapse:collapse}
+#pop td{padding:4px 0;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}
+#pop td.n{text-align:right;font-family:ui-monospace,Menlo,monospace;color:var(--ink)}
+#pop td.l{color:var(--ink2)}
+#pop .knopf{display:inline-block;margin:10px 8px 0 0;padding:6px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.18);color:var(--ink);text-decoration:none;font-size:12.5px;background:rgba(255,255,255,.04);cursor:pointer}
+#pop .knopf:hover{border-color:var(--acc);color:var(--acc)}
+#pop .fall{padding:5px 0;border-bottom:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--ink2)}
+#pop .fall b{color:var(--ink)}
+.punkt{display:inline-block;width:10px;height:10px;border-radius:50%}
+#hinweis{position:fixed;left:50%;top:45%;transform:translate(-50%,-50%);z-index:6;display:none;background:rgba(14,16,28,.95);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:16px 20px;text-align:center}
+#hinweis a{color:var(--acc)}
+#fuss{position:fixed;left:16px;bottom:10px;z-index:3;font-size:11px;color:var(--ink3);pointer-events:none}
+</style></head>
+<body>
+<canvas id="c"></canvas>
+<div id="kopf"><h1>Root Index · Weltall</h1><div class="st" id="stand">lädt …</div></div>
+<div id="links"><a href="cockpit.html">klassisches Cockpit</a><a href="produkte-tabelle.html">Produkttabelle</a></div>
+<div id="tip"></div>
+<div id="pop"><button class="zx" onclick="popZu()">×</button><div id="popInhalt"></div></div>
+<div id="hinweis">Kein Zugriff – bitte <a href="admin.html">im Admin anmelden</a>, dann neu laden.</div>
+<div id="fuss">Sonne = Datenbank-Last · Planeten leuchten, wenn sich etwas geändert hat · Sterne = Wächter · Bahn unten = Kette · Klick öffnet</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const de = (x,st=0) => x==null||x==='' ? '–' : Number(x).toLocaleString('de-DE',{maximumFractionDigits:st});
+
+/* ---------- Daten ---------- */
+let A=null, DB=null, RM=null, KA=null, FEHLER=false;
+async function ampelLaden(){
+  const {data,error}=await client.rpc('cb_admin_cockpit_ampel');
+  if(error||!data||data.ok===false){ FEHLER=true; $('hinweis').style.display='block'; return; }
+  A=data; FEHLER=false; $('hinweis').style.display='none';
+  $('stand').textContent='Stand '+new Date().toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' · '+de((A.mehr&&A.mehr.waechter&&A.mehr.waechter.alle||[]).length)+' Wächter';
+  sterneZuordnen(); glanzPruefen();
+}
+async function dbLaden(){ try{ const {data}=await client.rpc('cb_admin_cockpit_dblast'); if(data) DB=data; }catch(e){} }
+async function rmLaden(){ try{ const {data}=await client.rpc('cb_admin_rueckmeldungen',{p_tage:30}); if(data){ RM=data; glanzPruefen(); } }catch(e){} }
+async function kaLaden(){ try{ const {data}=await client.rpc('cb_admin_cockpit_karte'); if(data) KA=data; }catch(e){} }
+const M = () => (A&&A.mehr)||{}, MN = () => M().menschen||{}, ST = () => M().stamm||{}, ICH = () => (A&&A.ich)||{}, SE = () => (A&&A.seite)||{};
+
+/* ---------- Planeten: Werte, die beim Ändern leuchten (gemerkt je Browser) ---------- */
+const PLANETEN = [
+  {id:'merkur', name:'Merkur', thema:'Riki-Kosten', farbe:['#d9cbb8','#8a7d6c'], r:7,  bahn:.20, tempo:1.9,
+    wert:()=>ICH().riki_heute_usd, zeilen:()=>[['heute',de(ICH().riki_heute_usd,2)+' $'],['Monat',de(ICH().riki_monat_usd,2)+' $'],['Tagesdeckel',de(ICH().riki_tagesbudget_usd,2)+' $'],['Monatsbudget',de(ICH().riki_budget_usd,0)+' $']], link:['riki-kosten.html','Riki-Kosten']},
+  {id:'venus', name:'Venus', thema:'Besucher', farbe:['#f6dfae','#b98a45'], r:10, bahn:.29, tempo:1.4,
+    wert:()=>{ const b=SE().besucher||[]; return b.length?b[b.length-1].gesamt:null; },
+    zeilen:()=>{ const b=SE().besucher||[]; const h=b[b.length-1]||{}; return [['Besucher heute',de(h.gesamt)],['davon Google',de(h.google)],['direkt',de(h.direkt)],['Klicks 7 Tage',de(SE().klicks_7t)],['indexiert',de(SE().indexiert)]]; }, link:['monatsbericht.html','Monatsbericht']},
+  {id:'erde', name:'Erde', thema:'Nutzer', farbe:['#7fb6f2','#1f4d8c'], r:12, bahn:.39, tempo:1.0, erde:true,
+    wert:()=>MN().nutzer, zeilen:()=>[['Nutzer',de(MN().nutzer)],['Premium',de(MN().premium)],['aktiv 7 Tage',de(MN().aktiv_7t)],['Tagebuch 7 Tage',de(MN().tagebuch_7t)]], karte:true},
+  {id:'mars', name:'Mars', thema:'Rückmeldungen', farbe:['#f29a72','#8c3a22'], r:9, bahn:.49, tempo:.8,
+    wert:()=>RM?RM.offen:null, zeilen:()=>RM?[['offen',de(RM.offen)],['hilfreich (30 T)',de(RM.ja)],['nicht hilfreich',de(RM.nein)],['Angabe gemeldet',de(RM.meldung)]]:[['–','lädt']], link:['cockpit.html','im Cockpit beantworten']},
+  {id:'jupiter', name:'Jupiter', thema:'Produkte', farbe:['#e8c9a0','#9b6b3e'], r:20, bahn:.61, tempo:.55, baender:true,
+    wert:()=>ST().produkte_aktiv, zeilen:()=>[['aktiv',de(ST().produkte_aktiv)],['Entwürfe',de(ST().entwuerfe)],['Ø Index',de(ST().schnitt_score,1)],['heute freigegeben',de(A&&A.delta&&A.delta.frei_heute)]], link:['produkte-tabelle.html','Produkttabelle']},
+  {id:'saturn', name:'Saturn', thema:'Social', farbe:['#efdcae','#a8874e'], r:16, bahn:.73, tempo:.42, ring:true,
+    wert:()=>(Number(MN().ig_follower)||0)+(Number(MN().fb_follower)||0), zeilen:()=>[['Instagram Follower',de(MN().ig_follower)],['Facebook Follower',de(MN().fb_follower)],['Beiträge',de(MN().ig_beitraege)]], link:['https://www.instagram.com/root_index.de/','Instagram']},
+  {id:'uranus', name:'Uranus', thema:'Aufgaben', farbe:['#a9e6ea','#3f8f99'], r:13, bahn:.84, tempo:.3, ringSteil:true,
+    wert:()=>ICH().bei_ralph, zeilen:()=>{ const p=M().projekte||[]; return [['bei dir',de(ICH().bei_ralph)]].concat(p.filter(x=>x.offen>0).slice(0,8).map(x=>[x.p,de(x.offen)+' offen'])); }, link:['steuerung.html','Steuerung']},
+  {id:'neptun', name:'Neptun', thema:'Zutaten-Stamm', farbe:['#7f9cf2','#283f99'], r:12, bahn:.95, tempo:.22,
+    wert:()=>ST().zutaten, zeilen:()=>[['Zutaten',de(ST().zutaten)],['bewertet',de(ST().bewertet)],['nie gebunden',de(ST().nie_gebunden)],['Zusatzstoffe',de(ST().zusatzstoffe)]]},
+];
+const MOND = {id:'mond', name:'Mond', thema:'Scans', wert:()=>MN().scans_cache,
+  zeilen:()=>[['Scans gesamt',de(MN().scans_cache)],['übernommen',de(MN().scans_uebernommen)],['in der Warteschlange',de(MN().scans_warteschlange)]]};
+let GESEHEN={}; try{ GESEHEN=JSON.parse(localStorage.getItem('weltall-gesehen')||'{}'); }catch(e){}
+const GLANZ={};
+function glanzPruefen(){
+  [...PLANETEN, MOND].forEach(p=>{ const w=p.wert(); if(w==null) return; const s=String(w);
+    if(!(p.id in GESEHEN)){ GESEHEN[p.id]=s; } else if(GESEHEN[p.id]!==s){ GLANZ[p.id]={alt:GESEHEN[p.id],neu:s}; } });
+  try{ localStorage.setItem('weltall-gesehen',JSON.stringify(GESEHEN)); }catch(e){}
+}
+function gesehen(p){ const w=p.wert(); if(w!=null){ GESEHEN[p.id]=String(w); try{ localStorage.setItem('weltall-gesehen',JSON.stringify(GESEHEN)); }catch(e){} } delete GLANZ[p.id]; }
+
+/* ---------- Sternbilder = Wächter ---------- */
+const BILDER = [
+  {name:'Großer Wagen', ort:[.07,.10,.26,.20], p:[[0,.35],[.18,.28],[.33,.32],[.48,.42],[.55,.66],[.82,.7],[.88,.42]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+  {name:'Orion', ort:[.80,.08,.14,.30], p:[[.2,.12],[.8,.15],[.5,0],[.38,.5],[.5,.53],[.62,.56],[.25,.98],[.8,.95],[.5,.75]], l:[[2,0],[2,1],[0,3],[1,5],[3,4],[4,5],[3,6],[5,7],[4,8]]},
+  {name:'Kassiopeia', ort:[.40,.04,.20,.10], p:[[0,.2],[.25,.8],[.5,.35],[.75,.85],[1,.25]], l:[[0,1],[1,2],[2,3],[3,4]]},
+  {name:'Kleiner Wagen', ort:[.04,.72,.20,.16], p:[[0,0],[.15,.14],[.3,.22],[.45,.38],[.72,.34],[.78,.6],[.5,.66]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+  {name:'Löwe', ort:[.80,.62,.17,.18], p:[[.12,.05],[.05,.28],[.15,.48],[.32,.52],[.26,.22],[.6,.42],[.95,.55],[.66,.8],[.36,.78]], l:[[0,4],[4,1],[1,2],[2,3],[3,5],[5,6],[6,7],[7,8],[8,3]]},
+  {name:'Schwan', ort:[.60,.08,.10,.18], p:[[.5,0],[.5,.42],[.5,1],[0,.36],[1,.48]], l:[[0,1],[1,2],[3,1],[1,4]]},
+];
+let STERNE=[];
+function sterneZuordnen(){
+  const alle=((A&&A.mehr&&A.mehr.waechter&&A.mehr.waechter.alle)||[]).slice()
+    .sort((a,b)=>(b.gate?1:0)-(a.gate?1:0));
+  STERNE=[]; let i=0;
+  BILDER.forEach((b,bi)=>b.p.forEach((pt,pi)=>{ const w=alle[i++]; if(w) STERNE.push({w,bild:bi,pi}); }));
+  while(i<alle.length){ const w=alle[i++]; STERNE.push({w,bild:-1,frei:[.3+Math.random()*.4,.03+Math.random()*.06]}); }
+}
+function sternFarbe(w){ const n=Number(w.n)||0;
+  if(w.k==='wb_ralph') return n?'#b48cf2':'#8f78bf';
+  if(n===0) return '#7fd99a';
+  if(w.gate) return '#f2716c';
+  if(w.k==='w_etikett') return '#4f8fe8';
+  return '#f2cd6c'; }
+
+/* ---------- Galaxien = Links ---------- */
+const GALAXIEN = [
+  {name:'Produktseiten', url:'/produkt/', x:.10, y:.44, farbe:'#9fb8ff'},
+  {name:'Newsletter', url:'newsletter.html', x:.10, y:.61, farbe:'#d3a2ff'},
+  {name:'Produkttabelle', url:'produkte-tabelle.html', x:.91, y:.41, farbe:'#ffc98f'},
+  {name:'Steuerung', url:'steuerung.html', x:.93, y:.53, farbe:'#9fe7d0'},
+  {name:'Instagram', url:'https://www.instagram.com/root_index.de/', x:.75, y:.10, farbe:'#ff9fc4'},
+  {name:'App Store', url:'appstore.html', x:.96, y:.86, farbe:'#c9d6ff'},
+];
+
+/* ---------- Zeichnen ---------- */
+const cv=$('c'), cx=cv.getContext('2d'); let W=0,H=0,DPR=1, HINTERGRUND=[], HIT=[], T0=performance.now(), maus={x:-1,y:-1};
+function groesse(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
+  HINTERGRUND=Array.from({length:Math.round(W*H/2600)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,p:Math.random()*6.3,s:.5+Math.random()*1.5})); }
+addEventListener('resize',groesse); groesse();
+const SONNE = () => ({x:W*.5, y:H*.47});
+const SKALA = () => Math.min(W*.42, H*.62);
+
+function himmel(t){
+  const g=cx.createRadialGradient(W*.5,H*.47,0,W*.5,H*.47,Math.max(W,H)*.8);
+  g.addColorStop(0,'#0d1024'); g.addColorStop(.5,'#070816'); g.addColorStop(1,'#020208'); cx.fillStyle=g; cx.fillRect(0,0,W,H);
+  /* Milchstrasse */
+  cx.save(); cx.translate(W*.5,H*.5); cx.rotate(-.42); const mg=cx.createLinearGradient(0,-H*.18,0,H*.18);
+  mg.addColorStop(0,'rgba(120,110,170,0)'); mg.addColorStop(.5,'rgba(150,140,200,.07)'); mg.addColorStop(1,'rgba(120,110,170,0)');
+  cx.fillStyle=mg; cx.fillRect(-W,-H*.18,W*2,H*.36); cx.restore();
+  HINTERGRUND.forEach(s=>{ const a=.35+.35*Math.sin(t*s.s+s.p); cx.fillStyle='rgba(235,235,255,'+a.toFixed(2)+')'; cx.beginPath(); cx.arc(s.x,s.y,s.r,0,6.283); cx.fill(); });
+}
+function galaxie(g,t){
+  const x=g.x*W, y=g.y*H, R=Math.min(W,H)*.045, rot=t*.08+(g.x*10);
+  cx.save(); cx.translate(x,y); cx.scale(1,.55); cx.rotate(rot);
+  const kern=cx.createRadialGradient(0,0,0,0,0,R*.5); kern.addColorStop(0,'rgba(255,250,235,.9)'); kern.addColorStop(1,'rgba(255,250,235,0)');
+  for(let arm=0;arm<2;arm++){ for(let i=0;i<70;i++){ const f=i/70, a=arm*Math.PI+f*4.2, rr=R*f;
+      cx.fillStyle=g.farbe; cx.globalAlpha=(1-f)*.55; cx.beginPath(); cx.arc(Math.cos(a)*rr,Math.sin(a)*rr,1.6*(1-f)+.4,0,6.283); cx.fill(); } }
+  cx.globalAlpha=1; cx.fillStyle=kern; cx.beginPath(); cx.arc(0,0,R*.5,0,6.283); cx.fill(); cx.restore();
+  beschriftung(g.name, x, y+R*.7, '#9a93a8');
+  HIT.push({x,y,r:R*.9,tip:'Galaxie '+g.name+' · Klick öffnet',klick:()=>{ if(/^https?:/.test(g.url)) window.open(g.url,'_blank','noopener'); else location.href=g.url; }});
+}
+function beschriftung(t,x,y,f,gr){ cx.font=(gr||11)+'px "IBM Plex Sans",sans-serif'; cx.textAlign='center'; cx.fillStyle=f||'#b9b2a5'; cx.fillText(t,x,y); }
+function sonne(t){
+  const {x,y}=SONNE(); const R=Math.min(W,H)*.055;
+  const db=DB||{}; const anteil=Math.min(1,((Number(db.aktiv)||0)+(Number(db.wartend)||0)*2)/12 + (Number(db.verbindungen)||0)/(Number(db.max_verbindungen)||90)*.4);
+  const sturm = ((A&&A.mehr&&A.mehr.waechter&&A.mehr.waechter.alle)||[]).some(w=>w.k==='wb_lastbremse'&&Number(w.n)>0);
+  const farbe = sturm?[255,90,70]: anteil>.6?[255,140,70]: [255,205,110];
+  const puls = 1+ (.04+anteil*.18)*Math.sin(t*(1.5+anteil*5));
+  const kr = cx.createRadialGradient(x,y,R*.2,x,y,R*(2.6+anteil*1.4)*puls);
+  kr.addColorStop(0,'rgba('+farbe+',.55)'); kr.addColorStop(.35,'rgba('+farbe+',.16)'); kr.addColorStop(1,'rgba('+farbe+',0)');
+  cx.fillStyle=kr; cx.beginPath(); cx.arc(x,y,R*(2.6+anteil*1.4)*puls,0,6.283); cx.fill();
+  if(sturm){ for(let i=0;i<14;i++){ const a=i/14*6.283+t*.6; const l=R*(1.3+.6*Math.abs(Math.sin(t*3+i)));
+      cx.strokeStyle='rgba(255,120,80,.5)'; cx.lineWidth=2; cx.beginPath(); cx.moveTo(x+Math.cos(a)*R,y+Math.sin(a)*R); cx.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l); cx.stroke(); } }
+  const k=cx.createRadialGradient(x-R*.3,y-R*.3,R*.1,x,y,R); k.addColorStop(0,'#fffbe8'); k.addColorStop(.6,'rgb('+farbe+')'); k.addColorStop(1,'rgba('+farbe.map(v=>Math.round(v*.7))+',1)');
+  cx.fillStyle=k; cx.beginPath(); cx.arc(x,y,R*puls,0,6.283); cx.fill();
+  beschriftung('Sonne · Datenbank-Last', x, y+R*1.9, '#e6c99a');
+  HIT.push({x,y,r:R*1.2,tip:'Sonne = Datenbank-Last'+(sturm?' · Notbremse aktiv!':''),klick:()=>popSonne(sturm)});
+}
+function bahnPunkt(bahn,winkel){ const {x,y}=SONNE(); const rx=SKALA()*bahn, ry=rx*.36; return {x:x+Math.cos(winkel)*rx, y:y+Math.sin(winkel)*ry, tief:Math.sin(winkel)}; }
+function bahnen(){ const {x,y}=SONNE(); cx.strokeStyle='rgba(255,255,255,.06)'; cx.lineWidth=1;
+  PLANETEN.forEach(p=>{ const rx=SKALA()*p.bahn; cx.beginPath(); cx.ellipse(x,y,rx,rx*.36,0,0,6.283); cx.stroke(); }); }
+function planet(p,t){
+  const w=(t*p.tempo*.09)+p.bahn*17; const q=bahnPunkt(p.bahn,w); const s=Math.min(W,H)/900; const R=p.r*s*(.85+.25*(q.tief+1)/2);
+  const glanz=GLANZ[p.id];
+  if(glanz){ const a=.35+.3*Math.sin(t*4); const gl=cx.createRadialGradient(q.x,q.y,R,q.x,q.y,R*3.4); gl.addColorStop(0,'rgba(255,240,180,'+a+')'); gl.addColorStop(1,'rgba(255,240,180,0)');
+    cx.fillStyle=gl; cx.beginPath(); cx.arc(q.x,q.y,R*3.4,0,6.283); cx.fill(); }
+  if(p.ring||p.ringSteil){ cx.save(); cx.translate(q.x,q.y); cx.rotate(p.ringSteil?1.25:-.35); cx.strokeStyle=p.ring?'rgba(232,212,160,.75)':'rgba(170,230,235,.45)'; cx.lineWidth=p.ring?R*.32:1.2;
+    cx.beginPath(); cx.ellipse(0,0,R*2.1,R*.62,0,Math.PI,6.283); cx.stroke(); cx.restore(); }
+  const g=cx.createRadialGradient(q.x-R*.4,q.y-R*.4,R*.15,q.x,q.y,R); g.addColorStop(0,p.farbe[0]); g.addColorStop(1,p.farbe[1]);
+  cx.fillStyle=g; cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.fill();
+  if(p.baender){ cx.save(); cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.clip(); cx.strokeStyle='rgba(120,70,40,.35)'; cx.lineWidth=R*.14;
+    [-.45,-.1,.25,.55].forEach(o=>{ cx.beginPath(); cx.moveTo(q.x-R,q.y+o*R); cx.lineTo(q.x+R,q.y+o*R); cx.stroke(); }); cx.fillStyle='rgba(190,90,60,.7)'; cx.beginPath(); cx.ellipse(q.x+R*.3,q.y+R*.3,R*.22,R*.12,0,0,6.283); cx.fill(); cx.restore(); }
+  if(p.erde){ cx.save(); cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.clip(); cx.fillStyle='rgba(110,180,110,.85)';
+    const d=(t*.3)%6.283; [[-.3,-.2,.35,.25],[.25,.15,.3,.2],[-.1,.45,.25,.12]].forEach(([a,b,c,e])=>{ cx.beginPath(); cx.ellipse(q.x+Math.cos(d+a*4)*R*.5,q.y+b*R,c*R,e*R,0,0,6.283); cx.fill(); }); cx.restore();
+    const mw=t*.9, mx=q.x+Math.cos(mw)*R*2.4, my=q.y+Math.sin(mw)*R*1.1, mr=R*.33;
+    const mg=cx.createRadialGradient(mx-mr*.3,my-mr*.3,mr*.1,mx,my,mr); mg.addColorStop(0,'#f4f1ea'); mg.addColorStop(1,'#8e8a82'); cx.fillStyle=mg; cx.beginPath(); cx.arc(mx,my,mr,0,6.283); cx.fill();
+    if(GLANZ.mond){ cx.strokeStyle='rgba(255,240,180,'+(.4+.3*Math.sin(t*4))+')'; cx.lineWidth=2; cx.beginPath(); cx.arc(mx,my,mr*2,0,6.283); cx.stroke(); }
+    HIT.push({x:mx,y:my,r:Math.max(8,mr*1.6),tip:'Mond · Scans '+de(MN().scans_cache),klick:()=>popPlanet(MOND,'#d8d4cc')}); }
+  /* Schatten zur Sonne hin */
+  const {x:sx,y:sy}=SONNE(); const a=Math.atan2(q.y-sy,q.x-sx); const sh=cx.createLinearGradient(q.x-Math.cos(a)*R,q.y-Math.sin(a)*R,q.x+Math.cos(a)*R,q.y+Math.sin(a)*R);
+  sh.addColorStop(0,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,10,.55)'); cx.fillStyle=sh; cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.fill();
+  beschriftung(p.name+' · '+p.thema, q.x, q.y+R+13, glanz?'#ffe9a8':'#9c968a', 10.5);
+  HIT.push({x:q.x,y:q.y,r:Math.max(10,R*1.3),tip:p.name+' = '+p.thema+(glanz?' · geändert: '+glanz.alt+' → '+glanz.neu:''),klick:()=>popPlanet(p,p.farbe[0]),z:q.tief});
+}
+function sternbilder(t){
+  const drift = Math.sin(t*.05)*.006;
+  BILDER.forEach((b,bi)=>{ const [ox,oy,bw,bh]=b.ort; const pts=b.p.map(([px,py])=>[(ox+px*bw+drift)*W,(oy+py*bh)*H]);
+    cx.strokeStyle='rgba(170,180,230,.16)'; cx.lineWidth=1; b.l.forEach(([i,j])=>{ cx.beginPath(); cx.moveTo(pts[i][0],pts[i][1]); cx.lineTo(pts[j][0],pts[j][1]); cx.stroke(); });
+    const ly=Math.max(...pts.map(p=>p[1]))+16; beschriftung(b.name+(bi===0?' · Gate-Wächter':''), (ox+bw/2)*W, ly, 'rgba(170,180,230,.45)', 10);
+    b.pts=pts; });
+  STERNE.forEach(s=>{ let x,y; if(s.bild>=0){ [x,y]=BILDER[s.bild].pts[s.pi]; } else { x=s.frei[0]*W; y=s.frei[1]*H; }
+    const n=Number(s.w.n)||0, f=sternFarbe(s.w); const R=(n?5.5:3.6)+Math.min(4,Math.log10(n+1)*1.6);
+    const fl = n? (.75+.25*Math.sin(t*3+x)) : (.8+.2*Math.sin(t*1.3+y));
+    const gl=cx.createRadialGradient(x,y,0,x,y,R*4); gl.addColorStop(0,f); gl.addColorStop(.25,f+'88'); gl.addColorStop(1,f+'00');
+    cx.globalAlpha=fl; cx.fillStyle=gl; cx.beginPath(); cx.arc(x,y,R*4,0,6.283); cx.fill();
+    cx.strokeStyle=f; cx.lineWidth=1; cx.beginPath(); cx.moveTo(x-R*2.2,y); cx.lineTo(x+R*2.2,y); cx.moveTo(x,y-R*2.2); cx.lineTo(x,y+R*2.2); cx.stroke();
+    cx.fillStyle='#fff'; cx.beginPath(); cx.arc(x,y,R*.45,0,6.283); cx.fill(); cx.globalAlpha=1;
+    if(n) beschriftung(de(n), x, y-R-6, f, 10.5);
+    HIT.push({x,y,r:Math.max(9,R*1.6),tip:s.w.name+' · '+de(n)+' Fälle'+(s.w.gate?' · Gate':''),klick:()=>popWaechter(s.w,f)}); });
+}
+function kette(t){
+  const st=(A&&A.kette&&A.kette.stationen)||[]; if(!st.length) return;
+  const cxm=W*.5, cym=H*.86, rx=W*.30, ry=H*.055; const n=st.length;
+  cx.strokeStyle='rgba(143,184,242,.18)'; cx.lineWidth=1.2; cx.setLineDash([3,6]); cx.beginPath(); cx.ellipse(cxm,cym,rx,ry,0,0,6.283); cx.stroke(); cx.setLineDash([]);
+  /* fliessende Lichter = Produkte auf dem Weg */
+  for(let k=0;k<26;k++){ const f=((t*.05+k/26)%1); const a=Math.PI*.98 - f*Math.PI*.96; const x=cxm+Math.cos(a)*rx, y=cym+Math.sin(a)*ry;
+    cx.fillStyle='rgba(180,215,255,'+(.25+.5*Math.sin(f*Math.PI))+')'; cx.beginPath(); cx.arc(x,y,1.6,0,6.283); cx.fill(); }
+  st.forEach((s,i)=>{ const a=Math.PI*.98 - i/(n-1)*Math.PI*.96; const x=cxm+Math.cos(a)*rx, y=cym+Math.sin(a)*ry;
+    const h=Number(s.haengt)||0; const f=h? (s.ampel==='rot'?'#f2716c':'#f2cd6c') : '#7fd99a';
+    cx.save(); cx.translate(x,y); cx.rotate(t*.4+i); cx.strokeStyle=f; cx.lineWidth=1.5; cx.strokeRect(-6,-6,12,12); cx.restore();
+    cx.fillStyle=f; cx.beginPath(); cx.arc(x,y,3,0,6.283); cx.fill();
+    if(h){ cx.fillStyle=f+'55'; cx.beginPath(); cx.arc(x,y,10+3*Math.sin(t*4),0,6.283); cx.fill(); beschriftung(de(h), x, y-12, f, 10.5); }
+    beschriftung(s.titel, x, y+20, '#8fa6c8', 10);
+    HIT.push({x,y,r:13,tip:'Station '+s.rang+' · '+s.titel+' · '+de(h)+' hängen',klick:()=>popStation(s,f)}); });
+  beschriftung('Kette · Raumstationen', cxm, cym+ry+30, 'rgba(143,184,242,.5)', 10);
+}
+function bild(now){
+  const t=(now-T0)/1000; HIT=[];
+  himmel(t); GALAXIEN.forEach(g=>galaxie(g,t)); sternbilder(t); kette(t); bahnen();
+  const pl=PLANETEN.map(p=>({p,w:(t*p.tempo*.09)+p.bahn*17})).map(o=>({...o,tief:Math.sin(o.w)}));
+  pl.filter(o=>o.tief<0).forEach(o=>planet(o.p,t)); sonne(t); pl.filter(o=>o.tief>=0).forEach(o=>planet(o.p,t));
+  const h=treffer(maus.x,maus.y); cv.style.cursor=h?'pointer':'default';
+  if(h){ $('tip').style.display='block'; $('tip').textContent=h.tip; $('tip').style.left=Math.min(W-290,maus.x+14)+'px'; $('tip').style.top=(maus.y+14)+'px'; } else $('tip').style.display='none';
+  requestAnimationFrame(bild);
+}
+function treffer(x,y){ let best=null,bd=1e9; HIT.forEach(o=>{ const d=Math.hypot(o.x-x,o.y-y); if(d<o.r && d<bd){ bd=d; best=o; } }); return best; }
+cv.addEventListener('mousemove',e=>{ maus.x=e.clientX; maus.y=e.clientY; });
+cv.addEventListener('mouseleave',()=>{ maus.x=-1; maus.y=-1; });
+cv.addEventListener('click',e=>{ const h=treffer(e.clientX,e.clientY); if(h) h.klick(); else popZu(); });
+
+/* ---------- Popups ---------- */
+function popAuf(html){ $('popInhalt').innerHTML=html; const p=$('pop'); p.classList.add('an'); p.style.left=Math.max(16,Math.min(W-470,maus.x+20))+'px'; p.style.top=Math.max(50,Math.min(H-420,maus.y-40))+'px'; }
+function popZu(){ $('pop').classList.remove('an'); }
+function tabelle(z){ return '<table>'+z.map(([l,v])=>'<tr><td class="l">'+esc(l)+'</td><td class="n">'+esc(v)+'</td></tr>').join('')+'</table>'; }
+function popPlanet(p,f){
+  const gl=GLANZ[p.id];
+  let h='<h2><span class="punkt" style="background:'+f+'"></span>'+esc(p.name)+' · '+esc(p.thema)+'</h2><div class="unter">'+(gl?'Geändert seit deinem letzten Blick: '+esc(gl.alt)+' → '+esc(gl.neu):'Nichts Neues seit deinem letzten Blick.')+'</div>'+tabelle(p.zeilen());
+  if(p.karte && KA && KA.google_laender){ h+='<div class="unter" style="margin-top:12px">Google-Klicks nach Land</div>'+tabelle(KA.google_laender.slice(0,8).map(x=>[String(x.land).toUpperCase(),de(x.klicks)+' Klicks · '+de(x.impr)+' Einbl.'])); }
+  if(p.link) h+='<a class="knopf" href="'+esc(p.link[0])+'"'+(/^https?:/.test(p.link[0])?' target="_blank" rel="noopener"':'')+'>'+esc(p.link[1])+' ↗</a>';
+  popAuf(h); gesehen(p);
+}
+function popSonne(sturm){ const d=DB||{};
+  popAuf('<h2><span class="punkt" style="background:#ffcd6e"></span>Sonne · Datenbank-Last</h2><div class="unter">'+(sturm?'⚠ Notbremse aktiv – Takte pausiert, starten einzeln wieder.':'Ruhig gelb = normal · pulsiert stärker bei Last · rot und Strahlen = Notbremse')+'</div>'
+   +tabelle([['laufende Abfragen',de(d.aktiv)],['wartend',de(d.wartend)],['längste (s)',de(d.laengste_s,1)],['Verbindungen',de(d.verbindungen)+' / '+de(d.max_verbindungen)]])); }
+function popStation(s,f){ popAuf('<h2><span class="punkt" style="background:'+f+'"></span>Station '+s.rang+' · '+esc(s.titel)+'</h2><div class="unter">Die Kette als Raumstationen-Bahn: Produkte fliegen von Eingang bis Frei.</div>'
+   +tabelle([['hängen jetzt',de(s.haengt)],['vor 24 h',de(s.vor24)],['häufigster Grund',s.grund||'–']])+'<a class="knopf" href="cockpit.html">Kette im Cockpit ↗</a>'); }
+async function popWaechter(w,f){
+  if(w.k==='wb_ralph'){ location.href='produkte-tabelle.html?status=Pruefen'; return; }
+  popAuf('<h2><span class="punkt" style="background:'+f+'"></span>'+esc(w.name)+'</h2><div class="unter">'+de(w.n)+' Fälle · '+(w.gate?'Gate-Wächter (blockiert die Freigabe)':'Beobachtung')+'</div><div id="wf">lädt …</div>');
+  if(!Number(w.n)){ $('wf').textContent='Keine Fälle – der Stern leuchtet grün.'; return; }
+  const {data,error}=await client.rpc('cb_admin_cockpit_waechter_faelle',{p_key:w.k,p_limit:30,p_land:null});
+  if(error||!data||!data.ok){ $('wf').textContent='Fehler: '+(error?error.message:(data&&data.fehler)); return; }
+  const rows=data.faelle||data.zeilen||data.rows||[];
+  $('wf').innerHTML=rows.slice(0,30).map(r=>{ const pid=r.Produkt_ID||r.produkt_id||r.pid||''; const name=r.Produktname||r.name||r.Erkannter_Name||r.canonical_name||''; const rest=Object.entries(r).filter(([k])=>!/produkt_?id|produktname|^name$/i.test(k)).slice(0,2).map(([k,v])=>esc(k)+': '+esc(typeof v==='object'?JSON.stringify(v):v)).join(' · ');
+    return '<div class="fall">'+(pid?'<b><a href="produkte-tabelle.html?suche='+encodeURIComponent(pid)+'" style="color:var(--acc)">'+esc(pid)+'</a></b> ':'')+esc(name)+'<br>'+rest+'</div>'; }).join('')||'keine Zeilen';
+}
+addEventListener('keydown',e=>{ if(e.key==='Escape') popZu(); });
+
+/* ---------- Start ---------- */
+requestAnimationFrame(bild);
+ampelLaden(); dbLaden(); rmLaden(); kaLaden();
+setInterval(ampelLaden,60000); setInterval(dbLaden,10000); setInterval(rmLaden,120000); setInterval(kaLaden,600000);
+</script>
+</body></html>
