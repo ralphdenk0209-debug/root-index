@@ -9205,12 +9205,18 @@ var MFAN_GRUPPEN=[
 
   ['t2','','','',[]],
 
+  /* 15.10.2026 (Ralph): "die gesundheitsinformationen sollen auch in so einem menue sein" -
+     die Profil-Bereiche stehen direkt im Bogen, ein Tipp oeffnet den Bereich. */
   ['profil','Mein Profil','shoe','#4fd6c0',[
-    ['Persönliche Daten','shoe','#5ef2a0',function(){ navTo('profil'); }],
+    ['Über mich','shoe','#5ef2a0',function(){ pfMenue('ich'); }],
+    ['Gesundheit','heart','#ff6fa8',function(){ pfMenue('gesund'); }],
+    ['Ziele & Bedarf','sparkle','#ffc24b',function(){ pfMenue('ziele'); }],
+    ['Körpermaße','figure','#b79bff',function(){ pfMenue('masse'); }],
+    ['Wasser & Training','drop','#5ab6ff',function(){ pfMenue('wasser'); }],
+    ['Haushalt & Region','info','#4fd6c0',function(){ pfMenue('region'); }],
     ['Meine Supplements','pill','#5ab6ff',function(){ navTo('supp'); }],
     ['Mein Monat','calendar','#ffc24b',function(){ meinMonatOeffnen(); }],
-    /* 30.09.2026 Webtest M5: Darstellung und RIKI an/aus waren nur ueber Profil → App & Konto zu finden */
-    ['Einstellungen (Darstellung, RIKI)','gear','#8fa79a',function(){ navTo('profil'); setTimeout(function(){ try{ pfTab('app'); }catch(e){} }, 350); }]
+    ['App & Konto','gear','#8fa79a',function(){ pfMenue('app'); }]
   ]],
   /* Ralph 19.09.: "premium soll dann loeschen enthalten, oder? sollte also
      abo & co oder so aehnlich sein." Ja - Abo und Konto sind dieselbe Frage:
@@ -9260,13 +9266,13 @@ function buildFan(){
   var ax=r.right-6, ay=(r.top!=null?r.top:window.innerHeight-60)-4;   /* Ankerpunkt: rechte Oberkante des Knopfes */
   Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); });
 
+  /* 15.10.2026 (Ralph, Variante A): Der Hauptbogen bleibt stehen. Ist eine Gruppe offen,
+     schrumpft er auf Symbole und der Unterbogen klappt LINKS daneben auf - man sieht
+     immer, wo man herkommt. Kein "Zurueck" mehr: anderen Punkt im Hauptbogen antippen. */
+  fanStil();
+  var aktivDy=null, linksRand=0;
   var liste=[];
-  if(_mfanGruppe){
-    var g=MFAN_GRUPPEN.filter(function(x){ return x[0]===_mfanGruppe; })[0];
-    if(g){ liste=g[4].map(function(w){ return {art:'weg', txt:w[0], ico:w[1], col:w[2], tun:w[3]}; }); }
-    /* 03.10.2026 (Ralph): "zurück soll im menü unten sein" - erster Eintrag = unten am Knopf. */
-    liste.unshift({art:'zurueck', txt:'Zurück', ico:'book', col:'#8fa79a'});
-  } else {
+  {
     liste=MFAN_GRUPPEN.map(function(g){
       /* Eine Gruppe mit genau einem Weg braucht kein zweites Blatt - sonst
          tippt man zweimal fuer dasselbe. */
@@ -9282,7 +9288,8 @@ function buildFan(){
      Die Hoehe ist eine laufende Summe, weil ein Trennstrich flacher ist als
      ein Punkt - und der Bogen richtet sich nach dieser WIRKLICHEN Hoehe, nicht
      nach dem Zaehler; sonst knickt er an jedem Trennstrich. */
-  var ENDE=20, BAUCH=140, SCHRITT=50, SCHRITT_T=22;
+  var offen=!!_mfanGruppe;
+  var ENDE=20, BAUCH=offen?26:140, SCHRITT=50, SCHRITT_T=22;
   var summe=22, hoehen=[];
   liste.forEach(function(it){ summe += (it.art==='trenner') ? SCHRITT_T : SCHRITT; hoehen.push(-summe); });
   var unten=hoehen[0], oben=hoehen[hoehen.length-1];
@@ -9295,9 +9302,12 @@ function buildFan(){
       b.className='mfan-item mfan-trenner';
     } else {
       b.type='button';
-      b.className='mfan-item';
-      b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'+esc(it.txt)
-        +(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':'');
+      var aktiv=offen && it.art==='gruppe' && it.ziel===_mfanGruppe;
+      b.className='mfan-item'+(offen?' mfan-klein':'')+(aktiv?' mfan-aktiv':'');
+      b.title=it.txt;
+      b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'
+        +(offen?'':esc(it.txt)+(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':''));
+      if(aktiv) aktivDy=dy;
       b.onclick=function(){ fanKlick(it); };
     }
     b.style.right=(window.innerWidth-ax)+'px';
@@ -9306,10 +9316,44 @@ function buildFan(){
     f.appendChild(b);
     /* Erst im naechsten Bild verschieben, sonst gibt es keinen Uebergang. */
     requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
+    if(it.art!=='trenner') linksRand=Math.min(linksRand, dx-(b.offsetWidth||44));
+  });
+  if(!offen) return;
+  /* Unterbogen links neben dem Hauptbogen, mittig auf Hoehe der offenen Gruppe. */
+  var g=MFAN_GRUPPEN.filter(function(x){ return x[0]===_mfanGruppe; })[0]; if(!g) return;
+  var sub=g[4], n=sub.length, H=n*SCHRITT, mitte=(aktivDy!=null?aktivDy:-200);
+  var unterK=Math.min(-22, mitte+H/2), obenGrenze=-(ay-70);
+  if(unterK-H < obenGrenze) unterK=Math.min(-22, obenGrenze+H);
+  var rechts=linksRand-14, SB=Math.max(0, Math.min(110, ax+rechts-300));
+  sub.forEach(function(w,i){
+    var dy=unterK-i*SCHRITT, anteil=n>1?i/(n-1):0.5;
+    var dx=rechts-Math.round(SB*Math.sin(Math.PI*anteil));
+    var b=document.createElement('button'); b.type='button'; b.className='mfan-item mfan-unter';
+    b.innerHTML='<span class="mfi" style="color:'+w[2]+'">'+riIco(w[1],20)+'</span>'+esc(w[0]);
+    b.onclick=function(){ fanKlick({art:'weg', tun:w[3]}); };
+    b.style.right=(window.innerWidth-ax)+'px'; b.style.top=ay+'px';
+    b.style.transitionDelay=(60+i*28)+'ms';
+    f.appendChild(b);
+    requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
   });
 }
+/* Stil fuer den kleinen Hauptbogen und den Unterbogen - hier statt in index.html. */
+function fanStil(){
+  if(document.getElementById('mfanStil')) return;
+  var st=document.createElement('style'); st.id='mfanStil';
+  st.textContent='.mfan-item.mfan-klein{padding:9px;gap:0;opacity:.6}.mfan.open .mfan-item.mfan-klein{opacity:.6}'
+    +'.mfan.open .mfan-item.mfan-aktiv{opacity:1;box-shadow:0 0 0 3px var(--green,#16a34a),0 6px 18px rgba(0,0,0,.18)}'
+    +'.mfan-item.mfan-unter{white-space:nowrap;max-width:calc(100vw - 130px);overflow:hidden;text-overflow:ellipsis}';
+  document.head.appendChild(st);
+}
+/* Profil-Bereich direkt aus dem Menue oeffnen. */
+function pfMenue(gruppe){
+  navTo('profil');
+  setTimeout(function(){ try{ pfOeffnen(gruppe); }catch(e){} }, 350);
+}
+if(typeof window!=='undefined'){ window.pfMenue=pfMenue; }
 function fanKlick(it){
-  if(it.art==='gruppe'){ _mfanGruppe=it.ziel; buildFan(); return; }
+  if(it.art==='gruppe'){ _mfanGruppe=(_mfanGruppe===it.ziel?null:it.ziel); buildFan(); return; }
   if(it.art==='zurueck'){ _mfanGruppe=null; buildFan(); return; }
   closeFan();
   /* Der Weg traegt seine Aktion selbst - manche wechseln die Seite, manche
@@ -17640,7 +17684,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-04";
+const APP_BUILD = "2026-10-15-05";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
