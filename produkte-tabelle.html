@@ -114,6 +114,33 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
 #zw .form select,#zw .form input{background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px}
 #zw .form .reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 #zw .lab{width:100%;background:var(--card2);color:var(--ink);border:1px solid var(--acc);border-radius:6px;padding:4px 7px;font:inherit;font-size:12.5px}
+/* Ralph prüfen + Maschine (15.10.2026) */
+:root{--v:#b48cf2}
+.pr{font-size:11px;border-radius:99px;padding:1px 8px;border:1px dashed var(--v);color:var(--v);white-space:nowrap}
+.pr.claude{border-style:solid;background:rgba(180,140,242,.14)}
+.mxk{background:transparent;border:1px solid var(--line);color:var(--ink2);border-radius:6px;padding:1px 7px;font:inherit;font-size:11px;cursor:pointer;margin-left:4px}
+.mxk:hover{border-color:var(--v);color:var(--v)}
+#mx{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow:auto}
+#mx.an{display:flex}
+#mx .kasten{background:var(--card);border:1px solid var(--line);border-radius:14px;width:min(860px,100%);padding:16px 18px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+#mx h2{margin:0 0 4px;font-size:15px}
+#mx .unter{color:var(--ink3);font-size:12px;margin-bottom:8px}
+#mx .befund{background:var(--card2);border-left:3px solid var(--v);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12.5px;color:var(--ink2);white-space:pre-line}
+#mx textarea{width:100%;min-height:110px;background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:8px;font:inherit;font-size:13px;resize:vertical}
+#mx .knoepfe{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+#mx button{background:var(--card2);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:6px 11px;font:inherit;font-size:12.5px;cursor:pointer}
+#mx button.haupt{background:var(--v);color:#1a1714;border:0;font-weight:600}
+#mx button:disabled{opacity:.5;cursor:wait}
+.lst{display:grid;grid-template-columns:repeat(8,1fr);gap:6px;margin:10px 0 4px}
+.lst div{background:var(--card2);border-radius:8px;padding:8px 6px;text-align:center;font-size:11.5px;border-top:3px solid var(--line);color:var(--ink3)}
+.lst div b{display:block;font-size:12px;color:var(--ink2);margin-bottom:2px}
+.lst div.durch{border-top-color:var(--g)}.lst div.durch b{color:var(--g)}
+.lst div.haengt{border-top-color:var(--y)}.lst div.haengt b{color:var(--y)}
+.lst div.laeuft{border-top-color:var(--v);animation:puls 1s infinite}.lst div.laeuft b{color:var(--v)}
+@keyframes puls{50%{opacity:.45}}
+#mxNotiz{font-size:12px;color:var(--ink2);white-space:pre-line}
+#mxMeldung{font-size:12.5px;margin-top:6px}
+@media (max-width:700px){.lst{grid-template-columns:repeat(4,1fr)}}
 @media (max-width:700px){.bar input[type=search]{width:100%}}
 </style></head>
 <body>
@@ -121,7 +148,7 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
   <h1>Produkttabelle</h1>
   <input id="suche" type="search" placeholder="Suche: Name, Marke, EAN, P-Nummer" autocomplete="off">
   <input id="marke" type="text" placeholder="Marke beginnt mit …" style="width:150px">
-  <select id="status"><option value="">Status: alle</option><option>Aktiv</option><option>Entwurf</option><option>prüfen</option><option>Aktiv ohne Index</option><option>Abgelehnt</option><option>Inaktiv</option><option value="Ralph">★ Bei Ralph</option></select>
+  <select id="status"><option value="">Status: alle</option><option>Aktiv</option><option>Entwurf</option><option>prüfen</option><option>Aktiv ohne Index</option><option>Abgelehnt</option><option>Inaktiv</option><option value="Ralph">★ Bei Ralph</option><option value="Pruefen">🔍 Ralph prüfen</option></select>
   <select id="markt"><option value="">Markt: alle</option><option>DE</option><option>UK</option><option>FR</option><option>IE</option><option>US</option></select>
   <select id="proseite"><option>50</option><option selected>100</option><option>250</option><option>500</option></select>
   <button onclick="neu()">Suchen</button>
@@ -186,6 +213,22 @@ td.lang:focus{-webkit-line-clamp:unset;display:table-cell;max-height:none}
  <table><thead><tr><th>#</th><th>Text auf dem Etikett</th><th style="width:38%">Stamm-Zutat</th><th>Bewertung</th><th>Status</th></tr></thead><tbody id="zwRumpf"></tbody></table>
  <div class="hinw" style="margin-top:8px">Hinweis: Eine geänderte Stamm-Zutat wird als <b>Namensbrücke</b> gespeichert (Etikett-Name → Stamm-Zutat). Sie gilt dann für alle Produkte mit diesem Namen – so lernt die Maschine dazu. Jede Änderung steht im Verlauf.</div>
 </div></div>
+<div id="mx"><div class="kasten">
+ <h2 id="mxTitel">Durch die Maschine</h2>
+ <div class="unter" id="mxUnter"></div>
+ <div class="befund" id="mxBefund" hidden></div>
+ <textarea id="mxText" spellcheck="false" placeholder="Zutatentext vom Etikett oder von der Herstellerseite einfügen"></textarea>
+ <div class="knoepfe">
+  <button class="haupt" id="mxLos" onclick="mxLos(true)">Text übernehmen &amp; durch die Maschine</button>
+  <button id="mxNur" onclick="mxLos(false)">Ohne Änderung neu durchlaufen</button>
+  <span style="flex:1"></span>
+  <a id="mxLink" target="_blank" rel="noopener" style="align-self:center;font-size:12px">alle 27 Kästen ↗</a>
+  <button onclick="mxZu()">Schließen</button>
+ </div>
+ <div class="lst" id="mxLeiste"></div>
+ <div id="mxNotiz"></div>
+ <div id="mxMeldung"></div>
+</div></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
@@ -206,6 +249,7 @@ const SP = [
   ['ean','EAN',null, r=>esc(r.ean)],
   ['status','Status','status', r=>esc(r.status)],
   ['ralph','★ Ralph',null, r=>r.ralph?'★':''],
+  ['pruef','Prüfung',null, r=>pruefZelle(r)],
   ['markt','Markt',null, r=>esc(r.markt)],
   ['menge','Menge',null, r=>esc(r.menge)],
   ['quelle','Quelle',null, r=>esc(r.quelle)],
@@ -233,11 +277,11 @@ const SP = [
 ];
 const TXT = {verifiziert:'verifiziert',korrigiert:'korrigiert',abweichend:'abweichend',offen:'in Arbeit',vorlegen:'Ralph vorlegen',nicht_lesbar:'nicht lesbar',keine_seite:'keine Seite',ungeprueft:'ungeprüft',sonstiges:'sonstiges'};
 // Gruppen, Farben, Standardbreiten
-const GR = [['','Produkt',['id','name','marke','ean','status','ralph','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
+const GR = [['','Produkt',['id','name','marke','ean','status','ralph','pruef','markt','menge','quelle']],['gr-idx','Index',['idx','bew','a_zut','a_zus','a_nw','nova']],
   ['gr-nw','Nährwerte je 100 g/ml',['kcal','fett','gesf','kh','zucker','bst','prot','salz']],['gr-ns','Nährstoffe laut Etikett',['n_bezug','naehrstoffe']],['gr-zus','Zusatzstoffe',['zus_status','zus_text']],
   ['gr-zut','Zutaten',['zutaten']],['gr-her','Herstellerabgleich',['hersteller','hersteller_url']]];
 const GRK={}, GSTART={}; GR.forEach(g=>{ g[2].forEach((k,j)=>{ GRK[k]=g[0]; if(j===0&&g[0]) GSTART[k]=1; }); });
-const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,ralph:70,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
+const BREITE_STD={id:112,name:260,marke:140,ean:125,status:120,ralph:70,pruef:190,markt:60,menge:80,quelle:170,idx:64,bew:110,a_zut:72,a_zus:72,a_nw:72,nova:60,
   kcal:68,fett:62,gesf:62,kh:62,zucker:66,bst:74,prot:66,salz:62,n_bezug:120,naehrstoffe:320,zus_status:120,zus_text:220,zutaten:440,hersteller:170,hersteller_url:260};
 let BREITE={...BREITE_STD};
 try{ Object.assign(BREITE, JSON.parse(localStorage.getItem('pt-breiten')||'{}')); }catch(e){}
@@ -527,6 +571,78 @@ async function zwSpeichern(){
     +(brueck.length && neu===alt ? ' <span class="hinw">Bleibt die Bindung gleich, trifft die Maschine den Namen schon direkt – dann bitte melden.</span>':'');
 }
 
+/* ---- Ralph prüfen + Durch die Maschine (Ralph jaja 15.10.2026) ----------------------------------
+   Zeigt nur, was der Server sagt: Liste aus shadow_v1.ralph_pruefung, Lauf über cb_admin_ralph_durch_maschine,
+   Stationen über cb_produkt_leiste. Keine eigene Regel hier. */
+function pruefZelle(r){
+  const p=r.pruefung, i=ZEILEN.indexOf(r);
+  const knopf='<button class="mxk" onclick="mxAuf('+i+')" title="Text einfügen und Produkt durch die Maschine schicken">▶ Maschine</button>';
+  if(!p) return knopf;
+  const tip=(p.grund||'')+(p.befund?'\nClaude: '+p.befund:'');
+  return '<span class="pr'+(p.status==='claude_geprueft'?' claude':'')+'" title="'+esc(tip)+'">'+(p.status==='claude_geprueft'?'✓ Claude geprüft':'zu prüfen')+'</span>'+knopf;
+}
+let MX={i:null,poll:null};
+const MX_TITEL=['Eingang','Gelesen','Herkunft','Zerlegt','Gebunden','Bewertet','Wächter','Frei'];
+function mxLeiste(d,laeuft){
+  const k=(d&&d.kaesten)||[];
+  $('mxLeiste').innerHTML=MX_TITEL.map((t,j)=>{ const x=k[j]||{}; const st=laeuft?'laeuft':(x.status||'leer');
+    const txt=laeuft?'läuft …':(x.status==='durch'?'durch':x.status==='haengt'?'hängt':x.status==='uebersprungen'?'—':'–');
+    return '<div class="'+st+'" title="'+esc(x.notiz||'')+'"><b>'+t+'</b>'+txt+'</div>'; }).join('');
+  const h=k.filter(x=>x.status==='haengt').map(x=>x.titel+': '+x.notiz);
+  $('mxNotiz').textContent=laeuft?'':(h.length?'Hängt an:\n'+h.join('\n'):'');
+}
+async function mxStand(){
+  const r=ZEILEN[MX.i]; if(!r) return null;
+  const {data,error}=await client.rpc('cb_produkt_leiste',{p_id:r.id});
+  if(error){ $('mxMeldung').innerHTML='<span style="color:var(--r)">'+esc(error.message)+'</span>'; return null; }
+  mxLeiste(data,false); return data;
+}
+async function mxAuf(i){
+  MX.i=i; const r=ZEILEN[i]; const p=r.pruefung;
+  $('mxTitel').textContent=(r.marke?r.marke+' · ':'')+(r.name||r.id);
+  $('mxUnter').textContent=r.id+(r.ean?' · EAN '+r.ean:'')+' · Status '+(r.status||'–')+(p?' · auf der Liste seit '+datum(p.seit):'');
+  const bf=p?((p.grund?'Warum auf der Liste: '+p.grund:'')+(p.befund?'\nClaude geprüft'+(p.claude_am?' ('+datum(p.claude_am)+')':'')+': '+p.befund:'\nClaude hat noch nicht geprüft.')):'';
+  $('mxBefund').hidden=!bf; $('mxBefund').textContent=bf;
+  $('mxText').value=r.zutaten||'';
+  $('mxLink').href='maschine-lauf.html?p='+encodeURIComponent(r.id);
+  $('mxMeldung').textContent=''; $('mx').classList.add('an');
+  mxLeiste(null,false); await mxStand();
+}
+function mxZu(){ $('mx').classList.remove('an'); if(MX.poll){ clearInterval(MX.poll); MX.poll=null; } }
+async function mxLos(mitText){
+  const r=ZEILEN[MX.i]; if(!r) return;
+  const text=mitText?$('mxText').value.trim():null;
+  if(mitText && !text){ $('mxMeldung').innerHTML='<span style="color:var(--r)">Kein Text eingefügt.</span>'; return; }
+  $('mxLos').disabled=$('mxNur').disabled=true; if(MX.poll){ clearInterval(MX.poll); MX.poll=null; }
+  mxLeiste(null,true); $('mxMeldung').textContent='Die Maschine läuft – Zerlegen, Binden, Bewerten, Freigabe …';
+  const t0=Date.now();
+  const {data,error}=await client.rpc('cb_admin_ralph_durch_maschine',{p_id:r.id,p_text:text});
+  $('mxLos').disabled=$('mxNur').disabled=false;
+  if(error||!data||!data.ok){ mxLeiste(null,false); await mxStand(); $('mxMeldung').innerHTML='<span style="color:var(--r)">'+esc(error?error.message:(data&&(data.grund||data.schritt))||'Fehler')+'</span>'; return; }
+  mxLeiste(data.leiste,false);
+  const sek=Math.round((Date.now()-t0)/1000);
+  let m=(data.text_neu?'Text übernommen. ':'')+'Durchlauf in '+sek+' s. ';
+  if(data.zurueckgerollt) m+='⚠ Mit diesem Text gäbe es mehr Fehler als vorher – die Maschine hat den alten Text und die alten Zeilen behalten. Dein Text ist gespeichert im Protokoll ('+(data.grund||'')+'). ';
+  if(String(data.freigabe||'').startsWith('FREIGEGEBEN') && data.status==='Aktiv') m='<span style="color:var(--g)">✓ Freigegeben – fällt aus der Liste.</span> '+m;
+  else { m+='Noch nicht freigegeben ('+(data.freigabe||'–')+'). Ich schaue alle 15 Sekunden nach (der Freigabe-Takt läuft alle 5 Minuten).'; mxBeobachten(); }
+  $('mxMeldung').innerHTML=m;
+  zeileNeu(MX.i);
+}
+function mxBeobachten(){
+  let n=0; MX.poll=setInterval(async()=>{ n++; const d=await mxStand();
+    if(d && (d.kaesten||[])[7] && d.kaesten[7].status==='durch'){ clearInterval(MX.poll); MX.poll=null; $('mxMeldung').innerHTML='<span style="color:var(--g)">✓ Freigegeben – fällt aus der Liste.</span>'; zeileNeu(MX.i); }
+    if(n>=24){ clearInterval(MX.poll); MX.poll=null; } },15000);
+}
+async function zeileNeu(i){
+  const r=ZEILEN[i]; if(!r) return;
+  const t=await client.rpc('cb_admin_produkt_tabelle',{p_suche:r.id,p_marke:null,p_status:null,p_hersteller:null,p_markt:null,p_sort:'id',p_ab:false,p_limit:5,p_offset:0});
+  const z=(t.data&&t.data.zeilen||[]).find(x=>x.id===r.id); if(!z) return;
+  ZEILEN[i]=z; const tr=$('rumpf').querySelector('tr[data-i="'+i+'"]'); if(!tr) return;
+  const nb=document.createElement('tbody'); nb.innerHTML=zeileHtml(z,i); const ntr=nb.firstElementChild; ntr.classList.add('gespeichert');
+  if($('status').value==='Pruefen' && !z.pruefung) ntr.style.opacity='.4';
+  tr.replaceWith(ntr); breitenSetzen();
+}
+(function(){ const q=new URLSearchParams(location.search); const st=q.get('status'); if(st) $('status').value=st; const su=q.get('suche'); if(su) $('suche').value=su; })();
 stand(); laden();
 </script>
 </body></html>
