@@ -14638,6 +14638,8 @@ async function scanSofort(ean, d){
     if(n && typeof nwZeile==="function") h+=nwZeile(n);
     h+=vorlBanner('Root Index hat das Produkt eben aus <b>'+esc((d&&d.herkunftText)||"OpenFoodFacts")+'</b> angelegt und bewertet. '
       +'Es ist noch ein Entwurf &ndash; die Prüfung gegen das Etikett folgt.');
+    /* 15.10.2026 (Ralph, Grana Padano): hier fehlte der Weg zu den Etikettfotos. */
+    h+='<div style="text-align:center">'+etikettCtaBtn(ean)+'</div>';
     return {stufe:"sofort", produkt_id:r.produkt_id, html:h};
   }catch(e){ console.error("[Scan sofort]", e); return null; }
 }
@@ -17565,7 +17567,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-02";
+const APP_BUILD = "2026-10-15-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
