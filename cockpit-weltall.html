@@ -186,8 +186,12 @@ function planet(p,t){
   const glanz=GLANZ[p.id];
   if(glanz){ const a=.35+.3*Math.sin(t*4); const gl=cx.createRadialGradient(q.x,q.y,R,q.x,q.y,R*3.4); gl.addColorStop(0,'rgba(255,240,180,'+a+')'); gl.addColorStop(1,'rgba(255,240,180,0)');
     cx.fillStyle=gl; cx.beginPath(); cx.arc(q.x,q.y,R*3.4,0,6.283); cx.fill(); }
-  if(p.ring||p.ringSteil){ cx.save(); cx.translate(q.x,q.y); cx.rotate(p.ringSteil?1.25:-.35); cx.strokeStyle=p.ring?'rgba(232,212,160,.75)':'rgba(170,230,235,.45)'; cx.lineWidth=p.ring?R*.32:1.2;
-    cx.beginPath(); cx.ellipse(0,0,R*2.1,R*.62,0,Math.PI,6.283); cx.stroke(); cx.restore(); }
+  const ringHaelfte=(von,bis)=>{ if(!(p.ring||p.ringSteil)) return; cx.save(); cx.translate(q.x,q.y); cx.rotate(p.ringSteil?1.25:-.35);
+    cx.strokeStyle=p.ring?'rgba(232,212,160,.8)':'rgba(170,230,235,.5)'; cx.lineWidth=p.ring?R*.32:1.2;
+    cx.beginPath(); cx.ellipse(0,0,R*2.1,R*.62,0,von,bis); cx.stroke();
+    if(p.ring){ cx.strokeStyle='rgba(200,170,120,.45)'; cx.lineWidth=R*.12; cx.beginPath(); cx.ellipse(0,0,R*1.6,R*.47,0,von,bis); cx.stroke(); }
+    cx.restore(); };
+  ringHaelfte(Math.PI,2*Math.PI); /* hintere Haelfte hinter dem Planeten */
   const g=cx.createRadialGradient(q.x-R*.4,q.y-R*.4,R*.15,q.x,q.y,R); g.addColorStop(0,p.farbe[0]); g.addColorStop(1,p.farbe[1]);
   cx.fillStyle=g; cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.fill();
   if(p.baender){ cx.save(); cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.clip(); cx.strokeStyle='rgba(120,70,40,.35)'; cx.lineWidth=R*.14;
@@ -201,6 +205,7 @@ function planet(p,t){
   /* Schatten zur Sonne hin */
   const {x:sx,y:sy}=SONNE(); const a=Math.atan2(q.y-sy,q.x-sx); const sh=cx.createLinearGradient(q.x-Math.cos(a)*R,q.y-Math.sin(a)*R,q.x+Math.cos(a)*R,q.y+Math.sin(a)*R);
   sh.addColorStop(0,'rgba(0,0,0,0)'); sh.addColorStop(1,'rgba(0,0,10,.55)'); cx.fillStyle=sh; cx.beginPath(); cx.arc(q.x,q.y,R,0,6.283); cx.fill();
+  ringHaelfte(0,Math.PI); /* vordere Haelfte vor dem Planeten */
   beschriftung(p.name+' · '+p.thema, q.x, q.y+R+13, glanz?'#ffe9a8':'#9c968a', 10.5);
   HIT.push({x:q.x,y:q.y,r:Math.max(10,R*1.3),tip:p.name+' = '+p.thema+(glanz?' · geändert: '+glanz.alt+' → '+glanz.neu:''),klick:()=>popPlanet(p,p.farbe[0]),z:q.tief});
 }
