@@ -136,7 +136,7 @@ const GALAXIEN = [
 
 /* ---------- Zeichnen ---------- */
 const cv=$('c'), cx=cv.getContext('2d'); let W=0,H=0,DPR=1, HINTERGRUND=[], HIT=[], T0=performance.now(), maus={x:-1,y:-1};
-function groesse(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cx.setTransform(DPR,0,0,DPR,0,0);
+function groesse(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; cx.setTransform(DPR,0,0,DPR,0,0);
   HINTERGRUND=Array.from({length:Math.round(W*H/2600)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,p:Math.random()*6.3,s:.5+Math.random()*1.5})); }
 addEventListener('resize',groesse); groesse();
 const SONNE = () => ({x:W*.5, y:H*.47});
