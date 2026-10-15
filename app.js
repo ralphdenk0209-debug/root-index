@@ -8917,6 +8917,8 @@ function startKennzahlen(sum, prof){
      Die Note beschreibt die QUALITAET des Gegessenen - solange weniger als die Haelfte
      des Tagesziels erfasst ist, heisst es ehrlich „Bisher". Gleiche Regel in der App. */
   var subTxt = hatDaten ? (((kcalSoll>0 && kpct<50)?'Bisher: ':'Dein Tag: ')+bew.toLowerCase()) : 'Noch nichts erfasst';
+  /* 15.10.2026, Ralph: Ring, Zahl und Urteil in der Mitte folgen dem Index (vorher immer gruen). */
+  var kernCol = !hatDaten ? '#a8a29e' : (bew==='Sehr gut'?'#7cff9b':bew==='Gut'?'#c5f36b':bew==='Mittel'?'#ffb84d':'#ff7b7b');
   /* Die vier Achsen des TAGES (Schnitt ueber alle Eintraege mit Score).
      Fehlt eine, bleibt ihre Bahn grau - wir erfinden keinen Wert. */
   var A4=[
@@ -8963,11 +8965,11 @@ function startKennzahlen(sum, prof){
     +'<text x="26" y="166" font-size="10" fill="rgba(255,255,255,.55)">Verarbeitung <tspan font-size="11" font-weight="700" fill="'+(A4[2].pct==null?'#a8a29e':A4[2].f)+'">'+(A4[2].pct==null?'–':Math.round(A4[2].pct*100)+' %')+'</tspan></text>'
     +'<text x="274" y="166" font-size="10" fill="rgba(255,255,255,.55)" text-anchor="end">Nährwert <tspan font-size="11" font-weight="700" fill="'+(A4[3].pct==null?'#a8a29e':A4[3].f)+'">'+(A4[3].pct==null?'–':Math.round(A4[3].pct*100)+' %')+'</tspan></text>'
     +'<circle cx="150" cy="88" r="36" fill="#0a1710" stroke="rgba(255,255,255,.14)" stroke-width="2"/>'
-    +'<circle cx="150" cy="88" r="36" fill="none" stroke="#7cff9b" stroke-width="2.5" opacity="0" class="'+uid+'-r"/>'
+    +'<circle cx="150" cy="88" r="36" fill="none" stroke="'+kernCol+'" stroke-width="2.5" opacity="0" class="'+uid+'-r"/>'
     /* Die Zahl IM Kreis, die Bewertung DARUNTER - ausserhalb. Ein Text, der in
        einen Kreis soll, ist immer zu lang: der Kreis wird nicht breiter, das Wort schon. */
-    +'<text x="150" y="100" text-anchor="middle" font-size="36" font-weight="700" fill="#7cff9b" letter-spacing="-1" opacity="0" class="'+uid+'-n">'+kernTxt+'</text>'
-    +'<text x="150" y="140" text-anchor="middle" font-size="11.5" font-weight="700" fill="#7cff9b" opacity="0" class="'+uid+'-s">'+subTxt+'</text>'
+    +'<text x="150" y="100" text-anchor="middle" font-size="36" font-weight="700" fill="'+kernCol+'" letter-spacing="-1" opacity="0" class="'+uid+'-n">'+kernTxt+'</text>'
+    +'<text x="150" y="140" text-anchor="middle" font-size="11.5" font-weight="700" fill="'+kernCol+'" opacity="0" class="'+uid+'-s">'+subTxt+'</text>'
   +'</svg>';
 
   var MK=[
@@ -9013,7 +9015,7 @@ function startKennzahlen(sum, prof){
     'Makro-Profil pro 100 g: Plus für Eiweiß & Ballaststoffe, Abzug für Zucker, gesättigtes Fett und Salz – und dafür, wenn viele Kohlenhydrate auf wenig Ballaststoffe kommen (Blutzucker).'
   ];
   var rueck = '<div class="fxBack" style="padding:14px 14px">'
-    +'<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px">Warum <b style="color:#7cff9b">'+kernTxt+'</b>? Schnitt deiner heutigen Einträge</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,.5);margin-bottom:2px">Warum <b style="color:'+kernCol+'">'+kernTxt+'</b>? Schnitt deiner heutigen Einträge</div>'
     + A4.map(function(a,i){
         var pctT=a.pct==null?'–':Math.round(a.pct*100)+' %';
         var pts =a.v==null?'–':Math.round(a.v)+' / '+a.max;
@@ -17552,7 +17554,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-14-03";
+const APP_BUILD = "2026-10-15-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
