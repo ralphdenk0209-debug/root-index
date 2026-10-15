@@ -5,7 +5,7 @@
      Erster Entwurf neben cockpit.html. Gleiche Daten (cb_admin_cockpit_ampel, cb_admin_cockpit_dblast,
      cb_admin_rueckmeldungen, cb_admin_cockpit_karte, cb_admin_cockpit_waechter_faelle), nichts wird hier nachgerechnet.
      Sonne = Datenbank-Last · Planeten = interne Zahlen (leuchten bei Aenderung, bis geoeffnet) · Erde + Mond = Nutzer/Scans ·
-     Sternbilder = Waechter (Farbe wie Cockpit) · Raumstationen-Bahn = Kette · Galaxien = Links. -->
+     Sternbilder = Waechter (Farbe wie Cockpit) · Raumstation = Kette · Galaxien = Links. -->
 <style>
 :root{--ink:#f1ede4;--ink2:#b9b2a5;--ink3:#7d776c;--g:#7fd99a;--y:#f2cd6c;--r:#f2716c;--b:#8fb8f2;--v:#b48cf2;--acc:#e6a15a}
 *{box-sizing:border-box}
@@ -43,7 +43,7 @@ canvas{display:block;position:fixed;inset:0;cursor:default}
 <div id="tip"></div>
 <div id="pop"><button class="zx" onclick="popZu()">×</button><div id="popInhalt"></div></div>
 <div id="hinweis">Kein Zugriff – bitte <a href="admin.html">im Admin anmelden</a>, dann neu laden.</div>
-<div id="fuss">Sonne = Datenbank-Last · Planeten leuchten, wenn sich etwas geändert hat · Sterne = Wächter · Bahn unten = Kette · Klick öffnet</div>
+<div id="fuss">Sonne = Datenbank-Last · Planeten leuchten, wenn sich etwas geändert hat · Sterne = Wächter (leuchten nur, wenn sie melden) · Raumstation = Kette · Klick öffnet</div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
@@ -102,12 +102,12 @@ function gesehen(p){ const w=p.wert(); if(w!=null){ GESEHEN[p.id]=String(w); try
 
 /* ---------- Sternbilder = Wächter ---------- */
 const BILDER = [
-  {name:'Großer Wagen', ort:[.07,.10,.26,.20], p:[[0,.35],[.18,.28],[.33,.32],[.48,.42],[.55,.66],[.82,.7],[.88,.42]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
-  {name:'Orion', ort:[.80,.08,.14,.30], p:[[.2,.12],[.8,.15],[.5,0],[.38,.5],[.5,.53],[.62,.56],[.25,.98],[.8,.95],[.5,.75]], l:[[2,0],[2,1],[0,3],[1,5],[3,4],[4,5],[3,6],[5,7],[4,8]]},
-  {name:'Kassiopeia', ort:[.40,.04,.20,.10], p:[[0,.2],[.25,.8],[.5,.35],[.75,.85],[1,.25]], l:[[0,1],[1,2],[2,3],[3,4]]},
-  {name:'Kleiner Wagen', ort:[.04,.72,.20,.16], p:[[0,0],[.15,.14],[.3,.22],[.45,.38],[.72,.34],[.78,.6],[.5,.66]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
-  {name:'Löwe', ort:[.80,.62,.17,.18], p:[[.12,.05],[.05,.28],[.15,.48],[.32,.52],[.26,.22],[.6,.42],[.95,.55],[.66,.8],[.36,.78]], l:[[0,4],[4,1],[1,2],[2,3],[3,5],[5,6],[6,7],[7,8],[8,3]]},
-  {name:'Schwan', ort:[.60,.08,.10,.18], p:[[.5,0],[.5,.42],[.5,1],[0,.36],[1,.48]], l:[[0,1],[1,2],[3,1],[1,4]]},
+  {name:'Großer Wagen', ort:[.02,.05,.20,.16], p:[[0,.35],[.18,.28],[.33,.32],[.48,.42],[.55,.66],[.82,.7],[.88,.42]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+  {name:'Orion', ort:[.84,.05,.12,.24], p:[[.2,.12],[.8,.15],[.5,0],[.38,.5],[.5,.53],[.62,.56],[.25,.98],[.8,.95],[.5,.75]], l:[[2,0],[2,1],[0,3],[1,5],[3,4],[4,5],[3,6],[5,7],[4,8]]},
+  {name:'Kassiopeia', ort:[.03,.30,.15,.08], p:[[0,.2],[.25,.8],[.5,.35],[.75,.85],[1,.25]], l:[[0,1],[1,2],[2,3],[3,4]]},
+  {name:'Kleiner Wagen', ort:[.03,.74,.17,.14], p:[[0,0],[.15,.14],[.3,.22],[.45,.38],[.72,.34],[.78,.6],[.5,.66]], l:[[0,1],[1,2],[2,3],[3,4],[4,5],[5,6],[6,3]]},
+  {name:'Löwe', ort:[.80,.62,.16,.15], p:[[.12,.05],[.05,.28],[.15,.48],[.32,.52],[.26,.22],[.6,.42],[.95,.55],[.66,.8],[.36,.78]], l:[[0,4],[4,1],[1,2],[2,3],[3,5],[5,6],[6,7],[7,8],[8,3]]},
+  {name:'Schwan', ort:[.79,.33,.07,.14], p:[[.5,0],[.5,.42],[.5,1],[0,.36],[1,.48]], l:[[0,1],[1,2],[3,1],[1,4]]},
 ];
 let STERNE=[];
 function sterneZuordnen(){
@@ -130,7 +130,7 @@ const GALAXIEN = [
   {name:'Newsletter', url:'newsletter.html', x:.10, y:.61, farbe:'#d3a2ff'},
   {name:'Produkttabelle', url:'produkte-tabelle.html', x:.91, y:.41, farbe:'#ffc98f'},
   {name:'Steuerung', url:'steuerung.html', x:.93, y:.53, farbe:'#9fe7d0'},
-  {name:'Instagram', url:'https://www.instagram.com/root_index.de/', x:.75, y:.10, farbe:'#ff9fc4'},
+  {name:'Instagram', url:'https://www.instagram.com/root_index.de/', x:.76, y:.08, farbe:'#ff9fc4'},
   {name:'App Store', url:'appstore.html', x:.96, y:.86, farbe:'#c9d6ff'},
 ];
 
@@ -139,8 +139,8 @@ const cv=$('c'), cx=cv.getContext('2d'); let W=0,H=0,DPR=1, HINTERGRUND=[], HIT=
 function groesse(){ DPR=Math.min(2,window.devicePixelRatio||1); W=innerWidth; H=innerHeight; cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+'px'; cv.style.height=H+'px'; cx.setTransform(DPR,0,0,DPR,0,0);
   HINTERGRUND=Array.from({length:Math.round(W*H/2600)},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.2,p:Math.random()*6.3,s:.5+Math.random()*1.5})); }
 addEventListener('resize',groesse); groesse();
-const SONNE = () => ({x:W*.5, y:H*.47});
-const SKALA = () => Math.min(W*.42, H*.62);
+const SONNE = () => ({x:W*.5, y:H*.5});
+const SKALA = () => Math.min(W*.30, H*.46);
 
 function himmel(t){
   const g=cx.createRadialGradient(W*.5,H*.47,0,W*.5,H*.47,Math.max(W,H)*.8);
@@ -156,14 +156,14 @@ function galaxie(g,t){
   cx.save(); cx.translate(x,y); cx.scale(1,.55); cx.rotate(rot);
   const kern=cx.createRadialGradient(0,0,0,0,0,R*.5); kern.addColorStop(0,'rgba(255,250,235,.9)'); kern.addColorStop(1,'rgba(255,250,235,0)');
   for(let arm=0;arm<2;arm++){ for(let i=0;i<70;i++){ const f=i/70, a=arm*Math.PI+f*4.2, rr=R*f;
-      cx.fillStyle=g.farbe; cx.globalAlpha=(1-f)*.55; cx.beginPath(); cx.arc(Math.cos(a)*rr,Math.sin(a)*rr,1.6*(1-f)+.4,0,6.283); cx.fill(); } }
+      cx.fillStyle=g.farbe; cx.globalAlpha=(1-f)*.4; cx.beginPath(); cx.arc(Math.cos(a)*rr,Math.sin(a)*rr,1.6*(1-f)+.4,0,6.283); cx.fill(); } }
   cx.globalAlpha=1; cx.fillStyle=kern; cx.beginPath(); cx.arc(0,0,R*.5,0,6.283); cx.fill(); cx.restore();
   beschriftung(g.name, x, y+R*.7, '#9a93a8');
   HIT.push({x,y,r:R*.9,tip:'Galaxie '+g.name+' · Klick öffnet',klick:()=>{ if(/^https?:/.test(g.url)) window.open(g.url,'_blank','noopener'); else location.href=g.url; }});
 }
 function beschriftung(t,x,y,f,gr){ cx.font=(gr||11)+'px "IBM Plex Sans",sans-serif'; cx.textAlign='center'; cx.fillStyle=f||'#b9b2a5'; cx.fillText(t,x,y); }
 function sonne(t){
-  const {x,y}=SONNE(); const R=Math.min(W,H)*.055;
+  const {x,y}=SONNE(); const R=Math.min(W,H)*.04;
   const db=DB||{}; const anteil=Math.min(1,((Number(db.aktiv)||0)+(Number(db.wartend)||0)*2)/12 + (Number(db.verbindungen)||0)/(Number(db.max_verbindungen)||90)*.4);
   const sturm = ((A&&A.mehr&&A.mehr.waechter&&A.mehr.waechter.alle)||[]).some(w=>w.k==='wb_lastbremse'&&Number(w.n)>0);
   const farbe = sturm?[255,90,70]: anteil>.6?[255,140,70]: [255,205,110];
@@ -175,14 +175,14 @@ function sonne(t){
       cx.strokeStyle='rgba(255,120,80,.5)'; cx.lineWidth=2; cx.beginPath(); cx.moveTo(x+Math.cos(a)*R,y+Math.sin(a)*R); cx.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l); cx.stroke(); } }
   const k=cx.createRadialGradient(x-R*.3,y-R*.3,R*.1,x,y,R); k.addColorStop(0,'#fffbe8'); k.addColorStop(.6,'rgb('+farbe+')'); k.addColorStop(1,'rgba('+farbe.map(v=>Math.round(v*.7))+',1)');
   cx.fillStyle=k; cx.beginPath(); cx.arc(x,y,R*puls,0,6.283); cx.fill();
-  beschriftung('Sonne · Datenbank-Last', x, y+R*1.9, '#e6c99a');
+  beschriftung('Sonne · Datenbank-Last', x, y+R+16, '#e6c99a');
   HIT.push({x,y,r:R*1.2,tip:'Sonne = Datenbank-Last'+(sturm?' · Notbremse aktiv!':''),klick:()=>popSonne(sturm)});
 }
-function bahnPunkt(bahn,winkel){ const {x,y}=SONNE(); const rx=SKALA()*bahn, ry=rx*.36; return {x:x+Math.cos(winkel)*rx, y:y+Math.sin(winkel)*ry, tief:Math.sin(winkel)}; }
+function bahnPunkt(bahn,winkel){ const {x,y}=SONNE(); const r=SKALA()*bahn; return {x:x+Math.cos(winkel)*r, y:y+Math.sin(winkel)*r, tief:1}; }
 function bahnen(){ const {x,y}=SONNE(); cx.strokeStyle='rgba(255,255,255,.06)'; cx.lineWidth=1;
-  PLANETEN.forEach(p=>{ const rx=SKALA()*p.bahn; cx.beginPath(); cx.ellipse(x,y,rx,rx*.36,0,0,6.283); cx.stroke(); }); }
+  PLANETEN.forEach(p=>{ const r=SKALA()*p.bahn; cx.beginPath(); cx.arc(x,y,r,0,6.283); cx.stroke(); }); }
 function planet(p,t){
-  const w=(t*p.tempo*.09)+p.bahn*17; const q=bahnPunkt(p.bahn,w); const s=Math.min(W,H)/900; const R=p.r*s*(.85+.25*(q.tief+1)/2);
+  const w=(t*p.tempo*.09)+p.bahn*17; const q=bahnPunkt(p.bahn,w); const s=Math.min(W,H)/900; const R=p.r*s;
   const glanz=GLANZ[p.id];
   if(glanz){ const a=.35+.3*Math.sin(t*4); const gl=cx.createRadialGradient(q.x,q.y,R,q.x,q.y,R*3.4); gl.addColorStop(0,'rgba(255,240,180,'+a+')'); gl.addColorStop(1,'rgba(255,240,180,0)');
     cx.fillStyle=gl; cx.beginPath(); cx.arc(q.x,q.y,R*3.4,0,6.283); cx.fill(); }
@@ -207,40 +207,40 @@ function planet(p,t){
 function sternbilder(t){
   const drift = Math.sin(t*.05)*.006;
   BILDER.forEach((b,bi)=>{ const [ox,oy,bw,bh]=b.ort; const pts=b.p.map(([px,py])=>[(ox+px*bw+drift)*W,(oy+py*bh)*H]);
-    cx.strokeStyle='rgba(170,180,230,.16)'; cx.lineWidth=1; b.l.forEach(([i,j])=>{ cx.beginPath(); cx.moveTo(pts[i][0],pts[i][1]); cx.lineTo(pts[j][0],pts[j][1]); cx.stroke(); });
-    const ly=Math.max(...pts.map(p=>p[1]))+16; beschriftung(b.name+(bi===0?' · Gate-Wächter':''), (ox+bw/2)*W, ly, 'rgba(170,180,230,.45)', 10);
+    cx.strokeStyle='rgba(170,180,230,.08)'; cx.lineWidth=1; b.l.forEach(([i,j])=>{ cx.beginPath(); cx.moveTo(pts[i][0],pts[i][1]); cx.lineTo(pts[j][0],pts[j][1]); cx.stroke(); });
+    const ly=Math.max(...pts.map(p=>p[1]))+16; beschriftung(b.name+(bi===0?' · Gate-Wächter':''), (ox+bw/2)*W, ly, 'rgba(170,180,230,.30)', 10);
     b.pts=pts; });
   STERNE.forEach(s=>{ let x,y; if(s.bild>=0){ [x,y]=BILDER[s.bild].pts[s.pi]; } else { x=s.frei[0]*W; y=s.frei[1]*H; }
-    const n=Number(s.w.n)||0, f=sternFarbe(s.w); const R=(n?5.5:3.6)+Math.min(4,Math.log10(n+1)*1.6);
-    const fl = n? (.75+.25*Math.sin(t*3+x)) : (.8+.2*Math.sin(t*1.3+y));
+    const n=Number(s.w.n)||0, f=sternFarbe(s.w);
+    if(!n){ /* still: kleiner, ruhiger Stern */
+      cx.globalAlpha=.45+.2*Math.sin(t*1.1+x); cx.fillStyle=s.w.k==='wb_ralph'?'#cbb8f0':'#dfe6f0'; cx.beginPath(); cx.arc(x,y,1.6,0,6.283); cx.fill(); cx.globalAlpha=1;
+      HIT.push({x,y,r:8,tip:s.w.name+' · 0 Fälle',klick:()=>popWaechter(s.w,'#7fd99a')}); return; }
+    const R=4.5+Math.min(4,Math.log10(n+1)*1.6); const fl=.75+.25*Math.sin(t*3+x);
     const gl=cx.createRadialGradient(x,y,0,x,y,R*4); gl.addColorStop(0,f); gl.addColorStop(.25,f+'88'); gl.addColorStop(1,f+'00');
     cx.globalAlpha=fl; cx.fillStyle=gl; cx.beginPath(); cx.arc(x,y,R*4,0,6.283); cx.fill();
     cx.strokeStyle=f; cx.lineWidth=1; cx.beginPath(); cx.moveTo(x-R*2.2,y); cx.lineTo(x+R*2.2,y); cx.moveTo(x,y-R*2.2); cx.lineTo(x,y+R*2.2); cx.stroke();
     cx.fillStyle='#fff'; cx.beginPath(); cx.arc(x,y,R*.45,0,6.283); cx.fill(); cx.globalAlpha=1;
-    if(n) beschriftung(de(n), x, y-R-6, f, 10.5);
+    beschriftung(de(n), x, y-R-6, f, 10.5);
     HIT.push({x,y,r:Math.max(9,R*1.6),tip:s.w.name+' · '+de(n)+' Fälle'+(s.w.gate?' · Gate':''),klick:()=>popWaechter(s.w,f)}); });
 }
 function kette(t){
+  /* Kette = eine Raumstation am Rand. Ruhig, solange nichts haengt; haengt etwas, blinkt sie gelb/rot mit Zahl. */
   const st=(A&&A.kette&&A.kette.stationen)||[]; if(!st.length) return;
-  const cxm=W*.5, cym=H*.86, rx=W*.30, ry=H*.055; const n=st.length;
-  cx.strokeStyle='rgba(143,184,242,.18)'; cx.lineWidth=1.2; cx.setLineDash([3,6]); cx.beginPath(); cx.ellipse(cxm,cym,rx,ry,0,0,6.283); cx.stroke(); cx.setLineDash([]);
-  /* fliessende Lichter = Produkte auf dem Weg */
-  for(let k=0;k<26;k++){ const f=((t*.05+k/26)%1); const a=Math.PI*.98 - f*Math.PI*.96; const x=cxm+Math.cos(a)*rx, y=cym+Math.sin(a)*ry;
-    cx.fillStyle='rgba(180,215,255,'+(.25+.5*Math.sin(f*Math.PI))+')'; cx.beginPath(); cx.arc(x,y,1.6,0,6.283); cx.fill(); }
-  st.forEach((s,i)=>{ const a=Math.PI*.98 - i/(n-1)*Math.PI*.96; const x=cxm+Math.cos(a)*rx, y=cym+Math.sin(a)*ry;
-    const h=Number(s.haengt)||0; const f=h? (s.ampel==='rot'?'#f2716c':'#f2cd6c') : '#7fd99a';
-    cx.save(); cx.translate(x,y); cx.rotate(t*.4+i); cx.strokeStyle=f; cx.lineWidth=1.5; cx.strokeRect(-6,-6,12,12); cx.restore();
-    cx.fillStyle=f; cx.beginPath(); cx.arc(x,y,3,0,6.283); cx.fill();
-    if(h){ cx.fillStyle=f+'55'; cx.beginPath(); cx.arc(x,y,10+3*Math.sin(t*4),0,6.283); cx.fill(); beschriftung(de(h), x, y-12, f, 10.5); }
-    beschriftung(s.titel, x, y+20, '#8fa6c8', 10);
-    HIT.push({x,y,r:13,tip:'Station '+s.rang+' · '+s.titel+' · '+de(h)+' hängen',klick:()=>popStation(s,f)}); });
-  beschriftung('Kette · Raumstationen', cxm, cym+ry+30, 'rgba(143,184,242,.5)', 10);
+  const h=st.reduce((a,s)=>a+(Number(s.haengt)||0),0), rot=st.some(s=>s.ampel==='rot'&&Number(s.haengt)>0);
+  const f=h?(rot?'#f2716c':'#f2cd6c'):'#9fb4d6'; const x=W*.86, y=H*.86;
+  cx.save(); cx.translate(x,y); cx.rotate(t*.15);
+  cx.strokeStyle=f; cx.lineWidth=1.4; cx.globalAlpha=h?(.7+.3*Math.sin(t*4)):.75;
+  cx.strokeRect(-22,-4,44,8); cx.beginPath(); cx.arc(0,0,7,0,6.283); cx.stroke();
+  cx.fillStyle=f; cx.fillRect(-34,-9,10,18); cx.fillRect(24,-9,10,18); cx.restore(); cx.globalAlpha=1;
+  if(h){ cx.fillStyle=f+'33'; cx.beginPath(); cx.arc(x,y,30+4*Math.sin(t*4),0,6.283); cx.fill(); beschriftung(de(h)+' hängen', x, y-32, f, 11); }
+  beschriftung('Raumstation · Kette', x, y+34, '#8fa6c8', 10.5);
+  HIT.push({x,y,r:36,tip:'Raumstation = Kette · '+de(h)+' Produkte hängen',klick:()=>popKette(st)});
 }
 function bild(now){
   const t=(now-T0)/1000; HIT=[];
   himmel(t); GALAXIEN.forEach(g=>galaxie(g,t)); sternbilder(t); kette(t); bahnen();
   const pl=PLANETEN.map(p=>({p,w:(t*p.tempo*.09)+p.bahn*17})).map(o=>({...o,tief:Math.sin(o.w)}));
-  pl.filter(o=>o.tief<0).forEach(o=>planet(o.p,t)); sonne(t); pl.filter(o=>o.tief>=0).forEach(o=>planet(o.p,t));
+  sonne(t); pl.forEach(o=>planet(o.p,t));
   const h=treffer(maus.x,maus.y); cv.style.cursor=h?'pointer':'default';
   if(h){ $('tip').style.display='block'; $('tip').textContent=h.tip; $('tip').style.left=Math.min(W-290,maus.x+14)+'px'; $('tip').style.top=(maus.y+14)+'px'; } else $('tip').style.display='none';
   requestAnimationFrame(bild);
@@ -264,8 +264,12 @@ function popPlanet(p,f){
 function popSonne(sturm){ const d=DB||{};
   popAuf('<h2><span class="punkt" style="background:#ffcd6e"></span>Sonne · Datenbank-Last</h2><div class="unter">'+(sturm?'⚠ Notbremse aktiv – Takte pausiert, starten einzeln wieder.':'Ruhig gelb = normal · pulsiert stärker bei Last · rot und Strahlen = Notbremse')+'</div>'
    +tabelle([['laufende Abfragen',de(d.aktiv)],['wartend',de(d.wartend)],['längste (s)',de(d.laengste_s,1)],['Verbindungen',de(d.verbindungen)+' / '+de(d.max_verbindungen)]])); }
-function popStation(s,f){ popAuf('<h2><span class="punkt" style="background:'+f+'"></span>Station '+s.rang+' · '+esc(s.titel)+'</h2><div class="unter">Die Kette als Raumstationen-Bahn: Produkte fliegen von Eingang bis Frei.</div>'
-   +tabelle([['hängen jetzt',de(s.haengt)],['vor 24 h',de(s.vor24)],['häufigster Grund',s.grund||'–']])+'<a class="knopf" href="cockpit.html">Kette im Cockpit ↗</a>'); }
+function popKette(st){
+  popAuf('<h2><span class="punkt" style="background:#9fb4d6"></span>Raumstation · Kette</h2><div class="unter">Der Weg jedes Produkts von Eingang bis Frei.</div>'
+   +'<table>'+st.map(s=>{ const h=Number(s.haengt)||0; const f=h?(s.ampel==='rot'?'#f2716c':'#f2cd6c'):'#7fd99a';
+      return '<tr><td class="l"><span class="punkt" style="background:'+f+';width:8px;height:8px;margin-right:6px"></span>'+s.rang+' · '+esc(s.titel)+(s.grund?'<br><span style="color:var(--ink3);font-size:11.5px">'+esc(s.grund)+'</span>':'')+'</td><td class="n">'+de(h)+'</td></tr>'; }).join('')+'</table>'
+   +'<a class="knopf" href="cockpit.html">Kette im Cockpit ↗</a>');
+}
 async function popWaechter(w,f){
   if(w.k==='wb_ralph'){ location.href='produkte-tabelle.html?status=Pruefen'; return; }
   popAuf('<h2><span class="punkt" style="background:'+f+'"></span>'+esc(w.name)+'</h2><div class="unter">'+de(w.n)+' Fälle · '+(w.gate?'Gate-Wächter (blockiert die Freigabe)':'Beobachtung')+'</div><div id="wf">lädt …</div>');
