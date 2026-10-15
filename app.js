@@ -17282,6 +17282,78 @@ async function deleteRezept(id){
   if(error){ alert("Fehler: "+error.message); return; }
   closeP(); REZEPTE=null; await loadRezepte();
 }
+/* 15.10.2026 (Ralph "ja so bauen"): Kochansicht. Grosse Schrift, ein Schritt pro Seite,
+   Zutaten zum Abhaken, Timer im Schritt, Bildschirm bleibt an (Wake Lock). Rechnet nichts -
+   zeigt Zutaten und Zubereitung so, wie sie im Rezept stehen. Schalter: Stufen_Features 'kochmodus'. */
+var _koch=null;
+function kochStart(){
+  var r=_rezept; if(!r) return;
+  var steps=(r.zubereitung||"").split("\n").map(function(x){return x.trim();}).filter(Boolean).map(function(x){return x.replace(/^\d+[.)]\s*/,"");});
+  _koch={r:r, steps:steps, i:0, hak:{}, uhr:null, rest:0, lock:null};
+  var ov=document.createElement("div"); ov.id="kochOv";
+  ov.style.cssText="position:fixed;inset:0;z-index:10050;background:#0f1612;color:#f2f5f2;display:flex;flex-direction:column;font-family:inherit";
+  document.body.appendChild(ov);
+  var x0=null; ov.addEventListener("touchstart",function(e){ x0=e.touches[0].clientX; },{passive:true});
+  ov.addEventListener("touchend",function(e){ if(x0==null) return; var dx=e.changedTouches[0].clientX-x0; x0=null; if(Math.abs(dx)>60) kochGeh(dx<0?1:-1); },{passive:true});
+  document.addEventListener("keydown",kochTaste);
+  document.addEventListener("visibilitychange",kochWach);
+  kochWach(); kochZeigen();
+}
+function kochTaste(e){ if(!_koch) return; if(e.key==="ArrowRight") kochGeh(1); else if(e.key==="ArrowLeft") kochGeh(-1); else if(e.key==="Escape") kochEnde(); }
+async function kochWach(){ try{ if(_koch && document.visibilityState==="visible" && navigator.wakeLock){ _koch.lock=await navigator.wakeLock.request("screen"); } }catch(e){} }
+function kochEnde(){
+  if(_koch){ try{ clearInterval(_koch.uhr); }catch(e){} try{ _koch.lock && _koch.lock.release(); }catch(e){} }
+  _koch=null; document.removeEventListener("keydown",kochTaste); document.removeEventListener("visibilitychange",kochWach);
+  var ov=document.getElementById("kochOv"); if(ov) ov.remove();
+}
+function kochGeh(d){ if(!_koch) return; var n=_koch.steps.length; _koch.i=Math.max(0,Math.min(n,_koch.i+d)); kochZeigen(); }
+function kochHak(k){ if(!_koch) return; _koch.hak[k]=!_koch.hak[k]; kochZeigen(); }
+function kochTimer(min){
+  if(!_koch) return; try{ clearInterval(_koch.uhr); }catch(e){}
+  _koch.rest=Math.round(min*60);
+  _koch.uhr=setInterval(function(){
+    if(!_koch){ return; } _koch.rest--; var el=document.getElementById("kochUhr");
+    if(_koch.rest<=0){ clearInterval(_koch.uhr); _koch.uhr=null; _koch.rest=0;
+      try{ navigator.vibrate && navigator.vibrate([400,200,400,200,400]); }catch(e){}
+      try{ var A=new (window.AudioContext||window.webkitAudioContext)(); [0,0.4,0.8].forEach(function(t){ var o=A.createOscillator(); o.frequency.value=880; o.connect(A.destination); o.start(A.currentTime+t); o.stop(A.currentTime+t+0.25); }); }catch(e){}
+      if(el) el.textContent="⏰ Zeit ist um!"; return; }
+    if(el) el.textContent="⏱ "+Math.floor(_koch.rest/60)+":"+String(_koch.rest%60).padStart(2,"0");
+  },1000);
+  kochZeigen();
+}
+function kochZeigen(){
+  var ov=document.getElementById("kochOv"); if(!ov||!_koch) return;
+  var k=_koch, n=k.steps.length, i=k.i, h="";
+  var kopf='<div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.1)">'
+    +'<div style="flex:1;min-width:0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(k.r.name||"Rezept")+'</div>'
+    +'<div style="font-size:13px;color:#9fb0a6">'+(i===0?'Zutaten':('Schritt '+i+' von '+n))+'</div>'
+    +'<button onclick="kochEnde()" aria-label="Schließen" style="border:0;background:rgba(255,255,255,.12);color:#fff;width:38px;height:38px;border-radius:50%;font-size:18px;cursor:pointer">✕</button></div>'
+    +'<div style="height:4px;background:rgba(255,255,255,.08)"><div style="height:100%;width:'+(n?Math.round(100*i/n):0)+'%;background:#3ddc84;transition:width .3s"></div></div>';
+  if(i===0){
+    var z=(k.r.zutaten||[]);
+    h='<div style="font-size:22px;font-weight:800;margin-bottom:12px">Zutaten bereitlegen</div>'
+      +z.map(function(x,j){ var an=!!k.hak[j];
+        return '<button onclick="kochHak('+j+')" style="display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:14px 12px;margin:6px 0;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:'+(an?'rgba(61,220,132,.14)':'rgba(255,255,255,.04)')+';color:inherit;cursor:pointer;font-size:20px">'
+          +'<span style="flex:0 0 28px;height:28px;border-radius:8px;border:2px solid '+(an?'#3ddc84':'rgba(255,255,255,.4)')+';display:flex;align-items:center;justify-content:center;color:#3ddc84;font-weight:900">'+(an?'✓':'')+'</span>'
+          +'<span style="flex:1;'+(an?'opacity:.55;text-decoration:line-through':'')+'">'+esc(x.name||"")+'</span>'
+          +'<span style="color:#9fb0a6;font-size:17px;white-space:nowrap">'+esc(x.menge||"")+'</span></button>'; }).join("");
+  } else {
+    var t=k.steps[i-1], m=t.match(/(\d+)\s*(?:[–-]\s*(\d+)\s*)?(?:Min|Minuten)\b/i);
+    h='<div style="font-size:15px;color:#3ddc84;font-weight:800;margin-bottom:10px">Schritt '+i+'</div>'
+      +'<div style="font-size:clamp(24px,6vw,34px);line-height:1.45;font-weight:600">'+esc(t)+'</div>';
+    if(m){ var mn=Number(m[1]);
+      h+='<div style="margin-top:26px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">'
+        +'<button onclick="kochTimer('+mn+')" style="padding:14px 20px;border:0;border-radius:14px;background:#f5c451;color:#1b1b1b;font-size:19px;font-weight:800;cursor:pointer">⏱ '+mn+' Min starten</button>'
+        +'<span id="kochUhr" style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums">'+(k.uhr?('⏱ '+Math.floor(k.rest/60)+':'+String(k.rest%60).padStart(2,"0")):'')+'</span></div>';
+    } else if(k.uhr){ h+='<div id="kochUhr" style="margin-top:26px;font-size:26px;font-weight:800">⏱ '+Math.floor(k.rest/60)+':'+String(k.rest%60).padStart(2,"0")+'</div>'; }
+  }
+  var fuss='<div style="display:flex;gap:10px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));border-top:1px solid rgba(255,255,255,.1)">'
+    +'<button onclick="kochGeh(-1)" '+(i===0?'disabled':'')+' style="flex:1;padding:16px;border-radius:14px;border:1px solid rgba(255,255,255,.2);background:none;color:#fff;font-size:17px;font-weight:700;cursor:pointer;opacity:'+(i===0?'.35':'1')+'">← Zurück</button>'
+    +(i<n?'<button onclick="kochGeh(1)" style="flex:2;padding:16px;border-radius:14px;border:0;background:#3ddc84;color:#08130c;font-size:17px;font-weight:800;cursor:pointer">'+(i===0?'Los geht’s →':'Weiter →')+'</button>'
+         :'<button onclick="kochEnde()" style="flex:2;padding:16px;border-radius:14px;border:0;background:#3ddc84;color:#08130c;font-size:17px;font-weight:800;cursor:pointer">Fertig – guten Appetit! ✓</button>')
+    +'</div>';
+  ov.innerHTML=kopf+'<div style="flex:1;overflow:auto;padding:22px 18px;max-width:760px;width:100%;margin:0 auto;box-sizing:border-box">'+h+'</div>'+fuss;
+}
 let _rezept=null, _daySum=null, _goal=null;
 function rezeptDetail(r){
   _rezept=r; _daySum=null; _goal=null;
@@ -17370,6 +17442,7 @@ function rezeptDetail(r){
     ${modBar}
     ${controls}
     ${tbBox}
+    ${(typeof hasFeat!=='function'||hasFeat('kochmodus'))&&(r.zubereitung||'').trim()?`<button onclick="kochStart()" style="width:100%;margin:14px 0 2px;padding:13px;border:0;border-radius:12px;background:var(--k-16a34a);color:var(--k-ffffff);font-size:15px;font-weight:800;cursor:pointer">👩‍🍳 Jetzt kochen – Schritt für Schritt</button>`:''}
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:16px 0 4px">Zutaten <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Zahl = Root Index)</span></div>
     <div id="rzZutaten"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:18px 0 4px">Zubereitung</div>
@@ -17567,7 +17640,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-03";
+const APP_BUILD = "2026-10-15-04";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
