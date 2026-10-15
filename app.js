@@ -1731,6 +1731,11 @@ async function applyAuthState(session){
   _authStand = kennung;
   if(session){ await refreshMe(); } else { ME=null; TB_USER="U001"; await refreshMyFeatures(); }
   updateAuthUI(); updateGate();
+  /* 15.10.2026: ohne Konto zurueck auf die Startseite (z. B. Link mit ?p= ohne Anmeldung). */
+  if(!session && !(typeof window!=='undefined' && window.__ADMIN_PAGE===true)){
+    try{ if(window._curMode && window._curMode!=='start') setMode('start'); }catch(e){}
+    try{ var _ov=document.getElementById('overlay'); if(_ov && _ov.classList.contains('open')) closeP(); }catch(e){}
+  }
   const vis=id=>{ const e=document.getElementById(id); return e && e.style.display!=="none"; };
   REZEPTE=null; if(vis("rezeptView")) loadRezepte();
   if(vis("tagebuchView")) loadTagebuch();
@@ -2609,16 +2614,24 @@ async function altSektionFuellen(d, box, _alleAlt){
   var _supp=alts.some(function(a){ return /^Statt Kapsel:/.test(a.grund||''); });
   /* 12.10.2026 (Ralph): bei Unvertraeglichkeit liefert der Server die besten vertraeglichen (Grund „für dich verträglich"). */
   var _vertr=alts.some(function(a){ return /^für dich verträglich/.test(a.grund||''); });
-  var _verdeckt=0;
+  var _verdeckt=0, _vInfo='';
+  /* 15.10.2026 (Ralph): Alternativen inkl. "für dich verträglich" und "Statt Kapsel" sind Premium.
+     Kostenlose Konten: 3 Vorschauen am Tag (Server zaehlt, cb_vorschau). */
+  if(!_alleAlt && ME){
+    var vz=null; try{ vz=(await client.rpc('cb_vorschau',{p_funktion:'alternativen', p_produkt:String(d.id)})).data; }catch(e){}
+    if(vz && vz.erlaubt){ _alleAlt=true; if(vz.rest!=null) _vInfo='<div style="font-size:11.5px;color:var(--muted);margin-top:6px">Vorschau: noch '+vz.rest+' von '+vz.limit+' heute · <a onclick="premiumInfo()" style="color:var(--greendk);cursor:pointer;text-decoration:underline">7 Tage kostenlos testen</a></div>'; }
+  }
+  el=document.getElementById(box); if(!el) return;
   if(!_alleAlt){ _verdeckt=Math.max(0, alts.length-1); alts=alts.slice(0,1); }
   el.innerHTML=_hinweisHtml+'<div style="margin-top:14px">'
     + '<div style="font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--greendk,var(--k-166534));display:flex;align-items:center;gap:6px">🌿 '+(_supp?'Statt Kapsel: aus dem Essen':(_vertr?'Alternativen, die du verträgst':'Bessere Alternativen'))+'</div>'
     + alts.map(function(a){ return prodRef(a.id, { name:a.name, marke:a.marke, score:num(a.clean_score), delta:num(a.plus),
-          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:((_alleAlt||/^(für dich verträglich|Statt Kapsel:)/.test(a.grund||''))?String(a.grund||'').replace(/^Statt Kapsel: /,''):'') }); }).join('')
+          label:(a.kuratiert?'💡 Tausch-Tipp der Redaktion':''), note:(_alleAlt?String(a.grund||'').replace(/^Statt Kapsel: /,''):'') }); }).join('')
     + (_alleAlt ? '' : '<div onclick="premiumInfo()" style="cursor:pointer;font-size:12px;color:var(--greendk,var(--k-166534));background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--k-d1e7d9,#d1e7d9);border-radius:10px;padding:8px 10px;margin-top:8px;line-height:1.45">'
-        + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> bessere '+(_verdeckt===1?'Wahl':'Wahlen')+' und die Begründung, warum – mit <b>Premium</b>.'
+        + (_verdeckt>0 ? '🔒 <b>'+_verdeckt+' weitere</b> '+(_vertr?'Produkte, die du verträgst':(_supp?'Lebensmittel statt Kapsel':'bessere '+(_verdeckt===1?'Wahl':'Wahlen')))+' und die Begründung – mit <b>Premium</b>. Heute keine Vorschau mehr frei · <b>7 Tage kostenlos testen</b>'
                        : '🔒 Die <b>Begründung</b>, warum das besser ist – mit <b>Premium</b>.')
         + '</div>')
+    + _vInfo
     + '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.45">'+(_supp?'Lebensmittel mit dem Wirkstoff (DGE-Referenzwerte). Bei ärztlich festgestelltem Mangel kann ein Präparat sinnvoll sein.':_vertr?'Du verträgst das Produkt laut Profil nicht. Hier die besten Produkte derselben Art ohne deine Unverträglichkeiten – auch wenn ihr Index nicht höher ist.':'Besser heißt hier: dieselbe Produktart mit höherem Root Index.')+' Keine Werbung, keine bezahlten Plätze.</div>'
     + '</div>';
 }
@@ -3797,8 +3810,9 @@ function detail2(d){
              Der Satz nennt keine Diagnose und keine Empfehlung - er sagt nur, wofuer
              der Block gebaut ist (Riegel aus dem Knoten W10: Anzeige, keine Therapie). */
           + (bz?(_fBz?ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes())
-                     :pkSperre('Blutzucker-Verlauf','Wie stark das Produkt den Blutzucker treibt',
-                               meDiabetes()?'Du hast im Profil einen Diabetestyp angegeben – dieser Teil ist dafür gemacht.':'')):'')
+                     :vorschauBox('blutzucker', d.id, ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes()),
+                        pkSperre('Blutzucker-Verlauf','Wie stark das Produkt den Blutzucker typischerweise anhebt',
+                               meDiabetes()?'Du hast im Profil einen Diabetestyp angegeben – dieser Teil ist dafür gemacht.':''))):'')
           + ACC('🔬','Im Root Index','<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Die vier Achsen mit Punkten und Herleitung.</div>'
               +(hasFeat('pk_regeln')?scoreFlow(d):pkSperre('So kommt der Index zustande','Regeln, Deckel-Check und Herleitung'))
               +(hasFeat('pk_platzierung')?katRangHtml(d):pkSperre('Platzierung','Platz in der Kategorie und die Besten'))
@@ -5276,6 +5290,7 @@ async function produktZutatenV2(d){
 }
 if(typeof window!=='undefined'){ window.produktZutatenV2=produktZutatenV2; }
 async function detail(d){
+  if(riMussAnmelden()) return;
   /* Work #122 Phase A: welches Produkt gerade offen ist, wusste bisher NIEMAND ausser
      dieser Funktion. Der RIKI-Knopf braucht es fuer den Seitenzusammenhang. Additiv,
      eine Zeile, kein Aufrufer beruehrt - und bewusst HIER, weil detail() der einzige
@@ -5705,6 +5720,7 @@ function adminThemeAnwenden(m){
   }catch(e){}
 }
 function setMode(m){
+  if(m!=='start' && riMussAnmelden()) m='start';
   window._curMode=m;
   adminThemeAnwenden(m);
   try{ window.scrollTo(0,0); }catch(e){}
@@ -5789,6 +5805,27 @@ function setMode(m){
   if(typeof updateFloatBtns==='function') updateFloatBtns();
 }
 var NAV_HIST=[];
+/* 15.10.2026 (Ralph): Root Index nur mit Konto. Ohne Anmeldung bleibt die Startseite
+   (Erklaerung + Anmelden/Registrieren); alles andere oeffnet das Anmeldefenster.
+   Solange die Sitzung noch nicht geprueft ist (_authStand===null), wird nichts gesperrt. */
+function riMussAnmelden(){
+  if(typeof window!=='undefined' && window.__ADMIN_PAGE===true) return false;
+  if(_authStand==null || ME) return false;
+  try{ openLogin(); }catch(e){}
+  return true;
+}
+/* Vorschau-Kontingent (cb_vorschau): Platzhalter, dann freie Ansicht oder Sperrkarte. */
+function vorschauBox(funktion, pid, frei, gesperrt){
+  if(!ME) return gesperrt;
+  var id='vsb_'+funktion+'_'+Math.random().toString(36).slice(2,8);
+  setTimeout(async function(){
+    var v=null; try{ v=(await client.rpc('cb_vorschau',{p_funktion:funktion, p_produkt:String(pid)})).data; }catch(e){}
+    var el=document.getElementById(id); if(!el) return;
+    if(v && v.erlaubt){ el.outerHTML=frei+(v.rest!=null?'<div style="font-size:11.5px;color:var(--muted);margin:2px 0 8px">Vorschau: noch '+v.rest+' von '+v.limit+' heute · <a onclick="premiumInfo()" style="color:var(--greendk);cursor:pointer;text-decoration:underline">7 Tage kostenlos testen</a></div>':''); }
+    else { el.outerHTML=gesperrt; }
+  },0);
+  return '<div id="'+id+'"></div>';
+}
 function navTo(m){ closeMehr(); var c=window._curMode; if(c&&c!==m){ NAV_HIST.push(c); if(NAV_HIST.length>50) NAV_HIST.shift(); } setMode(m); }
 /* Der Produkte-Knopf unten fuehrt IMMER zur Kategorie-Uebersicht zurueck (Ralph, 18.07.2026):
    Wer in "Obst & Gemüse" nach unten gescrollt hat und wieder auf Produkte tippt, will
@@ -9096,6 +9133,7 @@ function startProdSearch(v){ navTo('produkte'); setTimeout(function(){ var el=do
    Ergebnis, schliesst - und steht wieder genau dort, wo man war.
    =========================================================================== */
 function startProdScan(){
+  if(riMussAnmelden()) return;
   /* 28a (Ralph): Im TAGEBUCH scannt der große Knopf direkt INS Tagebuch (derselbe Weg wie
      der frühere kleine ▦-Knopf: Scan -> Produkt -> Mengen-Ansicht -> Eintrag). Überall
      sonst bleibt die Produkt-Suche unverändert. */
@@ -17688,7 +17726,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-06";
+const APP_BUILD = "2026-10-15-07";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
