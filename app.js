@@ -9266,9 +9266,9 @@ function buildFan(){
   var ax=r.right-6, ay=(r.top!=null?r.top:window.innerHeight-60)-4;   /* Ankerpunkt: rechte Oberkante des Knopfes */
   Array.prototype.slice.call(f.querySelectorAll('.mfan-item')).forEach(function(el){ el.remove(); });
 
-  /* 15.10.2026 (Ralph, Variante A): Der Hauptbogen bleibt stehen. Ist eine Gruppe offen,
-     schrumpft er auf Symbole und der Unterbogen klappt LINKS daneben auf - man sieht
-     immer, wo man herkommt. Kein "Zurueck" mehr: anderen Punkt im Hauptbogen antippen. */
+  /* 15.10.2026 (Ralph, Variante A): Der Hauptbogen bleibt unveraendert stehen (die offene
+     Gruppe gruen umrandet), der Unterbogen klappt LINKS daneben auf - man sieht immer,
+     wo man herkommt. Kein "Zurueck" mehr: anderen Punkt im Hauptbogen antippen. */
   fanStil();
   var aktivDy=null, linksRand=0;
   var liste=[];
@@ -9289,7 +9289,7 @@ function buildFan(){
      ein Punkt - und der Bogen richtet sich nach dieser WIRKLICHEN Hoehe, nicht
      nach dem Zaehler; sonst knickt er an jedem Trennstrich. */
   var offen=!!_mfanGruppe;
-  var ENDE=20, BAUCH=offen?26:140, SCHRITT=50, SCHRITT_T=22;
+  var ENDE=20, BAUCH=140, SCHRITT=50, SCHRITT_T=22;
   var summe=22, hoehen=[];
   liste.forEach(function(it){ summe += (it.art==='trenner') ? SCHRITT_T : SCHRITT; hoehen.push(-summe); });
   var unten=hoehen[0], oben=hoehen[hoehen.length-1];
@@ -9303,10 +9303,10 @@ function buildFan(){
     } else {
       b.type='button';
       var aktiv=offen && it.art==='gruppe' && it.ziel===_mfanGruppe;
-      b.className='mfan-item'+(offen?' mfan-klein':'')+(aktiv?' mfan-aktiv':'');
+      b.className='mfan-item'+(aktiv?' mfan-aktiv':'');
       b.title=it.txt;
       b.innerHTML='<span class="mfi" style="color:'+it.col+'">'+riIco(it.ico,20)+'</span>'
-        +(offen?'':esc(it.txt)+(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':''));
+        +esc(it.txt)+(it.art==='gruppe'?'<span style="opacity:.45;font-size:12px;margin-left:2px">›</span>':'');
       if(aktiv) aktivDy=dy;
       b.onclick=function(){ fanKlick(it); };
     }
@@ -9324,16 +9324,20 @@ function buildFan(){
   var sub=g[4], n=sub.length, H=n*SCHRITT, mitte=(aktivDy!=null?aktivDy:-200);
   var unterK=Math.min(-22, mitte+H/2), obenGrenze=-(ay-70);
   if(unterK-H < obenGrenze) unterK=Math.min(-22, obenGrenze+H);
-  var rechts=linksRand-14, SB=Math.max(0, Math.min(110, ax+rechts-300));
+  /* 15.10.2026 (Ralph): Hauptbogen bleibt genau wie er ist; der Unterbogen kommt links
+     daneben. Reicht der Platz nicht (Handy), rueckt er an den linken Rand und liegt
+     ueber dem Hauptbogen - nie aus dem Bild. */
+  var rechts=linksRand-14, SB=60;
   sub.forEach(function(w,i){
     var dy=unterK-i*SCHRITT, anteil=n>1?i/(n-1):0.5;
-    var dx=rechts-Math.round(SB*Math.sin(Math.PI*anteil));
     var b=document.createElement('button'); b.type='button'; b.className='mfan-item mfan-unter';
     b.innerHTML='<span class="mfi" style="color:'+w[2]+'">'+riIco(w[1],20)+'</span>'+esc(w[0]);
     b.onclick=function(){ fanKlick({art:'weg', tun:w[3]}); };
     b.style.right=(window.innerWidth-ax)+'px'; b.style.top=ay+'px';
     b.style.transitionDelay=(60+i*28)+'ms';
     f.appendChild(b);
+    var dx=rechts-Math.round(SB*Math.sin(Math.PI*anteil)), wB=b.offsetWidth||200;
+    if(ax+dx-wB<8) dx=8-ax+wB;
     requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
   });
 }
@@ -9341,9 +9345,9 @@ function buildFan(){
 function fanStil(){
   if(document.getElementById('mfanStil')) return;
   var st=document.createElement('style'); st.id='mfanStil';
-  st.textContent='.mfan-item.mfan-klein{padding:9px;gap:0;opacity:.6}.mfan.open .mfan-item.mfan-klein{opacity:.6}'
+  st.textContent=''
     +'.mfan.open .mfan-item.mfan-aktiv{opacity:1;box-shadow:0 0 0 3px var(--green,#16a34a),0 6px 18px rgba(0,0,0,.18)}'
-    +'.mfan-item.mfan-unter{white-space:nowrap;max-width:calc(100vw - 130px);overflow:hidden;text-overflow:ellipsis}';
+    +'.mfan-item.mfan-unter{white-space:nowrap;max-width:calc(100vw - 24px);overflow:hidden;text-overflow:ellipsis;z-index:2;box-shadow:0 8px 22px rgba(0,0,0,.22)}';
   document.head.appendChild(st);
 }
 /* Profil-Bereich direkt aus dem Menue oeffnen. */
@@ -17684,7 +17688,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-05";
+const APP_BUILD = "2026-10-15-06";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
