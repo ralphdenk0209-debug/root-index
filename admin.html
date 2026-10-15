@@ -1508,6 +1508,10 @@ try{ var _st=document.createElement('style'); _st.textContent='#besucherKarte{di
 window.loadDashboard=function(){
   var box=document.getElementById('fgDash'); if(!box) return;
   var f=box.querySelector('iframe.cockpitFrame');
+  /* 15.10.2026: Der Klick auf den Wächter „Ralph prüfen“ öffnet die Produkttabelle im selben Rahmen.
+     Der Dashboard-Knopf holt dann das Cockpit zurück. */
+  if(f){ var amCockpit=false; try{ amCockpit=/cockpit\.html$/.test(f.contentWindow.location.pathname); }catch(e){}
+    if(!amCockpit) f.src='cockpit.html?cb='+Date.now(); }
   if(!f){
     /* Ralph 23.09.: "das cockpit soll die ganze seite sein, menü soll aber bleiben" -
        der Rahmen liegt fest neben dem Menü und füllt den Rest des Fensters. */
