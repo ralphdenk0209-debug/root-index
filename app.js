@@ -12270,7 +12270,9 @@ function tbScanPopup(){
         /* Erst wenn auch das Nachladen nichts bringt, ist es wirklich eine Sackgasse -
            dann sagen wir das im Klartext, statt es bei "erkannt" bewenden zu lassen (§1.13i). */
         if(msg){ msg.style.color="var(--k-b45309)"; msg.innerHTML="✓ "+esc(data.name)+" erkannt – die Produktdaten liessen sich gerade nicht laden. "
-          +'<button onclick="tbScanPopup()" style="margin-left:6px;padding:3px 10px;border:1px solid var(--k-e7e0d4);border-radius:8px;background:var(--k-fbf8f2);cursor:pointer;font-size:12px">Nochmal scannen</button>'; }
+          +'<button onclick="tbScanPopup()" style="margin-left:6px;padding:3px 10px;border:1px solid var(--k-e7e0d4);border-radius:8px;background:var(--k-fbf8f2);cursor:pointer;font-size:12px">Nochmal scannen</button>'
+          /* 15.10.2026 (Ralph, Grana Padano): auch hier der Weg zu den Etikettfotos. */
+          +'<div style="text-align:center">'+etikettCtaBtn(code, true)+'</div>'; }
       } else {
         try{ await client.rpc("ean_vormerken",{p_ean:code,p_quelle:"Tagebuch-Scan",p_akteur:"Web-Tagebuch"}); }catch(e){}
 
@@ -13169,6 +13171,9 @@ function editMengeNeu(id,cur,pid,mahl){
       +'<input id="tbMengeNeuVal" type="number" inputmode="decimal" min="0" step="any" value="'+(sg?Math.round(cur/sg):cur)+'" style="flex:1;padding:11px;border:1px solid var(--tb-line,var(--k-e7e0d4));border-radius:11px;font-size:16px;background:var(--tb-card,var(--k-ffffff));color:var(--tb-text,var(--k-1d2b3a))">'
       +'<span style="font-size:13px;color:var(--tb-muted,var(--k-6b6256));flex:0 0 auto">'+(sg?('Stück ('+sg+' g)'):'g')+'</span>'
     +'</div>'
+    /* 15.10.2026 (Ralph): Eintrag in eine andere Mahlzeit verschieben. */
+    +(mahl?('<div style="display:flex;gap:6px;margin:10px 0 2px;flex-wrap:wrap">'+['Frühstück','Mittag','Abendessen','Snack'].map(function(m){ var an=(m===mahl);
+        return '<button onclick="tbMahlzeitSetzen('+id+',\''+m+'\')" style="flex:1;min-width:70px;padding:8px 6px;border-radius:999px;font-size:12.5px;cursor:pointer;border:1px solid '+(an?'var(--k-16a34a)':'var(--tb-line,var(--k-e7e0d4))')+';background:'+(an?'var(--k-eef6ee)':'none')+';color:var(--tb-text,var(--k-1d2b3a));'+(an?'font-weight:800':'')+'">'+m+'</button>'; }).join('')+'</div>'):'')
     +'<button onclick="tbMengeNeuSave('+id+','+(sg||0)+')" style="margin-top:10px;width:100%;background:var(--k-16a34a);color:var(--k-ffffff);border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Speichern</button>'
     +(kannZiel?('<button onclick="document.getElementById(\'tbMengeOv\').remove();tbFillItem('+id+',\''+mahl+'\')" title="Diese Menge so anpassen, dass die Mahlzeit ihren rechnerischen kcal-Anteil trifft (andere Einträge bleiben)" style="margin-top:8px;width:100%;background:none;border:1px solid var(--tb-line,var(--k-e7e0d4));color:var(--tb-muted,var(--k-6b6256));border-radius:12px;padding:10px;font-size:13px;cursor:pointer">🎯 auf Mahlzeit-Ziel auffüllen</button>'):'')
     /* 28g (Ralph): "wenn am abend noch was offen ist und ich nudeln mache, dann könnte ich mehr
@@ -13181,6 +13186,12 @@ function editMengeNeu(id,cur,pid,mahl){
   document.body.appendChild(ov);
   try{ var _i=document.getElementById('tbMengeNeuVal'); _i.focus(); _i.select();
     _i.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); tbMengeNeuSave(id,sg||0); } }); }catch(e){}
+}
+async function tbMahlzeitSetzen(id,m){
+  try{ const {error}=await client.rpc("cb_tb_mahlzeit",{p_eintrag:id,p_mahlzeit:m}); if(error) throw error; }
+  catch(e){ alert("Verschieben fehlgeschlagen: "+e.message); return; }
+  const ov=document.getElementById('tbMengeOv'); if(ov) ov.remove();
+  loadTagebuch();
 }
 async function tbMengeNeuSave(id,sg){
   const v=parseFloat(String((document.getElementById('tbMengeNeuVal')||{}).value||'').replace(',','.'));
@@ -17554,7 +17565,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-01";
+const APP_BUILD = "2026-10-15-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
