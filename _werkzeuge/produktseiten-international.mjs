@@ -249,6 +249,7 @@ function seite(T, V, jsV, { titel, beschreibung, kanonisch, inhalt, jsonld, ruec
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${esc(titel)}</title>
 <meta name="description" content="${esc(beschreibung)}">
+<meta name="robots" content="noindex, follow">
 <link rel="canonical" href="${kanonisch}">
 <link rel="icon" href="/icon-192.png">
 <meta name="theme-color" content="#263e27">
@@ -492,7 +493,8 @@ async function main() {
   }
   writeFileSync(join(WEB, "sitemap-int.xml"),
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `<url><loc>${u}</loc></url>`).join("\n") + `\n</urlset>\n`);
+    // Ralph 16.10.: internationale Seiten vorerst noindex, Sitemap leer (Google lehnte ~17.500 Seiten ab, s. Befund Google-Einbruch).
+    `</urlset>\n`);
   mkdirSync(join(WEB, "en", "product"), { recursive: true });
   writeFileSync(join(WEB, "en", "product", "stand.json"), JSON.stringify(stand) + "\n");
   console.log(`✅ Sitemap international: ${urls.length} URLs`);

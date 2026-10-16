@@ -818,7 +818,7 @@ async function main() {
     `<sitemap><loc>${DOMAIN}/sitemap-top.xml</loc><lastmod>${heute}</lastmod></sitemap>\n</sitemapindex>\n`);
   urls.push(...auswahl.map((k) => k.url));
   writeFileSync(join(WEB, "robots.txt"),
-    `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\nSitemap: ${DOMAIN}/sitemap-int.xml\n`);
+    `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\n`);
 
   // Stand fuer das Cockpit: wie viele Seiten stehen seit wann bei Google.
   // Die Zahl der freigegebenen Produkte waechst den ganzen Tag, die Seiten
