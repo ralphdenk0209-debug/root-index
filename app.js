@@ -17559,9 +17559,34 @@ async function rtPruefen(r){
     +'<span style="font-weight:800;color:var(--greendk)">'+(d.erlaubt?'Zeigen ›':'🔒 ›')+'</span></div>'
     +'<style>@keyframes rtHopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}</style>';
   try{ var k=rikiKnopf(); if(k&&k.animate) k.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:500,iterations:3}); }catch(e){}
+  rtBlaseZeigen(d);
+}
+/* 16.10.2026 (Ralph: "er huepft kurz aber es erscheint keine sprechblase"): Riki stellt die Frage
+   selbst in einer Sprechblase ueber seinem Knopf. Ja oeffnet die Auswahl, Nein schliesst. Solange die
+   Blase steht, oeffnet auch ein Tipp auf Riki direkt die Auswahl. */
+function rtBlaseWeg(){ var b=document.getElementById('rtBlase'); if(b) b.remove(); var k=rikiKnopf(); if(k&&k._rtFang){ k.removeEventListener('click',k._rtFang,true); k._rtFang=null; } }
+function rtBlaseZeigen(d){
+  rtBlaseWeg();
+  var k=rikiKnopf(), r=k?k.getBoundingClientRect():null;
+  var unten = r ? Math.max(90, window.innerHeight - r.top + 10) : 150;
+  var rechts = r ? Math.max(10, window.innerWidth - r.right) : 16;
+  var b=document.createElement('div'); b.id='rtBlase';
+  b.style.cssText='position:fixed;z-index:10040;right:'+rechts+'px;bottom:'+unten+'px;max-width:270px;padding:11px 13px;border-radius:14px 14px 4px 14px;'
+    +'background:var(--card);color:var(--ink);border:1.5px solid var(--green);box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13.5px;line-height:1.45';
+  b.innerHTML='<b>Riki:</b> Für '+d.anzahl+' Zutat'+(d.anzahl==1?'':'en')+' kenne ich bessere Alternativen. Soll ich sie zeigen?'
+    +'<div style="display:flex;gap:8px;margin-top:9px"><button id="rtJa" style="flex:1;padding:8px;border:0;border-radius:9px;background:var(--green);color:var(--auf-gruen);font-weight:800;cursor:pointer">'+(d.erlaubt?'Ja, zeigen':'🔒 Premium')+'</button>'
+    +'<button id="rtNein" style="padding:8px 12px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--ink);cursor:pointer">Nein</button></div>';
+  document.body.appendChild(b);
+  document.getElementById('rtJa').onclick=function(){ rtBlaseWeg(); rtOeffnen(); };
+  document.getElementById('rtNein').onclick=rtBlaseWeg;
+  if(k){ k._rtFang=function(ev){ if(document.getElementById('rtBlase')){ ev.stopImmediatePropagation(); ev.preventDefault(); rtBlaseWeg(); rtOeffnen(); } }; k.addEventListener('click',k._rtFang,true); }
+  /* Rezept zu -> Blase weg */
+  var ov=document.getElementById('overlay');
+  var w=setInterval(function(){ if(!document.getElementById('rtBlase')){ clearInterval(w); return; } if(!ov||!ov.classList.contains('open')){ rtBlaseWeg(); clearInterval(w); } },700);
 }
 function rtOeffnen(){
   var d=_rtDaten; if(!d) return;
+  rtBlaseWeg();
   if(!d.erlaubt){ try{ premiumInfo(); }catch(e){} return; }
   var alt=document.getElementById('rtBlatt'); if(alt) alt.remove();
   var h='<div style="position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.remove()" id="rtBlatt">'
@@ -17797,7 +17822,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-16-02";
+const APP_BUILD = "2026-10-16-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
