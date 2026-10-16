@@ -9334,7 +9334,8 @@ function buildFan(){
   liste.forEach(function(it,i){
     var dy=hoehen[i];
     var anteil=(oben!==unten)?((dy-unten)/(oben-unten)):0.5;
-    var dx=-Math.round(ENDE+BAUCH*Math.sin(Math.PI*anteil));
+    /* 16.10.2026 (Ralph): Unterbogen offen -> Hauptbogen rechtsbuendig als gerade Saeule, sonst ueberlagern sich beide. */
+    var dx=offen?-ENDE:-Math.round(ENDE+BAUCH*Math.sin(Math.PI*anteil));
     var b=document.createElement(it.art==='trenner'?'div':'button');
     if(it.art==='trenner'){
       b.className='mfan-item mfan-trenner';
@@ -9374,7 +9375,7 @@ function buildFan(){
     b.style.right=(window.innerWidth-ax)+'px'; b.style.top=ay+'px';
     b.style.transitionDelay=(60+i*28)+'ms';
     f.appendChild(b);
-    var dx=rechts-Math.round(SB*Math.sin(Math.PI*anteil)), wB=b.offsetWidth||200;
+    var dx=rechts, wB=b.offsetWidth||200;   /* 16.10.2026: gerade Saeule links */
     if(ax+dx-wB<8) dx=8-ax+wB;
     requestAnimationFrame(function(){ b.style.transform='translate('+dx+'px,'+dy+'px) scale(1)'; });
   });
@@ -17726,7 +17727,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-15-07";
+const APP_BUILD = "2026-10-16-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
