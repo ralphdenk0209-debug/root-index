@@ -17530,6 +17530,7 @@ function rezeptDetail(r){
     ${controls}
     ${tbBox}
     ${(typeof hasFeat!=='function'||hasFeat('kochmodus'))&&(r.zubereitung||'').trim()?`<button onclick="kochStart()" style="width:100%;margin:14px 0 2px;padding:13px;border:0;border-radius:12px;background:var(--k-16a34a);color:var(--k-ffffff);font-size:15px;font-weight:800;cursor:pointer">👩‍🍳 Jetzt kochen – Schritt für Schritt</button>`:''}
+    <div id="rtBox"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:16px 0 4px">Zutaten <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Zahl = Root Index)</span></div>
     <div id="rzZutaten"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:18px 0 4px">Zubereitung</div>
@@ -17538,7 +17539,76 @@ function rezeptDetail(r){
   if(canTb) loadRezeptBudget();
   document.getElementById("overlay").classList.add("open");
   try{ alRezeptLaden(); }catch(e){}   /* 30.09.2026 */
+  try{ rtPruefen(r); }catch(e){}       /* 16.10.2026 Zutaten-Alternativen */
 }
+/* ===========================================================================
+   16.10.2026 (Ralph): REZEPT-ZUTATEN TAUSCHEN – komplett Premium.
+   Riki springt an und fragt, ob bessere Alternativen gewuenscht sind; man waehlt
+   einzeln oder alle und uebernimmt sie ins Rezept. Fremdes Rezept -> eigene Kopie.
+   Quelle: cb_rezept_alternativen (Produkt-Alternativen + Tausch-Tabelle rezept_tausch).
+   =========================================================================== */
+var _rtDaten=null, _rtRezept=null;
+async function rtPruefen(r){
+  var box=document.getElementById('rtBox'); if(!box||!ME) return;
+  _rtDaten=null; _rtRezept=r;
+  var d=null; try{ d=(await client.rpc('cb_rezept_alternativen',{p_rezept:r.id})).data; }catch(e){}
+  if(!d||!d.anzahl||_rtRezept!==r) return;
+  _rtDaten=d;
+  box.innerHTML='<div onclick="rtOeffnen()" style="display:flex;gap:10px;align-items:center;margin:14px 0 4px;padding:11px 13px;border:1.5px solid var(--green);border-radius:12px;background:var(--greenlt);cursor:pointer;animation:rtHopp .6s ease 2">'
+    +'<span style="font-size:22px">🤖</span><div style="flex:1;font-size:13.5px;line-height:1.45"><b>Riki:</b> Für '+d.anzahl+' Zutat'+(d.anzahl==1?'':'en')+' kenne ich bessere Alternativen. Zeigen?</div>'
+    +'<span style="font-weight:800;color:var(--greendk)">'+(d.erlaubt?'Zeigen ›':'🔒 ›')+'</span></div>'
+    +'<style>@keyframes rtHopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}</style>';
+  try{ var k=rikiKnopf(); if(k&&k.animate) k.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:500,iterations:3}); }catch(e){}
+}
+function rtOeffnen(){
+  var d=_rtDaten; if(!d) return;
+  if(!d.erlaubt){ try{ premiumInfo(); }catch(e){} return; }
+  var alt=document.getElementById('rtBlatt'); if(alt) alt.remove();
+  var h='<div style="position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.remove()" id="rtBlatt">'
+    +'<div style="background:var(--card);color:var(--ink);width:100%;max-width:560px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 20px">'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:22px">🤖</span><b style="font-size:16px">Bessere Zutaten</b>'
+    +'<button onclick="document.getElementById(\'rtBlatt\').remove()" style="margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button></div>'
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Wähle je Zutat einen Ersatz. '+(d.darf_bearbeiten?'Das Rezept wird angepasst.':'Du bekommst eine eigene Kopie – das Original bleibt.')+'</div>';
+  d.zutaten.forEach(function(z,i){
+    h+='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0">'
+      +'<label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px"><input type="checkbox" class="rtWahl" data-i="'+i+'"> '+esc(z.text||'')+(z.anzeige?' <span style="font-weight:400;color:var(--muted)">'+esc(z.anzeige)+'</span>':'')
+      +(z.score!=null?' <span style="margin-left:auto;font-size:12px;color:var(--muted)">Index '+Math.round(z.score)+'</span>':'')+'</label>';
+    (z.vorschlaege||[]).forEach(function(v,j){
+      h+='<label style="display:flex;gap:8px;align-items:flex-start;margin:7px 0 0 24px;font-size:13px;line-height:1.4">'
+        +'<input type="radio" name="rt'+i+'" value="'+j+'"'+(j===0?' checked':'')+' onchange="document.querySelector(\'.rtWahl[data-i=&quot;'+i+'&quot;]\').checked=true">'
+        +'<span><b>'+esc(v.name||'')+'</b>'+(v.marke?' · '+esc(v.marke):'')+(v.menge_g!=null?' · '+v.menge_g+' g':'')
+        +' <b style="color:'+farbe(scoreBew(v.score))+'">Index '+Math.round(v.score)+'</b>'
+        +(v.hinweis?'<br><span style="color:var(--muted)">'+esc(v.hinweis)+'</span>':'')+'</span></label>';
+    });
+    h+='</div>';
+  });
+  h+='<div style="display:flex;gap:8px;margin-top:12px">'
+    +'<button onclick="rtUebernehmen(false)" style="flex:1;padding:12px;border:1.5px solid var(--green);border-radius:12px;background:var(--card);color:var(--greendk);font-weight:800;cursor:pointer">Ausgewählte übernehmen</button>'
+    +'<button onclick="rtUebernehmen(true)" style="flex:1;padding:12px;border:0;border-radius:12px;background:var(--green);color:var(--auf-gruen);font-weight:800;cursor:pointer">Alle übernehmen</button></div>'
+    +'<div id="rtMeld" style="font-size:12.5px;margin-top:8px;color:var(--muted)"></div></div></div>';
+  document.body.insertAdjacentHTML('beforeend',h);
+}
+async function rtUebernehmen(alle){
+  var d=_rtDaten, r=_rtRezept; if(!d||!r) return;
+  var wahl=[];
+  d.zutaten.forEach(function(z,i){
+    var cb=document.querySelector('.rtWahl[data-i="'+i+'"]');
+    if(!alle && !(cb&&cb.checked)) return;
+    var rad=document.querySelector('input[name="rt'+i+'"]:checked'); var j=rad?parseInt(rad.value,10):0;
+    var v=(z.vorschlaege||[])[j]; if(!v) return;
+    wahl.push({zeile:z.zeile, produkt_id:v.produkt_id, menge_g:v.menge_g});
+  });
+  var m=document.getElementById('rtMeld');
+  if(!wahl.length){ if(m) m.textContent='Bitte mindestens eine Zutat anhaken.'; return; }
+  if(m) m.textContent='Wird übernommen …';
+  var res=null; try{ res=(await client.rpc('cb_rezept_alternativen_uebernehmen',{p_rezept:r.id, p_wahl:wahl})).data; }catch(e){}
+  if(!res||!res.ok){ if(m) m.textContent='Das hat nicht geklappt'+(res&&res.grund==='premium'?' – nur mit Premium.':'.'); return; }
+  var b=document.getElementById('rtBlatt'); if(b) b.remove();
+  try{ await loadRezepte(); }catch(e){}
+  await rezOeffnenById(res.rezept);
+  try{ rikiScanHinweis('🤖 '+res.getauscht+' Zutat'+(res.getauscht==1?'':'en')+' getauscht'+(res.kopie?' – als deine eigene Kopie gespeichert.':'.')); setTimeout(function(){ var x=document.getElementById('rikiWarteHinweis'); if(x) x.remove(); },4000); }catch(e){}
+}
+if(typeof window!=='undefined'){ window.rtOeffnen=rtOeffnen; window.rtUebernehmen=rtUebernehmen; }
 /* Liest eine GANZE Stueckzahl aus der Mengenangabe: "180 g (3 St.)" -> {anzahl:3, wort:"St."}
    Bewusst eng gefasst - es wird nur erkannt, was zweifelsfrei stueckig ist:
      erkannt:       (3 St.) · (11 St.) · (3 Scheiben) · 2 Stück
@@ -17727,7 +17797,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-16-01";
+const APP_BUILD = "2026-10-16-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
