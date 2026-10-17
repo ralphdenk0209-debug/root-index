@@ -39,6 +39,7 @@
   .el img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; }
   .el .txt{ width:100%; font-family:Inter,-apple-system,"Segoe UI",sans-serif; font-weight:800; white-space:pre-wrap; line-height:1.05; letter-spacing:-1.5px; }
   .el.karte{ background:#fff; border-radius:30px; box-shadow:0 22px 50px rgba(0,0,0,.55); }
+  .el.dunkel{ background:linear-gradient(160deg,#173826,#0b1a12); border:3px solid rgba(124,255,155,.45); border-radius:34px; box-shadow:0 22px 50px rgba(0,0,0,.6),0 0 40px rgba(124,255,155,.12); }
   .el .griff{ position:absolute; right:-22px; bottom:-22px; width:44px; height:44px; border-radius:50%; background:#FFD43B; border:4px solid #fff; cursor:nwse-resize; display:none; }
   .el.sel .griff{ display:block; }
   .hilfe{ position:absolute; background:#ff3ea5; pointer-events:none; display:none; z-index:9999; }
@@ -113,7 +114,7 @@ var VORGABE = {
   text:{ w:700, h:80, x:190, y:1200, text:"Text", size:48, farbe:"#F3EEDC", farbe2:"", align:"center" },
   produkt:{ w:540, h:720, x:270, y:440, pnr:"" },
   bild:{ w:400, h:230, x:30, y:700, pfad:"" },
-  flux:{ w:330, h:300, x:720, y:720, pnr:"", karte:true },
+  flux:{ w:380, h:330, x:690, y:690, pnr:"", karte:false, stil:"dunkel" },
   karte:{ w:400, h:250, x:340, y:1300 },
   kopf:{ w:420, h:70, x:56, y:62 },
   speichern:{ w:1000, h:60, x:40, y:1790, text:"📌 Speichern und beim Einkauf nachschauen.", size:30, farbe:"#F3EEDC", farbe2:"", align:"center" },
@@ -153,9 +154,9 @@ function zeichne(){
   f.querySelectorAll(".el").forEach(function(n){ n.remove(); });
   EL.forEach(function(v, i){
     var d = document.createElement("div");
-    d.className = "el" + (v.typ==="karte" || (v.typ==="flux" && v.karte) ? " karte" : "") + (SEL===v.id ? " sel" : "");
+    d.className = "el" + (v.typ==="karte" || (v.typ==="flux" && v.karte) ? " karte" : "") + (v.typ==="flux" && !v.karte && v.stil==="dunkel" ? " dunkel" : "") + (SEL===v.id ? " sel" : "");
     d.dataset.id = v.id;
-    d.style.cssText = "left:"+v.x+"px;top:"+v.y+"px;width:"+v.w+"px;height:"+v.h+"px;transform:rotate("+(v.rot||0)+"deg);z-index:"+(i+1)+(v.typ==="flux"&&v.karte?";padding:16px":"");
+    d.style.cssText = "left:"+v.x+"px;top:"+v.y+"px;width:"+v.w+"px;height:"+v.h+"px;transform:rotate("+(v.rot||0)+"deg);z-index:"+(i+1)+(v.typ==="flux"&&(v.karte||v.stil==="dunkel")?";padding:16px":"");
     d.innerHTML = inhalt(v) + '<div class="griff"></div>';
     f.appendChild(d);
   });
@@ -181,7 +182,7 @@ function props(){
     h += feld("P-Nr",'<input data-p="pnr" value="'+e(v.pnr||"")+'" placeholder="z. B. P28461">');
     h += '<small>'+(p ? e(p.marke+" · "+p.name)+(p.clean_score!=null?" · "+Math.floor(Number(p.clean_score)+0.5)+" Pkt":" · keine Punkte") : "")+'</small>';
   }
-  if(v.typ==="flux") h += '<label style="display:flex;gap:6px;align-items:center;margin:4px 0 8px"><input type="checkbox" data-p="karte"'+(v.karte?" checked":"")+'> auf weißer Karte</label>';
+  if(v.typ==="flux") h += feld("Hintergrund",'<select data-p="stilwahl"><option value="dunkel"'+(!v.karte&&v.stil==="dunkel"?" selected":"")+'>dunkle Karte (Standard)</option><option value="ohne"'+(!v.karte&&v.stil!=="dunkel"?" selected":"")+'>ohne</option><option value="weiss"'+(v.karte?" selected":"")+'>weiße Karte</option></select>');
   if(v.typ==="bild") h += '<button class="kn" id="bildWahl">🖼 Bild auswählen …</button> <small>'+e(v.pfad ? v.pfad.split("/").pop() : "")+'</small>';
   h += '<div class="reihe" style="margin-top:10px"><button class="kn" id="vor">⬆ nach vorn</button><button class="kn" id="zur">⬇ nach hinten</button></div>';
   h += '<div class="reihe" style="margin-top:6px"><button class="kn" id="mitte">↔ mittig</button><button class="kn" id="kopie">⧉ Kopie</button><button class="kn rot" id="weg">✕</button></div>';
@@ -190,6 +191,7 @@ function props(){
     i.oninput = i.onchange = async function(){
       var k = i.dataset.p, w = i.type==="checkbox" ? i.checked : i.value;
       if(["x","y","w","h","rot","size"].indexOf(k)>=0) w = Number(w);
+      if(k==="stilwahl"){ v.karte = w==="weiss"; v.stil = w==="dunkel" ? "dunkel" : ""; zeichne(); return; }
       if(k==="pnr"){ w = String(w).trim().toUpperCase(); v.pnr = w; if(/^P\d+$/.test(w)) await produkt(w, v); zeichne(); return; }
       v[k] = w; zeichne(); if(k==="rot") i.previousSibling && (i.closest("label").firstChild.textContent = "Drehung: "+w+"°");
     };
@@ -311,7 +313,7 @@ $("muster").onclick = async function(){
   EL = []; VID = null; $("vName").value = "Nutri-Score gegen Root Index"; $("vNr").value = "62";
   [ ["kopf",{}], ["ueberschrift",{}], ["produkt",{ pnr:"P28461", x:290, y:440, w:500, h:662 }],
     ["karte",{ x:22, y:700, w:400, h:236, rot:-6 }], ["bild",{ x:38, y:716, w:368, h:204, rot:-6, pfad:"repo:editor-bilder/nutri-score-a-quer.png" }],
-    ["flux",{ pnr:"P28461", x:720, y:720, w:330, h:300, rot:4 }], ["speichern",{}], ["fuss",{}] ]
+    ["flux",{ pnr:"P28461", x:690, y:690, w:380, h:330, rot:4 }], ["speichern",{}], ["fuss",{}] ]
     .forEach(function(a){ var v = Object.assign({ id:NID++, typ:a[0], rot:0 }, JSON.parse(JSON.stringify(VORGABE[a[0]])), a[1]); EL.push(v); });
   await nachladen(); zeichne(); SEL = null; props(); meld("Muster geladen – alles verschieben, wie du es willst, dann als Vorlage speichern.");
 };
