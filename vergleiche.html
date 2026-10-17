@@ -9,6 +9,11 @@
        - Reiter Produktbilder: Raster mit Bild, Marke · P-Nr, Punkte-Kreis, Merkmale, Filter; Ablagefeld (Upload spaeter)
        - Bereich steht fest in der Spalte "Bereich" (seit 17.10.); die Erkennung per Textmuster ist nur Rueckfall.
        - Neue Spalte "Gruppen_gepostet" (FB-Gruppen).
+     17.10.2026 abends (Ralph: "kannst du auf der seite produktbilder die bilder auch einfuegen?"):
+       - Upload je Karte (📷), per Ziehen auf die Karte oder ins Ablagefeld (Dateiname mit P-Nr).
+       - Bild wird im Browser auf weissen Grund, max. 900 px hoch, JPEG 88 gebracht (wie Schritt 9) und ueber
+         RPC cb_admin_produktbild_einreichen in produktbild_eingang gelegt; die Edge-Funktion produktbild-uebernehmen
+         laedt hoch und setzt Bild_URL. Fremdes Bild nur nach Rueckfrage (ersetzen), Herstellerbild mit Freigabe nie.
      Frueher: 03.10. Wochenplan, 08.10. nur Reels, 14.10. Ablage nach Bereich (abgeloest).
      Wahrheit: public."Instagram_Vergleich". Punkte live aus v_web_produkte. Loeschen = Status 'Verworfen'.
      Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). -->
@@ -90,7 +95,7 @@
   .ev.nm::after{ content:"!"; position:absolute; top:-7px; right:-6px; background:var(--gelb); color:#3a2a00; font-weight:800; font-size:11px; width:16px; height:16px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
   .ev.on{ opacity:.55; cursor:pointer; }
   .ev.ziehen, tr.ziehen{ opacity:.4; }
-  .kal.monat .tag{ min-height:88px; }
+  .kal.monat .tag{ min-height:74px; }
   .kal.monat .ev .t{ -webkit-line-clamp:1; }
   h3.unter{ margin:22px 0 8px; font-size:14px; }
   table{ width:100%; border-collapse:collapse; }
@@ -98,6 +103,17 @@
   td{ border-bottom:1px solid #eef0f4; padding:7px 8px; vertical-align:top; }
   tr.zieh{ cursor:grab; } tr.zieh:hover{ background:#fafbfd; }
   .tabwrap{ overflow-x:auto; }
+  /* Kalender bleibt stehen, nur "Ohne Termin" scrollt (Ralph 17.10.) */
+  @media (min-width:701px){
+    #t-kal.an{ display:flex; flex-direction:column; overflow:hidden; }
+    #t-kal .kalteil{ flex:0 1 auto; min-height:0; overflow-y:auto; max-height:calc(100% - 150px); }
+    #t-kal .ohneteil{ flex:1 0 150px; min-height:150px; display:flex; flex-direction:column; border-top:1px solid var(--lin); margin-top:10px; }
+    #t-kal .ohneteil .tabwrap{ flex:1; overflow:auto; min-height:0; }
+    #t-kal .ohneteil h3.unter{ margin-top:10px; }
+    #t-kal .ohneteil th{ position:sticky; top:0; z-index:1; }
+    .kal.monat .tag{ min-height:66px; } .kal.monat .ev{ padding:2px 6px; }
+    body.kalan .wrap{ padding-bottom:6px; } body.kalan #msg{ margin:6px 0 0; }
+  }
   .stand{ font-size:12px; font-weight:600; white-space:nowrap; }
 
   /* ---- Produktbilder ---- */
@@ -117,6 +133,9 @@
   .pk .akt label{ font-size:11.5px; display:flex; gap:3px; align-items:center; cursor:pointer; }
   .ablegen{ border:2px dashed #c9cdd9; border-radius:12px; padding:16px; text-align:center; color:var(--mut); margin-bottom:12px; background:#fafbfd; }
   .ablegen.ueber{ border-color:var(--vergleich); background:#eef5ff; }
+  .pk.ueber{ outline:3px dashed var(--vergleich); }
+  .pk .bild{ cursor:pointer; position:relative; }
+  .pk .lade{ position:absolute; inset:0; background:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--nav); border-radius:8px; text-align:center; padding:6px; }
 
   /* ---- Editor (Seitenleiste) ---- */
   #schleier{ position:fixed; inset:0; background:rgba(15,20,35,.28); z-index:40; display:none; }
@@ -172,6 +191,7 @@
   <div class="tab an" id="t-band"><div class="band" id="band"></div></div>
 
   <div class="tab" id="t-kal">
+   <div class="kalteil">
     <div class="kkopf">
       <button class="kn" id="kZur">◀</button><button class="kn" id="kHeute">Heute</button><button class="kn" id="kVor">▶</button>
       <h2 id="kTitel"></h2>
@@ -179,12 +199,15 @@
     </div>
     <div class="legende" id="legende"></div>
     <div class="kal" id="kal"></div>
+   </div>
+   <div class="ohneteil">
     <h3 class="unter">Ohne Termin <small id="ohneZahl"></small> <small>· Zeile in einen Tag ziehen</small></h3>
     <div class="tabwrap"><table><thead><tr><th></th><th>Nr</th><th>Art</th><th>Titel</th><th>Stand</th><th>Fehlt</th><th></th></tr></thead><tbody id="ohne"></tbody></table></div>
+   </div>
   </div>
 
   <div class="tab" id="t-bilder">
-    <div class="ablegen" id="ablegen">📥 Packungsfotos hier ablegen – <b>der Upload kommt später</b>. Bis dahin Fotos wie gewohnt an Claude schicken.</div>
+    <div class="ablegen" id="ablegen">📥 Fotos hier ablegen – der <b>Dateiname muss die P-Nr enthalten</b> (z. B. <i>P1099.jpg</i>). Oder ein Foto direkt auf eine Karte ziehen bzw. dort auf 📷 tippen.<br><small>Am besten freigestellt (PNG) – der Hintergrund wird weiß. JPG, PNG, WebP.</small></div>
     <div class="filter" id="bfilter">
       <button class="kn an" data-bf="alle">Alle</button><button class="kn" data-bf="ohne">ohne Bild</button><button class="kn" data-bf="frei">freigestellt</button>
       <button class="kn" data-bf="reel">im Reel</button><button class="kn" data-bf="frei_nicht">nicht verwendet</button><button class="kn" data-bf="pruef">Zuordnung prüfen</button>
@@ -249,7 +272,7 @@ function e(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ retur
 function lsGet(k){ try{ return localStorage.getItem(k); }catch(_){ return null; } }
 function lsSet(k, v){ try{ localStorage.setItem(k, v); }catch(_){} }
 
-var ZEILEN = [], P = {}, KAT = {}, BILD = {}, FOTO = {}, EXTRA = [], BUSY = false;
+var ZEILEN = [], P = {}, KAT = {}, BILD = {}, BILDQ = {}, FOTO = {}, EXTRA = [], BUSY = false;
 var SEL = {};                       // Mehrfachauswahl: id -> true
 var FB = {};                        // aktive Bereichsfilter (leer = alle)
 var SUCHE = "";
@@ -318,7 +341,9 @@ function reiter(t){
   document.querySelectorAll("nav button").forEach(function(x){ x.classList.toggle("an", x.dataset.t===t); });
   document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("an", x.id==="t-"+t); });
   $("filter").style.display = t==="bilder" ? "none" : "";
-  lsSet("cp_tab2", t);
+  lsSet("cp_tab2", t); document.body.classList.toggle("kalan", t==="kal");
+  if(t==="kal"){ window.scrollTo(0,0); setTimeout(kalHoehe, 0); }
+  if(typeof zeigeFilter==="function" && ZEILEN.length) zeigeFilter();
 }
 document.querySelectorAll("nav button").forEach(function(b){ b.onclick = function(){ reiter(b.dataset.t); }; });
 reiter(["band","kal","bilder"].indexOf(lsGet("cp_tab2"))>=0 ? lsGet("cp_tab2") : "band");
@@ -344,13 +369,13 @@ async function produkteLaden(liste){
     (p.data||[]).forEach(function(x){ P[x.id] = x; });
     var q = await vg.from("Produkte").select("Produkt_ID,Produktname,Marke,Kategorie,Bild_URL,Bild_URL_OFF").in("Produkt_ID", teil);
     (q.data||[]).forEach(function(x){
-      KAT[x.Produkt_ID] = x.Kategorie || ""; BILD[x.Produkt_ID] = x.Bild_URL || x.Bild_URL_OFF || null;
+      KAT[x.Produkt_ID] = x.Kategorie || ""; BILD[x.Produkt_ID] = x.Bild_URL || x.Bild_URL_OFF || null; BILDQ[x.Produkt_ID] = x.Bild_URL || null;
       if(!P[x.Produkt_ID]) P[x.Produkt_ID] = { id:x.Produkt_ID, name:x.Produktname, marke:x.Marke||"", clean_score:null, nichtImIndex:true };
     });
   }
 }
 
-function zeige(){ zeigeKopf(); zeigeFilter(); zeigeBand(); zeigeKal(); zeigeBilder(); leiste();
+function zeige(){ zeigeKopf(); zeigeBand(); zeigeKal(); zeigeFilter(); zeigeBilder(); leiste();
   meld(ZEILEN.length+" Einträge · Stand "+new Date().toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"})); }
 
 function zeigeKopf(){
@@ -365,14 +390,22 @@ function zeigeKopf(){
     + (ts ? "<span class='chip warn'><b>"+ts+"</b> Threads/Substack offen</span>" : "");
 }
 
+var KZEIT = null;   // sichtbarer Kalenderzeitraum {von, bis}
+function imBlick(x){
+  /* Zaehler passend zur Ansicht: im Kalender nur, was dort gerade zu sehen ist (Ralph 17.10.) */
+  var kal = $("t-kal").classList.contains("an");
+  if(!kal || !KZEIT) return true;
+  if(!x.Reel_geplant_am) return stufe(x)!=="online";
+  var d = new Date(x.Reel_geplant_am); return d >= KZEIT.von && d < KZEIT.bis;
+}
 function zeigeFilter(){
-  var z = {}; ZEILEN.forEach(function(x){ var b = bereich(x); z[b] = (z[b]||0)+1; });
+  var z = {}; ZEILEN.forEach(function(x){ if(!imBlick(x)) return; var b = bereich(x); z[b] = (z[b]||0)+1; });
   $("filter").innerHTML = "<button class='fchip alle"+(Object.keys(FB).length?"":" an")+"' data-fb=''>Alle</button>"
     + BER_REIHE.map(function(k){ return "<button class='fchip"+(FB[k]?" an":"")+"' style='--c:"+BER[k][1]+"' data-fb='"+k+"'>"+BER[k][0]+" "+(z[k]||0)+"</button>"; }).join("")
     + "<input class='suche' id='suche' placeholder='Suchen: Titel, Marke, P-Nr …' value='"+e(SUCHE)+"'>";
   $("filter").querySelectorAll("[data-fb]").forEach(function(b){ b.onclick = function(){
     var k = b.dataset.fb; if(!k) FB = {}; else if(FB[k]) delete FB[k]; else FB[k] = true;
-    zeigeFilter(); zeigeBand(); zeigeKal(); }; });
+    zeigeBand(); zeigeKal(); zeigeFilter(); }; });
   var s = $("suche"); s.oninput = function(){ SUCHE = s.value.trim().toLowerCase(); zeigeBand(); zeigeKal(); };
 }
 
@@ -458,10 +491,10 @@ $("lTermin").onclick = function(){
 /* ---- Kalender ---- */
 $("legende").innerHTML = BER_REIHE.map(function(k){ return "<span><i style='--c:"+BER[k][1]+"'></i>"+BER[k][0]+"</span>"; }).join("")
   + "<span><span class='nm'></span>noch nicht in Meta geplant</span><span style='opacity:.6'>blass = online</span>";
-document.querySelectorAll("[data-ans]").forEach(function(b){ b.onclick = function(){ KANS = b.dataset.ans; KOFF = 0; lsSet("cp_kans", KANS); zeigeKal(); }; });
-$("kZur").onclick = function(){ KOFF--; zeigeKal(); };
-$("kVor").onclick = function(){ KOFF++; zeigeKal(); };
-$("kHeute").onclick = function(){ KOFF = 0; zeigeKal(); };
+document.querySelectorAll("[data-ans]").forEach(function(b){ b.onclick = function(){ KANS = b.dataset.ans; KOFF = 0; lsSet("cp_kans", KANS); zeigeKal(); zeigeFilter(); }; });
+$("kZur").onclick = function(){ KOFF--; zeigeKal(); zeigeFilter(); };
+$("kVor").onclick = function(){ KOFF++; zeigeKal(); zeigeFilter(); };
+$("kHeute").onclick = function(){ KOFF = 0; zeigeKal(); zeigeFilter(); };
 function evHtml(x){
   var d = new Date(x.Reel_geplant_am), st = stufe(x), on = st==="online";
   return "<div class='ev"+(on?" on":(x.Reel_in_Meta?"":" nm"))+"' style='--c:"+BER[bereich(x)][1]+"' draggable='"+(!on)+"' data-id='"+x.id+"' title='"+e(titel(x)+(on?" · online":x.Reel_in_Meta?" · in Meta":" · noch nicht in Meta"))+"'>"
@@ -482,6 +515,7 @@ function zeigeKal(){
     var ende = new Date(start); ende.setDate(start.getDate()+13);
     $("kTitel").textContent = tm(start)+" – "+tm(ende)+ende.getFullYear();
   }
+  var bisK = new Date(start); bisK.setDate(start.getDate()+tage); KZEIT = { von:new Date(start), bis:bisK };
   var ev = ZEILEN.filter(function(x){ return x.Reel_geplant_am && passt(x); })
     .sort(function(a,b){ return new Date(a.Reel_geplant_am)-new Date(b.Reel_geplant_am); });
   var html = ["Mo","Di","Mi","Do","Fr","Sa","So"].map(function(w){ return "<div class='wt'>"+w+"</div>"; }).join("");
@@ -494,6 +528,7 @@ function zeigeKal(){
       + drin.map(evHtml).join("") + "</div>";
   }
   $("kal").className = "kal"+(KANS==="monat"?" monat":"");
+  setTimeout(kalHoehe, 0);
   $("kal").innerHTML = html;
 
   /* Ohne Termin */
@@ -508,6 +543,12 @@ function zeigeKal(){
   }).join("") || "<tr><td colspan='7'><small>Alles hat einen Termin.</small></td></tr>";
   kalVerdrahten();
 }
+function kalHoehe(){
+  var t = $("t-kal"); if(!t.classList.contains("an")) return;
+  if(window.innerWidth <= 700){ t.style.height = ""; return; }
+  t.style.height = Math.max(420, window.innerHeight - (t.getBoundingClientRect().top + window.scrollY) - 36) + "px";
+}
+window.addEventListener("resize", kalHoehe);
 var ZIEH = null;
 function kalVerdrahten(){
   document.querySelectorAll("#kal .ev, #ohne tr.zieh").forEach(function(el){
@@ -674,12 +715,14 @@ function zeigeBilder(){
       + (o.reel ? "<span class='gut'>🎬 im Reel</span>" : "") + (o.pruef ? "<span class='rot'>Zuordnung prüfen</span>" : "")
       + (!o.bild ? "<span class='warn'>kein Bild im Index</span>" : "")
       + (o.V.length ? "<span>"+o.V.map(function(x){ return "Nr "+x.Nr; }).join(", ")+"</span>" : "<span>nicht verwendet</span>");
-    return "<div class='pk'><div class='bild'>"+(o.bild?"<img loading='lazy' src='"+e(o.bild)+"' alt='' onerror=\"this.outerHTML='<span>📦</span>'\">":"<span>📦</span>")+"</div>"
+    var lauf = UPL[o.id];
+    return "<div class='pk' data-pk='"+e(o.id)+"'><div class='bild' data-up='"+e(o.id)+"' title='Bild einfügen'>"+(lauf?"<div class='lade'>"+e(lauf)+"</div>":"")+(o.bild?"<img loading='lazy' src='"+e(o.bild)+"' alt='' onerror=\"this.outerHTML='<span>📦</span>'\">":"<span>📦</span>")+"</div>"
       + "<div class='kreis' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
       + "<div class='mk'>"+e(p.marke)+" · "+e(o.id)+"</div><div class='nm'>"+e(p.name)+"</div>"
       + "<div class='mm'>"+mm+"</div>"
       + "<div class='akt'><label title='Foto vorne vorhanden'><input type='checkbox' data-pf='"+e(o.id)+"'"+(o.fo.foto_vorne?" checked":"")+">Foto</label>"
       + "<label title='freigestellt'><input type='checkbox' data-pfr='"+e(o.id)+"'"+(o.fo.foto_frei?" checked":"")+">frei</label>"
+      + "<button data-up='"+e(o.id)+"' title='Bild einfügen'>📷 Bild</button>"
       + "<button data-pv='"+e(o.id)+"'>+ Vergleich</button><button data-pe='"+e(o.id)+"'>+ Einzel</button>"
       + "<button data-pdel='"+e(o.id)+"' style='color:#a3261d' title='aus der Liste nehmen'>✕</button></div></div>";
   }).join("") || "<small>Keine Produkte in dieser Auswahl.</small>";
@@ -693,6 +736,7 @@ $("raster").onchange = async function(ev){
   FOTO[id] = Object.assign({}, alt, w); zeigeBilder(); meld("Foto gespeichert ✓");
 };
 $("raster").onclick = async function(ev){
+  var u = ev.target.closest("[data-up]"); if(u){ waehleDatei(u.dataset.up); return; }
   var b = ev.target.closest("button"); if(!b || BUSY) return;
   if(b.dataset.pv || b.dataset.pe){
     var id = b.dataset.pv || b.dataset.pe, typ = b.dataset.pv ? "Vergleich" : "Einzel";
@@ -725,10 +769,76 @@ $("pNeuOk").onclick = async function(){
 (function(){ var a = $("ablegen");
   ["dragenter","dragover"].forEach(function(t){ a.addEventListener(t, function(ev){ ev.preventDefault(); a.classList.add("ueber"); }); });
   a.addEventListener("dragleave", function(){ a.classList.remove("ueber"); });
-  a.addEventListener("drop", function(ev){ ev.preventDefault(); a.classList.remove("ueber");
-    var n = ev.dataTransfer && ev.dataTransfer.files ? ev.dataTransfer.files.length : 0;
-    meld(n+" Datei(en) erkannt – der Upload ist noch nicht gebaut. Bitte an Claude schicken."); });
+  a.addEventListener("drop", async function(ev){ ev.preventDefault(); a.classList.remove("ueber");
+    var fs = Array.prototype.slice.call((ev.dataTransfer && ev.dataTransfer.files) || []), ohne = [];
+    for(var i=0; i<fs.length; i++){
+      var m = fs[i].name.match(/p\d+/i);
+      if(!m){ ohne.push(fs[i].name); continue; }
+      await hochladen(m[0].toUpperCase(), fs[i]);
+    }
+    if(ohne.length) meld("Ohne P-Nr im Namen, nicht übernommen: "+ohne.join(", ")+" – auf die passende Karte ziehen.");
+  });
+  a.addEventListener("click", function(){ meld("Tipp: Foto auf eine Karte ziehen oder dort 📷 Bild antippen."); });
 })();
+/* Ziehen direkt auf eine Produktkarte */
+(function(){ var r = $("raster");
+  r.addEventListener("dragover", function(ev){ var k = ev.target.closest(".pk"); if(!k) return; ev.preventDefault();
+    r.querySelectorAll(".pk.ueber").forEach(function(x){ if(x!==k) x.classList.remove("ueber"); }); k.classList.add("ueber"); });
+  r.addEventListener("dragleave", function(ev){ var k = ev.target.closest(".pk"); if(k && !k.contains(ev.relatedTarget)) k.classList.remove("ueber"); });
+  r.addEventListener("drop", function(ev){ var k = ev.target.closest(".pk"); if(!k) return; ev.preventDefault(); k.classList.remove("ueber");
+    var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if(f) hochladen(k.dataset.pk, f); });
+})();
+
+/* ---- Bild einfuegen (17.10.2026) ---- */
+var UPL = {};   // P-ID -> Statustext waehrend des Uploads
+var DATEI = document.createElement("input"); DATEI.type = "file"; DATEI.accept = "image/jpeg,image/png,image/webp,image/*"; DATEI.style.display = "none";
+document.body.appendChild(DATEI);
+function waehleDatei(id){ DATEI.value = ""; DATEI.onchange = function(){ if(DATEI.files[0]) hochladen(id, DATEI.files[0]); }; DATEI.click(); }
+function bildLaden(datei){ return new Promise(function(ok, nein){
+  var u = URL.createObjectURL(datei), img = new Image();
+  img.onload = function(){ ok(img); setTimeout(function(){ URL.revokeObjectURL(u); }, 1000); };
+  img.onerror = function(){ URL.revokeObjectURL(u); nein(new Error("Bild lässt sich nicht öffnen (HEIC? Bitte als JPG/PNG exportieren)")); };
+  img.src = u; }); }
+/* wie Schritt 9: weisser Grund, hoechstens 900 px hoch (und 1400 px breit), JPEG Qualitaet 88 */
+async function aufbereiten(datei){
+  var img = await bildLaden(datei), w = img.naturalWidth, h = img.naturalHeight;
+  var f = Math.min(1, 900/h, 1400/w), cw = Math.max(1, Math.round(w*f)), ch = Math.max(1, Math.round(h*f));
+  var c = document.createElement("canvas"); c.width = cw; c.height = ch;
+  var g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, cw, ch); g.drawImage(img, 0, 0, cw, ch);
+  return c.toDataURL("image/jpeg", 0.88).split(",")[1];
+}
+function setzeUpl(id, t){ if(t) UPL[id] = t; else delete UPL[id]; zeigeBilder(); }
+async function hochladen(id, datei){
+  id = pid(id);
+  if(!/^image\//.test(datei.type||"") && !/\.(jpe?g|png|webp)$/i.test(datei.name||"")){ meld(datei.name+": kein Bild."); return; }
+  if(datei.size > 25e6){ meld(datei.name+": zu groß."); return; }
+  if(!P[id]){ await produkteLaden([id]); }
+  if(!P[id]){ meld(id+" nicht gefunden."); return; }
+  var name = P[id].marke+" "+P[id].name, alt = BILDQ[id], fremd = alt && alt.indexOf("/storage/v1/object/public/produktbilder/")<0, ersetzen = false;
+  if(fremd){
+    if(!confirm("„"+name+"“ hat schon ein fremdes Bild (z. B. Hersteller/OFF).\nDurch dein Foto ersetzen?")) return;
+    ersetzen = true;
+  } else if(alt && !confirm("„"+name+"“ hat schon ein eigenes Bild. Durch das neue ersetzen?")) return;
+  try{
+    setzeUpl(id, "bereite vor …");
+    var b64 = await aufbereiten(datei);
+    setzeUpl(id, "lade hoch …");
+    var r = await vg.rpc("cb_admin_produktbild_einreichen", { p_produkt_id:id, p_daten_base64:b64, p_mime:"image/jpeg", p_ersetzen:ersetzen });
+    if(r.error) throw new Error(r.error.message);
+    var nr = r.data, st = null;
+    for(var i=0; i<15; i++){
+      await new Promise(function(ok){ setTimeout(ok, i<3 ? 1500 : 2500); });
+      var s = await vg.rpc("cb_admin_produktbild_status", { p_id:nr });
+      st = s.data && s.data[0]; if(st && st.status!=="offen" && st.status!=="laeuft") break;
+    }
+    if(!st || st.status==="offen" || st.status==="laeuft"){ setzeUpl(id, null); meld(id+": Bild liegt im Eingang (Nr "+nr+") – wird gleich übernommen, später neu laden."); return; }
+    if(st.status==="erledigt"){ BILD[id] = BILDQ[id] = st.bild_url;
+      var fo = FOTO[id] || {}, w = { produkt_id:id, foto_vorne:true, foto_frei:!!fo.foto_frei, aktualisiert_am:new Date().toISOString() };
+      var rf = await vg.from("content_produkt_foto").upsert(w); if(!rf.error) FOTO[id] = Object.assign({}, fo, w);
+      setzeUpl(id, null); zeigeBand(); meld(name+": Bild übernommen ✓"); return; }
+    setzeUpl(id, null); meld(name+": "+st.status+(st.fehler?" – "+st.fehler:""));
+  }catch(err){ setzeUpl(id, null); meld(name+": "+(err.message||err)); }
+}
 
 laden();
 </script>
