@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<!-- REEL-EDITOR (reel-editor.html) · Ralph 17.10.2026: „wenn ich einen Editor haette, wuerde ich es dir zeigen, wie ich es mir
+     vorstelle – sowas koennte oefter gebraucht werden.“
+     Ralph legt das Startbild (oder jede Szene) eines Reels auf einer Flaeche 1080x1920 zurecht: Ueberschrift, Produktfoto (P-Nr),
+     eigenes Bild (z. B. Nutri-Score-Ausschnitt), Flux mit echten Punkten, weisse Karte, Text. Verschieben, Groesse, Drehen, Ebenen.
+     „Als Vorlage speichern“ schreibt public.reel_vorlage (layout jsonb, Koordinaten in Reel-Pixeln). Claude baut daraus das Reel.
+     Hochgeladene Bilder: Bucket vergleich-fotos (privat, nur Admin), Pfad editor/…; Anzeige ueber signierte Links.
+     Produktdaten: v_web_produkte (Punkte) + cb_admin_produkte_info (Name, Bild). Schreibrecht: RLS rv_admin_all (cb_ist_admin()). -->
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Reel-Editor · Root Index</title>
+<style>
+  :root{ --ink:#1f2433; --mut:#6b7186; --lin:#e2e4ec; --nav:#16233d; --akz:#2F6FDE; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font:14px/1.45 -apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink); background:#eef0f4; height:100vh; display:flex; flex-direction:column; }
+  header{ background:var(--nav); color:#fff; padding:10px 16px; display:flex; flex-wrap:wrap; gap:8px 14px; align-items:center; }
+  header h1{ font-size:17px; margin:0; } header a{ color:#9fc3ff; font-size:13px; }
+  .leiste{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-left:auto; }
+  .kn{ border:1px solid var(--lin); background:#fff; border-radius:8px; padding:5px 10px; cursor:pointer; font:inherit; font-size:13px; color:var(--ink); }
+  header .kn{ background:rgba(255,255,255,.1); color:#fff; border-color:rgba(255,255,255,.25); }
+  .kn.haupt{ background:var(--akz); color:#fff; border-color:var(--akz); }
+  .kn.rot{ color:#a3261d; border-color:#f0c9c5; }
+  select, input, textarea{ font:inherit; padding:5px 8px; border:1px solid var(--lin); border-radius:8px; color:var(--ink); background:#fff; }
+  header select, header input{ background:#fff; }
+  main{ flex:1; display:grid; grid-template-columns:220px 1fr 290px; min-height:0; }
+  #palette, #props{ background:#fff; border-right:1px solid var(--lin); padding:12px; overflow-y:auto; }
+  #props{ border-right:none; border-left:1px solid var(--lin); }
+  h3{ font-size:12px; text-transform:uppercase; letter-spacing:.5px; color:var(--mut); margin:4px 0 8px; }
+  #palette button{ display:block; width:100%; text-align:left; margin-bottom:6px; }
+  #buehne{ display:flex; align-items:center; justify-content:center; overflow:hidden; position:relative; }
+  #flaeche{ width:1080px; height:1920px; position:relative; overflow:hidden; transform-origin:0 0; flex:none;
+    background:radial-gradient(90% 60% at 50% 38%,#22352a,#0d1510 75%); box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  #wrap{ position:relative; }
+  .el{ position:absolute; cursor:move; user-select:none; touch-action:none; }
+  .el.sel{ outline:4px solid #FFD43B; outline-offset:4px; }
+  .el img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; }
+  .el .txt{ width:100%; font-family:Inter,-apple-system,"Segoe UI",sans-serif; font-weight:800; white-space:pre-wrap; line-height:1.05; letter-spacing:-1.5px; }
+  .el.karte{ background:#fff; border-radius:30px; box-shadow:0 22px 50px rgba(0,0,0,.55); }
+  .el .griff{ position:absolute; right:-22px; bottom:-22px; width:44px; height:44px; border-radius:50%; background:#FFD43B; border:4px solid #fff; cursor:nwse-resize; display:none; }
+  .el.sel .griff{ display:block; }
+  .hilfe{ position:absolute; background:#ff3ea5; pointer-events:none; display:none; z-index:9999; }
+  #hv{ left:539px; top:0; width:2px; height:1920px; } #hh{ top:959px; left:0; height:2px; width:1080px; }
+  .feld{ display:flex; flex-direction:column; gap:3px; margin-bottom:9px; font-size:12px; color:var(--mut); }
+  .feld input, .feld textarea, .feld select{ width:100%; }
+  .reihe{ display:flex; gap:6px; } .reihe > *{ flex:1; min-width:0; }
+  #msg{ font-size:12.5px; color:var(--mut); padding:6px 16px; background:#fff; border-top:1px solid var(--lin); min-height:30px; }
+  .tipp{ font-size:12px; color:var(--mut); background:#f6f7fa; border-radius:8px; padding:8px; margin-top:10px; }
+  @media (max-width:900px){ main{ grid-template-columns:1fr; grid-template-rows:auto 60vh auto; } #palette, #props{ border:none; } #palette button{ display:inline-block; width:auto; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>🎬 Reel-Editor</h1><a href="vergleiche.html">← Content-Plan</a>
+  <div class="leiste">
+    <select id="vorlagen"><option value="">– Vorlage laden –</option></select>
+    <input id="vName" placeholder="Name der Vorlage" style="width:200px">
+    <input id="vNr" placeholder="Nr" style="width:60px" title="Nr im Content-Plan (optional)">
+    <button class="kn haupt" id="speichern">Als Vorlage speichern</button>
+    <button class="kn" id="neu">Neu</button>
+    <button class="kn" id="png">Als Bild laden</button>
+  </div>
+</header>
+<main>
+  <aside id="palette">
+    <h3>Bausteine</h3>
+    <button class="kn" data-neu="ueberschrift">🔠 Überschrift</button>
+    <button class="kn" data-neu="text">✏️ Text</button>
+    <button class="kn" data-neu="produkt">📦 Produktfoto (P-Nr)</button>
+    <button class="kn" data-neu="bild">🖼 Eigenes Bild hochladen</button>
+    <button class="kn" data-neu="flux">🌸 Flux mit Punkten</button>
+    <button class="kn" data-neu="karte">⬜ Weiße Karte</button>
+    <button class="kn" data-neu="kopf">🌱 Logo-Kopf</button>
+    <button class="kn" data-neu="speichern">📌 Speichern-Satz</button>
+    <button class="kn" data-neu="fuss">🔗 App-Fußzeile</button>
+    <h3 style="margin-top:16px">Muster</h3>
+    <button class="kn" id="muster">Nutri-Score gegen Root Index</button>
+    <div class="tipp">Ziehen = verschieben · gelber Punkt = Größe · Entf = löschen · Pfeiltasten = fein schieben (Shift = 10 px). Pinke Linie = Mitte.</div>
+  </aside>
+  <section id="buehne"><div id="wrap"><div id="flaeche"><div class="hilfe" id="hv"></div><div class="hilfe" id="hh"></div></div></div></section>
+  <aside id="props"><h3>Eigenschaften</h3><div id="pinhalt"><small>Baustein anklicken.</small></div></aside>
+</main>
+<div id="msg">lädt …</div>
+<input type="file" id="datei" accept="image/*" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+var vg = supabase.createClient("https://haurbpfkfaaehorirzee.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw",
+  { auth:{ persistSession:true, autoRefreshToken:true, detectSessionInUrl:false, storage:window.localStorage, storageKey:"sb-cleanbase-auth" } });
+function $(id){ return document.getElementById(id); }
+function e(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){ return ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[c]; }); }
+function meld(t){ $("msg").textContent = t; }
+var EL = [], SEL = null, AKT = null, SKAL = 0.4, NID = 1, URLS = {}, PRODUKT = {};
+var ACHS = [["Nährwerte",40],["Zutaten",30],["Zusatzstoffe",15],["Verarbeitung",15]], FARBEN = ["#F2A900","#16a34a","#8b5cf6","#2f7fe0"];
+function rf(n){ return n>=90?"#16a34a":n>=75?"#65a30d":n>=60?"#e8920c":"#dc2626"; }
+
+/* ---- Flaeche skalieren ---- */
+function skalieren(){
+  var b = $("buehne"), w = b.clientWidth - 30, h = b.clientHeight - 30;
+  SKAL = Math.max(0.15, Math.min(w/1080, h/1920));
+  $("flaeche").style.transform = "scale("+SKAL+")";
+  $("wrap").style.width = (1080*SKAL)+"px"; $("wrap").style.height = (1920*SKAL)+"px";
+}
+window.addEventListener("resize", skalieren);
+
+/* ---- Bausteine ---- */
+var VORGABE = {
+  ueberschrift:{ w:1000, h:220, x:40, y:160, text:"Nutri-Score A.\nRoot Index: 51.", size:96, farbe:"#F3EEDC", farbe2:"#FF6B6B", align:"center" },
+  text:{ w:700, h:80, x:190, y:1200, text:"Text", size:48, farbe:"#F3EEDC", farbe2:"", align:"center" },
+  produkt:{ w:540, h:720, x:270, y:440, pnr:"" },
+  bild:{ w:400, h:230, x:30, y:700, pfad:"" },
+  flux:{ w:330, h:300, x:720, y:720, pnr:"", karte:true },
+  karte:{ w:400, h:250, x:340, y:1300 },
+  kopf:{ w:420, h:70, x:56, y:62 },
+  speichern:{ w:1000, h:60, x:40, y:1790, text:"📌 Speichern und beim Einkauf nachschauen.", size:30, farbe:"#F3EEDC", farbe2:"", align:"center" },
+  fuss:{ w:1000, h:50, x:40, y:1840, text:"Alle Werte in der App: root-index.de/app", size:30, farbe:"rgba(243,238,220,.75)", farbe2:"", align:"center" }
+};
+function neuesEl(typ, werte){
+  var v = Object.assign({ id:NID++, typ:typ, rot:0 }, JSON.parse(JSON.stringify(VORGABE[typ])), werte||{});
+  EL.push(v); zeichne(); waehle(v.id); return v;
+}
+function fluxSvg(p, karte){
+  var ax = p ? [p.p_naehrwert*2, p.p_zutaten, p.p_zusatzstoffe, p.p_nova].map(Number) : [40,30,15,15];
+  var sc = p && p.clean_score!=null ? Math.floor(Number(p.clean_score)+0.5) : null;
+  var bahn = ["M16 20 H44 L62 38","M164 20 H136 L118 38","M16 104 H44 L62 86","M164 104 H136 L118 86"], kap = [[16,20],[164,20],[16,104],[164,104]], o = "";
+  ax.forEach(function(v,j){ o += '<path d="'+bahn[j]+'" stroke="'+(karte?"#e6e8ee":"rgba(243,238,220,.16)")+'"/><path d="'+bahn[j]+'" stroke="'+FARBEN[j]+'" stroke-dasharray="58" stroke-dashoffset="'+(58*(1-v/ACHS[j][1])).toFixed(1)+'"/>'; });
+  var d = kap.map(function(k,j){ return '<circle cx="'+k[0]+'" cy="'+k[1]+'" r="7" fill="'+FARBEN[j]+'"/>'; }).join("");
+  var fg = karte ? "#1f2433" : "#F3EEDC";
+  return '<svg viewBox="0 0 180 140" width="100%" height="100%"><g fill="none" stroke-width="9" stroke-linecap="round" stroke-linejoin="round">'+o+'</g>'+d
+    + '<circle cx="90" cy="62" r="31" fill="'+(karte?"#fff":"#0E2016")+'" stroke="'+rf(sc==null?100:sc)+'" stroke-width="5"/>'
+    + '<text x="90" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="28" fill="'+fg+'">'+(sc==null?"–":sc)+'</text>'
+    + '<text x="90" y="134" text-anchor="middle" font-family="Inter,sans-serif" font-weight="800" font-size="12" letter-spacing="1.5" fill="'+fg+'">ROOT INDEX</text></svg>';
+}
+function inhalt(v){
+  if(v.typ==="ueberschrift" || v.typ==="text" || v.typ==="speichern" || v.typ==="fuss"){
+    var z = String(v.text||"").split("\n");
+    return '<div class="txt" style="font-size:'+v.size+'px;color:'+v.farbe+';text-align:'+(v.align||"center")+'">'
+      + z.map(function(t,i){ return '<span style="color:'+(i>0 && v.farbe2 ? v.farbe2 : v.farbe)+'">'+e(t)+'</span>'; }).join("\n") + '</div>';
+  }
+  if(v.typ==="produkt"){ var p = PRODUKT[v.pnr]; return p && p.bild ? '<img crossorigin="anonymous" src="'+e(p.bild)+'">' : '<div style="width:100%;height:100%;border:4px dashed rgba(255,255,255,.4);border-radius:20px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:40px">📦 '+e(v.pnr||"P-Nr?")+'</div>'; }
+  if(v.typ==="bild" && /^repo:/.test(v.pfad||"")) return '<img crossorigin="anonymous" src="'+e(v.pfad.slice(5))+'">';
+  if(v.typ==="bild"){ return URLS[v.pfad] ? '<img crossorigin="anonymous" src="'+e(URLS[v.pfad])+'">' : '<div style="width:100%;height:100%;border:4px dashed rgba(255,255,255,.4);border-radius:20px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:36px">🖼 Bild wählen</div>'; }
+  if(v.typ==="flux"){ return fluxSvg(PRODUKT[v.pnr], v.karte); }
+  if(v.typ==="kopf"){ return '<div style="display:flex;align-items:center;gap:16px;font-weight:800;font-size:38px;color:#F3EEDC;height:100%"><img src="logo.svg" style="width:64px;height:64px">Root Index<sup style="font-size:20px">™</sup></div>'; }
+  return "";
+}
+function zeichne(){
+  var f = $("flaeche");
+  f.querySelectorAll(".el").forEach(function(n){ n.remove(); });
+  EL.forEach(function(v, i){
+    var d = document.createElement("div");
+    d.className = "el" + (v.typ==="karte" || (v.typ==="flux" && v.karte) ? " karte" : "") + (SEL===v.id ? " sel" : "");
+    d.dataset.id = v.id;
+    d.style.cssText = "left:"+v.x+"px;top:"+v.y+"px;width:"+v.w+"px;height:"+v.h+"px;transform:rotate("+(v.rot||0)+"deg);z-index:"+(i+1)+(v.typ==="flux"&&v.karte?";padding:16px":"");
+    d.innerHTML = inhalt(v) + '<div class="griff"></div>';
+    f.appendChild(d);
+  });
+}
+
+/* ---- Auswahl und Eigenschaften ---- */
+function el(id){ return EL.filter(function(v){ return v.id===id; })[0]; }
+function waehle(id){ SEL = id; zeichne(); props(); }
+function feld(lab, html){ return '<label class="feld">'+lab+html+'</label>'; }
+function props(){
+  var v = el(SEL), h = "";
+  if(!v){ $("pinhalt").innerHTML = "<small>Baustein anklicken.</small>"; return; }
+  h += '<div class="reihe">'+feld("X",'<input type="number" data-p="x" value="'+Math.round(v.x)+'">')+feld("Y",'<input type="number" data-p="y" value="'+Math.round(v.y)+'">')+'</div>';
+  h += '<div class="reihe">'+feld("Breite",'<input type="number" data-p="w" value="'+Math.round(v.w)+'">')+feld("Höhe",'<input type="number" data-p="h" value="'+Math.round(v.h)+'">')+'</div>';
+  h += feld("Drehung: "+(v.rot||0)+"°",'<input type="range" min="-30" max="30" step="1" data-p="rot" value="'+(v.rot||0)+'">');
+  if(v.text!=null){
+    h += feld("Text (Enter = neue Zeile)",'<textarea rows="3" data-p="text">'+e(v.text)+'</textarea>');
+    h += '<div class="reihe">'+feld("Größe",'<input type="number" data-p="size" value="'+v.size+'">')+feld("Ausrichtung",'<select data-p="align"><option'+(v.align==="left"?" selected":"")+'>left</option><option'+(v.align==="center"?" selected":"")+'>center</option><option'+(v.align==="right"?" selected":"")+'>right</option></select>')+'</div>';
+    h += '<div class="reihe">'+feld("Farbe",'<select data-p="farbe">'+farbOpt(v.farbe)+'</select>')+feld("Farbe ab Zeile 2",'<select data-p="farbe2"><option value="">gleich</option>'+farbOpt(v.farbe2)+'</select>')+'</div>';
+  }
+  if(v.typ==="produkt" || v.typ==="flux"){
+    var p = PRODUKT[v.pnr];
+    h += feld("P-Nr",'<input data-p="pnr" value="'+e(v.pnr||"")+'" placeholder="z. B. P28461">');
+    h += '<small>'+(p ? e(p.marke+" · "+p.name)+(p.clean_score!=null?" · "+Math.floor(Number(p.clean_score)+0.5)+" Pkt":" · keine Punkte") : "")+'</small>';
+  }
+  if(v.typ==="flux") h += '<label style="display:flex;gap:6px;align-items:center;margin:4px 0 8px"><input type="checkbox" data-p="karte"'+(v.karte?" checked":"")+'> auf weißer Karte</label>';
+  if(v.typ==="bild") h += '<button class="kn" id="bildWahl">🖼 Bild auswählen …</button> <small>'+e(v.pfad ? v.pfad.split("/").pop() : "")+'</small>';
+  h += '<div class="reihe" style="margin-top:10px"><button class="kn" id="vor">⬆ nach vorn</button><button class="kn" id="zur">⬇ nach hinten</button></div>';
+  h += '<div class="reihe" style="margin-top:6px"><button class="kn" id="mitte">↔ mittig</button><button class="kn" id="kopie">⧉ Kopie</button><button class="kn rot" id="weg">✕</button></div>';
+  $("pinhalt").innerHTML = h;
+  $("pinhalt").querySelectorAll("[data-p]").forEach(function(i){
+    i.oninput = i.onchange = async function(){
+      var k = i.dataset.p, w = i.type==="checkbox" ? i.checked : i.value;
+      if(["x","y","w","h","rot","size"].indexOf(k)>=0) w = Number(w);
+      if(k==="pnr"){ w = String(w).trim().toUpperCase(); v.pnr = w; if(/^P\d+$/.test(w)) await produkt(w, v); zeichne(); return; }
+      v[k] = w; zeichne(); if(k==="rot") i.previousSibling && (i.closest("label").firstChild.textContent = "Drehung: "+w+"°");
+    };
+  });
+  if($("bildWahl")) $("bildWahl").onclick = function(){ $("datei").click(); };
+  $("vor").onclick = function(){ var i = EL.indexOf(v); if(i<EL.length-1){ EL.splice(i,1); EL.splice(i+1,0,v); zeichne(); } };
+  $("zur").onclick = function(){ var i = EL.indexOf(v); if(i>0){ EL.splice(i,1); EL.splice(i-1,0,v); zeichne(); } };
+  $("mitte").onclick = function(){ v.x = Math.round(540 - v.w/2); zeichne(); props(); };
+  $("kopie").onclick = function(){ var k = JSON.parse(JSON.stringify(v)); k.id = NID++; k.x += 30; k.y += 30; EL.push(k); waehle(k.id); };
+  $("weg").onclick = function(){ EL = EL.filter(function(x){ return x!==v; }); SEL = null; zeichne(); props(); };
+}
+var FARBEN_TXT = [["#F3EEDC","Creme"],["#7CFF9B","Grün"],["#FF6B6B","Rot"],["#FFB347","Orange"],["#FFD43B","Gelb"],["#ffffff","Weiß"],["#1f2433","Dunkel"],["rgba(243,238,220,.75)","Grau"]];
+function farbOpt(sel){ return FARBEN_TXT.map(function(f){ return '<option value="'+f[0]+'"'+(f[0]===sel?" selected":"")+'>'+f[1]+'</option>'; }).join(""); }
+
+/* ---- Produktdaten ---- */
+async function produkt(pnr, v){
+  if(PRODUKT[pnr]) return PRODUKT[pnr];
+  var a = await vg.from("v_web_produkte").select("id,name,marke,clean_score,p_zutaten,p_zusatzstoffe,p_nova,p_naehrwert").eq("id", pnr);
+  var b = await vg.rpc("cb_admin_produkte_info", { p_ids:[pnr] });
+  if(b.error){ meld("Produkt: "+b.error.message); }
+  var x = (a.data||[])[0] || {}, y = (b.data||[])[0] || {};
+  if(!x.id && !y.id){ meld(pnr+" nicht gefunden"); return null; }
+  PRODUKT[pnr] = Object.assign({ name:y.name, marke:y.marke }, x, { bild: y.bild_url || y.bild_url_off || null });
+  if(v && v.typ==="produkt" && PRODUKT[pnr].bild){ await seitenverhaeltnis(PRODUKT[pnr].bild, v); }
+  meld(pnr+": "+(PRODUKT[pnr].marke||"")+" "+(PRODUKT[pnr].name||"")); return PRODUKT[pnr];
+}
+function seitenverhaeltnis(url, v){ return new Promise(function(ok){ var i = new Image(); i.crossOrigin = "anonymous";
+  i.onload = function(){ v.h = Math.round(v.w * i.naturalHeight / i.naturalWidth); ok(); }; i.onerror = function(){ ok(); }; i.src = url; }); }
+
+/* ---- Eigenes Bild hochladen ---- */
+$("datei").onchange = async function(){
+  var f = this.files[0], v = el(SEL); if(!f || !v || v.typ!=="bild") return;
+  meld("lade hoch …");
+  var pfad = "editor/"+Date.now()+"-"+f.name.replace(/[^a-z0-9._-]/gi,"_");
+  var r = await vg.storage.from("vergleich-fotos").upload(pfad, f, { contentType:f.type||"image/png", upsert:false });
+  if(r.error){ meld("Upload: "+r.error.message); return; }
+  v.pfad = pfad; await signieren([pfad]); await seitenverhaeltnis(URLS[pfad], v); zeichne(); props(); meld("Bild hochgeladen ✓");
+};
+async function signieren(pfade){
+  pfade = pfade.filter(function(p){ return p && !URLS[p]; }); if(!pfade.length) return;
+  var r = await vg.storage.from("vergleich-fotos").createSignedUrls(pfade, 60*60*6);
+  (r.data||[]).forEach(function(x){ if(x.signedUrl) URLS[x.path] = x.signedUrl; });
+}
+
+/* ---- Ziehen / Groesse (Maus und Finger) ---- */
+$("flaeche").addEventListener("pointerdown", function(ev){
+  var d = ev.target.closest(".el"); if(!d){ SEL = null; zeichne(); props(); return; }
+  var v = el(+d.dataset.id); if(SEL!==v.id) waehle(v.id);
+  AKT = { v:v, modus: ev.target.classList.contains("griff") ? "gross" : "zieh", sx:ev.clientX, sy:ev.clientY, x:v.x, y:v.y, w:v.w, h:v.h };
+  ev.preventDefault();
+});
+window.addEventListener("pointermove", function(ev){
+  if(!AKT) return; var v = AKT.v, dx = (ev.clientX-AKT.sx)/SKAL, dy = (ev.clientY-AKT.sy)/SKAL;
+  if(AKT.modus==="zieh"){
+    v.x = AKT.x + dx; v.y = AKT.y + dy;
+    var mx = v.x + v.w/2, my = v.y + v.h/2;
+    if(Math.abs(mx-540) < 12){ v.x = 540 - v.w/2; $("hv").style.display = "block"; } else $("hv").style.display = "none";
+    if(Math.abs(my-960) < 12){ v.y = 960 - v.h/2; $("hh").style.display = "block"; } else $("hh").style.display = "none";
+  } else {
+    var fest = v.typ==="produkt" || v.typ==="bild" || v.typ==="flux" || v.typ==="kopf";
+    v.w = Math.max(30, AKT.w + dx); v.h = fest ? Math.max(30, AKT.h * v.w / AKT.w) : Math.max(30, AKT.h + dy);
+  }
+  var n = document.querySelector('.el[data-id="'+v.id+'"]');
+  if(n){ n.style.left = v.x+"px"; n.style.top = v.y+"px"; n.style.width = v.w+"px"; n.style.height = v.h+"px"; }
+});
+window.addEventListener("pointerup", function(){ if(AKT){ AKT = null; $("hv").style.display = $("hh").style.display = "none"; props(); } });
+document.addEventListener("keydown", function(ev){
+  var v = el(SEL); if(!v || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+  var s = ev.shiftKey ? 10 : 1;
+  if(ev.key==="Delete" || ev.key==="Backspace"){ EL = EL.filter(function(x){ return x!==v; }); SEL = null; zeichne(); props(); ev.preventDefault(); }
+  else if(ev.key==="ArrowLeft"){ v.x -= s; } else if(ev.key==="ArrowRight"){ v.x += s; } else if(ev.key==="ArrowUp"){ v.y -= s; } else if(ev.key==="ArrowDown"){ v.y += s; } else return;
+  ev.preventDefault(); zeichne(); props();
+});
+document.querySelectorAll("[data-neu]").forEach(function(b){ b.onclick = function(){
+  var v = neuesEl(b.dataset.neu); if(v.typ==="bild") $("datei").click();
+}; });
+
+/* ---- Vorlagen speichern / laden ---- */
+var VID = null;
+async function liste(){
+  var r = await vg.from("reel_vorlage").select("id,name,nr,aktualisiert_am").order("aktualisiert_am",{ascending:false});
+  if(r.error){ meld("Fehler: "+r.error.message+" (im Admin angemeldet?)"); return; }
+  $("vorlagen").innerHTML = '<option value="">– Vorlage laden –</option>' + (r.data||[]).map(function(x){ return '<option value="'+x.id+'">'+e(x.name)+(x.nr?" · Nr "+x.nr:"")+'</option>'; }).join("");
+  if(VID) $("vorlagen").value = String(VID);
+}
+$("vorlagen").onchange = async function(){
+  var id = +this.value; if(!id) return;
+  var r = await vg.from("reel_vorlage").select("*").eq("id", id).single();
+  if(r.error){ meld("Fehler: "+r.error.message); return; }
+  VID = id; $("vName").value = r.data.name; $("vNr").value = r.data.nr || "";
+  EL = (r.data.layout && r.data.layout.elemente) || []; NID = EL.reduce(function(m,v){ return Math.max(m, v.id+1); }, 1);
+  await nachladen(); SEL = null; zeichne(); props(); meld("Vorlage „"+r.data.name+"“ geladen");
+};
+async function nachladen(){
+  await signieren(EL.filter(function(v){ return v.typ==="bild" && !/^repo:/.test(v.pfad||""); }).map(function(v){ return v.pfad; }));
+  for(var i=0; i<EL.length; i++){ if(EL[i].pnr && /^P\d+$/.test(EL[i].pnr)) await produkt(EL[i].pnr); }
+}
+$("speichern").onclick = async function(){
+  var name = $("vName").value.trim(); if(!name){ $("vName").focus(); meld("Bitte einen Namen eingeben."); return; }
+  var daten = { name:name, nr: +$("vNr").value || null, layout:{ format:"1080x1920", elemente:EL }, aktualisiert_am:new Date().toISOString() };
+  var r = VID ? await vg.from("reel_vorlage").update(daten).eq("id", VID).select("id") : await vg.from("reel_vorlage").insert(daten).select("id");
+  if(r.error){ meld("Fehler: "+r.error.message); return; }
+  VID = r.data[0].id; await liste(); meld("Vorlage gespeichert ✓ (Nr "+VID+") – sag Claude: „Reel nach Vorlage "+name+"“");
+};
+$("neu").onclick = function(){ if(EL.length && !confirm("Neue leere Fläche? Nicht gespeicherte Änderungen gehen verloren.")) return; EL = []; VID = null; SEL = null; $("vName").value = ""; $("vNr").value = ""; $("vorlagen").value = ""; zeichne(); props(); };
+$("png").onclick = async function(){
+  var alt = SEL; SEL = null; zeichne(); meld("erzeuge Bild …");
+  try{
+    var c = await html2canvas($("flaeche"), { scale:1, useCORS:true, backgroundColor:null, width:1080, height:1920,
+      onclone:function(d){ d.getElementById("flaeche").style.transform = "none"; } });
+    var a = document.createElement("a"); a.download = ($("vName").value || "reel-vorlage")+".png"; a.href = c.toDataURL("image/png"); a.click(); meld("Bild geladen ✓");
+  }catch(err){ meld("Bild: "+err.message); }
+  SEL = alt; zeichne();
+};
+
+/* ---- Muster: Nutri-Score gegen Root Index (Reel 62) ---- */
+$("muster").onclick = async function(){
+  if(EL.length && !confirm("Muster laden? Die aktuelle Fläche wird ersetzt.")) return;
+  EL = []; VID = null; $("vName").value = "Nutri-Score gegen Root Index"; $("vNr").value = "62";
+  [ ["kopf",{}], ["ueberschrift",{}], ["produkt",{ pnr:"P28461", x:290, y:440, w:500, h:662 }],
+    ["karte",{ x:22, y:700, w:400, h:236, rot:-6 }], ["bild",{ x:38, y:716, w:368, h:204, rot:-6, pfad:"repo:editor-bilder/nutri-score-a-quer.png" }],
+    ["flux",{ pnr:"P28461", x:720, y:720, w:330, h:300, rot:4 }], ["speichern",{}], ["fuss",{}] ]
+    .forEach(function(a){ var v = Object.assign({ id:NID++, typ:a[0], rot:0 }, JSON.parse(JSON.stringify(VORGABE[a[0]])), a[1]); EL.push(v); });
+  await nachladen(); zeichne(); SEL = null; props(); meld("Muster geladen – alles verschieben, wie du es willst, dann als Vorlage speichern.");
+};
+
+(async function(){
+  skalieren(); zeichne();
+  var s = await vg.auth.getSession(); if(!s.data || !s.data.session){ meld("Bitte zuerst im Admin anmelden (root-index.de/admin.html)."); }
+  await liste(); if(!$("msg").textContent.indexOf("lädt")) meld("bereit");
+  meld("Bereit – links einen Baustein wählen oder „Nutri-Score gegen Root Index“ als Muster laden.");
+})();
+</script>
+</body>
+</html>
