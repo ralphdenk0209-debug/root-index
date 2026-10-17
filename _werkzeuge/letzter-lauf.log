@@ -1,4 +1,4 @@
-Lauf: 102 · Commit: bd80550d2b254e573b13f6f4d456e76bde370b33 · 2026-10-17 07:27 UTC
+Lauf: 103 · Commit: 18b2ff5172ebf83b7715c62b20352e1f73700a9f · 2026-10-17 17:46 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 2000 Produkte (zuletzt P11890)
@@ -21,22 +21,23 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 36000 Produkte (zuletzt P491)
   ... 38000 Produkte (zuletzt P51139)
   ... 40000 Produkte (zuletzt P53185)
-  ... 42000 Produkte (zuletzt P55210)
-  ... 44000 Produkte (zuletzt P57267)
-  ... 46000 Produkte (zuletzt P59303)
-  ... 48000 Produkte (zuletzt P61327)
-  ... 50000 Produkte (zuletzt P63450)
-  ... 52000 Produkte (zuletzt P65516)
-  ... 54000 Produkte (zuletzt P676)
-  ... 56000 Produkte (zuletzt P69644)
-  ... 58000 Produkte (zuletzt P71735)
-  ... 60000 Produkte (zuletzt P74713)
-Fertig geladen: 60818 Produkte
+  ! nach id P53185: 200 Zeilen gingen nicht, versuche kleiner
+  ... 40080 Produkte (zuletzt P53266)
+  ... 42080 Produkte (zuletzt P55294)
+  ... 44080 Produkte (zuletzt P57347)
+  ... 46080 Produkte (zuletzt P59387)
+  ... 48080 Produkte (zuletzt P61411)
+  ... 50080 Produkte (zuletzt P63534)
+  ... 52080 Produkte (zuletzt P65598)
+  ... 54080 Produkte (zuletzt P67680)
+  ... 56080 Produkte (zuletzt P69732)
+  ... 58080 Produkte (zuletzt P71819)
+  ... 60080 Produkte (zuletzt P82249)
+Fertig geladen: 60819 Produkte
 Herstellerbilder: 5 mit Freigabe.
 Umleitungen (301): 5231
 ↪️  Weiterleitungen alter Adressen: 5231
-✅ Produktseiten: 60818 · Kategorien: 23 · Sitemap-URLs: 10027
-  ! nach id P74605: 200 Zeilen gingen nicht, versuche kleiner
+✅ Produktseiten: 60819 · Kategorien: 23 · Sitemap-URLs: 10027
 Geladen: 17615 Produkte (UK/US/FR)
 ✅ en: 1962 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 47
 ✅ fr: 15653 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 132
