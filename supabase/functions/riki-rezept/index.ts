@@ -58,6 +58,19 @@ ZUSAETZLICH: rechne sie in GRAMM um — aber NUR, wenn die Umrechnung eindeutig 
 Wenn die Umrechnung NICHT eindeutig ist ("1 Prise", "etwas", "1 Bund", "nach Geschmack",
 "2 Stueck" ohne Stueckgewicht, "1 Zwiebel"): menge_g = null.
 RATE KEIN GEWICHT. Eine Zwiebel wiegt zwischen 50 und 200 g — das ist keine Zahl, das ist ein Bereich.
+Schreib die Stueckangabe aber VOLLSTAENDIG in "menge" ("2", "1 grosse", "1/2", "1 kleiner", "3 Zehen", "1 Bund"),
+denn daraus rechnen WIR mit unserer Stueckgewicht-Tabelle. Groessenwoerter (klein/mittel/gross) gehoeren in "menge".
+
+=== NAME DER ZUTAT (17.10.2026) ===
+"name" ist NUR die Zutat selbst, so kurz wie moeglich, Einzahl wenn sinnvoll: "Lachsfilet", "Suesskartoffel", "Zwiebel".
+Alles andere gehoert NICHT in den Namen, sondern in "hinweis":
+  Klammerzusaetze, Empfehlungen, Groessen, Zubereitung ("am besten Wildlachs", "je ca. 150 g", "fein gehackt", "Groesse M").
+  Beispiel: "2 Lachsfilets (je ca. 150 g, am besten Wildlachs)" ->
+    { "name": "Lachsfilet", "menge": "2", "menge_g": 300, "hinweis": "je ca. 150 g, am besten Wildlachs" }
+  (steht "je ca. 150 g" da, IST das eine eindeutige Grammangabe: 2 x 150 = 300.)
+Steht eine Auswahl da ("Zucchini, Spinat oder gruener Spargel"): name = die ERSTE Zutat,
+  "alternativen" = die uebrigen als Liste, Hinweis z. B. "oder Spinat / gruener Spargel".
+Schreibweise korrigieren ist erlaubt, wenn eindeutig ("Tomatemark" -> "Tomatenmark", "Zucchino" -> "Zucchini").
 
 === NAEHRWERTE ===
 Stehen auf dem Foto Naehrwerte pro Portion (kcal, Eiweiss, KH, Fett), gib sie an.
@@ -86,7 +99,7 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
   "zeit_min": number|null,
   "ernaehrungsform": "vegan"|"vegetarisch"|"omnivor"|null,
   "naehrwerte_portion": { "kcal": number|null, "protein": number|null, "kh": number|null, "fett": number|null },
-  "zutaten": [ { "name": string, "menge": string|null, "menge_g": number|null } ],
+  "zutaten": [ { "name": string, "menge": string|null, "menge_g": number|null, "hinweis": string|null, "alternativen": string[] } ],
   "zubereitung": string|null,
   "warnungen": string[],
   "unsicher": boolean
@@ -106,6 +119,11 @@ function pruefe(v: any): string[] {
     w.push("Bei keiner Zutat war eine eindeutige Grammangabe moeglich. Ohne Mengen koennen wir das Rezept nicht bewerten.");
   else if (ohneMenge > 0)
     w.push(`${ohneMenge} von ${zut.length} Zutaten haben keine eindeutige Grammangabe (z. B. "1 Prise"). Wir raten sie nicht - trag sie bei Bedarf selbst ein.`);
+
+  const std = zut.filter((z: any) => z?.menge_quelle === "standardgewicht").length;
+  if (std > 0) w.push(`${std} Mengen aus Stueckangaben mit Standardgewicht gerechnet (z. B. 1 Zwiebel = 100 g) - bitte kurz pruefen.`);
+  const alt = zut.filter((z: any) => Array.isArray(z?.alternativen) && z.alternativen.length).length;
+  if (alt > 0) w.push(`${alt} Zutat(en) mit Auswahl ("oder") - gerechnet wird mit der ersten.`);
 
   const p = Number(v?.portionen);
   if (isFinite(p) && (p < 1 || p > 50)) w.push(`Portionen (${p}) sieht falsch gelesen aus.`);
@@ -243,6 +261,18 @@ Deno.serve(async (req) => {
     for (const z of zutaten) {
       z.produkt_id = null; z.treffer = null;
       if (!z?.name) continue;
+      // 17.10.2026: Stueckangaben ueber die Stueckgewicht-Tabelle in Gramm (dokumentierter Standard, kein Raten von Riki)
+      if (z.menge_g == null && z.menge) {
+        try {
+          const { data: mg } = await sb.rpc("cb_rezept_menge_gramm", { p_name: z.name, p_menge: String(z.menge) });
+          if (mg?.g != null && Number(mg.g) > 0) {
+            z.menge_g = Number(mg.g);
+            z.menge_quelle = mg.art;
+            if (mg.art === "standardgewicht")
+              z.hinweis = [z.hinweis, `Standardgewicht: ${mg.anzahl} × ${mg.basis} (${mg.groesse}) = ${mg.g} g`].filter(Boolean).join(" | ");
+          }
+        } catch { /* Umrechnung ist Kuer */ }
+      }
       try {
         const { data: t } = await sb.rpc("cb_zutat_zuordnen", { p_name: z.name });
         if (t?.gefunden) {
