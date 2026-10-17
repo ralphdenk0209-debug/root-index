@@ -7,6 +7,7 @@
 //
 // GRUNDSATZ: Riki SCHLAEGT VOR, Riki entscheidet nicht. Der Nutzer sieht jeden Wert,
 // bevor er gespeichert wird. Was Riki nicht lesen kann, bleibt leer - nicht geraten.
+// 17.10.2026: Name/Hinweis getrennt, Stueckgewichte ueber cb_rezept_menge_gramm (Ralph A).
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
