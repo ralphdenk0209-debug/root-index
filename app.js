@@ -10595,6 +10595,26 @@ async function renderPlaner(){
     if(k) setTimeout(function(){ var y=k.getBoundingClientRect().top+window.pageYOffset-80; window.scrollTo({top:Math.max(0,y),behavior:'smooth'}); },600); } }catch(e){}
 }
 /* Kurze Rueckmeldung unten am Bildschirm statt eines Browser-Popups (alert). */
+/* 17.10.2026 (Ralph B): Nach jedem Rezept-Speichern prueft der Server das Rezept
+   (fehlende Produkte/Mengen, Standardgewichte, unplausible kcal) und wir zeigen das sofort an. */
+async function rezeptPruefung(rid){
+  if(!rid) return;
+  try{
+    var r=await client.rpc("cb_rezept_naehrwerte_neu",{p_rezept:String(rid),p_schreiben:false});
+    var d=r&&r.data, w=(d&&Array.isArray(d.warnungen))?d.warnungen:[];
+    if(!w.length) return;
+    var old=document.getElementById("rzPruefOv"); if(old) old.remove();
+    var ov=document.createElement("div"); ov.id="rzPruefOv";
+    ov.style.cssText="position:fixed;left:12px;right:12px;bottom:16px;z-index:99999;max-width:520px;margin:0 auto;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:14px;padding:14px 14px 12px;box-shadow:0 8px 24px rgba(0,0,0,.18);font-size:13.5px;color:#78350f";
+    ov.innerHTML='<div style="font-weight:800;margin-bottom:6px">⚠️ Rezept gespeichert – bitte kurz prüfen</div>'
+      +'<ul style="margin:0 0 8px 18px;padding:0">'+w.map(function(x){return '<li>'+esc(String(x))+'</li>';}).join('')+'</ul>'
+      +(d.kcal_portion!=null?'<div style="color:#92400e;margin-bottom:8px">Gerechnet: '+d.kcal_portion+' kcal pro Portion</div>':'')
+      +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'rzPruefOv\').remove();editRezept(\''+esc(String(rid))+'\')" style="flex:1;background:#f59e0b;color:#fff;border:0;border-radius:10px;padding:9px;font-weight:700;cursor:pointer">Jetzt korrigieren</button>'
+      +'<button onclick="document.getElementById(\'rzPruefOv\').remove()" style="flex:0 0 auto;background:#fff;color:#92400e;border:1px solid #f59e0b;border-radius:10px;padding:9px 14px;cursor:pointer">Später</button></div>';
+    document.body.appendChild(ov);
+  }catch(e){ /* Pruefung ist Hinweis, nie Blockade */ }
+}
+if(typeof window!=='undefined') window.rezeptPruefung=rezeptPruefung;
 function toast(text, farbe){
   try{
     let t=document.getElementById('riToast');
@@ -12188,7 +12208,7 @@ async function tbMzSave(){
   if(msg){ msg.style.color='var(--k-6b6256)'; msg.textContent='Speichere…'; }
   const {data:rid,error}=await client.rpc('cb_rezept_anlegen',{p_payload:payload});
   if(error){ if(msg){msg.style.color='var(--k-f87171)';msg.textContent='Fehler: '+error.message;} return; }
-  REZEPTE=null;
+  REZEPTE=null; rezeptPruefung(rid);
   const ov=document.getElementById('tbMzOv');
   if(ov){ ov.firstElementChild.innerHTML='<div style="text-align:center;padding:18px 6px">'
     +'<div style="font-size:34px;color:var(--k-16a34a)">✓</div>'
@@ -16651,6 +16671,7 @@ async function rnSave(){
     }
     rnClose();
     REZEPTE=null; if(typeof loadRezepte==="function") await loadRezepte();
+    rezeptPruefung(rid);
   }catch(e){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+((e&&e.message)||e); } }
 }
 /* Kopf-Knopf „Rezept abfotografieren“ auf der Rezeptseite: oeffnet den (klassischen)
@@ -17356,6 +17377,7 @@ async function saveRezept(){
   }
   closeP();
   REZEPTE=null; await loadRezepte();
+  rezeptPruefung(rid);
 }
 async function publishRezept(id, pub){
   if(!pub && !confirm("Rezept wieder auf privat setzen? Andere sehen es dann nicht mehr.")) return;
