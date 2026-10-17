@@ -367,10 +367,12 @@ async function produkteLaden(liste){
     var teil = liste.slice(i, i+150);
     var p = await vg.from("v_web_produkte").select("id,name,marke,ean,clean_score,bewertung").in("id", teil);
     (p.data||[]).forEach(function(x){ P[x.id] = x; });
-    var q = await vg.from("Produkte").select("Produkt_ID,Produktname,Marke,Kategorie,Bild_URL,Bild_URL_OFF").in("Produkt_ID", teil);
+    /* Tabelle Produkte ist fuer angemeldete Nutzer gesperrt – Bilder/Kategorie ueber Admin-RPC (17.10.2026) */
+    var q = await vg.rpc("cb_admin_produkte_info", { p_ids:teil });
+    if(q.error) meld("Produktbilder: "+q.error.message);
     (q.data||[]).forEach(function(x){
-      KAT[x.Produkt_ID] = x.Kategorie || ""; BILD[x.Produkt_ID] = x.Bild_URL || x.Bild_URL_OFF || null; BILDQ[x.Produkt_ID] = x.Bild_URL || null;
-      if(!P[x.Produkt_ID]) P[x.Produkt_ID] = { id:x.Produkt_ID, name:x.Produktname, marke:x.Marke||"", clean_score:null, nichtImIndex:true };
+      KAT[x.id] = x.kategorie || ""; BILD[x.id] = x.bild_url || x.bild_url_off || null; BILDQ[x.id] = x.bild_url || null;
+      if(!P[x.id]) P[x.id] = { id:x.id, name:x.name, marke:x.marke||"", clean_score:null, nichtImIndex:true };
     });
   }
 }
