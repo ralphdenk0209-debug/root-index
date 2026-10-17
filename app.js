@@ -8764,7 +8764,7 @@ function riMiniPalette(accent){
   return {green:['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'],amber:['#6b4410','#1a120a','#ffc24b','#ffcf6b'],blue:['#143a63','#0b1420','#5ab6ff','#7cc4ff'],violet:['#45256b','#120b1a','#b79bff','#c9b3ff'],berry:['#6b1f45','#1a0a12','#ff6fa8','#ffa8cb'],terra:['#7a3b1f','#1a0e08','#ff9e5e','#ffc59b'],teal:['#0e4a44','#081614','#4fd6c0','#8cf0e0']}[accent]||['#1f5e39','#0c1a12','#5ef2a0','#7cff9b'];
 }
 function riMiniRahmen(A){
-  return 'position:relative;overflow:hidden;cursor:pointer;border-radius:16px;padding:11px 10px;height:104px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 120% at 22% 12%, '+A[0]+' 0%, '+A[1]+' 62%);box-shadow:0 8px 22px rgba(15,40,25,.22)';
+  return 'position:relative;overflow:hidden;cursor:pointer;border-radius:16px;padding:11px 10px;height:104px;box-sizing:border-box;display:flex;flex-direction:column;justify-content:space-between;background:radial-gradient(120% 120% at 22% 12%, '+A[0]+' 0%, '+A[1]+' 62%);box-shadow:0 6px 16px rgba(15,40,25,.14);filter:saturate(.62) brightness(1.06)'; /* 17.10.2026 (Ralph): Kacheln dezenter - selbe Farben, blasser */
 }
 /* Der Zusatz ist auf Ralphs Wunsch geblieben (19.09.2026) - er sagt, was die
    Kachel tut. In drei Spalten ist er eng, deshalb eine Zeile mit Ellipse statt
@@ -8773,7 +8773,7 @@ function riMiniTile(nav,ico,label,zusatz,accent,cornerIco,cornerAct){
   var A=riMiniPalette(accent);
   var _akt=(nav==='produkte')?'prodHome()':("navTo('"+nav+"')");
   return '<div onclick="'+_akt+'" style="'+riMiniRahmen(A)+'">'
-    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
+    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'4d 0%,transparent 70%);filter:blur(7px)"></div>'
     +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
     +'<div style="position:relative;z-index:2;min-width:0">'
       +'<div style="color:#ffffff;font-size:12.5px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+label+'</div>'
@@ -8785,7 +8785,7 @@ function riMiniTile(nav,ico,label,zusatz,accent,cornerIco,cornerAct){
 function riWertTile(art,label,ico,accent){
   var A=riMiniPalette(accent);
   return '<div id="wertKachel_'+art+'" onclick="vitalOeffnen(\''+art+'\')" style="'+riMiniRahmen(A)+'">'
-    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'80 0%,transparent 70%);filter:blur(7px)"></div>'
+    +'<div style="position:absolute;top:2px;left:2px;width:64px;height:64px;background:radial-gradient(circle,'+A[2]+'4d 0%,transparent 70%);filter:blur(7px)"></div>'
     +'<div style="position:relative;z-index:2;color:'+A[3]+';filter:drop-shadow(0 0 6px '+A[2]+'cc)">'+riIco(ico,22)+'</div>'
     +'<div style="position:relative;z-index:2">'
       +'<div id="wertZahl_'+art+'" style="color:'+A[3]+';font-size:15px;font-weight:800;line-height:1.1">–</div>'
@@ -17844,7 +17844,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-16-03";
+const APP_BUILD = "2026-10-17-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
