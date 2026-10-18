@@ -8,7 +8,7 @@
 <!-- mischpult.html · 18.10.2026 · Ralph: "setz mal c um" (Entwurf C aus den Cockpit-Vorschlaegen:
      "ich muss alles verwalten können und im blick haben").
      Jeder Bereich ein Kanalzug: Lampe, Wert, Verlauf, Notiz, Schalter, Knopf.
-     Liest NUR cb_admin_mischpult (baut auf cb_admin_cockpit_ampel / _dblast / _social auf - keine eigene Fachlogik).
+     Liest NUR cb_admin_mischpult_lesen (Vorrat aus cb_admin_mischpult, alle 5 Min.; baut auf cb_admin_cockpit_ampel / _dblast / _social auf - keine eigene Fachlogik).
      Schreibt NUR ueber cb_admin_mischpult_schalten (Feature-Flags etikett_riki, rezept_riki, push; mit Protokoll)
      und cb_claude_kosten_sync (Knopf "Jetzt abrufen"). Waechter-Faelle ueber cb_admin_cockpit_waechter_faelle. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -242,10 +242,11 @@ const SCHNELL=[
 $('schnell').innerHTML=SCHNELL.map(s=>'<a href="'+s[1]+'" target="'+s[2]+'" rel="noopener">'+esc(s[0])+'</a>').join('');
 
 async function laden(){
-  const {data,error}=await client.rpc('cb_admin_mischpult');
-  if(error||!data||data.ok===false){ $('hinweis').style.display='block'; $('stand').textContent=error?('Fehler: '+error.message):'kein Zugriff'; return; }
+  /* 18.10. abends: liest den vorgerechneten Stand (alle 5 Min., Cron mischpult-cache) - die Live-Rechnung dauert > 8 s. */
+  const {data,error}=await client.rpc('cb_admin_mischpult_lesen');
+  if(error||!data||data.ok===false){ $('hinweis').style.display='block'; $('stand').textContent=error?('Fehler: '+error.message):(data&&data.fehler)||'kein Zugriff'; return; }
   $('hinweis').style.display='none'; D=data;
-  $('stand').textContent='Stand '+new Date(data.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  $('stand').textContent='Stand '+new Date(data.cache_stand||data.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' (alle 5 Min. neu)';
   bauen();
 }
 async function schalten(k, an){
