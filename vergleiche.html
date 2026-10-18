@@ -14,6 +14,13 @@
        - Bild wird im Browser auf weissen Grund, max. 900 px hoch, JPEG 88 gebracht (wie Schritt 9) und ueber
          RPC cb_admin_produktbild_einreichen in produktbild_eingang gelegt; die Edge-Funktion produktbild-uebernehmen
          laedt hoch und setzt Bild_URL. Fremdes Bild nur nach Rueckfrage (ersetzen), Herstellerbild mit Freigabe nie.
+     18.10.2026 (Ralph: "kalender ueber die ganze seite und scrollbar, neue themen per klick und popup,
+       gruppenposts in die planung, kennzeichnung wo geplant per logo"):
+       - Kalender ohne feste Hoehe, Seite scrollt, Kopf + Wochentage bleiben oben stehen; Ansicht 2 / 6 Wochen / Monat
+       - Klick auf einen Tag (oder "+ Neu") oeffnet ein Popup: Vorhandenes einplanen · Neues Thema · Gruppenpost
+       - FB-Gruppen-Posts aus Tabelle public.gruppen_post im Kalender (gestrichelte Karte 👥), per Popup anlegen/aendern
+       - Kanal-Zeichen je Karte (Kuerzel in Kanalfarbe, keine nachgezeichneten Logos): IG, FB, Threads, Substack,
+         YouTube, Pinterest, TikTok; im Editor Haken fuer YouTube/Pinterest/TikTok
      Frueher: 03.10. Wochenplan, 08.10. nur Reels, 14.10. Ablage nach Bereich (abgeloest).
      Wahrheit: public."Instagram_Vergleich". Punkte live aus v_web_produkte. Loeschen = Status 'Verworfen'.
      Schreibrecht: RLS ivg_admin_all (cb_ist_admin()). -->
@@ -103,17 +110,41 @@
   td{ border-bottom:1px solid #eef0f4; padding:7px 8px; vertical-align:top; }
   tr.zieh{ cursor:grab; } tr.zieh:hover{ background:#fafbfd; }
   .tabwrap{ overflow-x:auto; }
-  /* Kalender bleibt stehen, nur "Ohne Termin" scrollt (Ralph 17.10.) */
-  @media (min-width:701px){
-    #t-kal.an{ display:flex; flex-direction:column; overflow:hidden; }
-    #t-kal .kalteil{ flex:0 1 auto; min-height:0; overflow-y:auto; max-height:calc(100% - 150px); }
-    #t-kal .ohneteil{ flex:1 0 150px; min-height:150px; display:flex; flex-direction:column; border-top:1px solid var(--lin); margin-top:10px; }
-    #t-kal .ohneteil .tabwrap{ flex:1; overflow:auto; min-height:0; }
-    #t-kal .ohneteil h3.unter{ margin-top:10px; }
-    #t-kal .ohneteil th{ position:sticky; top:0; z-index:1; }
-    .kal.monat .tag{ min-height:66px; } .kal.monat .ev{ padding:2px 6px; }
-    body.kalan .wrap{ padding-bottom:6px; } body.kalan #msg{ margin:6px 0 0; }
-  }
+  /* Kalender ueber die ganze Seite, Seite scrollt; Kopf und Wochentage bleiben stehen (Ralph 18.10.) */
+  #t-kal{ padding:10px 10px 14px; }
+  #t-kal .kkopf{ position:sticky; top:0; z-index:6; background:#fff; margin:0 -10px 6px; padding:8px 10px; border-bottom:1px solid var(--lin); }
+  .kal .wt{ position:sticky; top:52px; z-index:5; background:#fff; border-bottom:1px solid var(--lin); }
+  .tag{ min-height:150px; cursor:pointer; } .tag:hover{ border-color:#c7ccda; }
+  .kal.monat .tag{ min-height:112px; } .kal.w6 .tag{ min-height:118px; }
+  @media (min-width:701px){ .kal:not(.monat):not(.w6) .tag{ min-height:max(150px, calc((100vh - 300px) / 2)); } }
+  .tag .frei{ flex:1; min-height:14px; }
+  .ohneteil{ margin-top:16px; border-top:1px solid var(--lin); }
+  .ohneteil summary{ cursor:pointer; font-weight:700; padding:12px 2px 6px; font-size:14px; }
+  /* Kanal-Zeichen (Kuerzel in Kanalfarbe) */
+  .kz2{ display:flex; flex-wrap:wrap; gap:2px; margin-top:3px; }
+  .kb{ display:inline-flex; align-items:center; justify-content:center; min-width:16px; height:16px; padding:0 3px; border-radius:4px; background:var(--k); color:#fff; font-size:9px; font-weight:800; line-height:1; box-shadow:0 0 0 1.5px rgba(255,255,255,.9); letter-spacing:-.2px; }
+  .legende .kb{ box-shadow:none; margin-right:3px; }
+  .ev.gr{ background:#fff; color:var(--ink); border:2px dashed #1877F2; }
+  .ev.gr .u{ color:var(--mut); } .ev.gr.weg{ opacity:.55; }
+  /* Popup */
+  #pop{ position:fixed; inset:0; background:rgba(15,20,35,.35); z-index:60; display:none; align-items:flex-start; justify-content:center; padding:6vh 12px 12px; overflow-y:auto; }
+  #pop.an{ display:flex; }
+  #pop .pk2{ background:#fff; border-radius:14px; width:min(560px,100%); box-shadow:0 20px 60px rgba(0,0,0,.3); display:flex; flex-direction:column; max-height:88vh; }
+  #pop .pkopf{ display:flex; align-items:center; gap:8px; padding:14px 16px 8px; }
+  #pop .pkopf h3{ margin:0; font-size:16px; flex:1; }
+  #pop .zu{ border:none; background:none; font-size:24px; cursor:pointer; color:var(--mut); line-height:1; }
+  #pop .pwahl{ display:flex; gap:6px; padding:0 16px 10px; flex-wrap:wrap; }
+  #pop .pwahl button{ flex:1 1 140px; border:1.5px solid var(--lin); background:#f7f8fb; border-radius:10px; padding:8px; cursor:pointer; font-weight:650; font-size:13px; }
+  #pop .pwahl button.an{ border-color:var(--nav); background:var(--nav); color:#fff; }
+  #pop .pb{ padding:4px 16px 10px; overflow-y:auto; display:flex; flex-direction:column; gap:9px; }
+  #pop label{ font-size:12px; color:var(--mut); display:flex; flex-direction:column; gap:3px; }
+  #pop input:not([type=checkbox]), #pop select, #pop textarea{ font:inherit; padding:6px 8px; border:1px solid var(--lin); border-radius:8px; color:var(--ink); width:100%; }
+  #pop .reihe{ display:flex; gap:8px; } #pop .reihe > *{ flex:1; min-width:0; }
+  #pop .liste{ border:1px solid var(--lin); border-radius:10px; max-height:300px; overflow-y:auto; }
+  #pop .li{ display:flex; gap:8px; align-items:center; padding:7px 9px; border-bottom:1px solid #eef0f4; cursor:pointer; }
+  #pop .li:hover{ background:#f6f8fc; } #pop .li.an{ background:#e8eefc; }
+  #pop .li .t{ flex:1; min-width:0; font-size:13px; } #pop .li small{ display:block; }
+  #pop .pfuss{ padding:10px 16px 14px; border-top:1px solid var(--lin); display:flex; gap:6px; }
   .stand{ font-size:12px; font-weight:600; white-space:nowrap; }
 
   /* ---- Produktbilder ---- */
@@ -172,6 +203,7 @@
     .kal{ gap:3px; } .tag{ padding:3px; min-height:80px; } .ev{ font-size:11px; padding:3px 4px; }
     .kal{ grid-template-columns:1fr; gap:4px; } .kal .wt{ display:none; }
     .tag{ min-height:0; padding:6px 8px; } .tag.leer.vorbei, .tag.anderer{ display:none; }
+    .kal .wt{ position:static; } #t-kal .kkopf{ position:static; }
     .ev{ font-size:12.5px; padding:5px 8px; } .ev .t{ -webkit-line-clamp:2 !important; }
     .wtag{ display:inline !important; }
     .suche{ min-width:0; flex:1 1 100%; }
@@ -195,15 +227,15 @@
     <div class="kkopf">
       <button class="kn" id="kZur">◀</button><button class="kn" id="kHeute">Heute</button><button class="kn" id="kVor">▶</button>
       <h2 id="kTitel"></h2>
-      <span style="margin-left:auto"><button class="kn" data-ans="2w">2 Wochen</button> <button class="kn" data-ans="monat">Monat</button></span>
+      <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap"><button class="kn haupt" id="kNeu">+ Neu</button> <button class="kn" data-ans="2w">2 Wochen</button> <button class="kn" data-ans="w6">6 Wochen</button> <button class="kn" data-ans="monat">Monat</button></span>
     </div>
     <div class="legende" id="legende"></div>
     <div class="kal" id="kal"></div>
    </div>
-   <div class="ohneteil">
-    <h3 class="unter">Ohne Termin <small id="ohneZahl"></small> <small>· Zeile in einen Tag ziehen</small></h3>
+   <details class="ohneteil" id="ohneteil">
+    <summary>Ohne Termin <small id="ohneZahl"></small> <small>· Zeile in einen Tag ziehen oder Tag anklicken</small></summary>
     <div class="tabwrap"><table><thead><tr><th></th><th>Nr</th><th>Art</th><th>Titel</th><th>Stand</th><th>Fehlt</th><th></th></tr></thead><tbody id="ohne"></tbody></table></div>
-   </div>
+   </details>
   </div>
 
   <div class="tab" id="t-bilder">
@@ -228,6 +260,37 @@
   <button id="lAus" title="Auswahl aufheben">✕</button>
 </div>
 
+<!-- Popup: Neu am Tag (Ralph 18.10.) -->
+<div id="pop" role="dialog" aria-modal="true">
+ <div class="pk2">
+  <div class="pkopf"><h3 id="qTitel">Neu</h3><button class="zu" id="qZu" title="schließen">×</button></div>
+  <div class="pwahl" id="qWahl"><button data-qm="plan">📌 Vorhandenes einplanen</button><button data-qm="neu">💡 Neues Thema</button><button data-qm="gr">👥 Gruppenpost</button></div>
+  <div class="pb">
+   <div class="reihe"><label>Datum<input type="date" id="qDat"></label><label>Uhrzeit<input type="time" id="qZeit" value="18:00"></label></div>
+   <div id="qm-plan">
+     <input id="qSuche" placeholder="Suchen: Titel, Marke, Nr …" style="margin-bottom:6px">
+     <div class="liste" id="qListe"></div>
+   </div>
+   <div id="qm-neu">
+     <label>Titel (Zeile 1)<input id="qZ1" placeholder="z. B. Zweimal Hafermilch."></label>
+     <div class="reihe"><label>Art<select id="qBer"></select></label><label>Typ<select id="qTyp"><option>Vergleich</option><option>Einzel</option></select></label></div>
+     <div class="reihe"><label>Produkt A<input id="qA" placeholder="P1234"></label><label id="qBlab">Produkt B<input id="qB" placeholder="P5678"></label></div>
+     <label>Was fehlt<input id="qFehlt" placeholder="z. B. Ralph: Foto Rückseite"></label>
+     <label>Notiz<textarea id="qNotiz" rows="2"></textarea></label>
+   </div>
+   <div id="qm-gr">
+     <div class="reihe"><label>Art<select id="gArt"><option value="rezept">Rezept-Reel</option><option value="vergleich">Produktvergleich</option><option value="vorstellung">Vorstellung (B)</option><option value="wissen">Wissens-Post (A)</option><option value="admin">Nachricht an Admins (C)</option></select></label>
+       <label>Stand<select id="gSt"><option value="geplant">geplant</option><option value="gepostet">gepostet</option><option value="wartet">wartet auf Freigabe</option><option value="abgelehnt">abgelehnt</option></select></label></div>
+     <label>Reel (aus dem Plan)<select id="gNr"></select></label>
+     <label>Gruppen (Nummern aus gruppen-plan.md, höchstens 3–4)<input id="gGr" placeholder="z. B. 2, 4, 12"></label>
+     <label>Text<textarea id="gText" rows="4" placeholder="Posttext (ohne Link)"></textarea></label>
+     <label>Notiz<input id="gNotiz"></label>
+   </div>
+  </div>
+  <div class="pfuss"><button class="kn haupt" id="qOk">Speichern</button><button class="kn" id="qEd" hidden>Im Editor öffnen</button><button class="kn rot" id="qWeg" style="margin-left:auto" hidden>Verwerfen</button></div>
+ </div>
+</div>
+
 <!-- Editor -->
 <div id="schleier"></div>
 <aside id="editor" aria-label="Bearbeiten">
@@ -244,7 +307,9 @@
     <div class="hinweis" id="eHinweis" hidden>Schon in Meta eingeplant. Änderst du den Termin, bitte auch in Meta ändern und danach den Haken wieder setzen.</div>
     <div><div style="font-size:12px;color:var(--mut);margin-bottom:3px">Wo geplant</div>
       <div class="wo"><label class="chk"><input type="checkbox" id="eMeta"> Meta (IG + FB)</label><label class="chk"><input type="checkbox" id="eThreads"> Threads</label>
-        <label class="chk"><input type="checkbox" id="eSubstack"> Substack</label><label class="chk"><input type="checkbox" id="eGruppen"> FB-Gruppen</label></div></div>
+        <label class="chk"><input type="checkbox" id="eSubstack"> Substack</label><label class="chk"><input type="checkbox" id="eGruppen"> FB-Gruppen</label>
+        <label class="chk"><input type="checkbox" id="eYT"> YouTube</label><label class="chk"><input type="checkbox" id="ePin"> Pinterest</label>
+        <label class="chk"><input type="checkbox" id="eTT"> TikTok</label></div></div>
     <label>Was fehlt<input id="eFehlt" placeholder="z. B. Ralph: Foto Rückseite"></label>
     <label>Beitragstext<textarea id="eText" rows="6"></textarea></label>
     <label>Kurztext (Substack)<textarea id="eKurz" rows="3"></textarea></label>
@@ -276,7 +341,15 @@ var ZEILEN = [], P = {}, KAT = {}, BILD = {}, BILDQ = {}, FOTO = {}, EXTRA = [],
 var SEL = {};                       // Mehrfachauswahl: id -> true
 var FB = {};                        // aktive Bereichsfilter (leer = alle)
 var SUCHE = "";
-var KANS = lsGet("cp_kans")==="monat" ? "monat" : "2w", KOFF = 0;
+var KANS = ["monat","w6"].indexOf(lsGet("cp_kans"))>=0 ? lsGet("cp_kans") : "2w", KOFF = 0;
+var GP = [];                        // FB-Gruppen-Posts (public.gruppen_post)
+var GR_ART = { rezept:"Rezept-Reel", vergleich:"Vergleich", vorstellung:"Vorstellung", wissen:"Wissen", admin:"Admins fragen" };
+/* Kanal-Zeichen: Kuerzel in Kanalfarbe (keine nachgezeichneten Logos) */
+var KANAL = [ ["Reel_in_Meta","IG","#D62976","Instagram"], ["Reel_in_Meta","f","#1877F2","Facebook"], ["Threads_gepostet","@","#101010","Threads"],
+  ["Substack_gepostet","S","#FF6719","Substack"], ["YouTube_gepostet","YT","#FF0000","YouTube"], ["Pinterest_gepostet","P","#E60023","Pinterest"],
+  ["TikTok_gepostet","TT","#25262b","TikTok"], ["Gruppen_gepostet","👥","#4267B2","FB-Gruppen"] ];
+function kb(k){ return "<span class='kb' style='--k:"+k[2]+"' title='"+k[3]+"'>"+k[1]+"</span>"; }
+function kanaele(x){ var l = KANAL.filter(function(k){ return x[k[0]]; }); return l.length ? "<div class='kz2'>"+l.map(kb).join("")+"</div>" : ""; }
 var BF = "alle", ONLINE_MAX = 20;
 
 /* Bereiche und feste Farben (Ralph 17.10.2026) */
@@ -358,6 +431,8 @@ async function laden(){
   FOTO = {}; var f = await vg.from("content_produkt_foto").select("*");
   (f.data||[]).forEach(function(x){ FOTO[x.produkt_id] = x; ids[x.produkt_id] = 1; });
   EXTRA.forEach(function(id){ ids[id] = 1; });
+  var g = await vg.from("gruppen_post").select("*").neq("status","verworfen").order("geplant_am");
+  GP = g.error ? [] : (g.data||[]); if(g.error) meld("Gruppenposts: "+g.error.message);
   await produkteLaden(Object.keys(ids));
   zeige();
 }
@@ -389,7 +464,9 @@ function zeigeKopf(){
   $("chips").innerHTML = "<span class='chip'>geplant bis <b>"+(bis?datum(bis):"–")+"</b></span>"
     + "<span class='chip'><b>"+nMeta+"</b> in Meta</span>"
     + "<span class='chip warn'><b>"+(zuk.length-nMeta)+"</b> nur im Plan</span>"
-    + (ts ? "<span class='chip warn'><b>"+ts+"</b> Threads/Substack offen</span>" : "");
+    + (ts ? "<span class='chip warn'><b>"+ts+"</b> Threads/Substack offen</span>" : "")
+    + (function(){ var n = GP.filter(function(g){ return g.status==="geplant" && new Date(g.geplant_am) > jetzt; })[0];
+        return n ? "<span class='chip'>👥 nächster Gruppenpost <b>"+datum(new Date(n.geplant_am))+"</b></span>" : ""; })();
 }
 
 var KZEIT = null;   // sichtbarer Kalenderzeitraum {von, bis}
@@ -404,10 +481,12 @@ function zeigeFilter(){
   var z = {}; ZEILEN.forEach(function(x){ if(!imBlick(x)) return; var b = bereich(x); z[b] = (z[b]||0)+1; });
   $("filter").innerHTML = "<button class='fchip alle"+(Object.keys(FB).length?"":" an")+"' data-fb=''>Alle</button>"
     + BER_REIHE.map(function(k){ return "<button class='fchip"+(FB[k]?" an":"")+"' style='--c:"+BER[k][1]+"' data-fb='"+k+"'>"+BER[k][0]+" "+(z[k]||0)+"</button>"; }).join("")
+    + "<button class='fchip"+(GRAN?" an":"")+"' style='--c:#1877F2' data-gr='1'>👥 FB-Gruppen "+GP.filter(function(g){ return !KZEIT || !$("t-kal").classList.contains("an") || (new Date(g.geplant_am)>=KZEIT.von && new Date(g.geplant_am)<KZEIT.bis); }).length+"</button>"
     + "<input class='suche' id='suche' placeholder='Suchen: Titel, Marke, P-Nr …' value='"+e(SUCHE)+"'>";
   $("filter").querySelectorAll("[data-fb]").forEach(function(b){ b.onclick = function(){
     var k = b.dataset.fb; if(!k) FB = {}; else if(FB[k]) delete FB[k]; else FB[k] = true;
     zeigeBand(); zeigeKal(); zeigeFilter(); }; });
+  var gb = $("filter").querySelector("[data-gr]"); gb.onclick = function(){ GRAN = !GRAN; lsSet("cp_gr", GRAN?"an":"aus"); zeigeKal(); zeigeFilter(); };
   var s = $("suche"); s.oninput = function(){ SUCHE = s.value.trim().toLowerCase(); zeigeBand(); zeigeKal(); };
 }
 
@@ -492,7 +571,9 @@ $("lTermin").onclick = function(){
 
 /* ---- Kalender ---- */
 $("legende").innerHTML = BER_REIHE.map(function(k){ return "<span><i style='--c:"+BER[k][1]+"'></i>"+BER[k][0]+"</span>"; }).join("")
-  + "<span><span class='nm'></span>noch nicht in Meta geplant</span><span style='opacity:.6'>blass = online</span>";
+  + "<span><span class='nm'></span>noch nicht in Meta geplant</span><span style='opacity:.6'>blass = online</span>"
+  + "<span style='border:2px dashed #1877F2;border-radius:6px;padding:0 6px'>👥 FB-Gruppen-Post</span>"
+  + "<span>"+KANAL.map(kb).join(" ")+" = dort geplant</span>";
 document.querySelectorAll("[data-ans]").forEach(function(b){ b.onclick = function(){ KANS = b.dataset.ans; KOFF = 0; lsSet("cp_kans", KANS); zeigeKal(); zeigeFilter(); }; });
 $("kZur").onclick = function(){ KOFF--; zeigeKal(); zeigeFilter(); };
 $("kVor").onclick = function(){ KOFF++; zeigeKal(); zeigeFilter(); };
@@ -500,7 +581,16 @@ $("kHeute").onclick = function(){ KOFF = 0; zeigeKal(); zeigeFilter(); };
 function evHtml(x){
   var d = new Date(x.Reel_geplant_am), st = stufe(x), on = st==="online";
   return "<div class='ev"+(on?" on":(x.Reel_in_Meta?"":" nm"))+"' style='--c:"+BER[bereich(x)][1]+"' draggable='"+(!on)+"' data-id='"+x.id+"' title='"+e(titel(x)+(on?" · online":x.Reel_in_Meta?" · in Meta":" · noch nicht in Meta"))+"'>"
-    + "<div class='t'>"+e(titel(x))+"</div><div class='u'><span>"+zeit(d)+"</span><span>Nr "+e(x.Nr)+"</span></div></div>";
+    + "<div class='t'>"+e(titel(x))+"</div><div class='u'><span>"+zeit(d)+"</span><span>Nr "+e(x.Nr)+"</span></div>"+kanaele(x)+"</div>";
+}
+function grTitel(g){ var z = g.nr!=null ? ZEILEN.filter(function(x){ return x.Nr===g.nr; })[0] : null;
+  return GR_ART[g.art] + (z ? ": "+titel(z) : g.nr!=null ? " Nr "+g.nr : ""); }
+function grHtml(g){
+  var d = new Date(g.geplant_am), weg = g.status!=="geplant";
+  var st = { gepostet:"✓ gepostet", wartet:"⏳ wartet", abgelehnt:"✗ abgelehnt", geplant:"" }[g.status]||"";
+  return "<div class='ev gr"+(weg?" weg":"")+"' draggable='true' data-gid='"+g.id+"' title='"+e("FB-Gruppen "+(g.gruppen||"")+" · "+grTitel(g)+(g.notiz?" · "+g.notiz:""))+"'>"
+    + "<div class='t'>👥 "+e(grTitel(g))+"</div><div class='u'><span>"+zeit(d)+"</span><span>Gr. "+e(g.gruppen||"–")+"</span></div>"
+    + (st ? "<div class='u'><span>"+st+"</span></div>" : "") + "</div>";
 }
 function zeigeKal(){
   document.querySelectorAll("[data-ans]").forEach(function(b){ b.classList.toggle("an", b.dataset.ans===KANS); });
@@ -513,8 +603,9 @@ function zeigeKal(){
     tage = Math.ceil(((mEnde - start)/864e5 + 1)/7)*7;
     $("kTitel").textContent = m1.toLocaleDateString("de-DE",{month:"long", year:"numeric"});
   } else {
-    start = new Date(heute); start.setDate(heute.getDate() - ((heute.getDay()+6)%7) + 14*KOFF); tage = 14;
-    var ende = new Date(start); ende.setDate(start.getDate()+13);
+    tage = KANS==="w6" ? 42 : 14;
+    start = new Date(heute); start.setDate(heute.getDate() - ((heute.getDay()+6)%7) + tage*KOFF);
+    var ende = new Date(start); ende.setDate(start.getDate()+tage-1);
     $("kTitel").textContent = tm(start)+" – "+tm(ende)+ende.getFullYear();
   }
   var bisK = new Date(start); bisK.setDate(start.getDate()+tage); KZEIT = { von:new Date(start), bis:bisK };
@@ -524,12 +615,14 @@ function zeigeKal(){
   for(var k=0; k<tage; k++){
     var tag = new Date(start); tag.setDate(start.getDate()+k);
     var drin = ev.filter(function(x){ return new Date(x.Reel_geplant_am).toDateString()===tag.toDateString(); });
+    var grs = GP.filter(function(g){ return new Date(g.geplant_am).toDateString()===tag.toDateString() && grPasst(g); });
     var kl = "tag"+(tag<heute?" vorbei":"")+(tag.getTime()===heute.getTime()?" heute":"")+(monat!=null && tag.getMonth()!==monat?" anderer":"");
-    html += "<div class='"+kl+(drin.length?"":" leer")+"' data-tag='"+ymd(tag)+"'><div class='kz'><span><span class='wtag'>"+tag.toLocaleDateString("de-DE",{weekday:"short"})+" </span><b>"+tag.getDate()+"</b>"+(tag.getDate()===1||k===0?" "+tag.toLocaleDateString("de-DE",{month:"short"}):"")+"</span>"
+    html += "<div class='"+kl+(drin.length||grs.length?"":" leer")+"' data-tag='"+ymd(tag)+"'><div class='kz'><span><span class='wtag'>"+tag.toLocaleDateString("de-DE",{weekday:"short"})+" </span><b>"+tag.getDate()+"</b>"+(tag.getDate()===1||k===0?" "+tag.toLocaleDateString("de-DE",{month:"short"}):"")+"</span>"
       + "<span><span class='takt'>"+(TAKT[tag.getDay()]||"")+"</span> <button class='plus' title='neu anlegen' data-neu='"+ymd(tag)+"'>+</button></span></div>"
-      + drin.map(evHtml).join("") + "</div>";
+      + grs.concat(drin).sort(function(a,b){ return new Date(a.geplant_am||a.Reel_geplant_am)-new Date(b.geplant_am||b.Reel_geplant_am); })
+          .map(function(x){ return x.geplant_am ? grHtml(x) : evHtml(x); }).join("") + "<div class='frei'></div></div>";
   }
-  $("kal").className = "kal"+(KANS==="monat"?" monat":"");
+  $("kal").className = "kal"+(KANS==="monat"?" monat":KANS==="w6"?" w6":"");
   setTimeout(kalHoehe, 0);
   $("kal").innerHTML = html;
 
@@ -545,27 +638,26 @@ function zeigeKal(){
   }).join("") || "<tr><td colspan='7'><small>Alles hat einen Termin.</small></td></tr>";
   kalVerdrahten();
 }
-function kalHoehe(){
-  var t = $("t-kal"); if(!t.classList.contains("an")) return;
-  if(window.innerWidth <= 700){ t.style.height = ""; return; }
-  t.style.height = Math.max(420, window.innerHeight - (t.getBoundingClientRect().top + window.scrollY) - 36) + "px";
-}
+function kalHoehe(){ $("t-kal").style.height = ""; }   /* seit 18.10. keine feste Hoehe mehr – die Seite scrollt */
 window.addEventListener("resize", kalHoehe);
 var ZIEH = null;
 function kalVerdrahten(){
   document.querySelectorAll("#kal .ev, #ohne tr.zieh").forEach(function(el){
-    el.addEventListener("dragstart", function(ev){ ZIEH = +el.dataset.id; el.classList.add("ziehen"); ev.dataTransfer.effectAllowed = "move"; try{ ev.dataTransfer.setData("text/plain", el.dataset.id); }catch(_){} });
+    el.addEventListener("dragstart", function(ev){ ZIEH = el.dataset.gid ? "g"+el.dataset.gid : +el.dataset.id; el.classList.add("ziehen"); ev.dataTransfer.effectAllowed = "move"; try{ ev.dataTransfer.setData("text/plain", el.dataset.id); }catch(_){} });
     el.addEventListener("dragend", function(){ el.classList.remove("ziehen"); });
   });
-  document.querySelectorAll("#kal .ev").forEach(function(el){ el.addEventListener("click", function(){ oeffne(+el.dataset.id); }); });
+  document.querySelectorAll("#kal .ev").forEach(function(el){ el.addEventListener("click", function(ev){ ev.stopPropagation();
+    if(el.dataset.gid) popOeffne(null, "gr", +el.dataset.gid); else oeffne(+el.dataset.id); }); });
   document.querySelectorAll("#ohne [data-ed]").forEach(function(b){ b.onclick = function(){ oeffne(+b.dataset.ed); }; });
   document.querySelectorAll("#ohne [data-sel]").forEach(function(c){ c.onchange = function(){ waehle(+c.dataset.sel, c.checked); }; });
   document.querySelectorAll("#kal .tag").forEach(function(t){
     t.addEventListener("dragover", function(ev){ if(ZIEH){ ev.preventDefault(); t.classList.add("ueber"); } });
     t.addEventListener("dragleave", function(){ t.classList.remove("ueber"); });
-    t.addEventListener("drop", function(ev){ ev.preventDefault(); t.classList.remove("ueber"); if(ZIEH){ var z = ZIEH; ZIEH = null; verschiebeAuf(z, t.dataset.tag); } });
+    t.addEventListener("drop", function(ev){ ev.preventDefault(); t.classList.remove("ueber"); if(ZIEH){ var z = ZIEH; ZIEH = null;
+      if(String(z).charAt(0)==="g") grVerschiebe(+String(z).slice(1), t.dataset.tag); else verschiebeAuf(z, t.dataset.tag); } });
+    t.addEventListener("click", function(ev){ if(ev.target.closest(".ev")) return; popOeffne(t.dataset.tag); });
   });
-  document.querySelectorAll("#kal .plus").forEach(function(b){ b.addEventListener("click", function(ev){ ev.stopPropagation(); oeffne(null, b.dataset.neu); }); });
+  document.querySelectorAll("#kal .plus").forEach(function(b){ b.addEventListener("click", function(ev){ ev.stopPropagation(); popOeffne(b.dataset.neu); }); });
 }
 
 async function speichern(id, werte, text){
@@ -617,6 +709,7 @@ function oeffne(id, tagYmd){
   var d = x.Reel_geplant_am ? new Date(x.Reel_geplant_am) : (tagYmd ? ausFeldern(tagYmd) : null);
   $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "18:00";
   $("eMeta").checked = !!x.Reel_in_Meta; $("eThreads").checked = !!x.Threads_gepostet; $("eSubstack").checked = !!x.Substack_gepostet; $("eGruppen").checked = !!x.Gruppen_gepostet;
+  $("eYT").checked = !!x.YouTube_gepostet; $("ePin").checked = !!x.Pinterest_gepostet; $("eTT").checked = !!x.TikTok_gepostet;
   $("eHinweis").hidden = !x.Reel_in_Meta;
   $("eFehlt").value = x.Fehlt||""; $("eText").value = x.Beitragstext||""; $("eKurz").value = x.Kurztext||"";
   $("eReel").value = x.Reel_Datei||""; $("eNotiz").value = x.Notiz||"";
@@ -646,7 +739,8 @@ function formWerte(){
     Produkt_A:pid($("eA").value), Produkt_B: typ==="Einzel" ? null : pid($("eB").value),
     Status:$("eStatus").value, Fehlt:$("eFehlt").value.trim()||null, Beitragstext:$("eText").value.trim()||null,
     Kurztext:$("eKurz").value.trim()||null, Reel_Datei:$("eReel").value.trim()||null, Notiz:$("eNotiz").value.trim()||null,
-    Reel_in_Meta:$("eMeta").checked, Threads_gepostet:$("eThreads").checked, Substack_gepostet:$("eSubstack").checked, Gruppen_gepostet:$("eGruppen").checked };
+    Reel_in_Meta:$("eMeta").checked, Threads_gepostet:$("eThreads").checked, Substack_gepostet:$("eSubstack").checked, Gruppen_gepostet:$("eGruppen").checked,
+    YouTube_gepostet:$("eYT").checked, Pinterest_gepostet:$("ePin").checked, TikTok_gepostet:$("eTT").checked };
   w.Reel_geplant_am = $("eDatum").value ? ausFeldern($("eDatum").value, $("eZeit").value).toISOString() : null;
   if(!w.Reel_geplant_am) w.Reel_in_Meta = false;
   return w;
@@ -670,6 +764,7 @@ $("eSpeichern").onclick = async function(){
 $("eDupl").onclick = async function(){
   var w = formWerte(); w.Nr = naechsteNr(w.Typ); w.Status = "Idee"; w.Reel_geplant_am = null; w.Reel_in_Meta = false;
   w.Threads_gepostet = false; w.Substack_gepostet = false; w.Gruppen_gepostet = false; w.Reel_Datei = null;
+  w.YouTube_gepostet = false; w.Pinterest_gepostet = false; w.TikTok_gepostet = false;
   w.Zeile1 = (w.Zeile1||"")+" (Kopie)"; w.Notiz = "Kopie von Nr "+zeile(ED.id).Nr+(w.Notiz?" · "+w.Notiz:"");
   if(BUSY) return; BUSY = true; var r = await vg.from(T).insert(w).select("*"); BUSY = false;
   if(r.error){ meld("Fehler: " + r.error.message); return; }
@@ -694,6 +789,108 @@ $("eWeg").onclick = async function(){
   if(!confirm("Nr "+x.Nr+" „"+titel(x)+"“ verwerfen?"+(x.Reel_in_Meta?"\nAchtung: in Meta eingeplant – dort bitte selbst löschen.":""))) return;
   var id = ED.id; schliessen(); await speichern(id, { Status:"Verworfen" }, "verwerfe …");
 };
+
+/* ---- Popup: Neu am Tag · Gruppenposts (Ralph 18.10.) ---- */
+var Q = null;   // { modus, tag, id (gewaehlte Zeile), gid (Gruppenpost) }
+var GRAN = lsGet("cp_gr")!=="aus";
+function grPasst(g){ if(!GRAN) return false; if(!SUCHE) return true;
+  var t = [g.gruppen, g.notiz, g.text, GR_ART[g.art], g.nr].join(" ").toLowerCase();
+  return SUCHE.split(/\s+/).every(function(w){ return t.indexOf(w)>=0; }); }
+$("qBer").innerHTML = BER_REIHE.map(function(k){ return "<option value='"+k+"'>"+BER[k][0]+"</option>"; }).join("");
+$("qTyp").onchange = function(){ $("qBlab").hidden = this.value==="Einzel"; };
+function qModus(m){
+  Q.modus = m;
+  document.querySelectorAll("#qWahl [data-qm]").forEach(function(b){ b.classList.toggle("an", b.dataset.qm===m); });
+  ["plan","neu","gr"].forEach(function(k){ $("qm-"+k).hidden = k!==m; });
+  if(!Q.gid && m==="gr" && $("qZeit").value==="18:00") $("qZeit").value = "10:00";
+  if(!Q.gid && m!=="gr" && $("qZeit").value==="10:00") $("qZeit").value = "18:00";
+  $("qOk").textContent = m==="plan" ? "Einplanen" : m==="neu" ? "Anlegen" : Q.gid ? "Speichern" : "Gruppenpost planen";
+  $("qEd").hidden = m!=="plan"; $("qWeg").hidden = !(m==="gr" && Q.gid);
+  if(m==="plan") qListe();
+}
+document.querySelectorAll("#qWahl [data-qm]").forEach(function(b){ b.onclick = function(){ if(!Q.gid) qModus(b.dataset.qm); }; });
+function qListe(){
+  var s = $("qSuche").value.trim().toLowerCase();
+  var l = ZEILEN.filter(function(x){ return !x.Reel_geplant_am && stufe(x)!=="online"; })
+    .filter(function(x){ if(!s) return true; var a = P[pid(x.Produkt_A)], b = P[pid(x.Produkt_B)];
+      var t = [x.Nr, titel(x), x.Zeile2, x.Notiz, a&&a.marke, b&&b.marke].join(" ").toLowerCase(); return s.split(/\s+/).every(function(w){ return t.indexOf(w)>=0; }); })
+    .sort(function(a,b){ var o = STUFEN.map(function(s){ return s[0]; }); return o.indexOf(stufe(b))-o.indexOf(stufe(a)) || (a.Nr||0)-(b.Nr||0); });
+  $("qListe").innerHTML = l.map(function(x){
+    return "<div class='li"+(Q.id===x.id?" an":"")+"' data-qid='"+x.id+"'>"+pill(x)+"<div class='t'><b>"+e(titel(x))+"</b><small>Nr "+e(x.Nr)+" · "+STUFE_TXT[stufe(x)]+(punkteText(x)?" · "+e(punkteText(x)):"")+"</small></div></div>";
+  }).join("") || "<div class='li'><small>Nichts ohne Termin – oben „Neues Thema“ wählen.</small></div>";
+  $("qListe").querySelectorAll("[data-qid]").forEach(function(d){ d.onclick = function(){ Q.id = +d.dataset.qid; qListe(); }; });
+}
+$("qSuche").oninput = qListe;
+function popOeffne(tagYmd, modus, gid){
+  var g = gid ? GP.filter(function(x){ return x.id===gid; })[0] : null;
+  Q = { tag:tagYmd, id:null, gid: g ? g.id : null };
+  var d = g ? new Date(g.geplant_am) : null;
+  $("qDat").value = d ? ymd(d) : (tagYmd || ymd(new Date()));
+  $("qZeit").value = d ? hm(d) : (modus==="gr" ? "10:00" : "18:00");
+  var tagD = ausFeldern($("qDat").value);
+  $("qTitel").textContent = g ? "👥 Gruppenpost bearbeiten" : "Neu am "+tagD.toLocaleDateString("de-DE",{weekday:"long", day:"2-digit", month:"2-digit"});
+  $("qSuche").value = ""; $("qZ1").value = ""; $("qA").value = ""; $("qB").value = ""; $("qFehlt").value = ""; $("qNotiz").value = "";
+  $("qTyp").value = tagD.getDay()===4 ? "Einzel" : "Vergleich"; $("qBlab").hidden = $("qTyp").value==="Einzel";
+  $("qBer").value = ({2:"vergleich",4:"einzel",0:"app"})[tagD.getDay()] || "vergleich";
+  $("gNr").innerHTML = "<option value=''>– kein Reel –</option>" + ZEILEN.filter(function(x){ return x.Reel_Datei; })
+    .sort(function(a,b){ return (a.Nr||0)-(b.Nr||0); })
+    .map(function(x){ return "<option value='"+x.Nr+"'>Nr "+x.Nr+" · "+e(titel(x))+"</option>"; }).join("");
+  $("gArt").value = g ? g.art : (tagD.getDay()===2 ? "rezept" : "vergleich"); $("gSt").value = g ? g.status : "geplant";
+  $("gNr").value = g && g.nr!=null ? String(g.nr) : ""; $("gGr").value = g ? (g.gruppen||"") : "";
+  $("gText").value = g ? (g.text||"") : ""; $("gNotiz").value = g ? (g.notiz||"") : "";
+  var ohne = ZEILEN.some(function(x){ return !x.Reel_geplant_am && stufe(x)!=="online"; });
+  $("pop").classList.add("an");
+  $("qWahl").style.display = g ? "none" : "";
+  qModus(g ? "gr" : (modus || (ohne ? "plan" : "neu")));
+}
+function popZu(){ $("pop").classList.remove("an"); Q = null; }
+$("qZu").onclick = popZu; $("pop").addEventListener("click", function(ev){ if(ev.target.id==="pop") popZu(); });
+document.addEventListener("keydown", function(ev){ if(ev.key==="Escape" && Q) popZu(); });
+$("kNeu").onclick = function(){ popOeffne(null); };
+$("qEd").onclick = function(){ var id = Q.id, tag = $("qDat").value; if(!id){ meld("Bitte erst einen Eintrag in der Liste wählen."); return; } popZu(); oeffne(id); };
+$("qOk").onclick = async function(){
+  if(!$("qDat").value){ $("qDat").reportValidity(); return; }
+  var wann = ausFeldern($("qDat").value, $("qZeit").value).toISOString();
+  if(Q.modus==="plan"){
+    if(!Q.id){ meld("Bitte einen Eintrag aus der Liste wählen."); $("qListe").scrollIntoView({block:"nearest"}); return; }
+    var id = Q.id; popZu(); await speichern(id, { Reel_geplant_am:wann, Reel_in_Meta:false }, "plane ein …"); return;
+  }
+  if(Q.modus==="neu"){
+    var typ = $("qTyp").value;
+    var w = { Zeile1:$("qZ1").value.trim()||null, Bereich:$("qBer").value, Typ:typ, Produkt_A:pid($("qA").value),
+      Produkt_B: typ==="Einzel" ? null : pid($("qB").value), Status:"Idee", Fehlt:$("qFehlt").value.trim()||"Claude: Reel bauen (Text, Kurztext)",
+      Notiz:$("qNotiz").value.trim()||null, Reel_geplant_am:wann, Reel_in_Meta:false };
+    if(!w.Zeile1 && !w.Produkt_A){ $("qZ1").focus(); meld("Bitte Titel oder Produkt angeben."); return; }
+    w.Nr = naechsteNr(typ);
+    if(BUSY) return; BUSY = true; meld("lege an …");
+    var r = await vg.from(T).insert(w).select("*"); BUSY = false;
+    if(r.error){ meld("Fehler: " + r.error.message); return; }
+    popZu(); meld("angelegt ✓ – Nr "+w.Nr); laden(); return;
+  }
+  var gw = { geplant_am:wann, art:$("gArt").value, nr: $("gNr").value ? +$("gNr").value : null, gruppen:$("gGr").value.trim()||null,
+    status:$("gSt").value, text:$("gText").value.trim()||null, notiz:$("gNotiz").value.trim()||null };
+  if(!gw.gruppen){ $("gGr").focus(); meld("Bitte die Gruppen eintragen (Nummern aus gruppen-plan.md)."); return; }
+  if(gw.gruppen.split(/[,;\s]+/).filter(Boolean).length > 4 && !confirm("Mehr als 4 Gruppen an einem Tag – Facebook stuft das leicht als Spam ein. Trotzdem?")) return;
+  if(BUSY) return; BUSY = true; meld("speichere Gruppenpost …");
+  var rq = Q.gid ? await vg.from("gruppen_post").update(gw).eq("id", Q.gid) : await vg.from("gruppen_post").insert(gw);
+  BUSY = false;
+  if(rq.error){ meld("Fehler: " + rq.error.message); return; }
+  if(gw.status==="gepostet" && gw.nr!=null){ var z = ZEILEN.filter(function(x){ return x.Nr===gw.nr; })[0];
+    if(z && !z.Gruppen_gepostet) await vg.from(T).update({ Gruppen_gepostet:true }).eq("id", z.id); }
+  popZu(); meld("Gruppenpost gespeichert ✓"); laden();
+};
+$("qWeg").onclick = async function(){
+  if(!Q || !Q.gid || !confirm("Diesen Gruppenpost verwerfen?")) return;
+  var id = Q.gid; popZu(); var r = await vg.from("gruppen_post").update({ status:"verworfen" }).eq("id", id);
+  if(r.error){ meld("Fehler: "+r.error.message); return; } meld("verworfen ✓"); laden();
+};
+async function grVerschiebe(gid, tagYmd){
+  var g = GP.filter(function(x){ return x.id===gid; })[0]; if(!g) return;
+  var neuD = ausFeldern(tagYmd, hm(new Date(g.geplant_am)));
+  var r = await vg.from("gruppen_post").update({ geplant_am:neuD.toISOString() }).eq("id", gid);
+  if(r.error){ meld("Fehler: "+r.error.message); return; }
+  g.geplant_am = neuD.toISOString(); zeigeKal(); zeigeKopf(); meld("Gruppenpost verschoben ✓");
+}
 
 /* ---- Produktbilder ---- */
 document.querySelectorAll("[data-bf]").forEach(function(b){ b.onclick = function(){ BF = b.dataset.bf;
