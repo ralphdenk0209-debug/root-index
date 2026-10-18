@@ -17466,7 +17466,7 @@ function kochZeigen(){
 let _rezept=null, _daySum=null, _goal=null;
 function rezeptDetail(r){
   _rezept=r; _daySum=null; _goal=null;
-  const steps=(r.zubereitung||"").split("\n").filter(s=>s.trim()).map(s=>`<div style="margin:8px 0;font-size:14px;line-height:1.5">${esc(s)}</div>`).join("");
+  const steps='<div id="rzSchritte">'+rtSchritteHtml(r)+'</div>';   /* 18.10.2026: Schritte zeigen getauschte Zutaten */
   const pro = ME && hasFeat('rezepte_pro');
   const canTb = ME && hasFeat('tagebuch');
   const rsc = rezeptScore(r), rbew = scoreBew(rsc);
@@ -17569,17 +17569,73 @@ function rezeptDetail(r){
    einzeln oder alle und uebernimmt sie ins Rezept. Fremdes Rezept -> eigene Kopie.
    Quelle: cb_rezept_alternativen (Produkt-Alternativen + Tausch-Tabelle rezept_tausch).
    =========================================================================== */
-var _rtDaten=null, _rtRezept=null;
+var _rtDaten=null, _rtRezept=null, _rtTausch=[], _rtOriginal=false;
+/* 18.10.2026 (Ralph): Getauschte Zutaten gelten NUR fuer den Nutzer selbst (rezept_tausch_wahl),
+   das Grundrezept bleibt fuer alle gleich. Zutatenliste und Zubereitung zeigen die eigene Variante,
+   ein Tipp auf eine Zutat zeigt ihre Alternativen samt Original. */
+function rtTauschFuer(i){
+  if(_rtOriginal) return null;
+  return (_rtTausch||[]).find(function(t){ return t.original_text===i.name && (t.original_produkt||null)===(i.produkt_id||null); })||null;
+}
+function rtZutatenMitTausch(z){
+  return z.map(function(i){
+    var t=rtTauschFuer(i); if(!t) return i;
+    return {name:t.name, menge:(t.menge_g!=null?t.menge_g+' g':i.menge), menge_g:(t.menge_g!=null?t.menge_g:i.menge_g),
+            produkt_id:t.produkt_id, clean_score:t.score, bewertung:scoreBew(num(t.score)), _tausch:true, _orig:i};
+  });
+}
+function rtKurz(txt){ return String(txt||'').split(/[(,]/)[0].trim(); }
+function rtSchritteHtml(r){
+  var txt=String((r&&r.zubereitung)||'');
+  var aktiv=_rtOriginal?[]:(_rtTausch||[]);
+  aktiv.forEach(function(t){
+    var alt=rtKurz(t.original_text).split(/\s+/)[0]; var neu=rtKurz(t.name);
+    if(!alt||alt.length<3) return;
+    try{ txt=txt.replace(new RegExp('(^|[^A-Za-zÄÖÜäöüß])('+alt.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')(?=[^A-Za-zÄÖÜäöüß]|$)','g'), function(m,a){ return a+neu; }); }catch(e){}
+  });
+  var h=txt.split("\n").filter(function(s){return s.trim();}).map(function(s){ return '<div style="margin:8px 0;font-size:14px;line-height:1.5">'+esc(s)+'</div>'; }).join("");
+  var tipps=aktiv.filter(function(t){return t.hinweis;});
+  if(tipps.length){
+    var gesehen={};
+    h+='<div style="margin:12px 0;padding:10px 12px;border:1px solid var(--green);border-radius:12px;background:var(--greenlt);font-size:13px;line-height:1.5"><b>🤖 Riki zu deinen Zutaten:</b>'
+      +tipps.filter(function(t){ if(gesehen[t.name]) return false; gesehen[t.name]=1; return true; }).map(function(t){ return '<div style="margin-top:4px">• <b>'+esc(rtKurz(t.name))+':</b> '+esc(t.hinweis)+'</div>'; }).join('')+'</div>';
+  }
+  return h;
+}
+function rtNeuZeichnen(){
+  try{ renderRezeptScaled(); }catch(e){}
+  var s=document.getElementById('rzSchritte'); if(s&&_rtRezept) s.innerHTML=rtSchritteHtml(_rtRezept);
+  rtBoxZeichnen();
+}
+function rtBoxZeichnen(){
+  var box=document.getElementById('rtBox'), d=_rtDaten; if(!box) return;
+  var n=(_rtTausch||[]).length, h='';
+  if(n){
+    h+='<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:14px 0 4px;padding:10px 13px;border:1.5px solid var(--green);border-radius:12px;background:var(--card);font-size:13.5px">'
+      +'<span>🔁 <b>'+(_rtOriginal?'Original':'Deine Variante')+'</b> · '+n+' Zutat'+(n==1?'':'en')+' getauscht</span>'
+      +'<a onclick="_rtOriginal=!_rtOriginal;rtNeuZeichnen()" style="margin-left:auto;color:var(--greendk);font-weight:700;cursor:pointer">'+(_rtOriginal?'Meine Variante zeigen':'Original zeigen')+'</a>'
+      +'<a onclick="rtAllesOriginal()" style="color:var(--muted);cursor:pointer;text-decoration:underline">zurücksetzen</a></div>';
+  }
+  if(d&&d.anzahl){
+    h+='<div onclick="rtOeffnen()" style="display:flex;gap:10px;align-items:center;margin:8px 0 4px;padding:11px 13px;border:1.5px solid var(--green);border-radius:12px;background:var(--greenlt);cursor:pointer;'+(n?'':'animation:rtHopp .6s ease 2')+'">'
+      +'<span style="font-size:22px">🤖</span><div style="flex:1;font-size:13.5px;line-height:1.45"><b>Riki:</b> Für '+d.anzahl+' Zutat'+(d.anzahl==1?'':'en')+' kenne ich bessere Alternativen. Zeigen?</div>'
+      +'<span style="font-weight:800;color:var(--greendk)">'+(d.erlaubt?'Zeigen ›':'🔒 ›')+'</span></div>'
+      +'<style>@keyframes rtHopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}</style>';
+  }
+  box.innerHTML=h;
+}
+async function rtTauschLaden(r){
+  try{ _rtTausch=(await client.rpc('cb_rezept_meine_tausche',{p_rezept:r.id})).data||[]; }catch(e){ _rtTausch=[]; }
+}
 async function rtPruefen(r){
   var box=document.getElementById('rtBox'); if(!box||!ME) return;
-  _rtDaten=null; _rtRezept=r;
-  var d=null; try{ d=(await client.rpc('cb_rezept_alternativen',{p_rezept:r.id})).data; }catch(e){}
-  if(!d||!d.anzahl||_rtRezept!==r) return;
+  _rtDaten=null; _rtRezept=r; _rtTausch=[]; _rtOriginal=false;
+  var d=null;
+  try{ var res=await Promise.all([client.rpc('cb_rezept_alternativen',{p_rezept:r.id}), rtTauschLaden(r)]); d=res[0].data; }catch(e){}
+  if(_rtRezept!==r) return;
   _rtDaten=d;
-  box.innerHTML='<div onclick="rtOeffnen()" style="display:flex;gap:10px;align-items:center;margin:14px 0 4px;padding:11px 13px;border:1.5px solid var(--green);border-radius:12px;background:var(--greenlt);cursor:pointer;animation:rtHopp .6s ease 2">'
-    +'<span style="font-size:22px">🤖</span><div style="flex:1;font-size:13.5px;line-height:1.45"><b>Riki:</b> Für '+d.anzahl+' Zutat'+(d.anzahl==1?'':'en')+' kenne ich bessere Alternativen. Zeigen?</div>'
-    +'<span style="font-weight:800;color:var(--greendk)">'+(d.erlaubt?'Zeigen ›':'🔒 ›')+'</span></div>'
-    +'<style>@keyframes rtHopp{0%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}</style>';
+  rtNeuZeichnen();
+  if(!d||!d.anzahl||(_rtTausch||[]).length) return;
   try{ var k=rikiKnopf(); if(k&&k.animate) k.animate([{transform:'translateY(0)'},{transform:'translateY(-14px)'},{transform:'translateY(0)'}],{duration:500,iterations:3}); }catch(e){}
   rtBlaseZeigen(d);
 }
@@ -17606,56 +17662,88 @@ function rtBlaseZeigen(d){
   var ov=document.getElementById('overlay');
   var w=setInterval(function(){ if(!document.getElementById('rtBlase')){ clearInterval(w); return; } if(!ov||!ov.classList.contains('open')){ rtBlaseWeg(); clearInterval(w); } },700);
 }
-function rtOeffnen(){
+function rtZeileZu(i){   /* passende Zeile aus cb_rezept_alternativen zur angezeigten Zutat */
+  var d=_rtDaten; if(!d||!d.zutaten) return -1;
+  for(var k=0;k<d.zutaten.length;k++){ var z=d.zutaten[k]; if((z.text===i.name) && (z.produkt_id||null)===(i.produkt_id||null)) return k; }
+  return -1;
+}
+function rtZutatKlick(zi){
+  var r=_rtRezept; if(!r||!_rtDaten) return;
+  var i=(Array.isArray(r.zutaten)?r.zutaten:[])[zi]; if(!i) return;
+  var k=rtZeileZu(i);
+  if(k<0){ try{ rikiScanHinweis('🤖 Für „'+esc(rtKurz(i.name))+'“ kenne ich keine bessere Alternative.'); setTimeout(function(){ var x=document.getElementById('rikiWarteHinweis'); if(x) x.remove(); },2500);}catch(e){} return; }
+  rtOeffnen(k);
+}
+async function rtEinzeln(zi,original){
+  var r=_rtRezept; var i=(Array.isArray(r&&r.zutaten)?r.zutaten:[])[zi]; if(!i) return;
+  var k=rtZeileZu(i); if(k<0) return;
+  await rtSenden([{zeile:_rtDaten.zutaten[k].zeile, produkt_id:null}]);
+}
+async function rtAllesOriginal(){
+  var d=_rtDaten; if(!d||!d.zutaten) return;
+  await rtSenden(d.zutaten.map(function(z){ return {zeile:z.zeile, produkt_id:null}; }));
+}
+async function rtSenden(wahl){
+  var r=_rtRezept; if(!r) return null;
+  var res=null; try{ res=(await client.rpc('cb_rezept_tausch_setzen',{p_rezept:r.id, p_wahl:wahl})).data; }catch(e){}
+  if(res&&res.ok){ await rtTauschLaden(r); _rtOriginal=false; rtNeuZeichnen(); }
+  return res;
+}
+function rtOeffnen(nur){
   var d=_rtDaten; if(!d) return;
   rtBlaseWeg();
   if(!d.erlaubt){ try{ premiumInfo(); }catch(e){} return; }
   var alt=document.getElementById('rtBlatt'); if(alt) alt.remove();
+  var liste=d.zutaten.map(function(z,i){ return {z:z,i:i}; }).filter(function(x){ return nur==null||x.i===nur; });
   var h='<div style="position:fixed;inset:0;z-index:10050;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center" onclick="if(event.target===this)this.remove()" id="rtBlatt">'
     +'<div style="background:var(--card);color:var(--ink);width:100%;max-width:560px;max-height:85vh;overflow:auto;border-radius:18px 18px 0 0;padding:16px 16px 20px">'
-    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:22px">🤖</span><b style="font-size:16px">Bessere Zutaten</b>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:22px">🤖</span><b style="font-size:16px">'+(nur!=null?'Zutat tauschen':'Bessere Zutaten')+'</b>'
     +'<button onclick="document.getElementById(\'rtBlatt\').remove()" style="margin-left:auto;border:0;background:none;font-size:20px;cursor:pointer;color:var(--muted)">✕</button></div>'
-    +'<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Wähle je Zutat einen Ersatz. '+(d.darf_bearbeiten?'Das Rezept wird angepasst.':'Du bekommst eine eigene Kopie – das Original bleibt.')+'</div>';
-  d.zutaten.forEach(function(z,i){
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Gilt nur für dich – das Rezept bleibt für alle anderen gleich. Du kannst jederzeit zum Original zurück.</div>';
+  liste.forEach(function(x){
+    var z=x.z, i=x.i;
+    var gew=(_rtTausch||[]).find(function(t){ return t.zeile===z.zeile; });
+    var akt=gew?gew.produkt_id:z.produkt_id;
     h+='<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0">'
-      +'<label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px"><input type="checkbox" class="rtWahl" data-i="'+i+'"> '+esc(z.text||'')+(z.anzeige?' <span style="font-weight:400;color:var(--muted)">'+esc(z.anzeige)+'</span>':'')
-      +(z.score!=null?' <span style="margin-left:auto;font-size:12px;color:var(--muted)">Index '+Math.round(z.score)+'</span>':'')+'</label>';
-    (z.vorschlaege||[]).forEach(function(v,j){
+      +'<label style="display:flex;gap:8px;align-items:center;font-weight:700;font-size:14px"><input type="checkbox" class="rtWahl" data-i="'+i+'"'+(nur!=null?' checked':'')+'> '+esc(rtKurz(z.text)||'')+'</label>';
+    var opts=[{produkt_id:z.produkt_id, name:z.text, marke:null, score:z.score, menge_g:z.menge_g, hinweis:null, original:true}].concat(z.vorschlaege||[]);
+    opts.forEach(function(v,j){
+      var an=(v.produkt_id===akt);
       h+='<label style="display:flex;gap:8px;align-items:flex-start;margin:7px 0 0 24px;font-size:13px;line-height:1.4">'
-        +'<input type="radio" name="rt'+i+'" value="'+j+'"'+(j===0?' checked':'')+' onchange="document.querySelector(\'.rtWahl[data-i=&quot;'+i+'&quot;]\').checked=true">'
-        +'<span><b>'+esc(v.name||'')+'</b>'+(v.marke?' · '+esc(v.marke):'')+(v.menge_g!=null?' · '+v.menge_g+' g':'')
-        +' <b style="color:'+farbe(scoreBew(v.score))+'">Index '+Math.round(v.score)+'</b>'
+        +'<input type="radio" name="rt'+i+'" value="'+j+'"'+(an?' checked':'')+' onchange="document.querySelector(\'.rtWahl[data-i=&quot;'+i+'&quot;]\').checked=true">'
+        +'<span>'+(v.original?'<span style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Original · </span>':'')+'<b>'+esc(v.name||'')+'</b>'+(v.marke?' · '+esc(v.marke):'')+(v.menge_g!=null?' · '+v.menge_g+' g':(v.original&&z.anzeige?' · '+esc(z.anzeige):''))
+        +(v.score!=null?' <b style="color:'+farbe(scoreBew(num(v.score)))+'">Index '+Math.round(v.score)+'</b>':'')
         +(v.hinweis?'<br><span style="color:var(--muted)">'+esc(v.hinweis)+'</span>':'')+'</span></label>';
     });
     h+='</div>';
   });
   h+='<div style="display:flex;gap:8px;margin-top:12px">'
-    +'<button onclick="rtUebernehmen(false)" style="flex:1;padding:12px;border:1.5px solid var(--green);border-radius:12px;background:var(--card);color:var(--greendk);font-weight:800;cursor:pointer">Ausgewählte übernehmen</button>'
-    +'<button onclick="rtUebernehmen(true)" style="flex:1;padding:12px;border:0;border-radius:12px;background:var(--green);color:var(--auf-gruen);font-weight:800;cursor:pointer">Alle übernehmen</button></div>'
-    +'<div id="rtMeld" style="font-size:12.5px;margin-top:8px;color:var(--muted)"></div></div></div>';
+    +'<button onclick="rtUebernehmen(false,'+(nur!=null?nur:'null')+')" style="flex:1;padding:12px;border:'+(nur!=null?'0;background:var(--green);color:var(--auf-gruen)':'1.5px solid var(--green);background:var(--card);color:var(--greendk)')+';border-radius:12px;font-weight:800;cursor:pointer">'+(nur!=null?'Übernehmen':'Ausgewählte übernehmen')+'</button>'
+    +(nur!=null?'':'<button onclick="rtUebernehmen(true,null)" style="flex:1;padding:12px;border:0;border-radius:12px;background:var(--green);color:var(--auf-gruen);font-weight:800;cursor:pointer">Alle übernehmen</button>')
+    +'</div><div id="rtMeld" style="font-size:12.5px;margin-top:8px;color:var(--muted)"></div></div></div>';
   document.body.insertAdjacentHTML('beforeend',h);
 }
-async function rtUebernehmen(alle){
-  var d=_rtDaten, r=_rtRezept; if(!d||!r) return;
+async function rtUebernehmen(alle,nur){
+  var d=_rtDaten; if(!d) return;
   var wahl=[];
   d.zutaten.forEach(function(z,i){
+    if(nur!=null && i!==nur) return;
     var cb=document.querySelector('.rtWahl[data-i="'+i+'"]');
     if(!alle && !(cb&&cb.checked)) return;
-    var rad=document.querySelector('input[name="rt'+i+'"]:checked'); var j=rad?parseInt(rad.value,10):0;
-    var v=(z.vorschlaege||[])[j]; if(!v) return;
-    wahl.push({zeile:z.zeile, produkt_id:v.produkt_id, menge_g:v.menge_g});
+    var rad=document.querySelector('input[name="rt'+i+'"]:checked'); var j=rad?parseInt(rad.value,10):1;
+    if(alle && !rad) j=1;
+    if(j===0){ wahl.push({zeile:z.zeile, produkt_id:null}); return; }
+    var v=(z.vorschlaege||[])[j-1]; if(!v) return;
+    wahl.push({zeile:z.zeile, produkt_id:v.produkt_id, menge_g:v.menge_g, hinweis:v.hinweis});
   });
   var m=document.getElementById('rtMeld');
   if(!wahl.length){ if(m) m.textContent='Bitte mindestens eine Zutat anhaken.'; return; }
   if(m) m.textContent='Wird übernommen …';
-  var res=null; try{ res=(await client.rpc('cb_rezept_alternativen_uebernehmen',{p_rezept:r.id, p_wahl:wahl})).data; }catch(e){}
+  var res=await rtSenden(wahl);
   if(!res||!res.ok){ if(m) m.textContent='Das hat nicht geklappt'+(res&&res.grund==='premium'?' – nur mit Premium.':'.'); return; }
   var b=document.getElementById('rtBlatt'); if(b) b.remove();
-  try{ await loadRezepte(); }catch(e){}
-  await rezOeffnenById(res.rezept);
-  try{ rikiScanHinweis('🤖 '+res.getauscht+' Zutat'+(res.getauscht==1?'':'en')+' getauscht'+(res.kopie?' – als deine eigene Kopie gespeichert.':'.')); setTimeout(function(){ var x=document.getElementById('rikiWarteHinweis'); if(x) x.remove(); },4000); }catch(e){}
 }
-if(typeof window!=='undefined'){ window.rtOeffnen=rtOeffnen; window.rtUebernehmen=rtUebernehmen; }
+if(typeof window!=='undefined'){ window.rtOeffnen=rtOeffnen; window.rtUebernehmen=rtUebernehmen; window.rtZutatKlick=rtZutatKlick; window.rtEinzeln=rtEinzeln; window.rtAllesOriginal=rtAllesOriginal; window.rtNeuZeichnen=rtNeuZeichnen; }
 /* Liest eine GANZE Stueckzahl aus der Mengenangabe: "180 g (3 St.)" -> {anzahl:3, wort:"St."}
    Bewusst eng gefasst - es wird nur erkannt, was zweifelsfrei stueckig ist:
      erkannt:       (3 St.) · (11 St.) · (3 Scheiben) · 2 Stück
@@ -17688,7 +17776,7 @@ function renderRezeptScaled(){
   }
   const fK = (zielK && K0) ? zielK/K0 : 1;       // Portionsgröße (Ziel-kcal)
   const totalFactor = fK * (pers/P0);            // Gesamtmenge der Zutaten
-  const zHtml=z.map(i=>{
+  const zHtml=rtZutatenMitTausch(z).map((i,zi)=>{
     const sc=num(i.clean_score);
     const badge = sc!=null ? `<span style="font-size:11px;font-weight:700;color:var(--k-ffffff);background:${farbe(i.bewertung)};border-radius:6px;padding:1px 6px;margin-left:6px">${sc}</span>` : "";
     let mengeStr; const g=num(i.menge_g);
@@ -17707,7 +17795,7 @@ function renderRezeptScaled(){
     }
     else if(g!=null){ const gs=g*totalFactor; mengeStr=rd(gs)+" g"+(train?` · <span style="color:var(--k-b45309)">Trainingstag ${rd(gs*_rzTrainF())} g</span>`:""); }
     else { mengeStr=esc(i.menge||"nach Geschmack"); }
-    return `<div style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)"><span>${esc(i.name)}${badge}</span><span style="color:var(--muted);white-space:nowrap;text-align:right">${mengeStr}</span></div>`;
+    return `<div onclick="rtZutatKlick(${zi})" style="display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);cursor:pointer"><span>${i._tausch?'🔁 ':''}${esc(i.name)}${badge}${i._tausch?`<span style="display:block;font-size:11.5px;color:var(--muted)">statt ${esc(i._orig.name)} · <a onclick="event.stopPropagation();rtEinzeln(${zi},true)" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Original</a></span>`:''}</span><span style="color:var(--muted);white-space:nowrap;text-align:right">${mengeStr}</span></div>`;
   }).join("");
   const zc=document.getElementById("rzZutaten"); if(zc) zc.innerHTML=zHtml;
   const kb=document.getElementById("rzKcalBadge"); if(kb) kb.textContent=K0?rd(K0*fK):"–";
@@ -17844,7 +17932,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-17-01";
+const APP_BUILD = "2026-10-18-09";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
