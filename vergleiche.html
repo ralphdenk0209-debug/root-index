@@ -16,7 +16,9 @@
          laedt hoch und setzt Bild_URL. Fremdes Bild nur nach Rueckfrage (ersetzen), Herstellerbild mit Freigabe nie.
      18.10.2026 (Ralph: "kalender ueber die ganze seite und scrollbar, neue themen per klick und popup,
        gruppenposts in die planung, kennzeichnung wo geplant per logo"):
-       - Kalender ohne feste Hoehe, Seite scrollt, Kopf + Wochentage bleiben oben stehen; Ansicht 2 / 6 Wochen / Monat
+       - Kalender als festes Fenster (Ralph 06:58: "fixiertes kalenderfenster, die wochen sollten scrollbar sein"):
+         Kopf + Wochentage stehen, darunter laufen die Wochen endlos (8 Wochen zurueck bis 30 voraus);
+         2 / 4 / 6 Wochen = wie viele Wochen ins Fenster passen; Titel zeigt den sichtbaren Zeitraum
        - Klick auf einen Tag (oder "+ Neu") oeffnet ein Popup: Vorhandenes einplanen · Neues Thema · Gruppenpost
        - FB-Gruppen-Posts aus Tabelle public.gruppen_post im Kalender (gestrichelte Karte 👥), per Popup anlegen/aendern
        - Kanal-Zeichen je Karte (Kuerzel in Kanalfarbe, keine nachgezeichneten Logos): IG, FB, Threads, Substack,
@@ -110,15 +112,25 @@
   td{ border-bottom:1px solid #eef0f4; padding:7px 8px; vertical-align:top; }
   tr.zieh{ cursor:grab; } tr.zieh:hover{ background:#fafbfd; }
   .tabwrap{ overflow-x:auto; }
-  /* Kalender ueber die ganze Seite, Seite scrollt; Kopf und Wochentage bleiben stehen (Ralph 18.10.) */
-  #t-kal{ padding:10px 10px 14px; }
-  #t-kal .kkopf{ position:sticky; top:0; z-index:6; background:#fff; margin:0 -10px 6px; padding:8px 10px; border-bottom:1px solid var(--lin); }
-  .kal .wt{ position:sticky; top:52px; z-index:5; background:#fff; border-bottom:1px solid var(--lin); }
-  .tag{ min-height:150px; cursor:pointer; } .tag:hover{ border-color:#c7ccda; }
-  .kal.monat .tag{ min-height:112px; } .kal.w6 .tag{ min-height:118px; }
-  @media (min-width:701px){ .kal:not(.monat):not(.w6) .tag{ min-height:max(150px, calc((100vh - 300px) / 2)); } }
+  /* Kalender = festes Fenster, nur die Wochen scrollen (Ralph 18.10.) */
+  #t-kal{ padding:10px 10px 12px; }
+  #t-kal .kkopf{ margin-bottom:6px; }
+  .kwt{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:5px; border-bottom:1px solid var(--lin); padding:0 9px 3px 0; }
+  .kwt div{ font-size:11.5px; font-weight:700; color:var(--mut); text-align:center; }
+  .kal{ padding:5px 4px 5px 0; }
+  .kal{ grid-auto-rows:minmax(var(--zh, 150px), max-content); }
+  .kal .tag{ min-height:var(--zh, 150px); cursor:pointer; } .kal .tag > *{ flex-shrink:0; } .tag:hover{ border-color:#c7ccda; }
+  .tag.mstart{ border-top:3px solid #9aa3bd; }
+  @media (min-width:701px){
+    #t-kal.an{ display:flex; flex-direction:column; overflow:hidden; }
+    #t-kal .kalteil{ flex:1; min-height:0; display:flex; flex-direction:column; }
+    #t-kal .kalscroll{ flex:none; overflow-y:auto; overscroll-behavior:contain; }   /* Hoehe setzt kalHoehe(); Raster darin ohne feste Hoehe, sonst quetscht Chrome die Zeilen */
+    #t-kal .ohneteil{ flex:0 0 auto; max-height:42%; overflow:auto; margin-top:auto; }
+    #t-kal .ohneteil[open] summary{ position:sticky; top:0; background:#fff; z-index:2; }
+    body.kalan .wrap{ padding-bottom:6px; } body.kalan #msg{ margin:4px 0 0; }
+  }
   .tag .frei{ flex:1; min-height:14px; }
-  .ohneteil{ margin-top:16px; border-top:1px solid var(--lin); }
+  .ohneteil{ margin-top:8px; border-top:1px solid var(--lin); }
   .ohneteil summary{ cursor:pointer; font-weight:700; padding:12px 2px 6px; font-size:14px; }
   /* Kanal-Zeichen (Kuerzel in Kanalfarbe) */
   .kz2{ display:flex; flex-wrap:wrap; gap:2px; margin-top:3px; }
@@ -203,7 +215,7 @@
     .kal{ gap:3px; } .tag{ padding:3px; min-height:80px; } .ev{ font-size:11px; padding:3px 4px; }
     .kal{ grid-template-columns:1fr; gap:4px; } .kal .wt{ display:none; }
     .tag{ min-height:0; padding:6px 8px; } .tag.leer.vorbei, .tag.anderer{ display:none; }
-    .kal .wt{ position:static; } #t-kal .kkopf{ position:static; }
+    .kwt{ display:none; } .tag.leer:not(.heute){ display:none; } .kal .tag{ min-height:0 !important; } .kal{ grid-auto-rows:auto; }
     .ev{ font-size:12.5px; padding:5px 8px; } .ev .t{ -webkit-line-clamp:2 !important; }
     .wtag{ display:inline !important; }
     .suche{ min-width:0; flex:1 1 100%; }
@@ -227,10 +239,11 @@
     <div class="kkopf">
       <button class="kn" id="kZur">◀</button><button class="kn" id="kHeute">Heute</button><button class="kn" id="kVor">▶</button>
       <h2 id="kTitel"></h2>
-      <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap"><button class="kn haupt" id="kNeu">+ Neu</button> <button class="kn" data-ans="2w">2 Wochen</button> <button class="kn" data-ans="w6">6 Wochen</button> <button class="kn" data-ans="monat">Monat</button></span>
+      <span style="margin-left:auto;display:flex;gap:4px;flex-wrap:wrap"><button class="kn haupt" id="kNeu">+ Neu</button> <button class="kn" data-ans="2w">2 Wochen</button> <button class="kn" data-ans="w4">4 Wochen</button> <button class="kn" data-ans="w6">6 Wochen</button></span>
     </div>
     <div class="legende" id="legende"></div>
-    <div class="kal" id="kal"></div>
+    <div class="kwt" id="kwt"><div>Mo</div><div>Di</div><div>Mi</div><div>Do</div><div>Fr</div><div>Sa</div><div>So</div></div>
+    <div class="kalscroll" id="kals"><div class="kal" id="kal"></div></div>
    </div>
    <details class="ohneteil" id="ohneteil">
     <summary>Ohne Termin <small id="ohneZahl"></small> <small>· Zeile in einen Tag ziehen oder Tag anklicken</small></summary>
@@ -341,7 +354,8 @@ var ZEILEN = [], P = {}, KAT = {}, BILD = {}, BILDQ = {}, FOTO = {}, EXTRA = [],
 var SEL = {};                       // Mehrfachauswahl: id -> true
 var FB = {};                        // aktive Bereichsfilter (leer = alle)
 var SUCHE = "";
-var KANS = ["monat","w6"].indexOf(lsGet("cp_kans"))>=0 ? lsGet("cp_kans") : "2w", KOFF = 0;
+var KANS = ["w4","w6"].indexOf(lsGet("cp_kans"))>=0 ? lsGet("cp_kans") : "2w", KOFF = 0;
+var KTOP = null;   // erster sichtbarer Montag (ymd) – bleibt beim Neuzeichnen stehen
 var GP = [];                        // FB-Gruppen-Posts (public.gruppen_post)
 var GR_ART = { rezept:"Rezept-Reel", vergleich:"Vergleich", vorstellung:"Vorstellung", wissen:"Wissen", admin:"Admins fragen" };
 /* Kanal-Zeichen: Kuerzel in Kanalfarbe (keine nachgezeichneten Logos) */
@@ -415,7 +429,7 @@ function reiter(t){
   document.querySelectorAll(".tab").forEach(function(x){ x.classList.toggle("an", x.id==="t-"+t); });
   $("filter").style.display = t==="bilder" ? "none" : "";
   lsSet("cp_tab2", t); document.body.classList.toggle("kalan", t==="kal");
-  if(t==="kal"){ window.scrollTo(0,0); setTimeout(kalHoehe, 0); }
+  if(t==="kal"){ window.scrollTo(0,0); setTimeout(function(){ kalHoehe(); kalZu(KTOP); }, 0); }
   if(typeof zeigeFilter==="function" && ZEILEN.length) zeigeFilter();
 }
 document.querySelectorAll("nav button").forEach(function(b){ b.onclick = function(){ reiter(b.dataset.t); }; });
@@ -574,10 +588,42 @@ $("legende").innerHTML = BER_REIHE.map(function(k){ return "<span><i style='--c:
   + "<span><span class='nm'></span>noch nicht in Meta geplant</span><span style='opacity:.6'>blass = online</span>"
   + "<span style='border:2px dashed #1877F2;border-radius:6px;padding:0 6px'>👥 FB-Gruppen-Post</span>"
   + "<span>"+KANAL.map(kb).join(" ")+" = dort geplant</span>";
-document.querySelectorAll("[data-ans]").forEach(function(b){ b.onclick = function(){ KANS = b.dataset.ans; KOFF = 0; lsSet("cp_kans", KANS); zeigeKal(); zeigeFilter(); }; });
-$("kZur").onclick = function(){ KOFF--; zeigeKal(); zeigeFilter(); };
-$("kVor").onclick = function(){ KOFF++; zeigeKal(); zeigeFilter(); };
-$("kHeute").onclick = function(){ KOFF = 0; zeigeKal(); zeigeFilter(); };
+function kWochen(){ return KANS==="w6" ? 6 : KANS==="w4" ? 4 : 2; }
+function montag(d){ var m = new Date(d.getFullYear(), d.getMonth(), d.getDate()); m.setDate(m.getDate()-((m.getDay()+6)%7)); return m; }
+document.querySelectorAll("[data-ans]").forEach(function(b){ b.onclick = function(){ KANS = b.dataset.ans; lsSet("cp_kans", KANS);
+  document.querySelectorAll("[data-ans]").forEach(function(x){ x.classList.toggle("an", x.dataset.ans===KANS); }); var top = KTOP; kalHoehe(); kalZu(top); }; });
+function kalSchritt(n){ var m = KTOP ? ausFeldern(KTOP) : montag(new Date()); m.setDate(m.getDate()+7*n*kWochen()); kalZu(ymd(m), true); }
+$("kZur").onclick = function(){ kalSchritt(-1); };
+$("kVor").onclick = function(){ kalSchritt(1); };
+$("kHeute").onclick = function(){ kalZu(ymd(montag(new Date())), true); };
+/* zu einem Montag scrollen (innerhalb des Fensters) */
+function kalZu(tagYmd, weich){
+  var k = $("kals"); if(!tagYmd) tagYmd = ymd(montag(new Date()));
+  var el = k.querySelector(".tag[data-tag='"+tagYmd+"']"); if(!el) return;
+  if(k.scrollHeight > k.clientHeight + 4) k.scrollTo({ top: k.scrollTop + el.getBoundingClientRect().top - k.getBoundingClientRect().top - 5, behavior: weich ? "smooth" : "auto" });
+  else if(weich) el.scrollIntoView({ behavior:"smooth", block:"start" });
+  kalSichtbar();
+}
+/* sichtbaren Zeitraum fuer Titel und Zaehler bestimmen */
+var KSCR = null;
+function kalSichtbar(){
+  var k = $("kals"), tags = k.querySelectorAll(".tag"); if(!tags.length) return;
+  var kr = k.getBoundingClientRect(), oben = Math.max(kr.top, 0), unten = Math.min(kr.bottom, window.innerHeight), erst = null, letzt = null;
+  for(var i=0; i<tags.length; i+=7){ var r = tags[i].getBoundingClientRect(); if(!r.height) continue;
+    if(r.bottom > oben + 20 && !erst) erst = tags[i];
+    if(r.top < unten - 20) letzt = tags[Math.min(i+6, tags.length-1)]; }
+  if(!letzt) letzt = erst;
+  if(!erst) return;
+  KTOP = erst.dataset.tag;
+  var von = ausFeldern(erst.dataset.tag), bis = ausFeldern(letzt.dataset.tag); bis.setDate(bis.getDate()+1);
+  var bisT = new Date(bis); bisT.setDate(bisT.getDate()-1);
+  $("kTitel").textContent = tm(von)+" – "+tm(bisT)+bisT.getFullYear();
+  var alt = KZEIT; KZEIT = { von:von, bis:bis };
+  if(!alt || alt.von.getTime()!==von.getTime() || alt.bis.getTime()!==bis.getTime()){
+    var s = $("suche"); if(!(s && document.activeElement===s)) zeigeFilter(); }
+}
+$("kals").addEventListener("scroll", function(){ clearTimeout(KSCR); KSCR = setTimeout(kalSichtbar, 120); });
+window.addEventListener("scroll", function(){ if(window.innerWidth<=700 && $("t-kal").classList.contains("an")){ clearTimeout(KSCR); KSCR = setTimeout(kalSichtbar, 150); } });
 function evHtml(x){
   var d = new Date(x.Reel_geplant_am), st = stufe(x), on = st==="online";
   return "<div class='ev"+(on?" on":(x.Reel_in_Meta?"":" nm"))+"' style='--c:"+BER[bereich(x)][1]+"' draggable='"+(!on)+"' data-id='"+x.id+"' title='"+e(titel(x)+(on?" · online":x.Reel_in_Meta?" · in Meta":" · noch nicht in Meta"))+"'>"
@@ -595,36 +641,31 @@ function grHtml(g){
 function zeigeKal(){
   document.querySelectorAll("[data-ans]").forEach(function(b){ b.classList.toggle("an", b.dataset.ans===KANS); });
   var jetzt = new Date(), heute = new Date(jetzt.getFullYear(), jetzt.getMonth(), jetzt.getDate());
-  var start, tage, monat = null;
-  if(KANS==="monat"){
-    var m1 = new Date(heute.getFullYear(), heute.getMonth()+KOFF, 1); monat = m1.getMonth();
-    start = new Date(m1); start.setDate(1 - ((m1.getDay()+6)%7));
-    var mEnde = new Date(m1.getFullYear(), m1.getMonth()+1, 0);
-    tage = Math.ceil(((mEnde - start)/864e5 + 1)/7)*7;
-    $("kTitel").textContent = m1.toLocaleDateString("de-DE",{month:"long", year:"numeric"});
-  } else {
-    tage = KANS==="w6" ? 42 : 14;
-    start = new Date(heute); start.setDate(heute.getDate() - ((heute.getDay()+6)%7) + tage*KOFF);
-    var ende = new Date(start); ende.setDate(start.getDate()+tage-1);
-    $("kTitel").textContent = tm(start)+" – "+tm(ende)+ende.getFullYear();
-  }
-  var bisK = new Date(start); bisK.setDate(start.getDate()+tage); KZEIT = { von:new Date(start), bis:bisK };
+  /* endlose Wochen: 8 zurueck (Handy: ab dieser Woche) bis 30 voraus; frueheste/spaeteste Termine immer drin */
+  var handy = window.innerWidth <= 700, monat = null;
+  var start = montag(heute); start.setDate(start.getDate() - (handy ? 0 : 56));
+  var ende = new Date(heute); ende.setDate(ende.getDate() + 30*7);
+  ZEILEN.concat(GP).forEach(function(x){ var d = x.Reel_geplant_am || x.geplant_am; if(!d) return; d = new Date(d);
+    if(d > ende) ende = d; if(!handy && d < start && d > new Date(heute.getTime() - 26*7*864e5)) start = montag(d); });
+  var tage = Math.ceil(((montag(ende) - start)/864e5 + 7)/7)*7;
+  if(!KTOP) KTOP = ymd(montag(heute));
   var ev = ZEILEN.filter(function(x){ return x.Reel_geplant_am && passt(x); })
     .sort(function(a,b){ return new Date(a.Reel_geplant_am)-new Date(b.Reel_geplant_am); });
-  var html = ["Mo","Di","Mi","Do","Fr","Sa","So"].map(function(w){ return "<div class='wt'>"+w+"</div>"; }).join("");
+  var html = "";
   for(var k=0; k<tage; k++){
     var tag = new Date(start); tag.setDate(start.getDate()+k);
     var drin = ev.filter(function(x){ return new Date(x.Reel_geplant_am).toDateString()===tag.toDateString(); });
     var grs = GP.filter(function(g){ return new Date(g.geplant_am).toDateString()===tag.toDateString() && grPasst(g); });
-    var kl = "tag"+(tag<heute?" vorbei":"")+(tag.getTime()===heute.getTime()?" heute":"")+(monat!=null && tag.getMonth()!==monat?" anderer":"");
+    var kl = "tag"+(tag<heute?" vorbei":"")+(tag.getTime()===heute.getTime()?" heute":"")+(tag.getDate()<=7?" mstart":"");
     html += "<div class='"+kl+(drin.length||grs.length?"":" leer")+"' data-tag='"+ymd(tag)+"'><div class='kz'><span><span class='wtag'>"+tag.toLocaleDateString("de-DE",{weekday:"short"})+" </span><b>"+tag.getDate()+"</b>"+(tag.getDate()===1||k===0?" "+tag.toLocaleDateString("de-DE",{month:"short"}):"")+"</span>"
       + "<span><span class='takt'>"+(TAKT[tag.getDay()]||"")+"</span> <button class='plus' title='neu anlegen' data-neu='"+ymd(tag)+"'>+</button></span></div>"
       + grs.concat(drin).sort(function(a,b){ return new Date(a.geplant_am||a.Reel_geplant_am)-new Date(b.geplant_am||b.Reel_geplant_am); })
           .map(function(x){ return x.geplant_am ? grHtml(x) : evHtml(x); }).join("") + "<div class='frei'></div></div>";
   }
-  $("kal").className = "kal"+(KANS==="monat"?" monat":KANS==="w6"?" w6":"");
-  setTimeout(kalHoehe, 0);
+  var top = KTOP;
+  $("kal").className = "kal";
   $("kal").innerHTML = html;
+  kalHoehe(); kalZu(top);
 
   /* Ohne Termin */
   var ohne = ZEILEN.filter(function(x){ return !x.Reel_geplant_am && stufe(x)!=="online" && passt(x); })
@@ -638,8 +679,17 @@ function zeigeKal(){
   }).join("") || "<tr><td colspan='7'><small>Alles hat einen Termin.</small></td></tr>";
   kalVerdrahten();
 }
-function kalHoehe(){ $("t-kal").style.height = ""; }   /* seit 18.10. keine feste Hoehe mehr – die Seite scrollt */
-window.addEventListener("resize", kalHoehe);
+function kalHoehe(){
+  var t = $("t-kal"), k = $("kals"); if(!t.classList.contains("an")) return;
+  if(window.innerWidth <= 700){ t.style.height = ""; k.style.height = ""; $("kal").style.removeProperty("--zh"); return; }
+  t.style.height = Math.max(460, window.innerHeight - (t.getBoundingClientRect().top + window.scrollY) - 30) + "px";
+  var o = $("ohneteil"), unten = t.getBoundingClientRect().bottom - 12 - o.getBoundingClientRect().height - 8;
+  k.style.height = Math.max(240, unten - k.getBoundingClientRect().top) + "px";
+  var n = kWochen(), h = Math.floor((k.clientHeight - 10) / n) - 5;
+  $("kal").style.setProperty("--zh", Math.max(n>=6 ? 70 : 90, h) + "px");
+}
+window.addEventListener("resize", function(){ var top = KTOP; kalHoehe(); kalZu(top); });
+$("ohneteil").addEventListener("toggle", function(){ var top = KTOP; kalHoehe(); kalZu(top); });
 var ZIEH = null;
 function kalVerdrahten(){
   document.querySelectorAll("#kal .ev, #ohne tr.zieh").forEach(function(el){
