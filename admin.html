@@ -1512,14 +1512,16 @@ window.loadDashboard=function(){
   var f=box.querySelector('iframe.cockpitFrame');
   /* 15.10.2026: Der Klick auf den Wächter „Ralph prüfen“ öffnet die Produkttabelle im selben Rahmen.
      Der Dashboard-Knopf holt dann das Cockpit zurück. */
-  if(f){ var amCockpit=false; try{ amCockpit=/cockpit\.html$/.test(f.contentWindow.location.pathname); }catch(e){}
-    if(!amCockpit) f.src='cockpit.html?cb='+Date.now(); }
+  /* 18.10.2026, Ralph: "setz mal c um" - das Dashboard ist jetzt das Mischpult (mischpult.html).
+     Das alte Cockpit bleibt ueber die Schnellwahl im Mischpult erreichbar. */
+  if(f){ var amCockpit=false; try{ amCockpit=/mischpult\.html$/.test(f.contentWindow.location.pathname); }catch(e){}
+    if(!amCockpit) f.src='mischpult.html?cb='+Date.now(); }
   if(!f){
     /* Ralph 23.09.: "das cockpit soll die ganze seite sein, menü soll aber bleiben" -
        der Rahmen liegt fest neben dem Menü und füllt den Rest des Fensters. */
-    f=document.createElement('iframe'); f.className='cockpitFrame'; f.title='Cockpit';
-    f.src='cockpit.html?cb='+Date.now();
-    f.style.cssText='position:fixed;right:0;bottom:0;border:0;background:#1a1714;z-index:5;display:block';
+    f=document.createElement('iframe'); f.className='cockpitFrame'; f.title='Mischpult';
+    f.src='mischpult.html?cb='+Date.now();
+    f.style.cssText='position:fixed;right:0;bottom:0;border:0;background:#16171a;z-index:5;display:block';
     box.innerHTML=''; box.appendChild(f);
     var lage=function(){
       var n=document.getElementById('adminNav'); var r=n?n.getBoundingClientRect():{top:0,right:0,bottom:0};
