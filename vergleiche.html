@@ -232,6 +232,7 @@
   .wbfoto{ width:180px; height:210px; border-radius:12px; background:#f3f4f7; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; position:relative; overflow:hidden; flex:none; }
   .wbfoto img{ max-width:100%; max-height:100%; object-fit:contain; }
   .wbfoto.leer{ border:2px dashed #c2611a; background:#fff8f1; color:#c2611a; box-sizing:border-box; text-align:center; padding:8px; }
+  .wbfoto.leer.gelb{ border-color:#b07a00; background:#fdf6e0; color:#7a5406; } .wbfoto.leer.gelb small{ color:#7a5406; }
   .wbfoto.leer small{ font-size:11.5px; color:#8a3f08; } .wbfoto.ueber{ outline:3px dashed var(--vergleich); }
   .wbfoto .lade{ position:absolute; inset:0; background:rgba(255,255,255,.88); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--nav); }
   .wbinfo{ flex:1; min-width:240px; display:flex; flex-direction:column; gap:8px; }
@@ -333,7 +334,7 @@
         <div class="wbf" id="wbFilter"></div>
         <div class="wbliste" id="wbListe"></div>
         <div class="wbneu"><input id="pNeu" class="suche" placeholder="P-Nr aufnehmen, z. B. P095" aria-label="P-Nr aufnehmen"><button type="button" class="kn" id="pNeuOk">+ aufnehmen</button></div>
-        <div class="ablegen" id="ablegen">Mehrere Fotos hier ablegen – <b>Dateiname mit P-Nr</b> (z. B. P1099.jpg). Ein einzelnes Foto rechts aufs Foto-Feld ziehen.</div>
+        <div class="ablegen" id="ablegen">Mehrere Fotos hier ablegen – <b>Dateiname mit P-Nr</b> (z. B. P1099.jpg). Ein einzelnes Foto rechts aufs Foto-Feld ziehen. Normale Fotos stellt Claude danach frei; freigestellte PNGs gehen direkt ins Index.</div>
       </div>
       <div class="wbr" id="wbDetail"></div>
     </div>
@@ -527,6 +528,7 @@ async function laden(){
   ZEILEN = r.data || [];
   var ids = {};
   ZEILEN.forEach(function(x){ [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).forEach(function(id){ ids[id] = 1; }); });
+  ROH = {}; var ro = await vg.rpc("cb_admin_rohfoto_offen"); (ro.data||[]).forEach(function(x){ ROH[x.produkt_id] = x.id; });
   FOTO = {}; var f = await vg.from("content_produkt_foto").select("*");
   (f.data||[]).forEach(function(x){ FOTO[x.produkt_id] = x; ids[x.produkt_id] = 1; });
   EXTRA.forEach(function(id){ ids[id] = 1; });
@@ -1035,12 +1037,13 @@ async function grVerschiebe(gid, tagYmd){
    Gezeigt wird NUR das eigene Bild (Bucket produktbilder) – keine OFF-/Fremdbilder.
    Partner: gleiche Art (Kategorie + Namenswort), bessere Alternativen (cb_produkt_alternativen,
    wie die App) und die Besten der Kategorie (>= +10). Nur lesen, keine Produktaenderung. */
+var ROH = {};   // P-ID -> offenes Rohfoto (content_rohfoto), wartet aufs Freistellen
 var SELP = lsGet("cp_wbsel") || null, WBSUCHE = "", PCACHE = {};
 BF = ["alle","fehlt","da","fertig","reel","nicht","pruef"].indexOf(lsGet("cp_wbf"))>=0 ? lsGet("cp_wbf") : "alle";
 function eigenBild(id){ var u = BILDQ[id]; return u && u.indexOf("/storage/v1/object/public/produktbilder/")>=0 ? u : null; }
 function fotoStand(id){ var fo = FOTO[id] || {};
   if(eigenBild(id)) return "fertig"; if(fo.foto_vorne) return "da"; return "fehlt"; }
-var FST = { fehlt:["Foto fehlt","#c2611a","#fff1e4","#8a3f08"], da:["Foto da, noch nicht im Index","#b07a00","#fdf3d6","#7a5406"], fertig:["Foto gemacht","#1d6b3a","#e8f3ec","#1d6b3a"] };
+var FST = { fehlt:["Foto fehlt","#c2611a","#fff1e4","#8a3f08"], da:["Foto da – Claude stellt frei","#b07a00","#fdf3d6","#7a5406"], fertig:["Foto gemacht","#1d6b3a","#e8f3ec","#1d6b3a"] };
 function nrListe(id){ return ZEILEN.filter(function(x){ return pid(x.Produkt_A)===id || pid(x.Produkt_B)===id; }); }
 function bewTxt(n){ return n==null ? "keine Punkte" : n>=90 ? "Sehr gut" : n>=75 ? "Gut" : n>=60 ? "Mittel" : "Schwach"; }
 function wbIds(){
@@ -1086,9 +1089,9 @@ function wbDetail(){
     + (V.length ? V.map(function(x){ return "<span>Nr "+x.Nr+" · "+e(titel(x))+"</span>"; }).join("") : "<span>Noch in keinem Post</span>")
     + (!P[id] || P[id].nichtImIndex ? "<span class='r'>Zuordnung prüfen</span>" : "");
   el.innerHTML = "<div class='wbkarte wbkopf'>"
-    + "<div class='wbfoto"+(u?"":" leer")+"' data-up='"+e(id)+"' data-drop='"+e(id)+"' title='"+(u?"Foto ersetzen":"Foto einfügen")+"'>"
+    + "<div class='wbfoto"+(u?"":st==="da"?" leer gelb":" leer")+"' data-up='"+e(id)+"' data-drop='"+e(id)+"' title='"+(u?"Foto ersetzen":"Foto einfügen")+"'>"
       + (UPL[id] ? "<div class='lade'>"+e(UPL[id])+"</div>" : "")
-      + (u ? "<img src='"+e(u)+"' alt='Dein Foto'>" : "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto fehlt</b><small>hierher ziehen oder tippen</small>")
+      + (u ? "<img src='"+e(u)+"' alt='Dein Foto'>" : st==="da" ? "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto da</b><small>"+(ROH[id]?"Rohfoto liegt vor – Claude stellt frei":"im Ordner – Claude stellt frei")+"</small>" : "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto fehlt</b><small>hierher ziehen oder tippen</small>")
     + "</div>"
     + "<div class='wbinfo'><div class='mk'>"+e(p.marke)+" · "+e(id)+"</div><h2>"+e(p.name)+"</h2><div class='wbchips'>"+chips+"</div>"
       + "<div class='wbakt'><button type='button' class='haupt' data-pv='"+e(id)+"'>+ Vergleich</button><button type='button' data-pe='"+e(id)+"'>+ Einzel-Reel</button>"
@@ -1250,8 +1253,43 @@ async function aufbereiten(datei){
   return c.toDataURL("image/jpeg", 0.88).split(",")[1];
 }
 function setzeUpl(id, t){ if(t) UPL[id] = t; else delete UPL[id]; zeigeBilder(); }
+/* 19.10.2026 (Ralph, Vorschlag A): freigestelltes PNG (mit Transparenz) geht direkt ins Index,
+   jedes andere Foto erst als Rohfoto nach content_rohfoto – Claude stellt frei und setzt es dann ins Index. */
+async function istFreigestellt(datei){
+  if(!/png$/i.test(datei.type||"") && !/\.png$/i.test(datei.name||"")) return false;
+  var img = await bildLaden(datei), c = document.createElement("canvas"), w = Math.min(400, img.naturalWidth), h = Math.round(img.naturalHeight*w/img.naturalWidth);
+  c.width = w; c.height = h; var g = c.getContext("2d"); g.drawImage(img, 0, 0, w, h);
+  var d = g.getImageData(0, 0, w, h).data, n = 0; for(var i=3; i<d.length; i+=4){ if(d[i] < 200) n++; }
+  return n > (w*h)*0.05;
+}
+async function rohAufbereiten(datei){
+  var img = await bildLaden(datei), w = img.naturalWidth, h = img.naturalHeight, f = Math.min(1, 1600/Math.max(w,h));
+  var c = document.createElement("canvas"); c.width = Math.round(w*f); c.height = Math.round(h*f);
+  var g = c.getContext("2d"); g.fillStyle = "#fff"; g.fillRect(0, 0, c.width, c.height); g.drawImage(img, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+}
 async function hochladen(id, datei){
   id = pid(id);
+  if(!/^image\//.test(datei.type||"") && !/\.(jpe?g|png|webp)$/i.test(datei.name||"")){ meld(datei.name+": kein Bild."); return; }
+  if(!(await istFreigestellt(datei).catch(function(){ return false; }))) return rohHochladen(id, datei);
+  return hochladenIndex(id, datei);
+}
+async function rohHochladen(id, datei){
+  if(!P[id]){ await produkteLaden([id]); }
+  if(!P[id]){ meld(id+" nicht gefunden."); return; }
+  var name = P[id].marke+" "+P[id].name;
+  try{
+    setzeUpl(id, "lade hoch …");
+    var b64 = await rohAufbereiten(datei);
+    var r = await vg.rpc("cb_admin_rohfoto_einreichen", { p_produkt_id:id, p_daten_base64:b64, p_mime:"image/jpeg", p_dateiname:datei.name||null });
+    if(r.error) throw new Error(r.error.message);
+    ROH[id] = r.data; FOTO[id] = Object.assign({}, FOTO[id]||{}, { produkt_id:id, foto_vorne:true });
+    setzeUpl(id, null); meld(name+": Foto gespeichert ✓ – Claude stellt es frei und setzt es dann ins Index.");
+  }catch(err){ setzeUpl(id, null); meld(name+": "+(err.message||err)); }
+}
+async function hochladenIndex(id, datei){
+  id = pid(id);
+
   if(!/^image\//.test(datei.type||"") && !/\.(jpe?g|png|webp)$/i.test(datei.name||"")){ meld(datei.name+": kein Bild."); return; }
   if(datei.size > 25e6){ meld(datei.name+": zu groß."); return; }
   if(!P[id]){ await produkteLaden([id]); }
