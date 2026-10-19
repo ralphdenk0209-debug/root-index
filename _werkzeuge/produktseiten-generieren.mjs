@@ -750,6 +750,7 @@ async function main() {
   for (const [, { eintraege }] of proKat) for (const { p, datei } of eintraege) neueAdresse.set(String(p.id).toUpperCase(), datei);
   let umgeleitet = 0;
   const umleitungen = [];   // 11.10.2026: echte 301 ueber produkt/.htaccess (Apache bei INWX)
+  const umgezogen = new Set(); // 19.10.2026: neue Adressen umbenannter Produkte -> zuerst in die Sitemap
   for (const [f, pid] of alteAdressen) {
     const ziel = neueAdresse.get(pid);
     if (!ziel || ziel === f || vergeben.has(f)) continue;
@@ -759,6 +760,7 @@ async function main() {
     // Sofort-Refresh + canonical wertet Google wie eine dauerhafte Weiterleitung.
     writeFileSync(join(ZIEL, f), `<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Weitergeleitet</title><link rel="canonical" href="${DOMAIN}${href}"><meta http-equiv="refresh" content="0; url=${href}"></head><body><a href="${href}">Zur Produktseite</a></body></html>\n`);
     umleitungen.push(`Redirect 301 /produkt/${f} ${DOMAIN}${href}`);
+    umgezogen.add(`${DOMAIN}${href}`);
     umgeleitet++;
   }
   /* 11.10.2026: Die Huellen allein reichten Google nicht - es behielt die alten Adressen
@@ -806,7 +808,9 @@ async function main() {
   const TOP = Number(process.env.SITEMAP_TOP || 10000); // 08.10.2026: 2000 -> 10000 (Ralph A), Google indexiert 24.200
   for (const f of readdirSync(WEB)) if (/^sitemap-de-\d+\.xml$/.test(f)) unlinkSync(join(WEB, f));
   const auswahl = kandidaten.filter((k) => k.q >= 0)
-    .sort((a, b) => b.q - a.q || b.score - a.score || a.url.localeCompare(b.url))
+    /* 19.10.2026 (Ralph A): Google kannte neue Adressen umbenannter Produkte nicht (z. B. p45599, p33543,
+       p26109 "URL Google nicht bekannt", in keiner Sitemap). Diese kommen jetzt zuerst in die Sitemap. */
+    .sort((a, b) => (umgezogen.has(b.url) - umgezogen.has(a.url)) || b.q - a.q || b.score - a.score || a.url.localeCompare(b.url))
     .slice(0, TOP);
   const heute = new Date().toISOString().slice(0, 10);
   const eintrag = (u, lm) => `<url><loc>${u}</loc>${lm ? `<lastmod>${lm}</lastmod>` : ""}</url>`;
@@ -817,6 +821,7 @@ async function main() {
     `<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
     `<sitemap><loc>${DOMAIN}/sitemap-top.xml</loc><lastmod>${heute}</lastmod></sitemap>\n</sitemapindex>\n`);
   urls.push(...auswahl.map((k) => k.url));
+  console.log(`Sitemap: davon neue Adressen umbenannter Produkte: ${auswahl.filter((k) => umgezogen.has(k.url)).length} von ${umgezogen.size}`);
   writeFileSync(join(WEB, "robots.txt"),
     `User-agent: *\nAllow: /\nDisallow: /admin.html\n\nSitemap: ${DOMAIN}/sitemap.xml\n`);
 
