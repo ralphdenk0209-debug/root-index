@@ -215,6 +215,8 @@
   .wbl .suche{ width:100%; box-sizing:border-box; min-width:0; }
   .wbf{ display:flex; flex-wrap:wrap; gap:5px; }
   .wbf .kn{ font-size:12px; padding:4px 9px; }
+  .wbmod{ display:flex; gap:5px; width:100%; margin-bottom:2px; } .wbmod .kn{ flex:1; font-size:12.5px; padding:6px 8px; }
+  .wbf select.suche{ width:100%; font-size:12.5px; padding:5px 8px; }
   .wbf .kn.orange:not(.an){ background:#fff1e4; color:#8a3f08; border-color:#f3c9a3; }
   .wbliste{ overflow-y:auto; flex:1; min-height:120px; margin:0 -12px; border-top:1px solid #eef0f4; }
   .wbz{ all:unset; box-sizing:border-box; width:100%; display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f0f2f6; cursor:pointer; }
@@ -1042,7 +1044,7 @@ var SELP = lsGet("cp_wbsel") || null, WBSUCHE = "", PCACHE = {};
 BF = ["alle","fehlt","da","fertig","reel","nicht","pruef"].indexOf(lsGet("cp_wbf"))>=0 ? lsGet("cp_wbf") : "alle";
 function eigenBild(id){ var u = BILDQ[id]; return u && u.indexOf("/storage/v1/object/public/produktbilder/")>=0 ? u : null; }
 function fotoStand(id){ var fo = FOTO[id] || {};
-  if(eigenBild(id)) return "fertig"; if(fo.foto_vorne) return "da"; return "fehlt"; }
+  if(eigenBild(id) || EIGEN[id]) return "fertig"; if(fo.foto_vorne) return "da"; return "fehlt"; }
 var FST = { fehlt:["Foto fehlt","#c2611a","#fff1e4","#8a3f08"], da:["Foto da – Claude stellt frei","#b07a00","#fdf3d6","#7a5406"], fertig:["Foto gemacht","#1d6b3a","#e8f3ec","#1d6b3a"] };
 function nrListe(id){ return ZEILEN.filter(function(x){ return pid(x.Produkt_A)===id || pid(x.Produkt_B)===id; }); }
 function bewTxt(n){ return n==null ? "keine Punkte" : n>=90 ? "Sehr gut" : n>=75 ? "Gut" : n>=60 ? "Mittel" : "Schwach"; }
@@ -1061,16 +1063,56 @@ function wbAlle(){
     || (a.p?a.p.marke+" "+a.p.name:a.id).localeCompare(b.p?b.p.marke+" "+b.p.name:b.id, "de"); });
 }
 function wbPasst(o, f){ return f==="alle" || o.st===f || (f==="reel" && o.reel) || (f==="nicht" && !o.V.length) || (f==="pruef" && o.pruef); }
+/* ---- Werkbank: „Alle Produkte“ (Ralph 19.10.2026) ----
+   Server-Liste cb_admin_content_kandidaten: mit Marke, ohne Obst & Gemüse, ohne Fertigprodukte,
+   aus Fleisch & Fisch nur Wurst (über den Namen), nur deutscher Markt. Seitenweise je 100. */
+var MODUS = lsGet("cp_wbmod")==="alle" ? "alle" : "plan", KAND = [], KGES = 0, KKAT = lsGet("cp_wbkat")||"", KST = "", KLAEDT = false, KTIMER = null, EIGEN = {};
+var KATS = ["Milchprodukte & Eier","Getränk","Fleisch & Fisch","Brot & Backwaren","Süßwaren","Würzen & Saucen","Getreide & Beilagen","Brotaufstrich",
+  "Desserts & Süßspeisen","Snacks","Tofu & Fleischalternativen","Nüsse & Hülsenfrüchte","Öle & Fette","Backen","Riegel","Süßungsmittel","Proteinpulver","Supplement","Sonstiges","Trinknahrung","Salze"];
+async function kandLaden(mehr){
+  if(!mehr) KAND = [];
+  KLAEDT = true; zeigeBilder();
+  var r = await vg.rpc("cb_admin_content_kandidaten", { p_suche:WBSUCHE.trim()||null, p_kategorie:KKAT||null, p_status:KST||null, p_limit:100, p_offset:KAND.length });
+  KLAEDT = false;
+  if(r.error){ meld("Alle Produkte: "+r.error.message); zeigeBilder(); return; }
+  (r.data||[]).forEach(function(x){ KAND.push(x); if(x.eigen_bild) EIGEN[x.id] = true; });
+  if(r.data && r.data[0]) KGES = Number(r.data[0].gesamt); else if(!mehr) KGES = 0;
+  zeigeBilder();
+}
+function modusChips(nPlan){
+  return "<span class='wbmod'><button type='button' class='kn"+(MODUS==="plan"?" an":"")+"' data-wbm='plan'>Content-Plan <b>"+nPlan+"</b></button>"
+    + "<button type='button' class='kn"+(MODUS==="alle"?" an":"")+"' data-wbm='alle'>Alle Produkte"+(KGES?" <b>"+KGES.toLocaleString("de-DE")+"</b>":"")+"</button></span>";
+}
+function zeigeKand(nPlan){
+  $("wbFilter").innerHTML = modusChips(nPlan)
+    + "<select class='suche' data-kkat aria-label='Kategorie'><option value=''>Alle Kategorien</option>"
+    + KATS.map(function(k){ return "<option"+(k===KKAT?" selected":"")+">"+e(k)+"</option>"; }).join("")+"</select>"
+    + [["","Alle"],["fehlt","Foto fehlt"],["fertig","Fertig"]].map(function(f){ return "<button type='button' class='kn wbk"+(KST===f[0]?" an":"")+"' data-kst='"+f[0]+"'>"+f[1]+"</button>"; }).join("");
+  var zeilen = KAND.map(function(x){
+    var st = x.eigen_bild || EIGEN[x.id] ? "fertig" : (FOTO[x.id] && FOTO[x.id].foto_vorne) ? "da" : "fehlt", f = FST[st];
+    var n = x.clean_score==null ? null : Math.floor(Number(x.clean_score)+0.5), V = nrListe(x.id);
+    return "<button type='button' class='wbz"+(x.id===SELP?" an":"")+"' data-sel='"+e(x.id)+"'>"
+      + "<span class='pu' style='background:"+f[1]+"'></span>"
+      + "<span class='tx'><b>"+e(x.marke)+" · "+e(x.name)+"</b><small>"+e(x.id)+" · "+e(x.kategorie||"")+" · "+f[0]+(V.length?" · Nr "+V.map(function(v){ return v.Nr; }).join(", "):"")+(UPL[x.id]?" · "+e(UPL[x.id]):"")+"</small></span>"
+      + "<span class='pk3' style='color:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</span></button>"; }).join("");
+  $("wbListe").innerHTML = zeilen
+    + (KLAEDT ? "<small style='padding:12px;display:block'>lade …</small>"
+       : KAND.length < KGES ? "<button type='button' class='kn' data-kmehr style='margin:10px 14px'>weitere 100 laden ("+KAND.length+" von "+KGES.toLocaleString("de-DE")+")</button>"
+       : !KAND.length ? "<small style='padding:12px;display:block'>Keine Produkte gefunden.</small>" : "");
+  wbDetail();
+}
+
 function zeigeBilder(){
   if(!$("wbListe")) return;
   var alle = wbAlle();
+  if(MODUS==="alle") return zeigeKand(alle.length);
   var fl = [["alle","Alle"],["fehlt","Foto fehlt"],["da","Foto da"],["fertig","Fertig"],["reel","Im Reel"],["nicht","Nicht verwendet"],["pruef","Zuordnung prüfen"]];
-  $("wbFilter").innerHTML = fl.map(function(f){ var n = alle.filter(function(o){ return wbPasst(o, f[0]); }).length;
+  $("wbFilter").innerHTML = modusChips(alle.length) + fl.map(function(f){ var n = alle.filter(function(o){ return wbPasst(o, f[0]); }).length;
     if(!n && f[0]!=="alle" && f[0]!=="fehlt" && BF!==f[0]) return "";
     return "<button type='button' class='kn wbk"+(BF===f[0]?" an":"")+(f[0]==="fehlt"&&n?" orange":"")+"' data-wbf='"+f[0]+"'>"+f[1]+" <b>"+n+"</b></button>"; }).join("");
   var s = WBSUCHE.toLowerCase().trim();
   var liste = alle.filter(function(o){ return wbPasst(o, BF) && (!s || o.txt.indexOf(s)>=0); });
-  if(!SELP || !alle.some(function(o){ return o.id===SELP; })) SELP = liste[0] ? liste[0].id : null;
+  if(!SELP || (!alle.some(function(o){ return o.id===SELP; }) && !P[SELP])) SELP = liste[0] ? liste[0].id : null;
   $("wbListe").innerHTML = liste.map(function(o){ var p = o.p || { marke:"", name:o.id }, f = FST[o.st], n = pkt(o.id);
     return "<button type='button' class='wbz"+(o.id===SELP?" an":"")+"' data-sel='"+e(o.id)+"'>"
       + "<span class='pu' style='background:"+f[1]+"'></span>"
@@ -1179,11 +1221,14 @@ async function inListe(id){
   if(!FOTO[id]){ var ri = await vg.from("content_produkt_foto").upsert({ produkt_id:id }); if(ri.error){ meld("Fehler: "+ri.error.message); return false; } FOTO[id] = { produkt_id:id, foto_vorne:false, foto_frei:false }; }
   if(EXTRA.indexOf(id)<0) EXTRA.push(id); return true;
 }
-function waehle(id){ SELP = id; lsSet("cp_wbsel", id); zeigeBilder();
+async function waehle(id){ SELP = id; lsSet("cp_wbsel", id); if(!P[id]){ zeigeBilder(); await produkteLaden([id]); } zeigeBilder();
   if(window.innerWidth < 900) setTimeout(function(){ $("wbDetail").scrollIntoView({ behavior:"smooth", block:"start" }); }, 50); }
-$("wbSuche").oninput = function(){ WBSUCHE = this.value; zeigeBilder(); };
+$("wbSuche").oninput = function(){ WBSUCHE = this.value;
+  if(MODUS==="alle"){ clearTimeout(KTIMER); KTIMER = setTimeout(function(){ kandLaden(false); }, 350); } else zeigeBilder(); };
 $("t-bilder").addEventListener("change", async function(ev){
-  var cb = ev.target; var id = cb.dataset && (cb.dataset.pf || cb.dataset.pfr); if(!id) return;
+  var cb = ev.target;
+  if(cb.matches && cb.matches("[data-kkat]")){ KKAT = cb.value; lsSet("cp_wbkat", KKAT); kandLaden(false); return; }
+  var id = cb.dataset && (cb.dataset.pf || cb.dataset.pfr); if(!id) return;
   var alt = FOTO[id] || {}, w = { produkt_id:id, foto_vorne:!!alt.foto_vorne, foto_frei:!!alt.foto_frei, aktualisiert_am:new Date().toISOString() };
   if(cb.dataset.pf){ w.foto_vorne = cb.checked; if(!cb.checked) w.foto_frei = false; } else { w.foto_frei = cb.checked; if(cb.checked) w.foto_vorne = true; }
   BUSY = true; var r = await vg.from("content_produkt_foto").upsert(w); BUSY = false;
@@ -1191,6 +1236,9 @@ $("t-bilder").addEventListener("change", async function(ev){
   FOTO[id] = Object.assign({}, alt, w); zeigeBilder(); meld("gespeichert ✓");
 });
 $("t-bilder").addEventListener("click", async function(ev){
+  var mb = ev.target.closest("[data-wbm]"); if(mb){ MODUS = mb.dataset.wbm; lsSet("cp_wbmod", MODUS); if(MODUS==="alle" && !KAND.length) kandLaden(false); else zeigeBilder(); return; }
+  var ks = ev.target.closest("[data-kst]"); if(ks){ KST = ks.dataset.kst; kandLaden(false); return; }
+  if(ev.target.closest("[data-kmehr]")){ kandLaden(true); return; }
   var fb = ev.target.closest("[data-wbf]"); if(fb){ BF = fb.dataset.wbf; lsSet("cp_wbf", BF); zeigeBilder(); return; }
   var s = ev.target.closest("[data-sel]"); if(s){ waehle(s.dataset.sel); return; }
   var u = ev.target.closest("[data-up]"); if(u){ waehleDatei(u.dataset.up); return; }
