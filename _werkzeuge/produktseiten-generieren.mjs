@@ -663,6 +663,18 @@ async function main() {
     const m = f.match(/-(p\d+)\.html$/i);
     if (m) alteAdressen.set(f, m[1].toUpperCase());
   }
+  /* 19.10.2026: Adressen aus frueheren Umbenennungen (vor 23.09., z. B. Menge/Preis im Namen:
+     ...-0-5l-p45599.html) lagen nicht mehr im Ordner und lieferten 404. Liste aus Search Console
+     (Leistung > Seiten) in _werkzeuge/alte-adressen.txt - jede bekommt unten ihre 301. */
+  try {
+    const liste = readFileSync(new URL("./alte-adressen.txt", import.meta.url), "utf8");
+    let n = 0;
+    for (const z of liste.split("\n")) {
+      const f = z.trim(); const m = f.match(/^[a-z0-9-]+-(p\d+)\.html$/);
+      if (m && !alteAdressen.has(f)) { alteAdressen.set(f, m[1].toUpperCase()); n++; }
+    }
+    console.log(`Alte Adressen aus Liste: ${n}`);
+  } catch (e) { console.log("Alte Adressen aus Liste: keine Datei (" + e.message + ")"); }
   for (const f of readdirSync(ZIEL)) if (f.endsWith(".html")) unlinkSync(join(ZIEL, f));
 
   // Die englischen Seiten sind von Hand gepflegt (en/), stehen aber in der Sitemap.
