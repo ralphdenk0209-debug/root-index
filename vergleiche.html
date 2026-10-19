@@ -475,7 +475,11 @@ reiter(["band","kal","bilder"].indexOf(lsGet("cp_tab2"))>=0 ? lsGet("cp_tab2") :
 /* ---- Laden ---- */
 async function laden(){
   var r = await vg.from(T).select("*").neq("Status","Verworfen").order("Nr",{ascending:true,nullsFirst:false});
-  if(r.error){ meld("Fehler: " + r.error.message + " (im Admin angemeldet?)"); return; }
+  if(r.error){
+    /* 19.10.2026: Anmeldung abgelaufen -> klarer Hinweis mit Link statt Rechte-Fehler */
+    var ses = null; try{ ses = (await vg.auth.getSession()).data.session; }catch(_){}
+    if(!ses){ $("msg").innerHTML = "Nicht angemeldet (Anmeldung abgelaufen). <a href='admin.html' style='font-weight:700'>Im Admin anmelden</a>, dann diese Seite neu laden."; return; }
+    meld("Fehler: " + r.error.message); return; }
   ZEILEN = r.data || [];
   var ids = {};
   ZEILEN.forEach(function(x){ [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).forEach(function(id){ ids[id] = 1; }); });
