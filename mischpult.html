@@ -142,7 +142,7 @@ function bauen(){
   const mSt = m.ampel==='rot' ? 'alarm' : m.ampel==='gelb' ? 'warn' : 'ok';
   Z.push({grp:'Maschine',nm:'Kette & Takte',st:mSt,v:zahl(m.aktiv)+'<span style="font-size:15px;color:var(--muted)"> / '+zahl(m.gesamt)+'</span>',u:'Takte aktiv',
     viz:bars(m.verlauf,mSt), notiz:zahl(m.still)+' still · '+zahl(m.rot)+' rot · '+zahl(m.fehler_24h)+' Fehler 24 h',
-    knopf:{t:'Maschine öffnen',href:cb('maschine-lauf.html')}});
+    knopf:{t:'Maschine öffnen',href:cb('maschine.html')}});
   /* Waechter */
   const wm=w.melden||[], wGate=wm.some(x=>x.gate===true);
   const wSt = !wm.length ? 'ok' : wGate ? 'alarm' : 'warn';
