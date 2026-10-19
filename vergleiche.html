@@ -209,6 +209,52 @@
   #partner .pr button{ border:1px solid var(--lin); background:#fff; border-radius:7px; padding:3px 8px; font-size:11.5px; cursor:pointer; white-space:nowrap; flex:none; }
   #partner .mm{ display:flex; flex-wrap:wrap; gap:3px; margin-top:2px; }
 
+  /* ---- Produktfotos: Werkbank (Ralph 19.10.2026, Vorschlag C) ---- */
+  .wb{ display:grid; grid-template-columns:340px minmax(0,1fr); gap:16px; align-items:start; }
+  .wbl{ background:#fff; border:1px solid var(--lin); border-radius:14px; padding:12px; display:flex; flex-direction:column; gap:10px; position:sticky; top:8px; max-height:calc(100vh - 140px); }
+  .wbl .suche{ width:100%; box-sizing:border-box; min-width:0; }
+  .wbf{ display:flex; flex-wrap:wrap; gap:5px; }
+  .wbf .kn{ font-size:12px; padding:4px 9px; }
+  .wbf .kn.orange:not(.an){ background:#fff1e4; color:#8a3f08; border-color:#f3c9a3; }
+  .wbliste{ overflow-y:auto; flex:1; min-height:120px; margin:0 -12px; border-top:1px solid #eef0f4; }
+  .wbz{ all:unset; box-sizing:border-box; width:100%; display:flex; align-items:center; gap:10px; padding:9px 14px; border-bottom:1px solid #f0f2f6; cursor:pointer; }
+  .wbz:hover{ background:#f6f8fc; } .wbz.an{ background:#eaf0fd; } .wbz:focus-visible{ outline:2px solid var(--vergleich); outline-offset:-2px; }
+  .wbz .pu{ width:10px; height:10px; border-radius:50%; flex:none; }
+  .wbz .tx, .wbpz .tx{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .wbz .tx b, .wbpz .tx b{ font-size:13px; line-height:1.25; } .wbz .tx small, .wbpz .tx small{ font-size:11.5px; color:var(--mut); }
+  .pk3{ font-weight:800; font-size:13px; width:28px; text-align:right; flex:none; }
+  .wbneu{ display:flex; gap:6px; } .wbneu .suche{ flex:1; }
+  .wbl .ablegen{ margin:0; padding:10px; font-size:12px; }
+  .wbr{ display:flex; flex-direction:column; gap:14px; min-width:0; }
+  .wbkarte{ background:#fff; border:1px solid var(--lin); border-radius:14px; padding:14px 16px; min-width:0; }
+  .wbkarte h3{ margin:0; font-size:15px; } .wbkarte h4{ margin:14px 0 2px; font-size:13px; } .wbkarte > small, .wbkarte h4 small{ color:var(--mut); font-size:12px; font-weight:500; }
+  .wbkopf{ display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap; }
+  .wbfoto{ width:180px; height:210px; border-radius:12px; background:#f3f4f7; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; cursor:pointer; position:relative; overflow:hidden; flex:none; }
+  .wbfoto img{ max-width:100%; max-height:100%; object-fit:contain; }
+  .wbfoto.leer{ border:2px dashed #c2611a; background:#fff8f1; color:#c2611a; box-sizing:border-box; text-align:center; padding:8px; }
+  .wbfoto.leer small{ font-size:11.5px; color:#8a3f08; } .wbfoto.ueber{ outline:3px dashed var(--vergleich); }
+  .wbfoto .lade{ position:absolute; inset:0; background:rgba(255,255,255,.88); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--nav); }
+  .wbinfo{ flex:1; min-width:240px; display:flex; flex-direction:column; gap:8px; }
+  .wbinfo .mk{ font-size:12.5px; color:var(--mut); } .wbinfo h2{ margin:0; font-size:24px; line-height:1.15; }
+  .wbchips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .wbchips span{ font-size:12px; font-weight:700; padding:4px 9px; border-radius:8px; background:#eef0f5; color:#4a5068; }
+  .wbchips .g{ background:#e8f3ec; color:#1d6b3a; } .wbchips .r{ background:#fbe6e4; color:#a3261d; }
+  .wbakt{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; margin-top:4px; }
+  .wbakt button, .wbpz button{ font:inherit; font-size:13px; font-weight:650; padding:7px 12px; border-radius:9px; border:1px solid var(--lin); background:#fff; color:var(--ink); cursor:pointer; }
+  .wbakt button.haupt, .wbpz button.haupt{ background:var(--vergleich); border-color:var(--vergleich); color:#fff; }
+  .wbakt button.weg{ color:#a3261d; margin-left:auto; }
+  .wbakt label{ font-size:12.5px; display:flex; gap:4px; align-items:center; cursor:pointer; }
+  .wbring{ width:96px; height:96px; border-radius:50%; border:6px solid var(--c); color:var(--c); display:flex; flex-direction:column; align-items:center; justify-content:center; box-sizing:border-box; flex:none; }
+  .wbring b{ font-size:30px; line-height:1; } .wbring small{ font-size:11px; font-weight:700; }
+  .wbpart{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+  .wbpz{ display:flex; align-items:center; gap:8px; padding:8px 0; border-bottom:1px solid #f0f2f6; }
+  .wbpz .fs{ font-size:11px; font-weight:800; padding:3px 6px; border-radius:6px; width:66px; text-align:center; flex:none; }
+  .wbpz .df{ font-size:12px; font-weight:700; width:30px; text-align:right; flex:none; }
+  .wbpz button{ font-size:11.5px; padding:5px 8px; flex:none; }
+  .wbkarte p.leer{ font-size:13px; color:var(--mut); margin:10px 0 0; }
+  .wbhin{ margin-top:12px; padding:10px 12px; border-radius:10px; background:#fff6ee; color:#8a3f08; font-size:12.5px; }
+  @media (max-width:1100px){ .wbpart{ grid-template-columns:1fr; } }
+  @media (max-width:900px){ .wb{ grid-template-columns:1fr; } .wbl{ position:static; max-height:none; } .wbliste{ max-height:50vh; } .wbfoto{ width:140px; height:170px; } .wbpz{ flex-wrap:wrap; } .wbpz .tx{ flex-basis:60%; } }
   /* ---- Editor (Seitenleiste) ---- */
   #schleier{ position:fixed; inset:0; background:rgba(15,20,35,.28); z-index:40; display:none; }
   #editor{ position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:#fff; z-index:41; box-shadow:-10px 0 40px rgba(0,0,0,.18); transform:translateX(105%); transition:transform .18s ease; display:flex; flex-direction:column; }
@@ -256,7 +302,7 @@
 <nav>
   <button data-t="band" class="an">🏭 Fließband</button>
   <button data-t="kal">📅 Kalender</button>
-  <button data-t="bilder">🖼 Produktbilder</button>
+  <button data-t="bilder">📷 Produktfotos</button>
 </nav>
 <div class="wrap">
   <div class="filter" id="filter"></div>
@@ -281,13 +327,16 @@
   </div>
 
   <div class="tab" id="t-bilder">
-    <div class="ablegen" id="ablegen">📥 Fotos hier ablegen – der <b>Dateiname muss die P-Nr enthalten</b> (z. B. <i>P1099.jpg</i>). Oder ein Foto direkt auf eine Karte ziehen bzw. dort auf 📷 tippen.<br><small>Am besten freigestellt (PNG) – der Hintergrund wird weiß. JPG, PNG, WebP.</small></div>
-    <div class="filter" id="bfilter">
-      <button class="kn an" data-bf="alle">Alle</button><button class="kn" data-bf="ohne">ohne Bild</button><button class="kn" data-bf="frei">freigestellt</button>
-      <button class="kn" data-bf="reel">im Reel</button><button class="kn" data-bf="frei_nicht">nicht verwendet</button><button class="kn" data-bf="pruef">Zuordnung prüfen</button>
-      <span style="margin-left:auto;display:flex;gap:6px"><input id="pNeu" class="suche" placeholder="P-ID hinzufügen, z. B. P095" style="min-width:160px"><button class="kn" id="pNeuOk">hinzufügen</button></span>
+    <div class="wb">
+      <div class="wbl">
+        <input id="wbSuche" class="suche" placeholder="Suchen: Marke, Name, P-Nr" aria-label="Produkte suchen">
+        <div class="wbf" id="wbFilter"></div>
+        <div class="wbliste" id="wbListe"></div>
+        <div class="wbneu"><input id="pNeu" class="suche" placeholder="P-Nr aufnehmen, z. B. P095" aria-label="P-Nr aufnehmen"><button type="button" class="kn" id="pNeuOk">+ aufnehmen</button></div>
+        <div class="ablegen" id="ablegen">Mehrere Fotos hier ablegen – <b>Dateiname mit P-Nr</b> (z. B. P1099.jpg). Ein einzelnes Foto rechts aufs Foto-Feld ziehen.</div>
+      </div>
+      <div class="wbr" id="wbDetail"></div>
     </div>
-    <div class="raster" id="raster"></div>
   </div>
   <div id="msg">lädt …</div>
 </div>
@@ -300,14 +349,6 @@
   <span class="grp"><select id="lStatus"><option>Idee</option><option>In Arbeit</option><option>Bereit</option><option>Geplant</option><option>Veröffentlicht</option></select><button id="lSt">Status</button></span>
   <button class="rot" id="lWeg">Verwerfen</button>
   <button id="lAus" title="Auswahl aufheben">✕</button>
-</div>
-
-<!-- Partner je Produkt (Ralph 19.10.2026): gleiche Art + bessere Alternativen, nur lesen -->
-<div id="partner" role="dialog" aria-modal="true">
- <div class="pk2">
-  <div class="pkopf" id="paKopf"></div>
-  <div class="pb" id="paInhalt"></div>
- </div>
 </div>
 
 <!-- Popup: Neu am Tag (Ralph 18.10.) -->
@@ -989,56 +1030,171 @@ async function grVerschiebe(gid, tagYmd){
   g.geplant_am = neuD.toISOString(); zeigeKal(); zeigeKopf(); meld("Gruppenpost verschoben ✓");
 }
 
-/* ---- Produktbilder ---- */
-document.querySelectorAll("[data-bf]").forEach(function(b){ b.onclick = function(){ BF = b.dataset.bf;
-  document.querySelectorAll("[data-bf]").forEach(function(x){ x.classList.toggle("an", x===b); }); zeigeBilder(); }; });
-function zeigeBilder(){
+/* ---- Produktfotos: Werkbank (Ralph 19.10.2026, Vorschlag C) ----
+   Links die Liste mit Foto-Stand, rechts das gewaehlte Produkt mit seinen Partnern.
+   Gezeigt wird NUR das eigene Bild (Bucket produktbilder) – keine OFF-/Fremdbilder.
+   Partner: gleiche Art (Kategorie + Namenswort), bessere Alternativen (cb_produkt_alternativen,
+   wie die App) und die Besten der Kategorie (>= +10). Nur lesen, keine Produktaenderung. */
+var SELP = lsGet("cp_wbsel") || null, WBSUCHE = "", PCACHE = {};
+BF = ["alle","fehlt","da","fertig","reel","nicht","pruef"].indexOf(lsGet("cp_wbf"))>=0 ? lsGet("cp_wbf") : "alle";
+function eigenBild(id){ var u = BILDQ[id]; return u && u.indexOf("/storage/v1/object/public/produktbilder/")>=0 ? u : null; }
+function fotoStand(id){ var fo = FOTO[id] || {};
+  if(eigenBild(id)) return "fertig"; if(fo.foto_vorne) return "da"; return "fehlt"; }
+var FST = { fehlt:["Foto fehlt","#c2611a","#fff1e4","#8a3f08"], da:["Foto da, noch nicht im Index","#b07a00","#fdf3d6","#7a5406"], fertig:["Foto gemacht","#1d6b3a","#e8f3ec","#1d6b3a"] };
+function nrListe(id){ return ZEILEN.filter(function(x){ return pid(x.Produkt_A)===id || pid(x.Produkt_B)===id; }); }
+function bewTxt(n){ return n==null ? "keine Punkte" : n>=90 ? "Sehr gut" : n>=75 ? "Gut" : n>=60 ? "Mittel" : "Schwach"; }
+function wbIds(){
   var ids = {};
   ZEILEN.forEach(function(x){ [x.Produkt_A, x.Produkt_B].map(pid).filter(Boolean).forEach(function(id){ ids[id] = 1; }); });
   Object.keys(FOTO).forEach(function(id){ ids[id] = 1; }); EXTRA.forEach(function(id){ ids[id] = 1; });
-  var liste = Object.keys(ids).map(function(id){
-    var V = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===id || pid(x.Produkt_B)===id; });
-    var fo = FOTO[id] || {}, p = P[id];
-    return { id:id, p:p, V:V, fo:fo, bild:bildUrl(id), reel:V.some(function(x){ return x.Reel_Datei; }),
-             pruef: !p || p.nichtImIndex };
-  }).filter(function(o){
-    return BF==="alle" || (BF==="ohne" && !o.bild) || (BF==="frei" && o.fo.foto_frei) || (BF==="reel" && o.reel)
-      || (BF==="frei_nicht" && !o.V.length) || (BF==="pruef" && o.pruef);
-  }).sort(function(a,b){ return ((a.p?a.p.marke+" "+a.p.name:a.id)).localeCompare(b.p?b.p.marke+" "+b.p.name:b.id, "de"); });
-  $("raster").innerHTML = liste.map(function(o){
-    var n = pkt(o.id), p = o.p || { marke:"", name:o.id };
-    var mm = (o.fo.foto_frei ? "<span class='gut'>✂ freigestellt</span>" : o.fo.foto_vorne ? "<span>📷 Foto da</span>" : "<span class='warn'>📷 Foto fehlt</span>")
-      + (o.reel ? "<span class='gut'>🎬 im Reel</span>" : "") + (o.pruef ? "<span class='rot'>Zuordnung prüfen</span>" : "")
-      + (!BILDQ[o.id] ? (o.bild ? "<span class='rot'>nur OFF-Bild – nicht für Posts</span>" : "<span class='warn'>kein Bild im Index</span>") : "")
-      + (o.V.length ? "<span>"+o.V.map(function(x){ return "Nr "+x.Nr; }).join(", ")+"</span>" : "<span>nicht verwendet</span>");
-    var lauf = UPL[o.id];
-    return "<div class='pk' data-pk='"+e(o.id)+"'><div class='bild' data-up='"+e(o.id)+"' title='Bild einfügen'>"+(lauf?"<div class='lade'>"+e(lauf)+"</div>":"")+(o.bild?(BILDQ[o.id]?"":"<b class='offm'>OFF</b>")+"<img loading='lazy'"+(BILDQ[o.id]?"":" class='off'")+" src='"+e(o.bild)+"' alt='' onerror=\"this.outerHTML='<span>📦</span>'\">":"<span>📦</span>")+"</div>"
-      + "<div class='kreis' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
-      + "<div class='mk'>"+e(p.marke)+" · "+e(o.id)+"</div><div class='nm'>"+e(p.name)+"</div>"
-      + "<div class='mm'>"+mm+"</div>"
-      + "<div class='akt'><label title='Foto vorne vorhanden'><input type='checkbox' data-pf='"+e(o.id)+"'"+(o.fo.foto_vorne?" checked":"")+">Foto</label>"
-      + "<label title='freigestellt'><input type='checkbox' data-pfr='"+e(o.id)+"'"+(o.fo.foto_frei?" checked":"")+">frei</label>"
-      + "<button data-up='"+e(o.id)+"' title='Bild einfügen'>📷 Bild</button>"
-      + "<button data-pp='"+e(o.id)+"' title='vergleichbare Produkte und bessere Alternativen'>🤝 Partner</button>"
-      + "<button data-pv='"+e(o.id)+"'>+ Vergleich</button><button data-pe='"+e(o.id)+"'>+ Einzel</button>"
-      + "<button data-pdel='"+e(o.id)+"' style='color:#a3261d' title='aus der Liste nehmen'>✕</button></div></div>";
-  }).join("") || "<small>Keine Produkte in dieser Auswahl.</small>";
+  return Object.keys(ids).filter(function(id){ return /^P\d+$/.test(id); });
 }
-$("raster").onchange = async function(ev){
-  var cb = ev.target; var id = cb.dataset.pf || cb.dataset.pfr; if(!id) return;
+function wbAlle(){
+  var rang = { fehlt:0, da:1, fertig:2 };
+  return wbIds().map(function(id){ var V = nrListe(id), p = P[id];
+    return { id:id, p:p, V:V, st:fotoStand(id), reel:V.some(function(x){ return x.Reel_Datei; }), pruef:!p || !!p.nichtImIndex,
+             txt:((p?p.marke+" "+p.name:"")+" "+id).toLowerCase() }; })
+  .sort(function(a,b){ return rang[a.st]-rang[b.st] || (b.V.length>0)-(a.V.length>0)
+    || (a.p?a.p.marke+" "+a.p.name:a.id).localeCompare(b.p?b.p.marke+" "+b.p.name:b.id, "de"); });
+}
+function wbPasst(o, f){ return f==="alle" || o.st===f || (f==="reel" && o.reel) || (f==="nicht" && !o.V.length) || (f==="pruef" && o.pruef); }
+function zeigeBilder(){
+  if(!$("wbListe")) return;
+  var alle = wbAlle();
+  var fl = [["alle","Alle"],["fehlt","Foto fehlt"],["da","Foto da"],["fertig","Fertig"],["reel","Im Reel"],["nicht","Nicht verwendet"],["pruef","Zuordnung prüfen"]];
+  $("wbFilter").innerHTML = fl.map(function(f){ var n = alle.filter(function(o){ return wbPasst(o, f[0]); }).length;
+    if(!n && f[0]!=="alle" && f[0]!=="fehlt" && BF!==f[0]) return "";
+    return "<button type='button' class='kn wbk"+(BF===f[0]?" an":"")+(f[0]==="fehlt"&&n?" orange":"")+"' data-wbf='"+f[0]+"'>"+f[1]+" <b>"+n+"</b></button>"; }).join("");
+  var s = WBSUCHE.toLowerCase().trim();
+  var liste = alle.filter(function(o){ return wbPasst(o, BF) && (!s || o.txt.indexOf(s)>=0); });
+  if(!SELP || !alle.some(function(o){ return o.id===SELP; })) SELP = liste[0] ? liste[0].id : null;
+  $("wbListe").innerHTML = liste.map(function(o){ var p = o.p || { marke:"", name:o.id }, f = FST[o.st], n = pkt(o.id);
+    return "<button type='button' class='wbz"+(o.id===SELP?" an":"")+"' data-sel='"+e(o.id)+"'>"
+      + "<span class='pu' style='background:"+f[1]+"'></span>"
+      + "<span class='tx'><b>"+e(p.marke)+" · "+e(p.name)+"</b><small>"+e(o.id)+" · "+f[0]+(o.V.length?" · Nr "+o.V.map(function(x){ return x.Nr; }).join(", "):"")+(UPL[o.id]?" · "+e(UPL[o.id]):"")+"</small></span>"
+      + "<span class='pk3' style='color:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</span></button>"; }).join("")
+    || "<small style='padding:12px;display:block'>Keine Produkte in dieser Auswahl.</small>";
+  wbDetail();
+}
+function wbDetail(){
+  var id = SELP, el = $("wbDetail");
+  if(!id){ el.innerHTML = "<div class='wbkarte'><small>Links ein Produkt wählen.</small></div>"; return; }
+  var p = P[id] || { marke:"", name:id }, fo = FOTO[id] || {}, st = fotoStand(id), f = FST[st], u = eigenBild(id), n = pkt(id), V = nrListe(id);
+  var chips = "<span style='background:"+f[2]+";color:"+f[3]+"'>"+f[0]+"</span>"
+    + (fo.foto_frei ? "<span class='g'>Freigestellt</span>" : "")
+    + (u ? "<span class='g'>Im Index</span>" : "")
+    + (V.length ? V.map(function(x){ return "<span>Nr "+x.Nr+" · "+e(titel(x))+"</span>"; }).join("") : "<span>Noch in keinem Post</span>")
+    + (!P[id] || P[id].nichtImIndex ? "<span class='r'>Zuordnung prüfen</span>" : "");
+  el.innerHTML = "<div class='wbkarte wbkopf'>"
+    + "<div class='wbfoto"+(u?"":" leer")+"' data-up='"+e(id)+"' data-drop='"+e(id)+"' title='"+(u?"Foto ersetzen":"Foto einfügen")+"'>"
+      + (UPL[id] ? "<div class='lade'>"+e(UPL[id])+"</div>" : "")
+      + (u ? "<img src='"+e(u)+"' alt='Dein Foto'>" : "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto fehlt</b><small>hierher ziehen oder tippen</small>")
+    + "</div>"
+    + "<div class='wbinfo'><div class='mk'>"+e(p.marke)+" · "+e(id)+"</div><h2>"+e(p.name)+"</h2><div class='wbchips'>"+chips+"</div>"
+      + "<div class='wbakt'><button type='button' class='haupt' data-pv='"+e(id)+"'>+ Vergleich</button><button type='button' data-pe='"+e(id)+"'>+ Einzel-Reel</button>"
+      + "<button type='button' data-up='"+e(id)+"'>"+(u?"Foto ersetzen":"Foto einfügen")+"</button>"
+      + "<label><input type='checkbox' data-pf='"+e(id)+"'"+(fo.foto_vorne?" checked":"")+"> Foto gemacht</label>"
+      + "<label><input type='checkbox' data-pfr='"+e(id)+"'"+(fo.foto_frei?" checked":"")+"> freigestellt</label>"
+      + "<button type='button' class='weg' data-pdel='"+e(id)+"' title='aus der Liste nehmen'>aus Liste</button></div></div>"
+    + "<div class='wbring' style='--c:"+farbeScore(n)+"'><b>"+(n==null?"–":n)+"</b><small>"+bewTxt(n)+"</small></div></div>"
+    + "<div class='wbpart'><div class='wbkarte' id='wbGleich'><h3>Gleiche Art</h3><small>lade …</small></div>"
+    + "<div class='wbkarte' id='wbBesser'><h3>Bessere Alternativen</h3><small>lade …</small></div></div>";
+  partnerLaden(id).then(function(d){ if(SELP===id && $("wbGleich")) partnerZeichnen(id, d); });
+}
+var PA_STOPP = ("bio natur naturell classic klassik original extra fein feine zart zarte frisch frische light leicht mild milde high protein "
+  + "vegan vegane veganer glutenfrei laktosefrei zuckerfrei ohne mit und oder fuer für nach sorte art style premium gourmet family mini minis "
+  + "pack packung stueck stück gramm xxl deutsche deutscher deutsches traditionell hausmacher spezial selection auswahl").split(" ");
+function paWorte(p){
+  var m = String(p.marke||"").toLowerCase();
+  var w = String(p.name||"").toLowerCase().split(/[^a-z0-9äöüß]+/).filter(function(x){
+    return x.length>=4 && !/^\d+$/.test(x) && m.indexOf(x)<0 && PA_STOPP.indexOf(x)<0; });
+  return w.filter(function(x,i){ return w.indexOf(x)===i; });
+}
+async function partnerLaden(id){
+  if(PCACHE[id]) return PCACHE[id];
+  if(!P[id]) await produkteLaden([id]);
+  var p = P[id] || { name:"", marke:"" }, cs = pkt(id);
+  var k = await vg.from("v_web_produkte").select("id,kategorie,unterkategorie").eq("id", id).maybeSingle();
+  var kat = k.data && k.data.kategorie, uk = k.data && k.data.unterkategorie, worte = paWorte(p), gleich = [], besser = [], weitere = [];
+  if(kat && worte.length){
+    var g = vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id)
+      .or(worte.map(function(w){ return "name.ilike.*"+w+"*"; }).join(",")).limit(400);
+    if(uk) g = g.eq("unterkategorie", uk);
+    var gr = await g;
+    gleich = (gr.data||[]).map(function(q){ var nm = String(q.name||"").toLowerCase();
+        q._n = worte.filter(function(w){ return nm.indexOf(w)>=0; }).length; return q; })
+      .sort(function(a,b){ return b._n-a._n || (b.clean_score==null?-1:b.clean_score)-(a.clean_score==null?-1:a.clean_score); }).slice(0, 25);
+  }
+  var ar = await vg.rpc("cb_produkt_alternativen", { p_produkt:id, p_max:8 }); besser = ar.data || [];
+  if(kat && cs!=null){
+    var wr = await vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id)
+      .gte("clean_score", cs+10).order("clean_score", { ascending:false }).limit(300);
+    var schon = {}, art = {}; gleich.concat(besser).forEach(function(q){ schon[q.id] = 1; });
+    weitere = (wr.data||[]).filter(function(q){ if(schon[q.id]) return false;
+      var a = String(q.name||"").toLowerCase().replace(/\bbio\b|[^a-zäöüß]/g,""); art[a] = (art[a]||0) + 1; return art[a] <= 2; }).slice(0, 12);
+  }
+  await produkteLaden(gleich.concat(besser, weitere).map(function(q){ return q.id; }));
+  return (PCACHE[id] = { kat:kat, uk:uk, worte:worte, gleich:gleich, besser:besser, weitere:weitere });
+}
+function partnerZeile(q, cs){
+  var n = q.clean_score==null ? null : Math.floor(Number(q.clean_score)+0.5), d = n!=null && cs!=null ? n-cs : null;
+  var st = fotoStand(q.id), f = FST[st], drin = wbIds().indexOf(q.id)>=0, V = nrListe(q.id);
+  return "<div class='wbpz'><span class='fs' style='background:"+f[2]+";color:"+f[3]+"'>"+(st==="fertig"?"Foto da":st==="da"?"Foto da*":"Foto fehlt")+"</span>"
+    + "<span class='tx'><b>"+e(q.marke||"")+" · "+e(q.name||"")+"</b><small>"+e(q.id)+(V.length?" · Nr "+V.map(function(x){ return x.Nr; }).join(", "):"")
+    + (q.grund?" · "+e(q.grund):"")+(q.kuratiert?" · Tausch-Tipp":"")+"</small></span>"
+    + "<span class='df' style='color:"+(d==null?"#5b6475":d>0?"#1d6b3a":d<0?"#a3261d":"#5b6475")+"'>"+(d==null?"":(d>0?"+":"")+d)+"</span>"
+    + "<span class='pk3' style='color:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</span>"
+    + (drin ? "<button type='button' data-sel='"+e(q.id)+"' title='in der Liste öffnen'>öffnen</button>" : "<button type='button' data-padd='"+e(q.id)+"' title='in die Liste aufnehmen (Foto fehlt)'>+ Liste</button>")
+    + "<button type='button' class='haupt' data-pav='"+e(q.id)+"'>+ Vergleich</button></div>";
+}
+function partnerZeichnen(id, d){
+  var cs = pkt(id), ohne = 0;
+  function zeilen(l){ return l.map(function(q){ if(fotoStand(q.id)==="fehlt") ohne++; return partnerZeile(q, cs); }).join(""); }
+  var g = zeilen(d.gleich), b = zeilen(d.besser), w = zeilen(d.weitere);
+  $("wbGleich").innerHTML = "<h3>Gleiche Art</h3><small>"+e(d.kat||"?")+(d.uk?" › "+e(d.uk):"")+(d.worte.length?" · Namenswort: "+e(d.worte.join(", ")):"")+"</small>"
+    + (g || "<p class='leer'>"+(d.worte.length?"Nichts Vergleichbares im Index.":"Kein Namenswort zum Vergleichen.")+"</p>");
+  $("wbBesser").innerHTML = "<h3>Bessere Alternativen</h3><small>wie in der App</small>"
+    + (b || "<p class='leer'>Die App schlägt hier nichts vor.</p>")
+    + "<h4>Besser in derselben Kategorie <small>mind. 10 Punkte mehr</small></h4>"
+    + (w || "<p class='leer'>"+(cs==null?"Produkt hat keine Punkte.":"Keine.")+"</p>")
+    + (ohne ? "<div class='wbhin'>Partner ohne dein Foto: <b>"+ohne+"</b> – mit „+ Liste“ landen sie links unter „Foto fehlt“.</div>" : "");
+}
+function neuAusProdukt(id, typ, partnerId){
+  oeffne(null);
+  $("eTyp").value = typ; $("eBlab").hidden = typ==="Einzel";
+  $("eA").value = id; $("eB").value = partnerId || "";
+  $("eBereich").value = KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich");
+  $("eFehlt").value = typ==="Einzel" ? "Claude: Einzel-Reel bauen" : "Claude: Vergleichs-Reel bauen";
+  pvZeigen();
+  meld(typ==="Einzel" ? "Neues Einzel-Reel: rechts prüfen, dann „Anlegen“." : partnerId ? "Neuer Vergleich "+id+" gegen "+partnerId+": rechts prüfen, dann „Anlegen“." : "Neuer Vergleich: rechts Produkt B eintragen, dann „Anlegen“.");
+  if(typ==="Vergleich" && !partnerId) setTimeout(function(){ $("eB").focus(); }, 150);
+}
+async function inListe(id){
+  await produkteLaden([id]);
+  if(!FOTO[id]){ var ri = await vg.from("content_produkt_foto").upsert({ produkt_id:id }); if(ri.error){ meld("Fehler: "+ri.error.message); return false; } FOTO[id] = { produkt_id:id, foto_vorne:false, foto_frei:false }; }
+  if(EXTRA.indexOf(id)<0) EXTRA.push(id); return true;
+}
+function waehle(id){ SELP = id; lsSet("cp_wbsel", id); zeigeBilder();
+  if(window.innerWidth < 900) setTimeout(function(){ $("wbDetail").scrollIntoView({ behavior:"smooth", block:"start" }); }, 50); }
+$("wbSuche").oninput = function(){ WBSUCHE = this.value; zeigeBilder(); };
+$("t-bilder").addEventListener("change", async function(ev){
+  var cb = ev.target; var id = cb.dataset && (cb.dataset.pf || cb.dataset.pfr); if(!id) return;
   var alt = FOTO[id] || {}, w = { produkt_id:id, foto_vorne:!!alt.foto_vorne, foto_frei:!!alt.foto_frei, aktualisiert_am:new Date().toISOString() };
   if(cb.dataset.pf){ w.foto_vorne = cb.checked; if(!cb.checked) w.foto_frei = false; } else { w.foto_frei = cb.checked; if(cb.checked) w.foto_vorne = true; }
   BUSY = true; var r = await vg.from("content_produkt_foto").upsert(w); BUSY = false;
   if(r.error){ meld("Fehler: "+r.error.message); cb.checked = !cb.checked; return; }
-  FOTO[id] = Object.assign({}, alt, w); zeigeBilder(); meld("Foto gespeichert ✓");
-};
-$("raster").onclick = async function(ev){
+  FOTO[id] = Object.assign({}, alt, w); zeigeBilder(); meld("gespeichert ✓");
+});
+$("t-bilder").addEventListener("click", async function(ev){
+  var fb = ev.target.closest("[data-wbf]"); if(fb){ BF = fb.dataset.wbf; lsSet("cp_wbf", BF); zeigeBilder(); return; }
+  var s = ev.target.closest("[data-sel]"); if(s){ waehle(s.dataset.sel); return; }
   var u = ev.target.closest("[data-up]"); if(u){ waehleDatei(u.dataset.up); return; }
   var b = ev.target.closest("button"); if(!b || BUSY) return;
-  if(b.dataset.pp){ partnerZeigen(b.dataset.pp); return; }
+  if(b.dataset.pav){ neuAusProdukt(SELP, "Vergleich", b.dataset.pav); return; }
+  if(b.dataset.padd){ b.disabled = true; if(await inListe(b.dataset.padd)){ meld(b.dataset.padd+" in die Liste aufgenommen – steht links unter „Foto fehlt“."); zeigeBilder(); } return; }
   if(b.dataset.pv || b.dataset.pe){ neuAusProdukt(b.dataset.pv || b.dataset.pe, b.dataset.pv ? "Vergleich" : "Einzel", ""); return; }
   if(b.dataset.pdel){
-    var did = b.dataset.pdel, alle = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===did || pid(x.Produkt_B)===did; });
+    var did = b.dataset.pdel, alle = nrListe(did);
     var fest = alle.filter(function(x){ return x.Status!=="Idee"; });
     if(fest.length){ meld(did+" steckt in Nr "+fest.map(function(x){ return x.Nr; }).join(", ")+" (fertig/in Arbeit) – dort zuerst verwerfen."); return; }
     if(!confirm("„"+(P[did] ? P[did].marke+" "+P[did].name : did)+"“ aus der Liste nehmen?"+(alle.length?" Die "+alle.length+" Idee(n) dazu werden verworfen.":""))) return;
@@ -1046,14 +1202,13 @@ $("raster").onclick = async function(ev){
     if(alle.length){ var r1 = await vg.from(T).update({ Status:"Verworfen" }).in("id", alle.map(function(x){ return x.id; })); if(r1.error){ BUSY = false; meld("Fehler: "+r1.error.message); return; } }
     var r2 = await vg.from("content_produkt_foto").delete().eq("produkt_id", did);
     BUSY = false; if(r2.error){ meld("Fehler: "+r2.error.message); return; }
-    EXTRA = EXTRA.filter(function(x){ return x!==did; }); meld("entfernt ✓"); laden();
+    EXTRA = EXTRA.filter(function(x){ return x!==did; }); SELP = null; meld("entfernt ✓"); laden();
   }
-};
+});
 $("pNeuOk").onclick = async function(){
   var id = pid($("pNeu").value); if(!id || !/^P\d+$/.test(id)){ meld("Bitte eine P-ID eingeben, z. B. P095."); return; }
-  await produkteLaden([id]);
-  if(!FOTO[id]){ var ri = await vg.from("content_produkt_foto").upsert({ produkt_id:id }); if(!ri.error) FOTO[id] = { produkt_id:id, foto_vorne:false, foto_frei:false }; }
-  if(EXTRA.indexOf(id)<0) EXTRA.push(id); $("pNeu").value = ""; zeigeBilder(); meld(P[id] ? id+" hinzugefügt" : id+" nicht gefunden");
+  if(!(await inListe(id))) return;
+  $("pNeu").value = ""; if(P[id]) waehle(id); meld(P[id] ? id+" hinzugefügt" : id+" nicht gefunden");
 };
 (function(){ var a = $("ablegen");
   ["dragenter","dragover"].forEach(function(t){ a.addEventListener(t, function(ev){ ev.preventDefault(); a.classList.add("ueber"); }); });
@@ -1065,110 +1220,16 @@ $("pNeuOk").onclick = async function(){
       if(!m){ ohne.push(fs[i].name); continue; }
       await hochladen(m[0].toUpperCase(), fs[i]);
     }
-    if(ohne.length) meld("Ohne P-Nr im Namen, nicht übernommen: "+ohne.join(", ")+" – auf die passende Karte ziehen.");
+    if(ohne.length) meld("Ohne P-Nr im Namen, nicht übernommen: "+ohne.join(", ")+" – aufs Foto-Feld rechts ziehen.");
   });
-  a.addEventListener("click", function(){ meld("Tipp: Foto auf eine Karte ziehen oder dort 📷 Bild antippen."); });
 })();
-/* Ziehen direkt auf eine Produktkarte */
-(function(){ var r = $("raster");
-  r.addEventListener("dragover", function(ev){ var k = ev.target.closest(".pk"); if(!k) return; ev.preventDefault();
-    r.querySelectorAll(".pk.ueber").forEach(function(x){ if(x!==k) x.classList.remove("ueber"); }); k.classList.add("ueber"); });
-  r.addEventListener("dragleave", function(ev){ var k = ev.target.closest(".pk"); if(k && !k.contains(ev.relatedTarget)) k.classList.remove("ueber"); });
-  r.addEventListener("drop", function(ev){ var k = ev.target.closest(".pk"); if(!k) return; ev.preventDefault(); k.classList.remove("ueber");
-    var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if(f) hochladen(k.dataset.pk, f); });
+/* Foto direkt aufs Foto-Feld rechts ziehen */
+(function(){ var d = $("wbDetail");
+  d.addEventListener("dragover", function(ev){ var k = ev.target.closest("[data-drop]"); if(!k) return; ev.preventDefault(); k.classList.add("ueber"); });
+  d.addEventListener("dragleave", function(ev){ var k = ev.target.closest("[data-drop]"); if(k && !k.contains(ev.relatedTarget)) k.classList.remove("ueber"); });
+  d.addEventListener("drop", function(ev){ var k = ev.target.closest("[data-drop]"); if(!k) return; ev.preventDefault(); k.classList.remove("ueber");
+    var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if(f) hochladen(k.dataset.drop, f); });
 })();
-
-/* ---- Neuer Vergleich/Einzel aus einem Produkt (19.10.2026) ---- */
-function neuAusProdukt(id, typ, partnerId){
-  oeffne(null);
-  $("eTyp").value = typ; $("eBlab").hidden = typ==="Einzel";
-  $("eA").value = id; $("eB").value = partnerId || "";
-  $("eBereich").value = KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich");
-  $("eFehlt").value = typ==="Einzel" ? "Claude: Einzel-Reel bauen" : "Claude: Vergleichs-Reel bauen";
-  pvZeigen();
-  meld(typ==="Einzel" ? "Neues Einzel-Reel: rechts prüfen, dann „Anlegen“." : partnerId ? "Neuer Vergleich "+id+" gegen "+partnerId+": rechts prüfen, dann „Anlegen“." : "Neuer Vergleich: rechts Produkt B eintragen, dann „Anlegen“.");
-  if(typ==="Vergleich" && !partnerId) setTimeout(function(){ $("eB").focus(); }, 150);
-}
-
-/* ---- Partner je Produkt (Ralph 19.10.2026) ----
-   Nur lesen. „Gleiche Art“ = gleiche Kategorie (und Unterkategorie, falls gesetzt) mit mindestens
-   einem gemeinsamen Namenswort – dieselben Stoppwoerter wie cb_produkt_alternativen.
-   „Bessere Alternativen“ = cb_produkt_alternativen (derselbe Weg wie die App, inkl. kuratierter
-   Tausch-Tipps) und darunter die besten derselben Kategorie mit mindestens 10 Punkten mehr. */
-var PA_STOPP = ("bio natur naturell classic klassik original extra fein feine zart zarte frisch frische light leicht mild milde high protein "
-  + "vegan vegane veganer glutenfrei laktosefrei zuckerfrei ohne mit und oder fuer für nach sorte art style premium gourmet family mini minis "
-  + "pack packung stueck stück gramm xxl deutsche deutscher deutsches traditionell hausmacher spezial selection auswahl").split(" ");
-var PA_ID = null;
-function paWorte(p){
-  var m = String(p.marke||"").toLowerCase();
-  var w = String(p.name||"").toLowerCase().split(/[^a-z0-9äöüß]+/).filter(function(x){
-    return x.length>=4 && !/^\d+$/.test(x) && m.indexOf(x)<0 && PA_STOPP.indexOf(x)<0; });
-  return w.filter(function(x,i){ return w.indexOf(x)===i; });
-}
-function paZeile(q, cs, worte){
-  var n = q.clean_score==null ? null : Math.floor(Number(q.clean_score)+0.5);
-  var d = n!=null && cs!=null ? n - cs : null;
-  var fo = FOTO[q.id] || {}, u = bildUrl(q.id);
-  var nr = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===q.id || pid(x.Produkt_B)===q.id; }).map(function(x){ return "Nr "+x.Nr; });
-  var mm = (fo.foto_frei ? "<span class='gut'>✂ freigestellt</span>" : fo.foto_vorne ? "<span class='gut'>📷 Foto da</span>" : "<span class='warn'>📷 kein eigenes Foto</span>")
-    + (BILDQ[q.id] ? "" : u ? "<span class='rot'>nur OFF-Bild – nicht für Posts</span>" : "<span>kein Bild im Index</span>")
-    + (nr.length ? "<span>"+e(nr.join(", "))+"</span>" : "")
-    + (q.grund ? "<span>"+e(q.grund)+"</span>" : "") + (q.kuratiert ? "<span class='gut'>Tausch-Tipp</span>" : "");
-  return "<div class='pr'>"+(u ? "<img"+(BILDQ[q.id]?"":" class='off' title='Bild von Open Food Facts – nicht für Posts'")+" loading='lazy' src='"+e(u)+"' alt='' onerror=\"this.outerHTML='<div class=ob>📦</div>'\">" : "<div class='ob'>📦</div>")
-    + "<div class='t'><b>"+e(q.marke||"")+" · "+e(q.name||"")+"</b> <small style='color:var(--mut)'>"+e(q.id)+"</small><div class='mm'>"+mm+"</div></div>"
-    + "<div class='d' style='color:"+(d==null?"var(--mut)":d>0?"#1d6b3a":d<0?"#a3261d":"var(--mut)")+"'>"+(d==null?"":(d>0?"+":"")+d)+"</div>"
-    + "<div class='n' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
-    + "<button data-pav='"+e(q.id)+"'>+ Vergleich</button></div>";
-}
-async function partnerZeigen(id){
-  PA_ID = id; if(!P[id]) await produkteLaden([id]);
-  var p = P[id] || { id:id, name:id, marke:"" }, cs = pkt(id), u = bildUrl(id);
-  $("paKopf").innerHTML = (u ? "<img src='"+e(u)+"' alt=''>" : "")
-    + "<h3>"+e(p.marke||"")+" · "+e(p.name||"")+"<br><small style='font-weight:500;color:var(--mut)'>"+e(id)+" · "+(cs==null?"keine Punkte":cs+" Punkte")+"</small></h3>"
-    + "<button class='zu' id='paZu' title='schließen'>×</button>";
-  $("paZu").onclick = partnerZu;
-  $("paInhalt").innerHTML = "<small>lade …</small>";
-  $("partner").classList.add("an");
-  var k = await vg.from("v_web_produkte").select("id,kategorie,unterkategorie").eq("id", id).maybeSingle();
-  var kat = k.data && k.data.kategorie, uk = k.data && k.data.unterkategorie;
-  var worte = paWorte(p), gleich = [], besser = [], weitere = [];
-  if(kat && worte.length){
-    var g = vg.from("v_web_produkte").select("id,name,marke,clean_score,bewertung").eq("kategorie", kat).neq("id", id)
-      .or(worte.map(function(w){ return "name.ilike.*"+w+"*"; }).join(",")).limit(400);
-    if(uk) g = g.eq("unterkategorie", uk);
-    var gr = await g; if(gr.error) meld("Partner: "+gr.error.message);
-    gleich = (gr.data||[]).map(function(q){ var nm = String(q.name||"").toLowerCase();
-        q._n = worte.filter(function(w){ return nm.indexOf(w)>=0; }).length; return q; })
-      .sort(function(a,b){ return b._n-a._n || (b.clean_score==null?-1:b.clean_score)-(a.clean_score==null?-1:a.clean_score); }).slice(0, 25);
-  }
-  var ar = await vg.rpc("cb_produkt_alternativen", { p_produkt:id, p_max:8 });
-  if(ar.error) meld("Alternativen: "+ar.error.message);
-  besser = ar.data || [];
-  if(kat && cs!=null){
-    var wr = await vg.from("v_web_produkte").select("id,name,marke,clean_score,bewertung").eq("kategorie", kat).neq("id", id)
-      .gte("clean_score", cs+10).order("clean_score", { ascending:false }).limit(300);
-    var schon = {}, art = {}; gleich.concat(besser).forEach(function(q){ schon[q.id] = 1; });
-    /* je Produktart hoechstens 2 (sonst 8x Reissirup), damit die Liste Auswahl zeigt */
-    weitere = (wr.data||[]).filter(function(q){ if(schon[q.id]) return false;
-      var a = String(q.name||"").toLowerCase().replace(/\bbio\b|[^a-zäöüß]/g,""); art[a] = (art[a]||0) + 1; return art[a] <= 2; }).slice(0, 12);
-  }
-  await produkteLaden(gleich.concat(besser, weitere).map(function(q){ return q.id; }));
-  if(PA_ID!==id) return;
-  function block(titel, hinweis, liste, leer){
-    return "<h4>"+titel+" <small>"+hinweis+"</small></h4>" + (liste.length ? liste.map(function(q){ return paZeile(q, cs, worte); }).join("") : "<small>"+leer+"</small>");
-  }
-  $("paInhalt").innerHTML =
-      block("Gleiche Art", "– "+e(kat||"?")+(uk?" › "+e(uk):"")+(worte.length?", Namenswort: "+e(worte.join(", ")):""), gleich,
-            worte.length ? "Nichts Vergleichbares im Index gefunden." : "Kein Namenswort, über das sich vergleichen lässt.")
-    + block("Bessere Alternativen", "– wie in der App", besser, "Die App schlägt hier nichts vor.")
-    + block("Besser in derselben Kategorie", "– mindestens 10 Punkte mehr", weitere, cs==null ? "Produkt hat keine Punkte." : "Keine.");
-}
-function partnerZu(){ $("partner").classList.remove("an"); PA_ID = null; }
-$("partner").addEventListener("click", function(ev){
-  if(ev.target.id==="partner"){ partnerZu(); return; }
-  var b = ev.target.closest("[data-pav]"); if(!b) return;
-  var a = PA_ID; partnerZu(); neuAusProdukt(a, "Vergleich", b.dataset.pav);
-});
 
 /* ---- Bild einfuegen (17.10.2026) ---- */
 var UPL = {};   // P-ID -> Statustext waehrend des Uploads
