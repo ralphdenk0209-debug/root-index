@@ -1114,7 +1114,8 @@ function paZeile(q, cs, worte){
     + "<button data-pav='"+e(q.id)+"'>+ Vergleich</button></div>";
 }
 async function partnerZeigen(id){
-  PA_ID = id; var p = P[id] || { id:id, name:id, marke:"" }, cs = pkt(id), u = bildUrl(id);
+  PA_ID = id; if(!P[id]) await produkteLaden([id]);
+  var p = P[id] || { id:id, name:id, marke:"" }, cs = pkt(id), u = bildUrl(id);
   $("paKopf").innerHTML = (u ? "<img src='"+e(u)+"' alt=''>" : "")
     + "<h3>"+e(p.marke||"")+" · "+e(p.name||"")+"<br><small style='font-weight:500;color:var(--mut)'>"+e(id)+" · "+(cs==null?"keine Punkte":cs+" Punkte")+"</small></h3>"
     + "<button class='zu' id='paZu' title='schließen'>×</button>";
