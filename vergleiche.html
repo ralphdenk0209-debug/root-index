@@ -186,6 +186,26 @@
   .pk .bild{ cursor:pointer; position:relative; }
   .pk .lade{ position:absolute; inset:0; background:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--nav); border-radius:8px; text-align:center; padding:6px; }
 
+  /* ---- Partner je Produkt (Ralph 19.10.2026) ---- */
+  #partner{ position:fixed; inset:0; background:rgba(15,20,35,.35); z-index:61; display:none; align-items:flex-start; justify-content:center; padding:5vh 12px 12px; overflow-y:auto; }
+  #partner.an{ display:flex; }
+  #partner .pk2{ background:#fff; border-radius:14px; width:min(620px,100%); box-shadow:0 20px 60px rgba(0,0,0,.3); display:flex; flex-direction:column; max-height:90vh; }
+  #partner .pkopf{ display:flex; align-items:center; gap:10px; padding:14px 16px 10px; border-bottom:1px solid var(--lin); }
+  #partner .pkopf img{ width:48px; height:48px; object-fit:contain; background:#f3f4f7; border-radius:8px; }
+  #partner .pkopf h3{ margin:0; font-size:15px; flex:1; line-height:1.3; }
+  #partner .zu{ border:none; background:none; font-size:24px; cursor:pointer; color:var(--mut); line-height:1; }
+  #partner .pb{ padding:8px 16px 14px; overflow-y:auto; }
+  #partner h4{ margin:12px 0 6px; font-size:12px; letter-spacing:.04em; text-transform:uppercase; color:var(--mut); }
+  #partner h4 small{ text-transform:none; letter-spacing:0; font-weight:500; }
+  #partner .pr{ display:flex; gap:9px; align-items:center; padding:6px 4px; border-bottom:1px solid #eef0f4; }
+  #partner .pr img, #partner .pr .ob{ width:42px; height:42px; object-fit:contain; background:#f3f4f7; border-radius:6px; flex:none; display:flex; align-items:center; justify-content:center; color:#c3c7d3; }
+  #partner .pr .t{ flex:1; min-width:0; font-size:12.5px; line-height:1.3; }
+  #partner .pr .t b{ font-size:13px; }
+  #partner .pr .n{ width:34px; height:34px; border-radius:50%; border:3px solid var(--c); color:var(--c); font-weight:800; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex:none; }
+  #partner .pr .d{ font-size:11.5px; font-weight:700; width:38px; text-align:right; flex:none; }
+  #partner .pr button{ border:1px solid var(--lin); background:#fff; border-radius:7px; padding:3px 8px; font-size:11.5px; cursor:pointer; white-space:nowrap; flex:none; }
+  #partner .mm{ display:flex; flex-wrap:wrap; gap:3px; margin-top:2px; }
+
   /* ---- Editor (Seitenleiste) ---- */
   #schleier{ position:fixed; inset:0; background:rgba(15,20,35,.28); z-index:40; display:none; }
   #editor{ position:fixed; top:0; right:0; bottom:0; width:min(440px,100vw); background:#fff; z-index:41; box-shadow:-10px 0 40px rgba(0,0,0,.18); transform:translateX(105%); transition:transform .18s ease; display:flex; flex-direction:column; }
@@ -277,6 +297,14 @@
   <span class="grp"><select id="lStatus"><option>Idee</option><option>In Arbeit</option><option>Bereit</option><option>Geplant</option><option>Veröffentlicht</option></select><button id="lSt">Status</button></span>
   <button class="rot" id="lWeg">Verwerfen</button>
   <button id="lAus" title="Auswahl aufheben">✕</button>
+</div>
+
+<!-- Partner je Produkt (Ralph 19.10.2026): gleiche Art + bessere Alternativen, nur lesen -->
+<div id="partner" role="dialog" aria-modal="true">
+ <div class="pk2">
+  <div class="pkopf" id="paKopf"></div>
+  <div class="pb" id="paInhalt"></div>
+ </div>
 </div>
 
 <!-- Popup: Neu am Tag (Ralph 18.10.) -->
@@ -984,6 +1012,7 @@ function zeigeBilder(){
       + "<div class='akt'><label title='Foto vorne vorhanden'><input type='checkbox' data-pf='"+e(o.id)+"'"+(o.fo.foto_vorne?" checked":"")+">Foto</label>"
       + "<label title='freigestellt'><input type='checkbox' data-pfr='"+e(o.id)+"'"+(o.fo.foto_frei?" checked":"")+">frei</label>"
       + "<button data-up='"+e(o.id)+"' title='Bild einfügen'>📷 Bild</button>"
+      + "<button data-pp='"+e(o.id)+"' title='vergleichbare Produkte und bessere Alternativen'>🤝 Partner</button>"
       + "<button data-pv='"+e(o.id)+"'>+ Vergleich</button><button data-pe='"+e(o.id)+"'>+ Einzel</button>"
       + "<button data-pdel='"+e(o.id)+"' style='color:#a3261d' title='aus der Liste nehmen'>✕</button></div></div>";
   }).join("") || "<small>Keine Produkte in dieser Auswahl.</small>";
@@ -999,19 +1028,8 @@ $("raster").onchange = async function(ev){
 $("raster").onclick = async function(ev){
   var u = ev.target.closest("[data-up]"); if(u){ waehleDatei(u.dataset.up); return; }
   var b = ev.target.closest("button"); if(!b || BUSY) return;
-  if(b.dataset.pv || b.dataset.pe){
-    // 19.10.2026 (Ralph: "Vergleich geklickt, sehe aber nichts"): statt prompt() den Editor vorbefuellt oeffnen
-    var id = b.dataset.pv || b.dataset.pe, typ = b.dataset.pv ? "Vergleich" : "Einzel";
-    oeffne(null);
-    $("eTyp").value = typ; $("eBlab").hidden = typ==="Einzel";
-    $("eA").value = id; $("eB").value = "";
-    $("eBereich").value = KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich");
-    $("eFehlt").value = typ==="Einzel" ? "Claude: Einzel-Reel bauen" : "Claude: Vergleichs-Reel bauen";
-    pvZeigen();
-    meld(typ==="Vergleich" ? "Neuer Vergleich: rechts Produkt B eintragen, dann „Anlegen“." : "Neues Einzel-Reel: rechts prüfen, dann „Anlegen“.");
-    if(typ==="Vergleich") setTimeout(function(){ $("eB").focus(); }, 150);
-    return;
-  }
+  if(b.dataset.pp){ partnerZeigen(b.dataset.pp); return; }
+  if(b.dataset.pv || b.dataset.pe){ neuAusProdukt(b.dataset.pv || b.dataset.pe, b.dataset.pv ? "Vergleich" : "Einzel", ""); return; }
   if(b.dataset.pdel){
     var did = b.dataset.pdel, alle = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===did || pid(x.Produkt_B)===did; });
     var fest = alle.filter(function(x){ return x.Status!=="Idee"; });
@@ -1052,6 +1070,97 @@ $("pNeuOk").onclick = async function(){
   r.addEventListener("drop", function(ev){ var k = ev.target.closest(".pk"); if(!k) return; ev.preventDefault(); k.classList.remove("ueber");
     var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if(f) hochladen(k.dataset.pk, f); });
 })();
+
+/* ---- Neuer Vergleich/Einzel aus einem Produkt (19.10.2026) ---- */
+function neuAusProdukt(id, typ, partnerId){
+  oeffne(null);
+  $("eTyp").value = typ; $("eBlab").hidden = typ==="Einzel";
+  $("eA").value = id; $("eB").value = partnerId || "";
+  $("eBereich").value = KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich");
+  $("eFehlt").value = typ==="Einzel" ? "Claude: Einzel-Reel bauen" : "Claude: Vergleichs-Reel bauen";
+  pvZeigen();
+  meld(typ==="Einzel" ? "Neues Einzel-Reel: rechts prüfen, dann „Anlegen“." : partnerId ? "Neuer Vergleich "+id+" gegen "+partnerId+": rechts prüfen, dann „Anlegen“." : "Neuer Vergleich: rechts Produkt B eintragen, dann „Anlegen“.");
+  if(typ==="Vergleich" && !partnerId) setTimeout(function(){ $("eB").focus(); }, 150);
+}
+
+/* ---- Partner je Produkt (Ralph 19.10.2026) ----
+   Nur lesen. „Gleiche Art“ = gleiche Kategorie (und Unterkategorie, falls gesetzt) mit mindestens
+   einem gemeinsamen Namenswort – dieselben Stoppwoerter wie cb_produkt_alternativen.
+   „Bessere Alternativen“ = cb_produkt_alternativen (derselbe Weg wie die App, inkl. kuratierter
+   Tausch-Tipps) und darunter die besten derselben Kategorie mit mindestens 10 Punkten mehr. */
+var PA_STOPP = ("bio natur naturell classic klassik original extra fein feine zart zarte frisch frische light leicht mild milde high protein "
+  + "vegan vegane veganer glutenfrei laktosefrei zuckerfrei ohne mit und oder fuer für nach sorte art style premium gourmet family mini minis "
+  + "pack packung stueck stück gramm xxl deutsche deutscher deutsches traditionell hausmacher spezial selection auswahl").split(" ");
+var PA_ID = null;
+function paWorte(p){
+  var m = String(p.marke||"").toLowerCase();
+  var w = String(p.name||"").toLowerCase().split(/[^a-z0-9äöüß]+/).filter(function(x){
+    return x.length>=4 && !/^\d+$/.test(x) && m.indexOf(x)<0 && PA_STOPP.indexOf(x)<0; });
+  return w.filter(function(x,i){ return w.indexOf(x)===i; });
+}
+function paZeile(q, cs, worte){
+  var n = q.clean_score==null ? null : Math.floor(Number(q.clean_score)+0.5);
+  var d = n!=null && cs!=null ? n - cs : null;
+  var fo = FOTO[q.id] || {}, u = bildUrl(q.id);
+  var nr = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===q.id || pid(x.Produkt_B)===q.id; }).map(function(x){ return "Nr "+x.Nr; });
+  var mm = (fo.foto_frei ? "<span class='gut'>✂ freigestellt</span>" : fo.foto_vorne ? "<span class='gut'>📷 Foto da</span>" : "<span class='warn'>📷 kein eigenes Foto</span>")
+    + (BILDQ[q.id] ? "" : "<span>kein Bild im Index</span>")
+    + (nr.length ? "<span>"+e(nr.join(", "))+"</span>" : "")
+    + (q.grund ? "<span>"+e(q.grund)+"</span>" : "") + (q.kuratiert ? "<span class='gut'>Tausch-Tipp</span>" : "");
+  return "<div class='pr'>"+(u ? "<img loading='lazy' src='"+e(u)+"' alt='' onerror=\"this.outerHTML='<div class=ob>📦</div>'\">" : "<div class='ob'>📦</div>")
+    + "<div class='t'><b>"+e(q.marke||"")+" · "+e(q.name||"")+"</b> <small style='color:var(--mut)'>"+e(q.id)+"</small><div class='mm'>"+mm+"</div></div>"
+    + "<div class='d' style='color:"+(d==null?"var(--mut)":d>0?"#1d6b3a":d<0?"#a3261d":"var(--mut)")+"'>"+(d==null?"":(d>0?"+":"")+d)+"</div>"
+    + "<div class='n' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
+    + "<button data-pav='"+e(q.id)+"'>+ Vergleich</button></div>";
+}
+async function partnerZeigen(id){
+  PA_ID = id; var p = P[id] || { id:id, name:id, marke:"" }, cs = pkt(id), u = bildUrl(id);
+  $("paKopf").innerHTML = (u ? "<img src='"+e(u)+"' alt=''>" : "")
+    + "<h3>"+e(p.marke||"")+" · "+e(p.name||"")+"<br><small style='font-weight:500;color:var(--mut)'>"+e(id)+" · "+(cs==null?"keine Punkte":cs+" Punkte")+"</small></h3>"
+    + "<button class='zu' id='paZu' title='schließen'>×</button>";
+  $("paZu").onclick = partnerZu;
+  $("paInhalt").innerHTML = "<small>lade …</small>";
+  $("partner").classList.add("an");
+  var k = await vg.from("v_web_produkte").select("id,kategorie,unterkategorie").eq("id", id).maybeSingle();
+  var kat = k.data && k.data.kategorie, uk = k.data && k.data.unterkategorie;
+  var worte = paWorte(p), gleich = [], besser = [], weitere = [];
+  if(kat && worte.length){
+    var g = vg.from("v_web_produkte").select("id,name,marke,clean_score,bewertung").eq("kategorie", kat).neq("id", id)
+      .or(worte.map(function(w){ return "name.ilike.*"+w+"*"; }).join(",")).limit(400);
+    if(uk) g = g.eq("unterkategorie", uk);
+    var gr = await g; if(gr.error) meld("Partner: "+gr.error.message);
+    gleich = (gr.data||[]).map(function(q){ var nm = String(q.name||"").toLowerCase();
+        q._n = worte.filter(function(w){ return nm.indexOf(w)>=0; }).length; return q; })
+      .sort(function(a,b){ return b._n-a._n || (b.clean_score==null?-1:b.clean_score)-(a.clean_score==null?-1:a.clean_score); }).slice(0, 25);
+  }
+  var ar = await vg.rpc("cb_produkt_alternativen", { p_produkt:id, p_max:8 });
+  if(ar.error) meld("Alternativen: "+ar.error.message);
+  besser = ar.data || [];
+  if(kat && cs!=null){
+    var wr = await vg.from("v_web_produkte").select("id,name,marke,clean_score,bewertung").eq("kategorie", kat).neq("id", id)
+      .gte("clean_score", cs+10).order("clean_score", { ascending:false }).limit(300);
+    var schon = {}, art = {}; gleich.concat(besser).forEach(function(q){ schon[q.id] = 1; });
+    /* je Produktart hoechstens 2 (sonst 8x Reissirup), damit die Liste Auswahl zeigt */
+    weitere = (wr.data||[]).filter(function(q){ if(schon[q.id]) return false;
+      var a = String(q.name||"").toLowerCase().replace(/\bbio\b|[^a-zäöüß]/g,""); art[a] = (art[a]||0) + 1; return art[a] <= 2; }).slice(0, 12);
+  }
+  await produkteLaden(gleich.concat(besser, weitere).map(function(q){ return q.id; }));
+  if(PA_ID!==id) return;
+  function block(titel, hinweis, liste, leer){
+    return "<h4>"+titel+" <small>"+hinweis+"</small></h4>" + (liste.length ? liste.map(function(q){ return paZeile(q, cs, worte); }).join("") : "<small>"+leer+"</small>");
+  }
+  $("paInhalt").innerHTML =
+      block("Gleiche Art", "– "+e(kat||"?")+(uk?" › "+e(uk):"")+(worte.length?", Namenswort: "+e(worte.join(", ")):""), gleich,
+            worte.length ? "Nichts Vergleichbares im Index gefunden." : "Kein Namenswort, über das sich vergleichen lässt.")
+    + block("Bessere Alternativen", "– wie in der App", besser, "Die App schlägt hier nichts vor.")
+    + block("Besser in derselben Kategorie", "– mindestens 10 Punkte mehr", weitere, cs==null ? "Produkt hat keine Punkte." : "Keine.");
+}
+function partnerZu(){ $("partner").classList.remove("an"); PA_ID = null; }
+$("partner").addEventListener("click", function(ev){
+  if(ev.target.id==="partner"){ partnerZu(); return; }
+  var b = ev.target.closest("[data-pav]"); if(!b) return;
+  var a = PA_ID; partnerZu(); neuAusProdukt(a, "Vergleich", b.dataset.pav);
+});
 
 /* ---- Bild einfuegen (17.10.2026) ---- */
 var UPL = {};   // P-ID -> Statustext waehrend des Uploads
