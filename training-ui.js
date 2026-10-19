@@ -101,13 +101,14 @@ async function loadTraining(){
       client.rpc("cb_train_adherence")
     ]);
     TRAIN = Array.isArray(rp.data)?(rp.data[0]||{}):(rp.data||{});
-    const _adh=(ra&&ra.data&&ra.data[0])||null;
+    _adh=(ra&&ra.data&&ra.data[0])||null;
     GERAETE_KAT = rk.data||[];
     const last=(rh.data&&rh.data[0])||{};
     renderTraining(TRAIN, last, (rt&&rt.data)||null);
   }catch(e){ body.innerHTML='<div style="color:var(--k-dc2626)">Fehler: '+esc(e.message)+'</div>'; }
 }
-let _trTab='plan', _trTf=null;
+/* 19.10.2026: _adh war nur in loadTraining() bekannt, renderTrainPlanPane() brach bei aktivem Plan mit "_adh is not defined" ab. */
+let _trTab='plan', _trTf=null, _adh=null;
 function renderTraining(p, last, tf){
   TRAIN=p; _trTf=tf;
   document.getElementById("trainBody").innerHTML=
