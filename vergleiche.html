@@ -792,7 +792,8 @@ $("ePv").onclick = async function(ev){
   if(r.error){ b.disabled = false; b.textContent = "🛒"; meld("Einkaufsliste: " + r.error.message); return; }
   b.textContent = "✓ Liste";
 };
-function naechsteNr(typ){ var gl = ZEILEN.filter(function(x){ return (x.Typ==="Einzel")===(typ==="Einzel"); }).map(function(x){ return x.Nr||0; });
+function naechsteNr(typ){ // 19.10.2026: nach Nummernbereich statt Typ (Nr 87 Einzel blockierte den naechsten Vergleich)
+  var gl = ZEILEN.filter(function(x){ return typ==="Einzel" ? (x.Nr||0) > 100 : (x.Nr||0) <= 100; }).map(function(x){ return x.Nr||0; });
   return Math.max.apply(null, gl.concat([typ==="Einzel"?100:0])) + 1; }
 function formWerte(){
   var typ = $("eTyp").value;
