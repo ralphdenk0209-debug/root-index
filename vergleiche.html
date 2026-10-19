@@ -186,6 +186,9 @@
   .pk .bild{ cursor:pointer; position:relative; }
   .pk .lade{ position:absolute; inset:0; background:rgba(255,255,255,.85); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--nav); border-radius:8px; text-align:center; padding:6px; }
 
+  /* OFF-Bilder (Open Food Facts) nur zur Orientierung, nie fuer Posts (Ralph 19.10.2026) */
+  img.off{ opacity:.55; filter:grayscale(.6); }
+  .pk .offm{ position:absolute; left:6px; top:6px; z-index:1; background:#a3261d; color:#fff; font-size:10px; border-radius:6px; padding:1px 5px; }
   /* ---- Partner je Produkt (Ralph 19.10.2026) ---- */
   #partner{ position:fixed; inset:0; background:rgba(15,20,35,.35); z-index:61; display:none; align-items:flex-start; justify-content:center; padding:5vh 12px 12px; overflow-y:auto; }
   #partner.an{ display:flex; }
@@ -1006,10 +1009,10 @@ function zeigeBilder(){
     var n = pkt(o.id), p = o.p || { marke:"", name:o.id };
     var mm = (o.fo.foto_frei ? "<span class='gut'>✂ freigestellt</span>" : o.fo.foto_vorne ? "<span>📷 Foto da</span>" : "<span class='warn'>📷 Foto fehlt</span>")
       + (o.reel ? "<span class='gut'>🎬 im Reel</span>" : "") + (o.pruef ? "<span class='rot'>Zuordnung prüfen</span>" : "")
-      + (!o.bild ? "<span class='warn'>kein Bild im Index</span>" : "")
+      + (!BILDQ[o.id] ? (o.bild ? "<span class='rot'>nur OFF-Bild – nicht für Posts</span>" : "<span class='warn'>kein Bild im Index</span>") : "")
       + (o.V.length ? "<span>"+o.V.map(function(x){ return "Nr "+x.Nr; }).join(", ")+"</span>" : "<span>nicht verwendet</span>");
     var lauf = UPL[o.id];
-    return "<div class='pk' data-pk='"+e(o.id)+"'><div class='bild' data-up='"+e(o.id)+"' title='Bild einfügen'>"+(lauf?"<div class='lade'>"+e(lauf)+"</div>":"")+(o.bild?"<img loading='lazy' src='"+e(o.bild)+"' alt='' onerror=\"this.outerHTML='<span>📦</span>'\">":"<span>📦</span>")+"</div>"
+    return "<div class='pk' data-pk='"+e(o.id)+"'><div class='bild' data-up='"+e(o.id)+"' title='Bild einfügen'>"+(lauf?"<div class='lade'>"+e(lauf)+"</div>":"")+(o.bild?(BILDQ[o.id]?"":"<b class='offm'>OFF</b>")+"<img loading='lazy'"+(BILDQ[o.id]?"":" class='off'")+" src='"+e(o.bild)+"' alt='' onerror=\"this.outerHTML='<span>📦</span>'\">":"<span>📦</span>")+"</div>"
       + "<div class='kreis' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
       + "<div class='mk'>"+e(p.marke)+" · "+e(o.id)+"</div><div class='nm'>"+e(p.name)+"</div>"
       + "<div class='mm'>"+mm+"</div>"
@@ -1108,10 +1111,10 @@ function paZeile(q, cs, worte){
   var fo = FOTO[q.id] || {}, u = bildUrl(q.id);
   var nr = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===q.id || pid(x.Produkt_B)===q.id; }).map(function(x){ return "Nr "+x.Nr; });
   var mm = (fo.foto_frei ? "<span class='gut'>✂ freigestellt</span>" : fo.foto_vorne ? "<span class='gut'>📷 Foto da</span>" : "<span class='warn'>📷 kein eigenes Foto</span>")
-    + (BILDQ[q.id] ? "" : "<span>kein Bild im Index</span>")
+    + (BILDQ[q.id] ? "" : u ? "<span class='rot'>nur OFF-Bild – nicht für Posts</span>" : "<span>kein Bild im Index</span>")
     + (nr.length ? "<span>"+e(nr.join(", "))+"</span>" : "")
     + (q.grund ? "<span>"+e(q.grund)+"</span>" : "") + (q.kuratiert ? "<span class='gut'>Tausch-Tipp</span>" : "");
-  return "<div class='pr'>"+(u ? "<img loading='lazy' src='"+e(u)+"' alt='' onerror=\"this.outerHTML='<div class=ob>📦</div>'\">" : "<div class='ob'>📦</div>")
+  return "<div class='pr'>"+(u ? "<img"+(BILDQ[q.id]?"":" class='off' title='Bild von Open Food Facts – nicht für Posts'")+" loading='lazy' src='"+e(u)+"' alt='' onerror=\"this.outerHTML='<div class=ob>📦</div>'\">" : "<div class='ob'>📦</div>")
     + "<div class='t'><b>"+e(q.marke||"")+" · "+e(q.name||"")+"</b> <small style='color:var(--mut)'>"+e(q.id)+"</small><div class='mm'>"+mm+"</div></div>"
     + "<div class='d' style='color:"+(d==null?"var(--mut)":d>0?"#1d6b3a":d<0?"#a3261d":"var(--mut)")+"'>"+(d==null?"":(d>0?"+":"")+d)+"</div>"
     + "<div class='n' style='--c:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</div>"
