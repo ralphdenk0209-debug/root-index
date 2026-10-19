@@ -225,6 +225,7 @@
   .wbz .tx, .wbpz .tx{ flex:1; min-width:0; display:flex; flex-direction:column; }
   .wbz .tx b, .wbpz .tx b{ font-size:13px; line-height:1.25; } .wbz .tx small, .wbpz .tx small{ font-size:11.5px; color:var(--mut); }
   .pk3{ font-weight:800; font-size:13px; width:28px; text-align:right; flex:none; }
+  .wbdop{ font-size:10.5px; font-weight:700; color:#5b6475; background:#eef0f5; border-radius:6px; padding:1px 5px; white-space:nowrap; }
   .wbneu{ display:flex; gap:6px; } .wbneu .suche{ flex:1; }
   .wbl .ablegen{ margin:0; padding:10px; font-size:12px; }
   .wbr{ display:flex; flex-direction:column; gap:14px; min-width:0; }
@@ -1066,16 +1067,17 @@ function wbPasst(o, f){ return f==="alle" || o.st===f || (f==="reel" && o.reel) 
 /* ---- Werkbank: „Alle Produkte“ (Ralph 19.10.2026) ----
    Server-Liste cb_admin_content_kandidaten: mit Marke, ohne Obst & Gemüse, ohne Fertigprodukte,
    aus Fleisch & Fisch nur Wurst (über den Namen), nur deutscher Markt. Seitenweise je 100. */
+var WEIT = {};   // P-ID -> weitere Eintraege mit gleicher Marke + gleichem Namen (andere EAN)
 var MODUS = lsGet("cp_wbmod")==="alle" ? "alle" : "plan", KAND = [], KGES = 0, KKAT = lsGet("cp_wbkat")||"", KST = "", KLAEDT = false, KTIMER = null, EIGEN = {};
 var KATS = ["Milchprodukte & Eier","Getränk","Fleisch & Fisch","Brot & Backwaren","Süßwaren","Würzen & Saucen","Getreide & Beilagen","Brotaufstrich",
   "Desserts & Süßspeisen","Snacks","Tofu & Fleischalternativen","Nüsse & Hülsenfrüchte","Öle & Fette","Backen","Riegel","Süßungsmittel","Proteinpulver","Supplement","Sonstiges","Trinknahrung","Salze"];
 async function kandLaden(mehr){
   if(!mehr) KAND = [];
   KLAEDT = true; zeigeBilder();
-  var r = await vg.rpc("cb_admin_content_kandidaten", { p_suche:WBSUCHE.trim()||null, p_kategorie:KKAT||null, p_status:KST||null, p_limit:100, p_offset:KAND.length });
+  var r = await vg.rpc("cb_admin_content_kandidaten_g", { p_suche:WBSUCHE.trim()||null, p_kategorie:KKAT||null, p_status:KST||null, p_limit:100, p_offset:KAND.length });
   KLAEDT = false;
   if(r.error){ meld("Alle Produkte: "+r.error.message); zeigeBilder(); return; }
-  (r.data||[]).forEach(function(x){ KAND.push(x); if(x.eigen_bild) EIGEN[x.id] = true; });
+  (r.data||[]).forEach(function(x){ KAND.push(x); if(x.eigen_bild) EIGEN[x.id] = true; WEIT[x.id] = x.weitere || []; });
   if(r.data && r.data[0]) KGES = Number(r.data[0].gesamt); else if(!mehr) KGES = 0;
   zeigeBilder();
 }
@@ -1093,7 +1095,7 @@ function zeigeKand(nPlan){
     var n = x.clean_score==null ? null : Math.floor(Number(x.clean_score)+0.5), V = nrListe(x.id);
     return "<button type='button' class='wbz"+(x.id===SELP?" an":"")+"' data-sel='"+e(x.id)+"'>"
       + "<span class='pu' style='background:"+f[1]+"'></span>"
-      + "<span class='tx'><b>"+e(x.marke)+" · "+e(x.name)+"</b><small>"+e(x.id)+" · "+e(x.kategorie||"")+" · "+f[0]+(V.length?" · Nr "+V.map(function(v){ return v.Nr; }).join(", "):"")+(UPL[x.id]?" · "+e(UPL[x.id]):"")+"</small></span>"
+      + "<span class='tx'><b>"+e(x.marke)+" · "+e(x.name)+((x.weitere||[]).length?" <span class='wbdop'>+"+x.weitere.length+" gleicher Name</span>":"")+"</b><small>"+e(x.id)+" · "+e(x.kategorie||"")+" · "+f[0]+(V.length?" · Nr "+V.map(function(v){ return v.Nr; }).join(", "):"")+(UPL[x.id]?" · "+e(UPL[x.id]):"")+"</small></span>"
       + "<span class='pk3' style='color:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</span></button>"; }).join("");
   $("wbListe").innerHTML = zeilen
     + (KLAEDT ? "<small style='padding:12px;display:block'>lade …</small>"
@@ -1135,13 +1137,15 @@ function wbDetail(){
       + (UPL[id] ? "<div class='lade'>"+e(UPL[id])+"</div>" : "")
       + (u ? "<img src='"+e(u)+"' alt='Dein Foto'>" : st==="da" ? "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto da</b><small>"+(ROH[id]?"Rohfoto liegt vor – Claude stellt frei":"im Ordner – Claude stellt frei")+"</small>" : "<svg width='34' height='34' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' aria-hidden='true'><path d='M4 8h3l2-3h6l2 3h3v11H4z'/><circle cx='12' cy='13' r='3.5'/></svg><b>Foto fehlt</b><small>hierher ziehen oder tippen</small>")
     + "</div>"
-    + "<div class='wbinfo'><div class='mk'>"+e(p.marke)+" · "+e(id)+"</div><h2>"+e(p.name)+"</h2><div class='wbchips'>"+chips+"</div>"
+    + "<div class='wbinfo'><div class='mk'>"+e(p.marke)+" · "+e(id)+(p.ean?" · EAN "+e(p.ean):"")+"</div><h2>"+e(p.name)+"</h2><div class='wbchips'>"+chips+"</div>"
       + "<div class='wbakt'><button type='button' class='haupt' data-pv='"+e(id)+"'>+ Vergleich</button><button type='button' data-pe='"+e(id)+"'>+ Einzel-Reel</button>"
       + "<button type='button' data-up='"+e(id)+"'>"+(u?"Foto ersetzen":"Foto einfügen")+"</button>"
       + "<label><input type='checkbox' data-pf='"+e(id)+"'"+(fo.foto_vorne?" checked":"")+"> Foto gemacht</label>"
       + "<label><input type='checkbox' data-pfr='"+e(id)+"'"+(fo.foto_frei?" checked":"")+"> freigestellt</label>"
       + "<button type='button' class='weg' data-pdel='"+e(id)+"' title='aus der Liste nehmen'>aus Liste</button></div></div>"
     + "<div class='wbring' style='--c:"+farbeScore(n)+"'><b>"+(n==null?"–":n)+"</b><small>"+bewTxt(n)+"</small></div></div>"
+    + ((WEIT[id]||[]).length ? "<div class='wbkarte'><h3>Gleicher Name, andere Packung</h3><small>gleiche Marke und gleicher Name, aber andere EAN – Packungsgröße oder Rezeptur können abweichen. Foto für die Packung machen, die du in der Hand hast (EAN vergleichen).</small>"
+        + WEIT[id].map(function(w){ return "<div class='wbpz'><span class='fs' style='background:"+(w.eigen?"#e8f3ec;color:#1d6b3a":"#fff1e4;color:#8a3f08")+"'>"+(w.eigen?"Foto da":"Foto fehlt")+"</span><span class='tx'><b>"+e(w.name)+"</b><small>"+e(w.id)+(w.ean?" · EAN "+e(w.ean):"")+"</small></span><span class='pk3' style='color:"+farbeScore(w.cs)+"'>"+(w.cs==null?"–":w.cs)+"</span><button type='button' data-sel='"+e(w.id)+"'>öffnen</button></div>"; }).join("") + "</div>" : "")
     + "<div class='wbpart'><div class='wbkarte' id='wbGleich'><h3>Gleiche Art</h3><small>lade …</small></div>"
     + "<div class='wbkarte' id='wbBesser'><h3>Bessere Alternativen</h3><small>lade …</small></div></div>";
   partnerLaden(id).then(function(d){ if(SELP===id && $("wbGleich")) partnerZeichnen(id, d); });
@@ -1187,16 +1191,23 @@ function partnerZeile(q, cs){
   var n = q.clean_score==null ? null : Math.floor(Number(q.clean_score)+0.5), d = n!=null && cs!=null ? n-cs : null;
   var st = fotoStand(q.id), f = FST[st], drin = wbIds().indexOf(q.id)>=0, V = nrListe(q.id);
   return "<div class='wbpz'><span class='fs' style='background:"+f[2]+";color:"+f[3]+"'>"+(st==="fertig"?"Foto da":st==="da"?"Foto da*":"Foto fehlt")+"</span>"
-    + "<span class='tx'><b>"+e(q.marke||"")+" · "+e(q.name||"")+"</b><small>"+e(q.id)+(V.length?" · Nr "+V.map(function(x){ return x.Nr; }).join(", "):"")
+    + "<span class='tx'><b>"+e(q.marke||"")+" · "+e(q.name||"")+(q._mehr?" <span class='wbdop'>+"+q._mehr+" gleicher Name</span>":"")+"</b><small>"+e(q.id)+(V.length?" · Nr "+V.map(function(x){ return x.Nr; }).join(", "):"")
     + (q.grund?" · "+e(q.grund):"")+(q.kuratiert?" · Tausch-Tipp":"")+"</small></span>"
     + "<span class='df' style='color:"+(d==null?"#5b6475":d>0?"#1d6b3a":d<0?"#a3261d":"#5b6475")+"'>"+(d==null?"":(d>0?"+":"")+d)+"</span>"
     + "<span class='pk3' style='color:"+farbeScore(n)+"'>"+(n==null?"–":n)+"</span>"
     + (drin ? "<button type='button' data-sel='"+e(q.id)+"' title='in der Liste öffnen'>öffnen</button>" : "<button type='button' data-padd='"+e(q.id)+"' title='in die Liste aufnehmen (Foto fehlt)'>+ Liste</button>")
     + "<button type='button' class='haupt' data-pav='"+e(q.id)+"'>+ Vergleich</button></div>";
 }
+function paGruppe(l){
+  /* gleiche Marke + gleicher Name (Schreibweise egal) nur einmal zeigen, Zahl dazuschreiben */
+  var seen = {}, aus = [];
+  l.forEach(function(q){ var k = String(q.marke||"").toLowerCase().trim()+"|"+String(q.name||"").toLowerCase().replace(/\b(type|typ)\b|[^a-zäöüß0-9]/g,"");
+    if(seen[k]){ seen[k]._mehr = (seen[k]._mehr||0)+1; return; } seen[k] = q; aus.push(q); });
+  return aus;
+}
 function partnerZeichnen(id, d){
   var cs = pkt(id), ohne = 0;
-  function zeilen(l){ return l.map(function(q){ if(fotoStand(q.id)==="fehlt") ohne++; return partnerZeile(q, cs); }).join(""); }
+  function zeilen(l){ return paGruppe(l).map(function(q){ if(fotoStand(q.id)==="fehlt") ohne++; return partnerZeile(q, cs); }).join(""); }
   var g = zeilen(d.gleich), b = zeilen(d.besser), w = zeilen(d.weitere);
   $("wbGleich").innerHTML = "<h3>Gleiche Art</h3><small>"+e(d.kat||"?")+(d.uk?" › "+e(d.uk):"")+(d.worte.length?" · Namenswort: "+e(d.worte.join(", ")):"")+"</small>"
     + (g || "<p class='leer'>"+(d.worte.length?"Nichts Vergleichbares im Index.":"Kein Namenswort zum Vergleichen.")+"</p>");
