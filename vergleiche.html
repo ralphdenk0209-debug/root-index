@@ -1120,7 +1120,7 @@ async function partnerLaden(id){
   var k = await vg.from("v_web_produkte").select("id,kategorie,unterkategorie").eq("id", id).maybeSingle();
   var kat = k.data && k.data.kategorie, uk = k.data && k.data.unterkategorie, worte = paWorte(p), gleich = [], besser = [], weitere = [];
   if(kat && worte.length){
-    var g = vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id)
+    var g = vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id).not("marke","is",null).neq("marke","")
       .or(worte.map(function(w){ return "name.ilike.*"+w+"*"; }).join(",")).limit(400);
     if(uk) g = g.eq("unterkategorie", uk);
     var gr = await g;
@@ -1128,9 +1128,11 @@ async function partnerLaden(id){
         q._n = worte.filter(function(w){ return nm.indexOf(w)>=0; }).length; return q; })
       .sort(function(a,b){ return b._n-a._n || (b.clean_score==null?-1:b.clean_score)-(a.clean_score==null?-1:a.clean_score); }).slice(0, 25);
   }
-  var ar = await vg.rpc("cb_produkt_alternativen", { p_produkt:id, p_max:8 }); besser = ar.data || [];
+  var ar = await vg.rpc("cb_produkt_alternativen", { p_produkt:id, p_max:8 });
+  /* 19.10.2026 (Ralph): nur Produkte mit Marke – Grundprodukte ohne Marke kann man nicht kaufen und fotografieren */
+  besser = (ar.data || []).filter(function(q){ return String(q.marke||"").trim(); });
   if(kat && cs!=null){
-    var wr = await vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id)
+    var wr = await vg.from("v_web_produkte").select("id,name,marke,clean_score").eq("kategorie", kat).neq("id", id).not("marke","is",null).neq("marke","")
       .gte("clean_score", cs+10).order("clean_score", { ascending:false }).limit(300);
     var schon = {}, art = {}; gleich.concat(besser).forEach(function(q){ schon[q.id] = 1; });
     weitere = (wr.data||[]).filter(function(q){ if(schon[q.id]) return false;
