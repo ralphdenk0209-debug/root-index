@@ -768,7 +768,7 @@ function oeffne(id, tagYmd){
   $("eA").value = x.Produkt_A||""; $("eB").value = x.Produkt_B||""; $("eBlab").hidden = $("eTyp").value==="Einzel";
   $("eStatus").value = ["Idee","In Arbeit","Bereit","Geplant","Veröffentlicht"].indexOf(x.Status)>=0 ? x.Status : "Idee";
   var d = x.Reel_geplant_am ? new Date(x.Reel_geplant_am) : (tagYmd ? ausFeldern(tagYmd) : null);
-  $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "18:00";
+  $("eDatum").value = d ? ymd(d) : ""; $("eZeit").value = d ? hm(d) : "19:00";
   $("eMeta").checked = !!x.Reel_in_Meta; $("eThreads").checked = !!x.Threads_gepostet; $("eSubstack").checked = !!x.Substack_gepostet; $("eGruppen").checked = !!x.Gruppen_gepostet;
   $("eYT").checked = !!x.YouTube_gepostet; $("ePin").checked = !!x.Pinterest_gepostet; $("eTT").checked = !!x.TikTok_gepostet;
   $("eHinweis").hidden = !x.Reel_in_Meta;
@@ -999,14 +999,17 @@ $("raster").onclick = async function(ev){
   var u = ev.target.closest("[data-up]"); if(u){ waehleDatei(u.dataset.up); return; }
   var b = ev.target.closest("button"); if(!b || BUSY) return;
   if(b.dataset.pv || b.dataset.pe){
+    // 19.10.2026 (Ralph: "Vergleich geklickt, sehe aber nichts"): statt prompt() den Editor vorbefuellt oeffnen
     var id = b.dataset.pv || b.dataset.pe, typ = b.dataset.pv ? "Vergleich" : "Einzel";
-    var z = { Nr:naechsteNr(typ), Typ:typ, Produkt_A:id, Status:"Idee", Bereich: KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich") };
-    if(typ==="Vergleich"){ var pb = prompt("Vergleich mit welchem Produkt? (P-ID, leer = später festlegen)"); if(pb===null) return;
-      z.Produkt_B = pid(pb); z.Fehlt = z.Produkt_B ? "Claude: Vergleichs-Reel bauen" : "Partnerprodukt fehlt"; }
-    else z.Fehlt = "Claude: Einzel-Reel bauen";
-    BUSY = true; var r = await vg.from(T).insert(z).select("*"); BUSY = false;
-    if(r.error){ meld("Fehler: "+r.error.message); return; }
-    meld("Idee Nr "+z.Nr+" angelegt ✓"); laden(); return;
+    oeffne(null);
+    $("eTyp").value = typ; $("eBlab").hidden = typ==="Einzel";
+    $("eA").value = id; $("eB").value = "";
+    $("eBereich").value = KAT[id] && String(KAT[id]).toLowerCase()==="supplement" ? "supp" : (typ==="Einzel"?"einzel":"vergleich");
+    $("eFehlt").value = typ==="Einzel" ? "Claude: Einzel-Reel bauen" : "Claude: Vergleichs-Reel bauen";
+    pvZeigen();
+    meld(typ==="Vergleich" ? "Neuer Vergleich: rechts Produkt B eintragen, dann „Anlegen“." : "Neues Einzel-Reel: rechts prüfen, dann „Anlegen“.");
+    if(typ==="Vergleich") setTimeout(function(){ $("eB").focus(); }, 150);
+    return;
   }
   if(b.dataset.pdel){
     var did = b.dataset.pdel, alle = ZEILEN.filter(function(x){ return pid(x.Produkt_A)===did || pid(x.Produkt_B)===did; });
