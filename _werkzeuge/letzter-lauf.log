@@ -1,17 +1,18 @@
-Lauf: 110 · Commit: 6a711098cb36c7ce564b63ef8a882a4156df6c51 · 2026-10-20 08:10 UTC
+Lauf: 111 · Commit: 8e2e7b77ea5f0b431c42409ac557ac8b68d68951 · 2026-10-20 18:58 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
-  ... 2000 Produkte (zuletzt P11888)
-  ... 4000 Produkte (zuletzt P13867)
-  ... 6000 Produkte (zuletzt P1583)
-  ... 8000 Produkte (zuletzt P17723)
-  ... 10000 Produkte (zuletzt P19654)
-  ... 12000 Produkte (zuletzt P21675)
-  ... 14000 Produkte (zuletzt P23695)
-  ... 16000 Produkte (zuletzt P25729)
-  ... 18000 Produkte (zuletzt P27756)
-  ... 20000 Produkte (zuletzt P29783)
-  ! nach id P30393: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
+  ... 80 Produkte (zuletzt P10031)
+  ... 2080 Produkte (zuletzt P11970)
+  ... 4080 Produkte (zuletzt P13940)
+  ... 6080 Produkte (zuletzt P15904)
+  ... 8080 Produkte (zuletzt P17799)
+  ... 10080 Produkte (zuletzt P19737)
+  ... 12080 Produkte (zuletzt P21756)
+  ... 14080 Produkte (zuletzt P23777)
+  ... 16080 Produkte (zuletzt P25808)
+  ... 18080 Produkte (zuletzt P27836)
+  ... 20080 Produkte (zuletzt P29863)
   ... 22080 Produkte (zuletzt P31912)
   ... 24080 Produkte (zuletzt P34009)
   ... 26080 Produkte (zuletzt P36043)
