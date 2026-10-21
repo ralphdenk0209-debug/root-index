@@ -169,7 +169,11 @@ function bauen(){
   const seSt = se.ampel==='rot'?'alarm':se.ampel==='gelb'?'warn':'ok';
   Z.push({grp:'Web',nm:'Seite & Google',st:seSt,v:zahl(se.besucher_14t),u:'Besucher 14 Tage',viz:bars(se.besucher,seSt),
     notiz:'Google '+zahl(se.klicks_28t)+' Klicks 28 T · Pos. '+zahl(se.position,1)+'<br>'+zahl(se.klicks_7t)+' Klicks 7 T ('+(se.delta_pct>0?'+':'')+zahl(se.delta_pct)+' %)',
-    knopf:{t:'Search Console',href:'https://search.google.com/search-console'}});
+    notiz2:1, knopf:{t:'Search Console',href:'https://search.google.com/search-console'}});
+  /* 21.10.2026: Besuche je Social-Kanal (7 Tage, ohne eigene Geraete) - zeigt, ob die Posts Besucher bringen. */
+  (function(){ const bq=d.besuch_quellen||{}, z=Z[Z.length-1];
+    const soz=[['instagram','IG'],['facebook','FB'],['youtube','YT'],['tiktok','TT'],['pinterest','Pin'],['threads','Th']].map(function(k){ return k[1]+' '+zahl(bq[k[0]]||0); }).join(' · ');
+    z.notiz += '<br><b>Aus Social (7 T):</b> '+soz; })();
   /* Nutzer */
   const akt=Number(me.aktiv_7t||0), pre=Number(me.premium||0), nut=Number(me.nutzer||0);
   Z.push({grp:'App',nm:'Nutzer',st:'ok',v:zahl(nut),u:zahl(pre)+' Premium',
