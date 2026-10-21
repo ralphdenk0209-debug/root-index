@@ -25,8 +25,8 @@ const json = (o: unknown, status = 200) => new Response(JSON.stringify(o), { sta
 function findeKey(): string | null {
   const env = Deno.env.toObject();
   const k = env["ANTHROPIC_API_KEY"];
-  if (typeof k === "string" && k.trim().startsWith("sk-ant-")) return k.trim();
-  for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-")) return v.trim();
+  if (typeof k === "string" && k.trim().startsWith("sk-ant-api")) return k.trim();
+  for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-api")) return v.trim();
   return null;
 }
 

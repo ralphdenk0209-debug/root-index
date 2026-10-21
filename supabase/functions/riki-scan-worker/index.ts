@@ -97,8 +97,8 @@ const CHECK_MODELL = "claude-haiku-4-5-20251001";
 function findeKey(): string | null {
   const env = Deno.env.toObject();
   const off = env["ANTHROPIC_API_KEY"];
-  if (typeof off === "string" && off.trim().startsWith("sk-ant-")) return off.trim();
-  for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-")) return v.trim();
+  if (typeof off === "string" && off.trim().startsWith("sk-ant-api")) return off.trim();
+  for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-api")) return v.trim();
   return null;
 }
 async function schnellCheck(images: string[]): Promise<any> {

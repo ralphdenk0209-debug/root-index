@@ -95,7 +95,7 @@
 //   andere Function fuehrt HINWEIS_REGEL, das semantic_class-Enum oder eine
 //   Allergenausgabe woertlich. riki-etikett teilt nur contract_version.
 //
-// Admin-Pruefung ueber cb_ist_admin(). Key: Secret, dessen Wert mit "sk-ant-" beginnt.
+// Admin-Pruefung ueber cb_ist_admin(). Key: Secret, dessen Wert mit "sk-ant-api" beginnt.
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -113,11 +113,11 @@ const PREISE: Record<string, { in: number; out: number }> = {
 function findeKey(): { key: string | null; name: string | null } {
   const env = Deno.env.toObject();
   const off = env["ANTHROPIC_API_KEY"];
-  if (typeof off === "string" && off.trim().startsWith("sk-ant-")) {
+  if (typeof off === "string" && off.trim().startsWith("sk-ant-api")) {
     return { key: off.trim(), name: "ANTHROPIC_API_KEY" };
   }
   for (const [k, v] of Object.entries(env)) {
-    if (typeof v === "string" && v.trim().startsWith("sk-ant-")) return { key: v.trim(), name: k };
+    if (typeof v === "string" && v.trim().startsWith("sk-ant-api")) return { key: v.trim(), name: k };
   }
   return { key: null, name: null };
 }

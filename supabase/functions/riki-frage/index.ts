@@ -14,8 +14,8 @@ function antwort(body: unknown, status=200){
 }
 function key(): string | null {
   const env=Deno.env.toObject();
-  if (env.ANTHROPIC_API_KEY?.startsWith("sk-ant-")) return env.ANTHROPIC_API_KEY;
-  for (const v of Object.values(env)) if (typeof v==="string" && v.startsWith("sk-ant-")) return v;
+  if (env.ANTHROPIC_API_KEY?.startsWith("sk-ant-api")) return env.ANTHROPIC_API_KEY;
+  for (const v of Object.values(env)) if (typeof v==="string" && v.startsWith("sk-ant-api")) return v;
   return null;
 }
 

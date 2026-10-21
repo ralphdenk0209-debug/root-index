@@ -47,9 +47,9 @@ const PAREN_ROLES = new Set(["processing", "composition", "explanation", "subing
 function findeKey(): string | null {
   const env = Deno.env.toObject();
   const off = env["ANTHROPIC_API_KEY"];
-  if (typeof off === "string" && off.trim().startsWith("sk-ant-")) return off.trim();
+  if (typeof off === "string" && off.trim().startsWith("sk-ant-api")) return off.trim();
   for (const v of Object.values(env)) {
-    if (typeof v === "string" && v.trim().startsWith("sk-ant-")) return v.trim();
+    if (typeof v === "string" && v.trim().startsWith("sk-ant-api")) return v.trim();
   }
   return null;
 }
