@@ -1505,6 +1505,8 @@ window.__ADMIN_PAGE=true;</script>
    (Steuerung, Arbeitsfläche-Helfer) Funktionen daraus nutzen. */
 /* Die Besucher-Karte (besucher-ui.js) sass VOR dem Dashboard - ihre Zahlen stehen jetzt im Cockpit (Seite / Menschen). */
 try{ var _st=document.createElement('style'); _st.textContent='#besucherKarte{display:none!important}'; document.head.appendChild(_st); }catch(e){}
+/* 21.10.2026: dieses Geraet gehoert zu uns - Besuche von hier zaehlen als "eigen", nicht als Besucher. */
+try{ localStorage.setItem('ri_intern','1'); }catch(e){}
 /* 15.10.2026: Sprung aus dem Weltall-Cockpit (admin.html?go=<bereich>) - oeffnet den Bereich nach dem Laden. */
 try{ var _go=new URLSearchParams(location.search).get('go'); if(_go){ var _goV=0; var _goT=setInterval(function(){ _goV++; if(typeof adminGo==='function' && typeof ME!=='undefined' && ME){ clearInterval(_goT); try{ adminGo(_go); }catch(e){} } else if(_goV>40){ clearInterval(_goT); } },300); } }catch(e){}
 window.loadDashboard=function(){

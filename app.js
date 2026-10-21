@@ -1523,6 +1523,12 @@ function premiumInfo(){
        als "com" zaehlen (27.09.2026). */
     try{ if(/(^|[?&])von=com([&#]|$)/.test(location.search)) sessionStorage.setItem("ri_von","com");
       if(sessionStorage.getItem("ri_von")==="com") q="com"; }catch(e){}
+/* 21.10.2026 (Ralph: "facebook und youtube werden angeschaut"): Kanal erkennen - Referrer, In-App-Browser der Apps, ?von=ig|fb|yt|tt|pin|th|nl. Eigene Geraete (Admin geoeffnet) zaehlen als "eigen". */
+try{var _r=(document.referrer||"").toLowerCase(),_u=navigator.userAgent;
+if(/instagram\./.test(_r)||/Instagram/.test(_u))q="instagram";else if(/(^|\/\/|\.)(facebook\.com|fb\.me|fb\.com)/.test(_r)||/FBAN|FBAV|FB_IAB/.test(_u))q="facebook";else if(/youtube\.com|youtu\.be/.test(_r))q="youtube";else if(/tiktok\./.test(_r)||/musical_ly|BytedanceWebview|TikTok/.test(_u))q="tiktok";else if(/pinterest\.|pin\.it/.test(_r)||/Pinterest/.test(_u))q="pinterest";else if(/threads\.(net|com)/.test(_r)||/Barcelona/.test(_u))q="threads";
+var _v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1],_m={ig:"instagram",fb:"facebook",yt:"youtube",tt:"tiktok",pin:"pinterest",th:"threads",nl:"newsletter"};
+if(_v&&_m[_v])sessionStorage.setItem("ri_von2",_m[_v]);var _s=sessionStorage.getItem("ri_von2");if(_s&&q!=="com")q=_s;
+if(localStorage.getItem("ri_intern")==="1")q="eigen";}catch(e){}
     fetch(SUPABASE_URL+"/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,
       headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
       body:JSON.stringify({p_seite:"app",p_quelle:q})}).catch(function(){});

@@ -100,6 +100,8 @@ const zeit = d => d ? new Date(d).toLocaleString('de-DE',{weekday:'short',day:'2
 const FARBE_HEX = {ok:'#4fd18b',warn:'#ffb547',alarm:'#ff5a4f',off:'#4a4c52'};
 const SCHALTER = {etikett_riki:'Etikett-Scan (Riki, kostet)', rezept_riki:'Rezept-Scan (Riki, kostet)', push:'Push-Mitteilungen'};
 if(window.self!==window.top) document.body.classList.add('eingebettet');
+/* 21.10.2026: dieses Geraet gehoert zu uns - Besuche von hier zaehlen als "eigen", nicht als Besucher. */
+try{ localStorage.setItem('ri_intern','1'); }catch(e){}
 (function(){ const t=Math.floor((Date.now()-new Date('2026-06-25T00:00:00'))/86400000)+1; $('tag').textContent='Tag '+t+' seit Start'; })();
 
 let D=null;
