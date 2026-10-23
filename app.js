@@ -12637,8 +12637,8 @@ async function tbFavToggle(id, btn){
 async function tbHistList(){
   const box=document.getElementById("tbAddResults"); if(!box) return;
   /* Zwei Unter-Reiter: „Ganze Mahlzeiten" (cb_tb_history + cb_tb_copy_meal) und „Einzelne". */
-  let meals=[]; try{ const {data}=await client.rpc("cb_tb_history",{p_limit:20}); meals=data||[]; }catch(e){}
-  let ids=[]; try{ const {data}=await client.rpc("cb_tb_history_produkte",{p_limit:90}); ids=(data||[]).map(x=>x.produkt_id); }catch(e){}
+  let meals=[]; try{ const {data}=await client.rpc("cb_tb_history",{p_limit:1000}); meals=data||[]; }catch(e){}
+  let ids=[]; try{ const {data}=await client.rpc("cb_tb_history_produkte",{p_limit:500}); ids=(data||[]).map(x=>x.produkt_id); }catch(e){}
   /* 20.08.: vierter Fall derselben Klasse (siehe tbFavList). Die Historie
      schlaegt Server-IDs im Katalog nach; ist er leer, sieht sie aus, als haette
      der Nutzer noch nie etwas eingetragen. */
@@ -15187,6 +15187,8 @@ async function loadRezepte(){
   const {data,error}=await client.rpc("cb_rezepte_list");
   if(error){document.getElementById("rezeptStats").textContent="Fehler: "+error.message;return;}
   REZEPTE=data;
+  /* 23.10.2026 (Ralph): ohne Premium sind nur die freien Rezepte offen - der Server sagt, welche zu sind. */
+  try{ const {data:zu}=await client.rpc("cb_rezepte_premium_gesperrt"); window._rezZu=new Set((zu||[]).map(x=>typeof x==="string"?x:(x&&x.cb_rezepte_premium_gesperrt)||"")); }catch(e){ window._rezZu=new Set(); }
   try{ const {data:fv}=await client.rpc("cb_rezept_fav_liste"); window._rezFav=new Set((fv||[]).map(x=>x.rezept_id)); }catch(e){ if(!window._rezFav) window._rezFav=new Set(); }
   try{ await Promise.all([ rezKatLoad(), rezVertLaden() ]); }catch(e){}
   try{ rezKatBarRender(); }catch(e){}
@@ -15595,7 +15597,7 @@ function renderRezeptList(){
      Antippen waehlt genau diese Art des Gerichts. Gleich in der App (RezeptKacheln). */
   try{ rezKachelnEinfuegen(g, q); }catch(e){ console.warn("rezKacheln:",e); }
   data.forEach(r=>{
-    const c=document.createElement("div");c.className="card";c.style.position="relative";c.dataset.rid=r.id;c.onclick=()=>rezeptDetail(r);
+    const c=document.createElement("div");c.className="card";c.style.position="relative";c.dataset.rid=r.id;const _zu=!!(window._rezZu&&window._rezZu.has(r.id));c.onclick=()=>{ if(_zu){ (ME?premiumInfo:openLogin)(); return; } rezeptDetail(r); };
     const rsc=rezeptScore(r), rbew=scoreBew(rsc);
     const _rfx = rsc!=null ? rezeptFluxAchsen(r) : null;
     const lead = _rfx ? fluxRingHtml(_rfx, rsc, farbe(rbew), 104)
@@ -15603,7 +15605,7 @@ function renderRezeptList(){
                : `<div class="badge" style="background:var(--green2)"><span class="num">${r.kcal??"–"}</span><span class="lbl">KCAL</span></div>`);
     const _fav=(window._rezFav&&window._rezFav.has(r.id));
     c.innerHTML=`<button onclick="event.stopPropagation();rezFavToggle('${r.id}',this)" title="Als Favorit" style="position:absolute;top:8px;right:8px;border:0;background:var(--k-w92);border-radius:50%;width:30px;height:30px;font-size:16px;line-height:1;cursor:pointer;color:${_fav?'var(--k-e11d48)':'var(--k-9aa7b2)'};box-shadow:0 1px 5px rgba(0,0,0,.15);z-index:2">${_fav?'♥':'♡'}</button>${lead}
-      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">${[r.zeit_min!=null?`⏱ ${r.zeit_min} min`:"", r.kcal!=null?`${r.kcal} kcal`:"", rezKatAktiv()?"":esc(r.ziel||"")].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}${rezVertZeile(r)}</div>`;
+      <div class="meta"><div class="name">${esc(r.name)}</div><div class="sub">${[r.zeit_min!=null?`⏱ ${r.zeit_min} min`:"", r.kcal!=null?`${r.kcal} kcal`:"", rezKatAktiv()?"":esc(r.ziel||"")].filter(Boolean).join(" · ")}</div><div style="margin-top:4px">${quelleChip(r)}${efChip(r.ernaehrungsform)}${mealChips(r.mahlzeiten)}${_zu?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;background:#FFD66B;color:#000">🔒 Premium</span>`:""}${r.gesperrt?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fde8e8);color:var(--k-dc2626)">⛔ gesperrt</span>`:""}${(ME&&ME.is_admin&&r.gemeldet)?`<span style="display:inline-block;margin-left:6px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--k-fff7e6);color:var(--k-b45309)">⚐ ${r.gemeldet}</span>`:""}</div>${rezKatAktiv()?`<div style="margin-top:2px">${rezKatChips(r)}${(ME&&ME.id)?`<span onclick="event.stopPropagation();rezKatAddOpen('${r.id}')" title="Zu einer eigenen, privaten Sammlung hinzufügen" style="display:inline-block;margin:3px 0 0 2px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px dashed var(--line);color:var(--muted);cursor:pointer">+ zu Sammlung</span>`:""}</div>`:""}${rezVertZeile(r)}</div>`;
     g.appendChild(c);
   });
   if(!(ME && hasFeat('rezepte_alle'))){
