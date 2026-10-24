@@ -1,43 +1,47 @@
-Lauf: 118 · Commit: 6cb99689c4114e7582c59e3a680d5a5cfbcf636c · 2026-10-23 18:58 UTC
+Lauf: 119 · Commit: 3454f7585227b5a3b16c0423b271b3534ebea189 · 2026-10-24 07:52 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
-  ... 2000 Produkte (zuletzt P11888)
-  ... 4000 Produkte (zuletzt P13867)
-  ... 6000 Produkte (zuletzt P1583)
-  ... 8000 Produkte (zuletzt P17724)
-  ... 10000 Produkte (zuletzt P19655)
-  ... 12000 Produkte (zuletzt P21676)
-  ... 14000 Produkte (zuletzt P23696)
-  ... 16000 Produkte (zuletzt P25730)
-  ... 18000 Produkte (zuletzt P27757)
-  ... 20000 Produkte (zuletzt P29784)
-  ... 22000 Produkte (zuletzt P31833)
-  ... 24000 Produkte (zuletzt P33930)
-  ... 26000 Produkte (zuletzt P35962)
-  ... 28000 Produkte (zuletzt P40955)
-  ... 30000 Produkte (zuletzt P43005)
-  ... 32000 Produkte (zuletzt P45023)
-  ... 34000 Produkte (zuletzt P47060)
-  ... 36000 Produkte (zuletzt P49098)
-  ... 38000 Produkte (zuletzt P51137)
-  ... 40000 Produkte (zuletzt P53183)
-  ... 42000 Produkte (zuletzt P55208)
-  ... 44000 Produkte (zuletzt P57265)
-  ... 46000 Produkte (zuletzt P59301)
-  ... 48000 Produkte (zuletzt P61325)
-  ... 50000 Produkte (zuletzt P63448)
-  ... 52000 Produkte (zuletzt P65514)
-  ... 54000 Produkte (zuletzt P67598)
-  ... 56000 Produkte (zuletzt P69642)
-  ... 58000 Produkte (zuletzt P71733)
-  ... 60000 Produkte (zuletzt P74199)
-Fertig geladen: 60998 Produkte
+  ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
+  ... 80 Produkte (zuletzt P10031)
+  ... 2080 Produkte (zuletzt P11969)
+  ... 4080 Produkte (zuletzt P1394)
+  ... 6080 Produkte (zuletzt P15903)
+  ... 8080 Produkte (zuletzt P17799)
+  ... 10080 Produkte (zuletzt P19737)
+  ... 12080 Produkte (zuletzt P21756)
+  ... 14080 Produkte (zuletzt P23777)
+  ... 16080 Produkte (zuletzt P25808)
+  ! nach id P26619: 200 Zeilen gingen nicht, versuche kleiner
+  ... 18160 Produkte (zuletzt P27916)
+  ... 20160 Produkte (zuletzt P29944)
+  ... 22160 Produkte (zuletzt P31992)
+  ... 24160 Produkte (zuletzt P34089)
+  ... 26160 Produkte (zuletzt P36124)
+  ... 28160 Produkte (zuletzt P41114)
+  ... 30160 Produkte (zuletzt P43169)
+  ... 32160 Produkte (zuletzt P45183)
+  ... 34160 Produkte (zuletzt P47222)
+  ... 36160 Produkte (zuletzt P49265)
+  ... 38160 Produkte (zuletzt P51303)
+  ... 40160 Produkte (zuletzt P53346)
+  ... 42160 Produkte (zuletzt P55370)
+  ... 44160 Produkte (zuletzt P57424)
+  ... 46160 Produkte (zuletzt P59464)
+  ... 48160 Produkte (zuletzt P61490)
+  ... 50160 Produkte (zuletzt P63614)
+  ... 52160 Produkte (zuletzt P65684)
+  ... 54160 Produkte (zuletzt P67760)
+  ... 56160 Produkte (zuletzt P69808)
+  ... 58160 Produkte (zuletzt P71897)
+  ... 60160 Produkte (zuletzt P74707)
+Fertig geladen: 61001 Produkte
 Herstellerbilder: 5 mit Freigabe.
 Alte Adressen aus Liste: 15
 Umleitungen (301): 5537
 Sitemap: davon neue Adressen umbenannter Produkte: 5422 von 5439
 ↪️  Weiterleitungen alter Adressen: 5537
-✅ Produktseiten: 60998 · Kategorien: 23 · Sitemap-URLs: 10027
+✅ Produktseiten: 61001 · Kategorien: 23 · Sitemap-URLs: 10027
+  ! nach id P81889: 200 Zeilen gingen nicht, versuche kleiner
 Geladen: 17614 Produkte (UK/US/FR)
 ✅ en: 1962 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 68
 ✅ fr: 15652 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 211
