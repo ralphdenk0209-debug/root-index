@@ -2602,7 +2602,7 @@ async function riEinladungUndCodePruefen(){
     if(e){ localStorage.removeItem('ri_einladung'); const {data}=await client.rpc('cb_einladung_annehmen',{p_code:e});
       const d=(typeof data==='string')?JSON.parse(data):data; if(d&&d.ok) toast('Willkommen! Deine Einladung ist angekommen.'); }
   }catch(_){}
-  try{ const c=localStorage.getItem('ri_gratis_code'); if(c) setTimeout(function(){ riCodeEinloesenOpen(c); },800); }catch(_){}
+  try{ const c=localStorage.getItem('ri_gratis_code'); if(c){ localStorage.removeItem('ri_gratis_code'); setTimeout(function(){ riCodeEinloesenOpen(c); },800); } }catch(_){}
 }
 if(typeof window!=="undefined"){ window.riErgebnisTeilen=riErgebnisTeilen; window.riEinladenOpen=riEinladenOpen; window.riCodeEinloesenOpen=riCodeEinloesenOpen; }
 /* 07.10.2026 (Apple 1.4.1): Quellen-Seite - Liste vom Server (cb_quellen_gesundheit), gleiche wie App. */
@@ -18066,7 +18066,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-25-01";
+const APP_BUILD="2026-10-25-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
