@@ -83,7 +83,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v16";
+const WORKER = "riki-scan-worker v17";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -196,7 +196,7 @@ async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, jo
   const vor = JSON.parse(JSON.stringify(v.lesung));
   if (r2) {
     const n = r2.d.vorschlag, m = vor.vorschlag;
-    for (const k of ["name", "marke", "kategorie_vorschlag", "bezug", "ean_auf_foto", "name_etikett", "bio", "nur_portionswerte"]) {
+    for (const k of ["name", "marke", "kategorie_vorschlag", "bezug", "ean_auf_foto", "name_etikett", "bio", "nur_portionswerte", "wirkstoffe_bezug", "verzehrempfehlung"]) {
       if (n[k] !== null && n[k] !== undefined && n[k] !== "") m[k] = n[k];
     }
     if (n.naehrwerte_100g && Object.values(n.naehrwerte_100g).some((x) => typeof x === "number")) m.naehrwerte_100g = n.naehrwerte_100g;
@@ -557,7 +557,10 @@ Deno.serve(async (req: Request) => {
           if (!name) { untauglich.push("Naehrstoff ohne Namen"); continue; }
           if (menge === null || menge < 0) { untauglich.push(`Naehrstoff "${name}": Menge unbrauchbar (${JSON.stringify(x?.menge)})`); continue; }
           const nrv = zahlOderNull(x?.nrv);
-          wirkGut.push({ name, menge: String(menge), einheit: x?.einheit == null ? null : String(x.einheit), nrv: nrv === null || nrv < 0 ? null : String(nrv) });
+          // v17 (25.10.2026 Ralph jaja): Bezug der Wirkstoffmenge und Verzehrempfehlung aus der Lesung mitgeben
+          const bz = ["tagesdosis", "pro_portion", "pro_100g", "pro_100ml"].includes(String(v.wirkstoffe_bezug ?? "")) ? String(v.wirkstoffe_bezug) : null;
+          const vz = typeof v.verzehrempfehlung === "string" && v.verzehrempfehlung.trim() ? v.verzehrempfehlung.trim().slice(0, 300) : null;
+          wirkGut.push({ name, menge: String(menge), einheit: x?.einheit == null ? null : String(x.einheit), nrv: nrv === null || nrv < 0 ? null : String(nrv), bezug: bz, verzehr: vz });
         }
         const mikro = Array.isArray(v.mikronaehrstoffe_100g) ? v.mikronaehrstoffe_100g : [];
         const mikroGut: Array<Record<string, unknown>> = [];

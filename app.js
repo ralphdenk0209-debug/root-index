@@ -2602,7 +2602,7 @@ async function riEinladungUndCodePruefen(){
     if(e){ localStorage.removeItem('ri_einladung'); const {data}=await client.rpc('cb_einladung_annehmen',{p_code:e});
       const d=(typeof data==='string')?JSON.parse(data):data; if(d&&d.ok) toast('Willkommen! Deine Einladung ist angekommen.'); }
   }catch(_){}
-  try{ const c=localStorage.getItem('ri_gratis_code'); if(c) setTimeout(function(){ riCodeEinloesenOpen(c); },800); }catch(_){}
+  try{ const c=localStorage.getItem('ri_gratis_code'); if(c){ localStorage.removeItem('ri_gratis_code'); setTimeout(function(){ riCodeEinloesenOpen(c); },800); } }catch(_){}
 }
 if(typeof window!=="undefined"){ window.riErgebnisTeilen=riErgebnisTeilen; window.riEinladenOpen=riEinladenOpen; window.riCodeEinloesenOpen=riCodeEinloesenOpen; }
 /* 07.10.2026 (Apple 1.4.1): Quellen-Seite - Liste vom Server (cb_quellen_gesundheit), gleiche wie App. */
@@ -8834,6 +8834,7 @@ async function renderStart(){
        (riBanderoleKopf) - dort steht sie auf jeder Seite, nicht nur auf der
        Startseite. Hier wird sie NICHT mehr gebaut, sonst stuende sie doppelt
        (§1.11n-p: toter Code, der dieselben IDs vergibt, ist eine geladene Falle). */
+    riErsterScanHtml()+
     startKennzahlen(sum, prof)
     /* 19.09.2026 (Ralph): "mach raster 3x3 weil wir aktuell 9 kacheln haben.
        wasser, schlaf und schritte darf aufklappen." Aus drei Zweierreihen mit
@@ -9261,8 +9262,24 @@ function startProdSearch(v){ navTo('produkte'); setTimeout(function(){ var el=do
    Jetzt: Die Kamera legt sich UEBER das, was da ist. Man scannt, bekommt sein
    Ergebnis, schliesst - und steht wieder genau dort, wo man war.
    =========================================================================== */
+/* 25.10.2026 (Ralph: "lass uns das so machen"): Neue Nutzer sehen oben auf der Startseite
+   einen grossen ersten Schritt "Scanne ein Produkt aus deinem Kuehlschrank". Er verschwindet,
+   sobald auf diesem Geraet einmal der Scanner geoeffnet wurde oder man ihn wegklickt. */
+function riErsterScanHtml(){
+  try{ if(localStorage.getItem('ri_erster_scan')==='1') return ''; }catch(e){ return ''; }
+  return '<div id="riErsterScan" style="position:relative;border-radius:16px;padding:18px 16px;margin-bottom:12px;background:radial-gradient(130% 130% at 50% 0%,#1F5E39,#0B1710 70%);color:#fff;box-shadow:0 10px 28px rgba(15,40,25,.30)">'
+    +'<button onclick="riErsterScanWeg()" aria-label="Ausblenden" style="position:absolute;top:8px;right:10px;border:0;background:none;color:rgba(255,255,255,.55);font-size:18px;cursor:pointer">✕</button>'
+    +'<div style="font-size:12px;font-weight:700;letter-spacing:.6px;color:#5EF2A0;text-transform:uppercase">Dein erster Schritt</div>'
+    +'<div style="font-size:19px;font-weight:800;margin:4px 0 6px">Scanne ein Produkt aus deinem Kühlschrank</div>'
+    +'<div style="font-size:13.5px;color:rgba(255,255,255,.72);line-height:1.5;margin-bottom:12px">Joghurt, Wurst, Müsli – egal was. In Sekunden siehst du, was wirklich drin ist.</div>'
+    +'<button onclick="riErsterScanLos()" style="width:100%;padding:13px;border:0;border-radius:12px;background:#5EF2A0;color:#0A1710;font-size:16px;font-weight:800;cursor:pointer">📷 Jetzt scannen</button>'
+    +'</div>';
+}
+function riErsterScanWeg(){ try{ localStorage.setItem('ri_erster_scan','1'); }catch(e){} var k=document.getElementById('riErsterScan'); if(k) k.remove(); }
+function riErsterScanLos(){ riErsterScanWeg(); startProdScan(); }
 function startProdScan(){
   if(riMussAnmelden()) return;
+  try{ localStorage.setItem('ri_erster_scan','1'); }catch(e){}
   /* 28a (Ralph): Im TAGEBUCH scannt der große Knopf direkt INS Tagebuch (derselbe Weg wie
      der frühere kleine ▦-Knopf: Scan -> Produkt -> Mengen-Ansicht -> Eintrag). Überall
      sonst bleibt die Produkt-Suche unverändert. */
@@ -18066,7 +18083,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-25-01";
+const APP_BUILD="2026-10-25-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
