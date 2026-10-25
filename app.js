@@ -1737,6 +1737,7 @@ async function applyAuthState(session){
   _authStand = kennung;
   if(session){ await refreshMe(); } else { ME=null; TB_USER="U001"; await refreshMyFeatures(); }
   updateAuthUI(); updateGate();
+  try{ if(session) riEinladungUndCodePruefen(); }catch(e){}
   /* 15.10.2026: ohne Konto zurueck auf die Startseite (z. B. Link mit ?p= ohne Anmeldung). */
   if(!session && !(typeof window!=='undefined' && window.__ADMIN_PAGE===true)){
     try{ if(window._curMode && window._curMode!=='start') setMode('start'); }catch(e){}
@@ -2485,6 +2486,110 @@ function wunschOpen(){
   };
 }
 if(typeof window!=="undefined") window.wunschOpen=wunschOpen;
+
+/* ===== 25.10.2026 (Ralph): Teilen, Einladen, Gratis-Codes =====
+   Server entscheidet alles (cb_mein_einladungscode, cb_einladung_annehmen,
+   cb_gratis_code_einloesen). Im iPhone-Rahmen (riNativeApp) KEIN eigener Code -
+   Apple erlaubt dort nur Apple-Angebotscodes (Richtlinie 3.1.1). */
+function riBlatt(id, inner){
+  const alt=document.getElementById(id); if(alt) alt.remove();
+  const ov=document.createElement('div'); ov.id=id;
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:10050;display:flex;align-items:flex-end;justify-content:center';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  ov.innerHTML='<div style="background:var(--card,#fff);border-radius:18px 18px 0 0;padding:16px 16px 22px;width:100%;max-width:520px;color:var(--ink)">'+inner
+    +'<button onclick="document.getElementById(\''+id+'\').remove()" style="margin-top:10px;width:100%;background:none;border:1px solid var(--line);color:var(--muted);border-radius:12px;padding:10px;font-size:13px;cursor:pointer">Schließen</button></div>';
+  document.body.appendChild(ov); return ov;
+}
+async function riTeilenText(titel, text, url, datei){
+  try{
+    if(datei && navigator.canShare && navigator.canShare({files:[datei]})){ await navigator.share({title:titel,text:text+' '+url,files:[datei]}); return true; }
+    if(navigator.share){ await navigator.share({title:titel,text:text,url:url}); return true; }
+  }catch(e){ if(e && e.name==='AbortError') return false; }
+  try{ await navigator.clipboard.writeText(text+' '+url); toast('Link kopiert – jetzt einfügen und teilen.'); return true; }catch(e){}
+  prompt('Zum Teilen kopieren:', text+' '+url); return true;
+}
+function riScoreBild(t){
+  return new Promise(function(res){
+    try{
+      const W=1080,H=1080,c=document.createElement('canvas'); c.width=W; c.height=H; const x=c.getContext('2d');
+      x.fillStyle='#133521'; x.fillRect(0,0,W,H);
+      const sc=(t.score==null)?null:Math.round(t.score);
+      const col= sc==null?'#8fa79a': sc>=75?'#22c55e': sc>=50?'#facc15': sc>=25?'#fb923c':'#ef4444';
+      x.textAlign='center'; x.fillStyle='#e6ece8'; x.font='600 40px system-ui,-apple-system,sans-serif';
+      x.fillText((t.marke||'').slice(0,40), W/2, 150);
+      x.fillStyle='#fff'; x.font='800 58px system-ui,-apple-system,sans-serif';
+      const n=String(t.name||''); const z1=n.slice(0,30), z2=n.length>30?n.slice(30,60)+(n.length>60?'…':''):'';
+      x.fillText(z1, W/2, 230); if(z2) x.fillText(z2, W/2, 300);
+      x.beginPath(); x.arc(W/2,590,190,0,Math.PI*2); x.lineWidth=26; x.strokeStyle=col; x.stroke();
+      x.fillStyle='#fff'; x.font='800 150px system-ui,-apple-system,sans-serif'; x.fillText(sc==null?'–':String(sc), W/2, 640);
+      x.fillStyle='#cfd8d3'; x.font='600 34px system-ui,-apple-system,sans-serif'; x.fillText(t.voll===false?'von 100 · vorläufig':'von 100', W/2, 700);
+      x.fillStyle='#fff'; x.font='800 54px system-ui,-apple-system,sans-serif'; x.fillText('Root Index™', W/2, 900);
+      x.fillStyle='#cfd8d3'; x.font='500 34px system-ui,-apple-system,sans-serif'; x.fillText('Wir lesen die Rückseite · root-index.de', W/2, 960);
+      c.toBlob(function(b){ res(b? new File([b],'root-index.png',{type:'image/png'}) : null); },'image/png');
+    }catch(e){ res(null); }
+  });
+}
+async function riErgebnisTeilen(t){
+  if(!t||!t.id){ toast('Nichts zum Teilen.'); return; }
+  const url='https://root-index.de/?p='+encodeURIComponent(t.id);
+  const txt=(t.score==null? (t.name+' – angeschaut mit Root Index.') : (t.name+': '+Math.round(t.score)+' von 100 im Root Index.'));
+  const bild=await riScoreBild(t);
+  riTeilenText('Root Index', txt, url, bild);
+}
+async function riEinladenOpen(){
+  if(!ME){ openLogin(); return; }
+  riBlatt('riEinlOv','<div style="font-weight:800;font-size:16px;margin-bottom:4px">❤️ Freund einladen</div><div id="riEinlInhalt" style="font-size:13px;color:var(--muted)">Lädt …</div>');
+  try{
+    const {data,error}=await client.rpc('cb_mein_einladungscode'); if(error) throw error;
+    const d=(typeof data==='string')?JSON.parse(data):data; const el=document.getElementById('riEinlInhalt'); if(!el) return;
+    if(!d||!d.ok){ el.textContent=(d&&d.grund)||'Gerade nicht möglich.'; return; }
+    el.innerHTML='<div style="line-height:1.55;margin-bottom:10px">Für jeden Freund, der sich mit deinem Link neu anmeldet, bekommst du <b>'+d.tage_je_freund+' Tage Premium</b> geschenkt.</div>'
+      +'<div style="font-size:12px;margin-bottom:4px">Dein Code</div><div style="font-size:24px;font-weight:800;letter-spacing:3px;color:var(--ink);margin-bottom:10px">'+esc(d.code)+'</div>'
+      +'<button id="riEinlTeilen" style="width:100%;background:var(--k-16a34a,#16a34a);color:#fff;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Einladung teilen</button>'
+      +'<div style="font-size:12px;margin-top:10px">Bisher eingeladen: <b>'+d.eingeladen+'</b> · geschenkt: <b>'+d.belohnung_tage+' Tage</b></div>';
+    document.getElementById('riEinlTeilen').onclick=function(){ riTeilenText('Root Index','Ich nutze Root Index, um zu sehen, was wirklich in Lebensmitteln steckt – unabhängig und ohne Werbung. Probier es aus:', d.link); };
+  }catch(e){ const el=document.getElementById('riEinlInhalt'); if(el) el.textContent='Fehler: '+(e.message||e); }
+}
+function riCodeEinloesenOpen(vorgabe){
+  if(typeof riNativeApp==='function' && riNativeApp()){
+    riBlatt('riCodeOv','<div style="font-weight:800;font-size:16px;margin-bottom:6px">Code einlösen</div><div style="font-size:13px;color:var(--muted);line-height:1.55">In der iPhone-App löst du Codes über den App Store ein: App Store öffnen → oben dein Profilbild → „Geschenkkarte oder Code einlösen“.</div>');
+    return;
+  }
+  if(!ME){ try{ if(vorgabe) localStorage.setItem('ri_gratis_code', vorgabe); }catch(e){} openLogin(); return; }
+  riBlatt('riCodeOv','<div style="font-weight:800;font-size:16px;margin-bottom:4px">Code einlösen</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px">Gib deinen Gutschein- oder Aktionscode ein. Premium wird sofort freigeschaltet – ohne Abo, ohne Zahlungsdaten.</div>'
+    +'<input id="riCodeFeld" maxlength="32" autocapitalize="characters" placeholder="z. B. FOLLOW3M" value="'+esc(vorgabe||'')+'" style="width:100%;box-sizing:border-box;padding:11px;border:1px solid var(--line);border-radius:11px;font-size:16px;letter-spacing:1px;text-transform:uppercase;background:var(--card);color:var(--ink)">'
+    +'<div id="riCodeMeld" style="font-size:13px;margin-top:8px"></div>'
+    +'<button id="riCodeLos" style="margin-top:10px;width:100%;background:var(--k-16a34a,#16a34a);color:#fff;border:0;border-radius:12px;padding:12px;font-size:14px;font-weight:800;cursor:pointer">Einlösen</button>');
+  document.getElementById('riCodeLos').onclick=async function(){
+    const b=this, m=document.getElementById('riCodeMeld'); b.disabled=true;
+    try{
+      const {data,error}=await client.rpc('cb_gratis_code_einloesen',{p_code:(document.getElementById('riCodeFeld').value||'')}); if(error) throw error;
+      const d=(typeof data==='string')?JSON.parse(data):data;
+      if(d&&d.ok){
+        try{ localStorage.removeItem('ri_gratis_code'); }catch(e){}
+        const bis=d.premium_bis? new Date(d.premium_bis).toLocaleDateString('de-DE'):'';
+        m.innerHTML='<span style="color:var(--greendk,#166534);font-weight:700">✓ '+d.tage+' Tage Premium freigeschaltet'+(bis?' – bis '+bis:'')+'.</span>';
+        try{ await refreshMe(); await refreshMyFeatures(); updateAuthUI(); updateGate(); }catch(e){}
+      } else { b.disabled=false; m.innerHTML='<span style="color:#b91c1c">'+esc((d&&d.grund)||'Nicht eingelöst.')+'</span>'; }
+    }catch(e){ b.disabled=false; m.innerHTML='<span style="color:#b91c1c">Fehler: '+esc(e.message||String(e))+'</span>'; }
+  };
+}
+/* Links: root-index.de/?einladung=CODE und root-index.de/?code=FOLLOW3M */
+(function(){ try{ const p=new URLSearchParams(location.search);
+  const e=p.get('einladung'); if(e) localStorage.setItem('ri_einladung', e.toUpperCase().slice(0,12));
+  const c=p.get('code'); if(c) localStorage.setItem('ri_gratis_code', c.toUpperCase().slice(0,32));
+}catch(_){} })();
+async function riEinladungUndCodePruefen(){
+  if(!ME) return;
+  try{
+    const e=localStorage.getItem('ri_einladung');
+    if(e){ localStorage.removeItem('ri_einladung'); const {data}=await client.rpc('cb_einladung_annehmen',{p_code:e});
+      const d=(typeof data==='string')?JSON.parse(data):data; if(d&&d.ok) toast('Willkommen! Deine Einladung ist angekommen.'); }
+  }catch(_){}
+  try{ const c=localStorage.getItem('ri_gratis_code'); if(c) setTimeout(function(){ riCodeEinloesenOpen(c); },800); }catch(_){}
+}
+if(typeof window!=="undefined"){ window.riErgebnisTeilen=riErgebnisTeilen; window.riEinladenOpen=riEinladenOpen; window.riCodeEinloesenOpen=riCodeEinloesenOpen; }
 /* 07.10.2026 (Apple 1.4.1): Quellen-Seite - Liste vom Server (cb_quellen_gesundheit), gleiche wie App. */
 async function quellenOpen(){
   const alt=document.getElementById('quellenOv'); if(alt) alt.remove();
@@ -3529,6 +3634,7 @@ function detail2(d){
   }catch(e){}
   if(String(d.kategorie||"").toLowerCase()==="supplement"){ return suppKarte(d); }
   var _istSalz=String(d.kategorie||"").toLowerCase()==="salze";
+  try{ window._pkTeilen={id:d.id,name:d.name,marke:(typeof mkLabel==='function'?mkLabel(d.marke):d.marke)||'',score:(d.ohne_index||_istSalz)?null:num(d.clean_score),voll:!!d.score_vollstaendig}; }catch(e){}
   var s=num(d.clean_score);
   var voll=!!d.score_vollstaendig;
   var bewTxt = voll ? (d.bewertung||"") : "Vorläufig";
@@ -3743,6 +3849,8 @@ function detail2(d){
       + '<div class="marke" style="margin:0">'+((mkLabel(d.marke)?esc(mkLabel(d.marke))+' · ':'')+esc(d.kategorie||''))+(d.unterkategorie?(' · '+esc(d.unterkategorie)):'')+'</div>'
       + ((efPill(d.ernaehrungsform)||bioPill(d)||bratenPill(d)||salmiakPill(d))?('<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+efPill(d.ernaehrungsform)+bioPill(d)+bratenPill(d)+salmiakPill(d)+'</div>'):'')
     + '</div>'
+    /* 25.10.2026 (Ralph, Yuka-Recherche): "Ergebnis teilen" - Bild mit Score + Link. */
+    + '<div style="margin:8px 0 2px"><button onclick="riErgebnisTeilen(window._pkTeilen)" style="padding:7px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer">📤 Ergebnis teilen</button></div>'
     + warn
     + (d.ohne_index?'<div style="margin:12px 0 6px;padding:12px 14px;border:1px solid var(--k-e4a343,#e4a343);border-radius:12px;background:var(--k-fff7ea,#fff7ea);font-size:12.5px;line-height:1.55;color:var(--k-7a5c1e,#7a5c1e)"><b>🌱 Bewusst ohne Index.</b> Für dieses Produkt gibt es keine belegbaren Nährwerte (typisch bei frischen Sprossen/Keimlingen – weder Hersteller noch BLS/USDA führen Werte). Wir zeigen lieber keine Zahl als eine erfundene.</div>':'')
     /* Platz fuer den Rueckstands-Hinweis. Er wird NACH dem Zeichnen befuellt, weil die
@@ -9267,6 +9375,9 @@ var MFAN_GRUPPEN=[
      was kostet es und wie komme ich wieder raus. */
   ['abo','Abo & Konto','star','#ffc24b',[
     ['Premium','star','#ffc24b',function(){ premiumInfo(); }],
+    /* 25.10.2026 (Ralph): Einladen mit Belohnung + Gratis-Codes. */
+    ['Freund einladen','heart','#ff6fa8',function(){ riEinladenOpen(); }],
+    ['Code einlösen','star','#ffc24b',function(){ riCodeEinloesenOpen(); }],
     ['Verträge hier kündigen','stop','#8fa79a',function(){ riKuendigenFormular(); }],
     ['Zahlungsdaten & Rechnungen','card','#8fa79a',function(){ startPortal(); }],
     ['Abmelden','logout','#8fa79a',function(){ doLogout(); }],
@@ -17940,7 +18051,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD = "2026-10-23-01";
+const APP_BUILD = "2026-10-25-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
