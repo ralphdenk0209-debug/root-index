@@ -112,7 +112,18 @@ async function loadUsers(){
   if(gate)gate.style.display="none"; if(inner)inner.style.display="";
   const {data,error}=await client.rpc("cb_users_list");
   if(error){ document.getElementById("usersTable").innerHTML='<div style="color:var(--k-dc2626)">Fehler: '+esc(error.message)+'</div>'; return; }
+  /* 25.10.2026, Ralph: "ob web oder apple anmeldung oder ggf dann play store". Eigene Abfrage
+     (Geraete aus den Anmelde-Sitzungen, Play-App meldet sich selbst) - cb_users_list bleibt unveraendert. */
+  try{ const pl=await client.rpc("cb_admin_nutzer_plattform"); var pm={}; (pl.data||[]).forEach(function(x){ pm[x.benutzer_id]=x; });
+    (data||[]).forEach(function(u){ u._pl=pm[u.benutzer_id]||null; }); }catch(e){}
   renderUsers(data||[]);
+}
+var _UP_FARBE={'iPhone-App':['#0a84ff','📱'],'Play-App':['#1a9c4a','🤖'],'Android':['#5f7f6a','🤖'],'iPhone-Browser':['#6b7280','🌐'],'Web':['#6b7280','🌐']};
+function _uUeber(u){
+  var p=u._pl; if(!p) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
+  var g=(p.geraete||[]).map(function(k){ var f=_UP_FARBE[k]||['#6b7280','']; var name=(k==='Android'?'Android (Browser/App)':k);
+    return '<span title="'+esc(name)+(k===p.zuerst?' – zuerst gesehen':'')+'" style="display:inline-block;margin:0 3px 3px 0;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;color:#fff;background:'+f[0]+(k===p.zuerst?';box-shadow:0 0 0 2px var(--card),0 0 0 3px '+f[0]:'')+'">'+f[1]+' '+esc(k)+'</span>'; }).join('');
+  return '<div>'+(g||'<span style="color:var(--k-c7c2b8)">\u2013</span>')+'</div><div style="font-size:11px;color:var(--muted)">'+esc(p.anmeldung||'')+'</div>';
 }
 function _uDate(s){ if(!s) return '–'; try{ return new Date(s).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return '–'; } }
 /* Ralph-Auftrag 06.09.2026: sichtbar machen, wer Produkte erfasst hat.
@@ -223,7 +234,7 @@ function renderUsers(rows){
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
   h+='<div style="width:100%">'
    +'<table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
-  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
+  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
   rows.forEach(u=>{
     const trial = u.subscription_status==='trialing' && u.trial_bis && new Date(u.trial_bis)>new Date();
     let abo;
@@ -234,6 +245,7 @@ function renderUsers(rows){
     const td='padding:8px 7px;font-size:12.5px;vertical-align:top';
     h+='<tr style="border-top:1px solid var(--line)">'
       +'<td style="'+td+'"><div style="font-weight:600">'+esc(u.name||u.benutzer_id)+'</div><div style="font-size:12px;color:var(--muted)">'+esc(u.email||"")+'</div></td>'
+      +'<td style="'+td+';min-width:120px">'+_uUeber(u)+'</td>'
       +'<td style="'+td+';text-align:center">'+rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')")+'</td>'
       +'<td style="'+td+'">'+abo+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uErf(u)+'</td>'

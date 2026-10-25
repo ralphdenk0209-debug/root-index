@@ -1534,6 +1534,21 @@ if(localStorage.getItem("ri_intern")==="1")q="eigen";}catch(e){}
       body:JSON.stringify({p_seite:"app",p_quelle:q})}).catch(function(){});
   }catch(e){}
 })();
+/* 25.10.2026, Ralph: im Admin sehen, wer ueber die Play-Store-App kommt. Die Play-App (TWA) sieht fuer
+   den Server aus wie Chrome - sie verraet sich nur beim Start ueber den Referrer android-app://de.rootindex.app.
+   Einmal je Sitzung, nur angemeldet, nur die Angabe "play" (cb_plattform_melden). */
+(function(){
+  try{
+    if(/^android-app:\/\/de\.rootindex\.app/.test(document.referrer||"")) sessionStorage.setItem("ri_twa","1");
+    if(sessionStorage.getItem("ri_twa")!=="1") return;
+    var n=0, t=setInterval(async function(){
+      n++; if(n>40 || sessionStorage.getItem("ri_twa_gemeldet")==="1"){ clearInterval(t); return; }
+      try{ var r=await client.auth.getSession(); if(r && r.data && r.data.session){
+        clearInterval(t); sessionStorage.setItem("ri_twa_gemeldet","1");
+        client.rpc("cb_plattform_melden",{p_plattform:"play"}).then(function(){},function(){}); } }catch(e){}
+    }, 3000);
+  }catch(e){}
+})();
 async function startPortal(){
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativeManage(); }
   try{
