@@ -1,5 +1,9 @@
 // RIKI-SCAN-WORKER
 //
+// v16 (2026-10-25, Ralph jaja): VORLESUNG NUR BEI EINEM FOTO. Bei mehreren Fotos liest riki-etikett alle
+//   gemeinsam (Weg wie v14) - sonst fehlten Zutaten von Foto 2 und "pro Portion" von Foto 2 ueberstimmte
+//   die 100-g-Tabelle von Foto 1 (Fall P96433, Job 183).
+//
 // v15 (2026-10-07, Ralph jaja „Maschine starten, sobald das erste Foto gemacht wurde"): VORLESUNG.
 //   App/Web schicken das Zutatenfoto sofort (cb_riki_scan_vorlesen). Modus body.vorlesung_id liest es
 //   allein: Schnell-Check + Zutaten (nur_zeilen) -> shadow_v1.riki_scan_vorlesung. Kommt danach der
@@ -79,7 +83,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v15";
+const WORKER = "riki-scan-worker v16";
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -163,6 +167,12 @@ async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, jo
   const { data: v0 } = await sb.rpc("cb_riki_scan_vorlesung_fuer_job", { p_job_id: job.job_id, p_ean: String(job.ean ?? "") });
   if (!v0 || !v0.foto_sha) return null;
   if (v0.schnellcheck?.antwort === "nein") return null;
+  // v16 (25.10.2026, Ralph jaja): mehr als ein Foto -> keine Abkuerzung. Laeuft die Zutatenliste ueber
+  // zwei Fotos (P96433: links/rechts abgeschnitten), las die Vorlesung nur Foto 1 und die Zweitlesung
+  // ausdruecklich ohne Zutaten -> Liste verdreht; zudem ueberstimmte "16 g pro Portion" auf Foto 2 die
+  // 100-g-Tabelle auf Foto 1 (nur_portionswerte). Eine gemeinsame Lesung aller Fotos sieht beides.
+  // Zeit gleich (die Zweitlesung dauerte ohnehin so lange), Kosten: Zutaten einmal mehr gelesen.
+  if (images.length > 1) return null;
   const shas = await Promise.all(images.map(sha256Hex));
   const idx = shas.indexOf(v0.foto_sha);
   if (idx < 0) return null;
