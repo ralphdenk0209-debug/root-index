@@ -259,6 +259,13 @@ const SCHNELL=[
   ['Produkttabelle','produkte-tabelle.html','_blank'],['Video-Skript','video-skript-01.html','_blank'],['Steuerung','steuerung.html','_blank'],
   ['Altes Cockpit','cockpit.html','_blank'],['Weltall','cockpit-weltall.html','_blank']];
 $('schnell').innerHTML=SCHNELL.map(s=>'<a href="'+s[1]+'" target="'+s[2]+'" rel="noopener">'+esc(s[0])+'</a>').join('');
+/* 25.10.2026: Im Admin eingebettet die Bereiche direkt oeffnen (parent.adminGo), statt admin.html neu zu laden -
+   schneller und ohne Wettlauf mit dem Start-Sprung aufs Dashboard. Gilt fuer alle Knoepfe mit admin.html?go=. */
+document.addEventListener('click',function(ev){
+  var a=ev.target.closest&&ev.target.closest('a[href*="admin.html?go="]'); if(!a) return;
+  try{ if(window.parent!==window && typeof window.parent.adminGo==='function'){
+    ev.preventDefault(); window.parent.adminGo(new URL(a.href,location.href).searchParams.get('go')); } }catch(e){}
+});
 
 async function laden(){
   /* 18.10. abends: liest den vorgerechneten Stand (alle 5 Min., Cron mischpult-cache) - die Live-Rechnung dauert > 8 s. */

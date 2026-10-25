@@ -168,6 +168,8 @@ function applyAdminMode(){
       var b=''; try{ if(typeof APP_BUILD!=='undefined'&&APP_BUILD){ b=String(APP_BUILD); } }catch(e){}
       k.innerHTML='<span class="riGi">▦</span>'
         +'<span class="riWm">ROOT<b>COCKPIT</b></span>'
+        /* 25.10.2026: Rueckweg zum Mischpult, seit das linke Menue ausgeblendet ist. */
+        +'<button id="riHome" type="button" onclick="try{adminGo(\'dash\')}catch(e){}" title="Zurück zum Mischpult">🎛 Mischpult</button>'
         +'<span class="riR">'
           +'<button id="riMail" onclick="try{navTo(\'postfach\');}catch(e){}" title="Postfach kontakt@root-index.de" '
             +'style="position:relative;border:0;background:transparent;color:inherit;font-size:15px;cursor:pointer;padding:1px 6px;line-height:1">'

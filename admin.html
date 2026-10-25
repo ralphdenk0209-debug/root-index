@@ -1484,7 +1484,7 @@
 window.__ADMIN_PAGE=true;</script>
 <script src="ladestelle.js?v=1.0.34"></script>
 <script src="riegel-kern.js?v=1.0.34"></script>
-<script src="adminnav.js?v=1.0.34"></script>
+<script src="adminnav.js?v=1.0.35"></script>
 <script src="admin-benutzer-ui.js?v=1.0.34"></script>
 <script src="fotostudio-ui.js?v=1.0.34"></script>
 <script src="intro-ui.js?v=1.0.34"></script>
@@ -1529,6 +1529,8 @@ window.loadDashboard=function(){
       var n=document.getElementById('adminNav'); var r=n?n.getBoundingClientRect():{top:0,right:0,bottom:0};
       var seite=document.body.classList.contains('navSeite');
       var top=Math.max(0,seite?r.top:r.bottom), left=Math.max(0,seite?r.right:0);
+      /* 25.10.2026: linkes Menue ist ausgeblendet - Rahmen beginnt unter der Kopfleiste und am linken Rand. */
+      if(seite){ var kk=document.getElementById('riKopf'); top=kk?Math.max(0,kk.getBoundingClientRect().bottom):44; left=0; }
       f.style.top=top+'px'; f.style.left=left+'px'; f.style.width=(window.innerWidth-left)+'px'; f.style.height=(window.innerHeight-top)+'px';
     };
     lage(); window.addEventListener('resize',lage);
@@ -1765,6 +1767,14 @@ window.loadDashboard=function(){
   #fgDash .ab .abfrei .abhilf.x{top:0;bottom:0;width:1px;margin-left:-0.5px;}
   #fgDash .ab .abfrei .abhilf.y{left:0;right:0;height:1px;margin-top:-0.5px;}
   body.navSeite.navSchmal .container{padding-left:calc(var(--nav-schmal) + 20px) !important;}
+  /* 25.10.2026, Ralph: "die linke seitenleiste soll weg, aber nur wenn alles in der mitte zu finden ist".
+     Alle Menuepunkte stehen in der Schnellwahl des Mischpults; Rueckweg ist der Knopf "Mischpult" oben links.
+     Die Knoepfe bleiben im DOM (adminGo markiert sie weiter), sie sind nur unsichtbar. */
+  body.navSeite #adminNav{display:none !important;}
+  body.navSeite{--nav-breit:0px;--nav-schmal:0px;}
+  body.navSeite #riKopf #riHome{border:1px solid #3a4148;background:transparent;color:#fff;border-radius:7px;
+    padding:3px 10px;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+  body.navSeite #riKopf #riHome:hover{border-color:var(--green);color:var(--green)}
   /* Die alten Unter-Reiter im Content sind jetzt Teil des Menues -> ausblenden. */
   #fgTabs{display:none !important;}
   /* Produkt-Erfassung: heller Arbeits-Hintergrund, damit der (helle) Editor nicht auf dunklem
@@ -1789,7 +1799,10 @@ window.loadDashboard=function(){
         if(ME.is_admin && !routed){
           routed=true;
           /* Dashboard (= eingebettetes Cockpit) als Start – über adminGo, damit der linke Menüpunkt markiert ist. */
-          setTimeout(function(){ try{ if(typeof adminGo==='function') adminGo('dash'); else navTo('freigabe'); }catch(e){} }, 250);
+          /* 25.10.2026: Mit ?go=<bereich> (Sprung aus dem Mischpult) NICHT aufs Dashboard springen -
+             sonst ueberschreibt dieser Start den Sprung (Ralph: "nutzer funktioniert nur im linken menue"). */
+          var _hatGo=false; try{ _hatGo=!!new URLSearchParams(location.search).get('go'); }catch(e){}
+          if(!_hatGo) setTimeout(function(){ try{ if(typeof adminGo==='function') adminGo('dash'); else navTo('freigabe'); }catch(e){} }, 250);
         }
       }
     }catch(e){}
