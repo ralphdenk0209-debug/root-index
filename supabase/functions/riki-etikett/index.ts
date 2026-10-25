@@ -152,6 +152,12 @@ Keine Prozentangaben, keine Zutatenaufzählung, keine Markennamen im Namen. Unsi
 
 === WIRKSTOFF-MENGEN ===
 Je Stoff Name, Menge, Einheit mg|µg|g|IU und falls sichtbar nrv. Nichts umrechnen. FCC ist nicht IU; IU ist nicht mg; g ist nicht mg. Keine Menge => kein Wirkstoffeintrag.
+wirkstoffe_bezug (25.10.2026): worauf sich die Wirkstoff-Spalte bezieht, NUR aus dem sichtbaren Spaltenkopf/Text:
+  "tagesdosis"  nur wenn das Etikett ausdruecklich Tagesdosis/Tagesportion nennt (z. B. "pro Tagesdosis", "pro Kapsel (= Tagesdosis)", "pro Tagesportion")
+  "pro_portion" pro Kapsel/Tablette/Messloeffel/Portion OHNE Tagesdosis-Angabe
+  "pro_100g" / "pro_100ml" bei einer 100-g-/100-ml-Spalte
+  sonst null. Nie aus der Verzehrempfehlung schliessen, nie raten.
+verzehrempfehlung: der sichtbare Wortlaut der Verzehrempfehlung, kurz (z. B. "Täglich 1 Kapsel unzerkaut mit Flüssigkeit"), sonst null.
 
 === MIKRONÄHRSTOFFE JE 100 g ===
 Nur sichtbare 100-g/100-ml-Spalte; nie aus Portion hochrechnen. Je Eintrag Name, Menge, Einheit mg|µg|g.
@@ -183,6 +189,8 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
     \"begruendung\": string
   } ],
   \"wirkstoffe\": [ { \"name\": string, \"menge\": number, \"einheit\": \"mg\"|\"µg\"|\"g\"|\"IU\", \"nrv\": number|null } ],
+  \"wirkstoffe_bezug\": \"tagesdosis\"|\"pro_portion\"|\"pro_100g\"|\"pro_100ml\"|null,
+  \"verzehrempfehlung\": string|null,
   \"mikronaehrstoffe_100g\": [ { \"name\": string, \"menge\": number, \"einheit\": \"mg\"|\"µg\"|\"g\" } ],
   \"zusatzstoffe\": { \"text\": string, \"e_nummern\": string[], \"status\": \"keine\"|\"neutral\"|\"enthalten\", \"suessstoffe\": boolean },
   \"warnungen\": string[],
