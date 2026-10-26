@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dein Geschenk – Root Index</title>
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="3 Monate Root Index Premium – ein Geschenk deiner Ernährungsberatung.">
+<meta name="description" content="Root Index Premium geschenkt – Code einlösen.">
 <!-- klientin.html · 26.10.2026 · Ralph: eigene Anmeldeseite fuer Klientinnen von Fachleuten.
      Weg: Link mit persoenlichem Einzelcode (?code=KUERZEL-XXXX) -> Konto anlegen oder anmelden ->
      cb_gratis_code_einloesen -> App laden und mit DERSELBEN E-Mail anmelden.
@@ -52,7 +52,7 @@
   <div class="geschenk">
     <div style="font-size:34px">🎁</div>
     <h1 id="titel">Premium – geschenkt</h1>
-    <p id="untertitel">von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.</p>
+    <p id="untertitel">Dein persönlicher Geschenk-Code. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.</p>
     <div class="code" id="codeAnzeige">–</div>
   </div>
 
@@ -101,7 +101,7 @@
   <div class="karte" id="bereichFehler" hidden>
     <h2>Hm, das hat nicht geklappt</h2>
     <p id="fehlerText"></p>
-    <p style="margin:0">Frag bitte deine Ernährungsberatung nach einem neuen Code oder schreib uns: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></p>
+    <p style="margin:0">Frag bitte bei der Person nach, von der du den Code hast, oder schreib uns: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></p>
   </div>
 
   <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a></div>
@@ -131,8 +131,8 @@ async function codePruefen(){
   const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
   if(!d.gueltig){ $('codeMeld').textContent = d.grund || 'Code ungültig.'; $('codeMeld').className='meld fehler'; return false; }
   const jahr = d.tage >= 300;
-  $('titel').textContent = jahr ? '1 Jahr Premium – für Sie' : (Math.round(d.tage/30) + ' Monate Premium – geschenkt');
-  $('untertitel').textContent = jahr ? 'Danke, dass Sie Root Index fachlich ausprobieren. Endet automatisch – kein Abo, keine Kosten.' : 'von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.';
+  $('titel').textContent = jahr ? '1 Jahr Premium – geschenkt' : (Math.round(d.tage/30) + ' Monate Premium – geschenkt');
+  $('untertitel').textContent = jahr ? 'Dein persönlicher Geschenk-Code. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.' : 'Dein persönlicher Geschenk-Code. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.';
   $('codeMeld').textContent = '✓ Code gültig'; $('codeMeld').className='meld ok';
   try{ localStorage.setItem('ri_klientin_code', code); localStorage.setItem('ri_gratis_code', code); }catch(e){}
   return true;
