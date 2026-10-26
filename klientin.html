@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dein Geschenk – Root Index</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="3 Monate Root Index Premium – ein Geschenk deiner Ernährungsberatung.">
+<!-- klientin.html · 26.10.2026 · Ralph: eigene Anmeldeseite fuer Klientinnen von Fachleuten.
+     Weg: Link mit persoenlichem Einzelcode (?code=KUERZEL-XXXX) -> Konto anlegen oder anmelden ->
+     cb_gratis_code_einloesen -> App laden und mit DERSELBEN E-Mail anmelden.
+     Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth): wer auf root-index.de angemeldet ist, ist es hier auch. -->
+<link rel="icon" href="favicon-96.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+  :root{--gruen:#2e7d46;--dunkel:#133521;--creme:#F3EEDC;--text:#1f2a22;--muted:#5d6b61;--karte:#fff;--linie:#dfe6df;--hell:#7CFF9B;--rot:#b42318}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.6 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .kopf{background:var(--dunkel);color:var(--creme);padding:14px 18px;font-weight:800}
+  .kopf a{color:var(--creme);text-decoration:none}
+  .wrap{max-width:520px;margin:0 auto;padding:22px 16px 60px}
+  .geschenk{background:var(--dunkel);color:var(--creme);border-radius:18px;padding:22px 20px;text-align:center}
+  .geschenk h1{font-size:26px;line-height:1.2;margin:4px 0 8px;color:#fff}
+  .geschenk p{margin:0;color:rgba(243,238,220,.8);font-size:15px}
+  .code{display:inline-block;background:var(--creme);color:var(--dunkel);font-weight:800;letter-spacing:.08em;border-radius:8px;padding:3px 12px;margin-top:12px;font-size:18px}
+  .karte{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px;margin:16px 0}
+  .karte h2{font-size:19px;margin:0 0 4px;color:var(--dunkel)}
+  .karte p{margin:0 0 12px;color:var(--muted);font-size:15px}
+  label{display:block;font-size:14px;font-weight:800;margin:10px 0 4px}
+  input{width:100%;padding:13px;border:1px solid var(--linie);border-radius:11px;font-size:17px;background:#fff;color:var(--text)}
+  .knopf{display:block;width:100%;text-align:center;background:var(--gruen);color:#fff;text-decoration:none;font-weight:800;border:0;border-radius:12px;padding:14px 16px;font-size:17px;margin-top:14px;cursor:pointer}
+  .knopf.zwei{background:#fff;color:var(--dunkel);border:1px solid var(--linie)}
+  .knopf:disabled{opacity:.6}
+  .tabs{display:flex;gap:8px;margin-bottom:6px}
+  .tabs button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--linie);background:#fff;font-weight:800;color:var(--muted);cursor:pointer;font-size:15px}
+  .tabs button.an{background:var(--dunkel);color:#fff;border-color:var(--dunkel)}
+  .meld{font-size:15px;margin-top:10px}
+  .meld.fehler{color:var(--rot)} .meld.ok{color:var(--gruen)}
+  .hinweis{background:#fff8e6;border:1px solid #f3d27a;border-radius:12px;padding:12px 14px;font-size:14px;color:#5b4500;margin-top:12px}
+  .schritt{display:grid;grid-template-columns:34px 1fr;gap:10px;margin:12px 0;align-items:start}
+  .nr{width:34px;height:34px;border-radius:50%;background:var(--dunkel);color:var(--hell);display:grid;place-items:center;font-weight:800}
+  .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="kopf"><a href="https://root-index.de">Root Index™</a></div>
+<div class="wrap">
+
+  <div class="geschenk">
+    <div style="font-size:34px">🎁</div>
+    <h1>3 Monate Premium – geschenkt</h1>
+    <p>von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.</p>
+    <div class="code" id="codeAnzeige">–</div>
+  </div>
+
+  <!-- 1) Anmelden / Konto erstellen -->
+  <div class="karte" id="bereichKonto">
+    <h2>Schritt 1: Konto anlegen</h2>
+    <p>Mit E-Mail und Passwort. Mit genau diesen Daten meldest du dich danach auch in der App an.</p>
+    <div class="tabs">
+      <button id="tabNeu" class="an" type="button">Neu bei Root Index</button>
+      <button id="tabAlt" type="button">Ich habe ein Konto</button>
+    </div>
+    <label for="mail">E-Mail</label>
+    <input id="mail" type="email" autocomplete="email" inputmode="email" placeholder="name@beispiel.de">
+    <label for="pass">Passwort (mind. 6 Zeichen)</label>
+    <input id="pass" type="password" autocomplete="new-password" placeholder="••••••">
+    <button class="knopf" id="los" type="button">Konto erstellen &amp; Geschenk einlösen</button>
+    <div class="meld" id="meld"></div>
+    <div class="hinweis" id="appleHinweis" hidden>
+      <b>Du nutzt die iPhone-App schon mit „Mit Apple anmelden“?</b><br>
+      Öffne in der App <b>Menü → Konto &amp; Abmelden</b>. Dort steht deine Konto-E-Mail – setze darunter ein Passwort. Danach hier mit dieser E-Mail und dem Passwort anmelden.
+    </div>
+    <p style="margin:12px 0 0;font-size:14px"><a href="#" id="appleLink">Ich nutze die App schon mit Apple-Anmeldung</a></p>
+  </div>
+
+  <!-- 2) Bestaetigungs-Mail -->
+  <div class="karte" id="bereichMail" hidden>
+    <h2>Fast geschafft – bitte E-Mail bestätigen</h2>
+    <p>Wir haben dir eine Mail an <b id="mailAdresse"></b> geschickt. Tippe dort auf den Link – du landest wieder auf dieser Seite und dein Geschenk wird automatisch eingelöst.</p>
+    <p style="margin:0">Keine Mail da? Schau im Spam-Ordner nach.</p>
+  </div>
+
+  <!-- 3) Fertig -->
+  <div class="karte" id="bereichFertig" hidden>
+    <h2>✅ Premium ist freigeschaltet</h2>
+    <p id="fertigText">Bis zum …</p>
+    <div class="schritt"><div class="nr">2</div><div><b>App laden</b><br><span style="color:var(--muted);font-size:15px">Auf dem iPhone aus dem App Store. Auf Android einfach root-index.de im Browser nutzen und zum Startbildschirm hinzufügen.</span></div></div>
+    <a class="knopf" href="https://apps.apple.com/app/id6818112011" target="_blank" rel="noopener">iPhone-App laden</a>
+    <a class="knopf zwei" href="https://root-index.de/">Im Browser öffnen</a>
+    <div class="schritt" style="margin-top:18px"><div class="nr">3</div><div><b>In der App anmelden</b><br><span style="color:var(--muted);font-size:15px">Mit <b id="fertigMail">deiner E-Mail</b> und deinem Passwort – <u>nicht</u> mit „Mit Apple anmelden“. Dann ist Premium auch in der App da.</span></div></div>
+    <div class="schritt"><div class="nr">4</div><div><b>Loslegen</b><br><span style="color:var(--muted);font-size:15px">Scanne ein Produkt aus deinem Kühlschrank – du siehst sofort, was wirklich drin ist.</span></div></div>
+  </div>
+
+  <div class="karte" id="bereichFehler" hidden>
+    <h2>Hm, das hat nicht geklappt</h2>
+    <p id="fehlerText"></p>
+    <p style="margin:0">Frag bitte deine Ernährungsberatung nach einem neuen Code oder schreib uns: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></p>
+  </div>
+
+  <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a></div>
+</div>
+
+<script>
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+let modus = 'neu';
+
+// Code aus dem Link; fuer die Rueckkehr aus der Bestaetigungs-Mail auch gemerkt
+let code = '';
+try{ code = (new URLSearchParams(location.search).get('code')||'').trim().toUpperCase().slice(0,32); }catch(e){}
+try{ if(code){ localStorage.setItem('ri_klientin_code', code); localStorage.setItem('ri_gratis_code', code); } else code = localStorage.getItem('ri_klientin_code')||''; }catch(e){}
+// ri_gratis_code: Fallback, falls die Bestaetigungs-Mail auf die Startseite fuehrt - app.js bietet den Code dort nach dem Anmelden an.
+$('codeAnzeige').textContent = code || 'Code fehlt';
+
+function zeige(id){ ['bereichKonto','bereichMail','bereichFertig','bereichFehler'].forEach(b => $(b).hidden = (b!==id)); }
+function meld(t, art){ const m=$('meld'); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
+
+function setModus(m){
+  modus = m;
+  $('tabNeu').classList.toggle('an', m==='neu'); $('tabAlt').classList.toggle('an', m==='alt');
+  $('los').textContent = m==='neu' ? 'Konto erstellen & Geschenk einlösen' : 'Anmelden & Geschenk einlösen';
+  $('pass').autocomplete = m==='neu' ? 'new-password' : 'current-password';
+  meld('');
+}
+$('tabNeu').onclick = () => setModus('neu');
+$('tabAlt').onclick = () => setModus('alt');
+$('appleLink').onclick = e => { e.preventDefault(); $('appleHinweis').hidden = false; setModus('alt'); };
+
+async function einloesen(session){
+  if(!code){ zeige('bereichFehler'); $('fehlerText').textContent='In deinem Link fehlt der Code.'; return; }
+  const {data, error} = await client.rpc('cb_gratis_code_einloesen', {p_code: code});
+  const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
+  if(error || !d.ok){
+    const g = error ? error.message : (d.grund||'Unbekannter Fehler.');
+    if(/schon eingelöst/i.test(g)){ fertig(session, null); return; }
+    zeige('bereichFehler'); $('fehlerText').textContent = g; return;
+  }
+  try{ localStorage.removeItem('ri_klientin_code'); localStorage.removeItem('ri_gratis_code'); }catch(e){}
+  fertig(session, d.premium_bis);
+}
+function fertig(session, bis){
+  zeige('bereichFertig');
+  const mail = session && session.user && session.user.email;
+  if(mail) $('fertigMail').textContent = mail;
+  $('fertigText').textContent = bis ? ('Premium läuft bis zum ' + new Date(bis).toLocaleDateString('de-DE') + ' – danach endet es automatisch.') : 'Dein Geschenk ist auf deinem Konto.';
+}
+
+$('los').onclick = async function(){
+  const email = $('mail').value.trim(), pass = $('pass').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ meld('Bitte eine gültige E-Mail eintragen.','fehler'); return; }
+  if(pass.length < 6){ meld('Das Passwort braucht mindestens 6 Zeichen.','fehler'); return; }
+  this.disabled = true; meld('⏳ Einen Moment …');
+  try{
+    if(modus==='neu'){
+      const {data, error} = await client.auth.signUp({ email, password: pass,
+        options:{ emailRedirectTo: location.origin + '/klientin.html?code=' + encodeURIComponent(code) } });
+      if(error){
+        if(/registered|exists/i.test(error.message)){ meld('Diese E-Mail hat schon ein Konto – bitte „Ich habe ein Konto“ wählen.','fehler'); setModus('alt'); }
+        else meld('Fehler: ' + error.message, 'fehler');
+        return;
+      }
+      if(data.session){ await einloesen(data.session); }
+      else { $('mailAdresse').textContent = email; zeige('bereichMail'); }
+    } else {
+      const {data, error} = await client.auth.signInWithPassword({ email, password: pass });
+      if(error){ meld(/invalid/i.test(error.message) ? 'E-Mail oder Passwort stimmt nicht.' : ('Fehler: ' + error.message), 'fehler'); return; }
+      await einloesen(data.session);
+    }
+  } finally { this.disabled = false; }
+};
+
+// Rueckkehr aus der Bestaetigungs-Mail oder schon angemeldet: direkt einloesen
+client.auth.getSession().then(r => {
+  const s = r && r.data && r.data.session;
+  if(s && code){ meld('⏳ Du bist angemeldet – Geschenk wird eingelöst …'); einloesen(s); }
+});
+</script>
+</body>
+</html>
