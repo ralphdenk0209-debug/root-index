@@ -134,7 +134,9 @@ async function codePruefen(){
   const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
   if(!d.gueltig){ $('codeMeld').textContent = d.grund || 'Code ungültig.'; $('codeMeld').className='meld fehler'; return false; }
   const jahr = d.tage >= 300;
-  $('titel').textContent = jahr ? '1 Jahr Premium – geschenkt' : (Math.round(d.tage/30) + ' Monate Premium – geschenkt');
+  const t = Number(d.tage)||0, mon = Math.round(t/30);
+  const dauer = jahr ? '1 Jahr' : (t < 28 ? (t + (t===1 ? ' Tag' : ' Tage')) : (mon + (mon===1 ? ' Monat' : ' Monate')));
+  $('titel').textContent = dauer + ' Premium – geschenkt';
   $('untertitel').textContent = jahr ? 'Dein persönlicher Geschenk-Code. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.' : 'Dein persönlicher Geschenk-Code. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.';
   $('codeMeld').textContent = '✓ Code gültig'; $('codeMeld').className='meld ok';
   try{ localStorage.setItem('ri_klientin_code', code); localStorage.setItem('ri_gratis_code', code); }catch(e){}
