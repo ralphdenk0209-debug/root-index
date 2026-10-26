@@ -1576,7 +1576,26 @@ function gateHtml(feat){
 /* 28z19 (Ralph: "das anmeldefenster soll auch mit passwort gehen, weil wir das eh in den
    App Store umstellen") - das Passwort-Feld war fertig gebaut, aber fuer normale Nutzer
    VERSTECKT (nur der Admin-Login zeigte es). Jetzt sehen es alle; der Code-Weg bleibt. */
-function openLogin(){ const lw=document.getElementById("landWahl"); if(lw) lw.value=RI_MARKT; const pw=document.getElementById("pwLogin"); if(pw) pw.style.display=""; const cb=document.getElementById("codeBtn"); if(cb) cb.style.display=""; const box=document.getElementById("codeBox"); if(box) box.style.display="none"; const intro=document.getElementById("loginIntro"); if(intro) intro.innerHTML='Mit <b>E-Mail und Passwort</b> anmelden – oder unten ohne Passwort per <b>6-stelligem Code</b>.'; document.getElementById("loginOverlay").classList.add("open"); const e=document.getElementById("loginEmail"); if(e) setTimeout(()=>e.focus(),60); }
+function openLogin(){ const lw=document.getElementById("landWahl"); if(lw) lw.value=RI_MARKT; const pw=document.getElementById("pwLogin"); if(pw) pw.style.display=""; const cb=document.getElementById("codeBtn"); if(cb) cb.style.display=""; const box=document.getElementById("codeBox"); if(box) box.style.display="none"; const intro=document.getElementById("loginIntro"); if(intro) intro.innerHTML='Mit <b>E-Mail und Passwort</b> anmelden – oder unten ohne Passwort per <b>6-stelligem Code</b>.'; riAppleKnopf(); document.getElementById("loginOverlay").classList.add("open"); const e=document.getElementById("loginEmail"); if(e) setTimeout(()=>e.focus(),60); }
+/* 26.10.2026 (Ralph): "Mit Apple anmelden" auch im Web (Services ID de.root-index.web, Secret bis 24.04.2027 - siehe
+   Ordner "Apple key Web login fuer Klientinen"). Knopf wird per JS ins Login-Fenster gesetzt (index.html bleibt unberuehrt).
+   In der iPhone-App (riNativeApp) nicht - dort gibt es den nativen Apple-Login. */
+function riAppleKnopf(){
+  try{
+    if(document.getElementById('riAppleLogin')) return;
+    if(typeof riNativeApp==='function' && riNativeApp()) return;
+    const intro=document.getElementById('loginIntro'); if(!intro) return;
+    const w=document.createElement('div'); w.id='riAppleLogin';
+    w.innerHTML='<button type="button" onclick="riAppleLogin()" style="width:100%;padding:12px;border:0;border-radius:10px;background:#000;color:#fff;font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px">'
+      +'<svg width="16" height="16" viewBox="0 0 814 1000" aria-hidden="true"><path fill="#fff" d="M788 341c-6 4-108 62-108 190 0 148 130 200 134 201-1 3-21 71-68 141-43 61-87 122-155 122s-86-39-164-39c-77 0-104 40-166 40s-106-57-156-127C47 789 0 663 0 543c0-193 126-296 249-296 66 0 121 43 162 43 39 0 101-46 176-46 29 0 131 3 201 97zM555 159c31-37 53-88 53-139 0-7-1-14-2-20-50 2-110 34-146 76-28 32-55 83-55 135 0 8 1 16 2 18 3 1 9 2 14 2 45 0 102-30 134-72z"/></svg>'
+      +'Mit Apple anmelden</button><div style="text-align:center;color:var(--muted);font-size:12.5px;margin:10px 0">oder mit E-Mail</div>';
+    intro.parentNode.insertBefore(w, intro.nextSibling);
+  }catch(e){}
+}
+async function riAppleLogin(){
+  const {error}=await client.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: location.origin+location.pathname } });
+  if(error){ const m=document.getElementById('loginMsg'); if(m){ m.style.color='var(--k-dc2626)'; m.textContent='Apple-Anmeldung: '+error.message; } }
+}
 async function pwVergessen(){
   const email=(document.getElementById("loginEmail").value||"").trim();
   const msg=document.getElementById("loginMsg");
@@ -18083,7 +18102,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-10-25-03";
+const APP_BUILD="2026-10-26-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
