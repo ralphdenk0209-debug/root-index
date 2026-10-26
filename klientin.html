@@ -60,6 +60,9 @@
   <div class="karte" id="bereichKonto">
     <h2>Schritt 1: Konto anlegen</h2>
     <p>Am einfachsten mit Apple – dann bist du in der iPhone-App sofort im selben Konto. Oder mit E-Mail und Passwort.</p>
+    <label for="codeFeld">Dein Code</label>
+    <input id="codeFeld" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="z. B. ABCD-7K3P" style="text-transform:uppercase;letter-spacing:.06em;font-weight:800">
+    <div class="meld" id="codeMeld"></div>
     <button class="knopf" id="appleLos" type="button" style="background:#000;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:8px">
       <svg width="18" height="18" viewBox="0 0 814 1000" aria-hidden="true"><path fill="#fff" d="M788 341c-6 4-108 62-108 190 0 148 130 200 134 201-1 3-21 71-68 141-43 61-87 122-155 122s-86-39-164-39c-77 0-104 40-166 40s-106-57-156-127C47 789 0 663 0 543c0-193 126-296 249-296 66 0 121 43 162 43 39 0 101-46 176-46 29 0 131 3 201 97zM555 159c31-37 53-88 53-139 0-7-1-14-2-20-50 2-110 34-146 76-28 32-55 83-55 135 0 8 1 16 2 18 3 1 9 2 14 2 45 0 102-30 134-72z"/></svg>
       Mit Apple anmelden &amp; einlösen</button>
@@ -68,9 +71,6 @@
       <button id="tabNeu" class="an" type="button">Neu bei Root Index</button>
       <button id="tabAlt" type="button">Ich habe ein Konto</button>
     </div>
-    <label for="codeFeld">Dein Code</label>
-    <input id="codeFeld" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="z. B. GOERGENS-7K3P" style="text-transform:uppercase;letter-spacing:.06em;font-weight:800">
-    <div class="meld" id="codeMeld"></div>
     <label for="mail">E-Mail</label>
     <input id="mail" type="email" autocomplete="email" inputmode="email" placeholder="name@beispiel.de">
     <label for="pass">Passwort (mind. 6 Zeichen)</label>
