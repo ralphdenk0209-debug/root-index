@@ -2,7 +2,8 @@
 Aufruf: python3 qr_karten.py "Praxis-Name" ausgabe.pdf CODE1 CODE2 ...  (Praxis-Name "" = ohne Absenderzeile, z. B. fuer Ralphs eigene Codes)
 Jede Karte: QR -> https://root-index.de/klientin.html?code=CODE, Code als Text zum Abtippen.
 """
-import sys, io
+import sys, io, os
+DAUER = os.environ.get("DAUER", "3 Monate")  # z. B. DAUER="1 Jahr" fuer Jahrescodes
 import qrcode
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import mm
@@ -36,14 +37,14 @@ def karte(c, x, y, praxis, code):
         pass
     c.setFillColorRGB(*CREME); c.setFont("Helvetica-Bold", 10); c.drawString(tx+10*mm, y+h-10*mm, "Root Index")
     c.setFillColorRGB(1, 1, 1); c.setFont("Helvetica-Bold", 12)
-    c.drawString(tx, y+h-20*mm, "3 Monate Premium")
+    c.drawString(tx, y+h-20*mm, DAUER + " Premium")
     c.setFillColorRGB(*HELL); c.setFont("Helvetica-Bold", 12); c.drawString(tx, y+h-25*mm, "geschenkt")
     c.setFillColorRGB(*CREME); c.setFont("Helvetica", 6.5)
     if praxis.strip():
         c.drawString(tx, y+h-30*mm, "von " + praxis[:30])
     # Code
     c.setFillColorRGB(*CREME); c.roundRect(tx, y+9*mm, 36*mm, 7*mm, 1.5*mm, stroke=0, fill=1)
-    c.setFillColorRGB(*DUNKEL); c.setFont("Helvetica-Bold", 9.5); c.drawCentredString(tx+18*mm, y+11.3*mm, code)
+    c.setFillColorRGB(*DUNKEL); c.setFont("Helvetica-Bold", 9.5 if len(code) <= 12 else 8.5); c.drawCentredString(tx+18*mm, y+11.3*mm, code)
     c.setFillColorRGB(*CREME); c.setFont("Helvetica", 6)
     c.drawString(tx, y+4.5*mm, "QR scannen · root-index.de/klientin.html")
 
