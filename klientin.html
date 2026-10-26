@@ -51,8 +51,8 @@
 
   <div class="geschenk">
     <div style="font-size:34px">🎁</div>
-    <h1>3 Monate Premium – geschenkt</h1>
-    <p>von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.</p>
+    <h1 id="titel">Premium – geschenkt</h1>
+    <p id="untertitel">von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.</p>
     <div class="code" id="codeAnzeige">–</div>
   </div>
 
@@ -64,6 +64,9 @@
       <button id="tabNeu" class="an" type="button">Neu bei Root Index</button>
       <button id="tabAlt" type="button">Ich habe ein Konto</button>
     </div>
+    <label for="codeFeld">Dein Code</label>
+    <input id="codeFeld" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="z. B. GOERGENS-7K3P" style="text-transform:uppercase;letter-spacing:.06em;font-weight:800">
+    <div class="meld" id="codeMeld"></div>
     <label for="mail">E-Mail</label>
     <input id="mail" type="email" autocomplete="email" inputmode="email" placeholder="name@beispiel.de">
     <label for="pass">Passwort (mind. 6 Zeichen)</label>
@@ -118,7 +121,23 @@ let code = '';
 try{ code = (new URLSearchParams(location.search).get('code')||'').trim().toUpperCase().slice(0,32); }catch(e){}
 try{ if(code){ localStorage.setItem('ri_klientin_code', code); localStorage.setItem('ri_gratis_code', code); } else code = localStorage.getItem('ri_klientin_code')||''; }catch(e){}
 // ri_gratis_code: Fallback, falls die Bestaetigungs-Mail auf die Startseite fuehrt - app.js bietet den Code dort nach dem Anmelden an.
-$('codeAnzeige').textContent = code || 'Code fehlt';
+$('codeFeld').value = code;
+async function codePruefen(){
+  code = $('codeFeld').value.trim().toUpperCase();
+  $('codeAnzeige').textContent = code || 'Code eingeben';
+  $('codeAnzeige').hidden = !code;
+  if(!code){ $('codeMeld').textContent=''; return false; }
+  const {data} = await client.rpc('cb_gratis_code_info', {p_code: code});
+  const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
+  if(!d.gueltig){ $('codeMeld').textContent = d.grund || 'Code ungültig.'; $('codeMeld').className='meld fehler'; return false; }
+  const jahr = d.tage >= 300;
+  $('titel').textContent = jahr ? '1 Jahr Premium – für Sie' : (Math.round(d.tage/30) + ' Monate Premium – geschenkt');
+  $('untertitel').textContent = jahr ? 'Danke, dass Sie Root Index fachlich ausprobieren. Endet automatisch – kein Abo, keine Kosten.' : 'von deiner Ernährungsberatung. Endet automatisch – kein Abo, keine Kosten, keine Zahlungsdaten.';
+  $('codeMeld').textContent = '✓ Code gültig'; $('codeMeld').className='meld ok';
+  try{ localStorage.setItem('ri_klientin_code', code); localStorage.setItem('ri_gratis_code', code); }catch(e){}
+  return true;
+}
+let _cp; $('codeFeld').oninput = () => { clearTimeout(_cp); _cp = setTimeout(codePruefen, 400); };
 
 function zeige(id){ ['bereichKonto','bereichMail','bereichFertig','bereichFehler'].forEach(b => $(b).hidden = (b!==id)); }
 function meld(t, art){ const m=$('meld'); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
@@ -157,6 +176,7 @@ $('los').onclick = async function(){
   const email = $('mail').value.trim(), pass = $('pass').value;
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ meld('Bitte eine gültige E-Mail eintragen.','fehler'); return; }
   if(pass.length < 6){ meld('Das Passwort braucht mindestens 6 Zeichen.','fehler'); return; }
+  if(!(await codePruefen())){ meld('Bitte zuerst einen gültigen Code eintragen.','fehler'); return; }
   this.disabled = true; meld('⏳ Einen Moment …');
   try{
     if(modus==='neu'){
@@ -178,10 +198,10 @@ $('los').onclick = async function(){
 };
 
 // Rueckkehr aus der Bestaetigungs-Mail oder schon angemeldet: direkt einloesen
-client.auth.getSession().then(r => {
+codePruefen().then(ok => client.auth.getSession().then(r => {
   const s = r && r.data && r.data.session;
-  if(s && code){ meld('⏳ Du bist angemeldet – Geschenk wird eingelöst …'); einloesen(s); }
-});
+  if(s && ok){ meld('⏳ Du bist angemeldet – Geschenk wird eingelöst …'); einloesen(s); }
+}));
 </script>
 </body>
 </html>
