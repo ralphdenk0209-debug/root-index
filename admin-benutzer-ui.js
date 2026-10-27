@@ -116,6 +116,11 @@ async function loadUsers(){
      (Geraete aus den Anmelde-Sitzungen, Play-App meldet sich selbst) - cb_users_list bleibt unveraendert. */
   try{ const pl=await client.rpc("cb_admin_nutzer_plattform"); var pm={}; (pl.data||[]).forEach(function(x){ pm[x.benutzer_id]=x; });
     (data||[]).forEach(function(u){ u._pl=pm[u.benutzer_id]||null; }); }catch(e){}
+  /* 27.10.2026, Ralph: Spalte Tagebuch - Tage mit mindestens einem Eintrag, nicht die Eintraege. */
+  try{ const tb=await client.rpc("cb_admin_nutzer_tagebuchtage"); var tm={}; (tb.data||[]).forEach(function(x){ tm[x.benutzer_id]=x; });
+    (data||[]).forEach(function(u){ u._tb=tm[u.benutzer_id]||null; }); }catch(e){}
+  /* 27.10.2026, Ralph: "die tabelle mittig ausrichten" */
+  try{ if(inner){ inner.style.maxWidth='1240px'; inner.style.margin='0 auto'; } }catch(e){}
   renderUsers(data||[]);
 }
 var _UP_FARBE={'iPhone-App':['#0a84ff','📱'],'Play-App':['#1a9c4a','🤖'],'Android':['#5f7f6a','🤖'],'iPhone-Browser':['#6b7280','🌐'],'Web':['#6b7280','🌐']};
@@ -124,6 +129,10 @@ function _uUeber(u){
   var g=(p.geraete||[]).map(function(k){ var f=_UP_FARBE[k]||['#6b7280','']; var name=(k==='Android'?'Android (Browser/App)':k);
     return '<span title="'+esc(name)+(k===p.zuerst?' – zuerst gesehen':'')+'" style="display:inline-block;margin:0 3px 3px 0;padding:1px 7px;border-radius:999px;font-size:11px;font-weight:700;white-space:nowrap;color:#fff;background:'+f[0]+(k===p.zuerst?';box-shadow:0 0 0 2px var(--card),0 0 0 3px '+f[0]:'')+'">'+f[1]+' '+esc(k)+'</span>'; }).join('');
   return '<div>'+(g||'<span style="color:var(--k-c7c2b8)">\u2013</span>')+'</div><div style="font-size:11px;color:var(--muted)">'+esc(p.anmeldung||'')+'</div>';
+}
+function _uTb(u){
+  var t=u._tb; if(!t||!t.tage) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
+  return '<div style="font-weight:700">'+t.tage+' Tage</div><div style="font-size:11px;color:var(--muted)">'+(t.tage_7?t.tage_7+' in 7 Tagen':'zuletzt '+_uDate(t.letzter))+'</div>';
 }
 function _uDate(s){ if(!s) return '–'; try{ return new Date(s).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}); }catch(e){ return '–'; } }
 /* Ralph-Auftrag 06.09.2026: sichtbar machen, wer Produkte erfasst hat.
@@ -233,8 +242,8 @@ function renderUsers(rows){
      vorhandene Breite passen. Dafuer engeres Innenmass und kleinere Schrift -
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
   h+='<div style="width:100%">'
-   +'<table style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
-  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
+   +'<table class="usrTab" style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
+  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
   rows.forEach(u=>{
     const trial = u.subscription_status==='trialing' && u.trial_bis && new Date(u.trial_bis)>new Date();
     let abo;
@@ -249,6 +258,7 @@ function renderUsers(rows){
       +'<td style="'+td+';text-align:center">'+rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')")+'</td>'
       +'<td style="'+td+'">'+abo+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uErf(u)+'</td>'
+      +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uTb(u)+'</td>'
       +'<td style="'+td+';font-size:12.5px">'+_uAktiv(u.letzte_aktivitaet)+'</td>'
       +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+_uDate(u.angelegt_am)+'</td>'
       +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+(u.is_premium?_uDate(u.premium_since):'–')+'</td>'
@@ -259,7 +269,7 @@ function renderUsers(rows){
       +'</td>'
       +'</tr>';
   });
-  h+='</table></div><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
+  h+='</table></div><style>.usrTab th,.usrTab td{text-align:center!important;vertical-align:middle!important}.usrTab th:first-child,.usrTab td:first-child{text-align:left!important}</style><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
   document.getElementById("usersTable").innerHTML=h;
 }
 async function setUserPremium(bid,val){
