@@ -141,11 +141,13 @@ function _uDate(s){ if(!s) return '–'; try{ return new Date(s).toLocaleDateStr
    erfasst hat, bekommt einen Strich statt einer Null: eine 0 laese sich als
    Bewertung lesen, der Strich sagt schlicht "nichts dabei". */
 function _uErf(u){
-  var n=Number(u&&u.produkte_erfasst||0);
-  if(!n) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
+  var n=Number(u&&u.produkte_erfasst||0), t=u&&u._tb, et=t?Number(t.erfasst_tage||0):0;
+  /* 27.10.2026, Ralph: "die tage wenn was erfasst wurde auch aufzaehlen" - Tage mit mindestens einem erfassten Produkt. */
+  var tage = et ? '<div style="font-size:11px;color:var(--muted);white-space:nowrap">an '+et+(et===1?' Tag':' Tagen')+(t.erfasst_tage_7&&t.erfasst_tage_7!==et?' · '+t.erfasst_tage_7+' in 7 T':'')+'</div>' : '';
+  if(!n) return et ? '<b>'+et+(et===1?' Tag':' Tage')+'</b>' : '<span style="color:var(--k-c7c2b8)">\u2013</span>';
   var a=Number(u.produkte_erfasst_aktiv||0);
   return '<b style="font-variant-numeric:tabular-nums">'+n+'</b>'
-    +(a!==n?'<div style="font-size:11px;color:var(--muted);white-space:nowrap">'+a+' aktiv</div>':'');
+    +(a!==n?'<div style="font-size:11px;color:var(--muted);white-space:nowrap">'+a+' aktiv</div>':'')+tage;
 }
 /* Ralph-Auftrag 06.09.2026: sichtbar machen, wann jemand zuletzt in der App war.
    Die Zeit kommt aus cb_users_list und ist dort das Spaeteste aus drei Messungen:
