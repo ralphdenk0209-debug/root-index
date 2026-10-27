@@ -205,7 +205,8 @@ function bauen(){
   const SK=[['instagram','IG','#D62976'],['facebook','FB','#1877F2'],['youtube','YT','#FF0000'],['tiktok','TT','#25262b']];
   const sozSumme=SK.reduce(function(a,k){ return a+Number((so[k[0]]||{}).follower||0); },0);
   const sozRueck=['youtube','tiktok'].reduce(function(a,k){ return a+Number(rk[k]||0); },0);
-  Z.push({grp:'Social',nm:'Social',st: sozRueck>0?'warn':'ok', v:zahl(sozSumme), u:'Follower auf 4 Kanälen',
+  /* 27.10.2026, Ralph: kein Gelb wegen Rueckstand oder 0 Followern - "dann ist das halt so". */
+  Z.push({grp:'Social',nm:'Social',st:'ok', v:zahl(sozSumme), u:'Follower auf 4 Kanälen',
     viz:'<div style="display:grid;grid-template-columns:auto 1fr auto;gap:3px 6px;align-items:center;font-size:12px;padding:0 4px">'
       +SK.map(function(k){ const kd=so[k[0]]||{}, vl=(kd.verlauf||[]).map(Number), m=Math.max(1,...vl);
         return '<span style="font-weight:800;color:#fff;background:'+k[2]+';border-radius:4px;padding:0 4px;font-size:10px;text-align:center">'+k[1]+'</span>'
@@ -215,10 +216,12 @@ function bauen(){
     knopf:{t:'Follower eintragen',onclick:'followerWahl()'}, knopf2:{t:'Meta Business Suite',href:'https://business.facebook.com/latest/content_calendar'}});
   /* Content-Plan */
   const rs=co.rueckstand||{}, rsTxt=Object.keys(rs).filter(k=>rs[k]>0).map(k=>({youtube:'YouTube',tiktok:'TikTok',pinterest:'Pinterest',substack:'Substack'}[k]||k)+' '+rs[k]);
-  const coSt = !co.naechstes ? 'alarm' : (co.luecke_tage>2 || rsTxt.length) ? 'warn' : 'ok';
+  /* 27.10.2026, Ralph: "gelb macht erst sinn, wenn die folgewoche nichts geplant ist". Rot: gar nichts mehr geplant. */
+  const coFw=Number(d.folgewoche||0);
+  const coSt = !co.naechstes ? 'alarm' : coFw===0 ? 'warn' : 'ok';
   Z.push({grp:'Social',nm:'Content-Plan',st:coSt,v:zahl(co.woche),u:'Reels diese Woche',
     viz:'<div class="bars" style="flex-direction:column;align-items:stretch;justify-content:center;gap:3px;font-size:12px;text-align:center"><span style="color:var(--muted)">nächstes Reel</span><b>'+zeit(co.naechstes)+'</b><span style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(co.naechstes_titel||'')+'</span></div>',
-    notiz:(co.luecke_tage?zahl(co.luecke_tage)+' von 7 Tagen ohne Reel':'jeden Tag etwas geplant')+'<br>'+(rsTxt.length?'Rückstand: '+rsTxt.join(' · '):'alle Kanäle gleichauf'),
+    notiz:'Folgewoche: '+(coFw?zahl(coFw)+' Reels geplant':'<b style="color:var(--warn)">noch nichts geplant</b>')+'<br>'+(rsTxt.length?'Rückstand: '+rsTxt.join(' · '):'alle Kanäle gleichauf'),
     knopf:{t:'Content-Plan',href:cb('vergleiche.html')}});
   /* Newsletter */
   const nx=nl.naechste;
