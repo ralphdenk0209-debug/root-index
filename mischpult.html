@@ -248,13 +248,13 @@ function bauen(){
      Nur belegte Betraege (Tabelle kosten_posten); fehlende stehen als "Betrag fehlt". KI-API automatisch aus v_riki_kosten (USD). */
   const ko=d.kosten||{};
   const ein=Number(ko.einnahmen_eur||0), aus=Number(ko.eur_bezahlt||0);
-  Z.push({grp:'Geld',nm:'Kosten & Einnahmen',st: ko.fehlt>0?'warn':'ok', v: eur(aus), u:'ausgegeben seit Start (bekannt)',
+  Z.push({grp:'Geld',nm:'Kosten & Einnahmen',st: ein>=aus?'ok':'warn', nz:true, v: eur(aus), u:'ausgegeben seit Start (bekannt)',
     viz:'<div style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:12px;padding:0 6px">'
       +'<span>Werbung</span><b style="text-align:right">'+eur(ko.werbung_eur)+'</b>'
       +'<span>KI-API (Riki)</span><b style="text-align:right">'+usd(ko.ki_usd)+'</b>'
-      +'<span>offen (Marke)</span><b style="text-align:right;color:var(--warn)">'+eur(ko.eur_offen)+'</b>'
+      +'<span>offen</span><b style="text-align:right;color:var(--warn)">'+eur(ko.eur_offen)+'</b>'
       +'<span>Einnahmen</span><b style="text-align:right;color:'+(ein>0?'var(--ok)':'var(--muted)')+'">'+eur(ein)+'</b></div>',
-    notiz: ko.fehlt ? zahl(ko.fehlt)+' Posten ohne Betrag (Konten, Webspace, Domains, Supabase, Claude-Abo)' : 'alle Beträge erfasst',
+    notiz: (ein>=aus ? 'Break-even erreicht' : 'gelb bis Break-even · noch '+eur(aus-ein)+' (KI-$ extra)')+(ko.fehlt ? ' · '+zahl(ko.fehlt)+' Posten ohne Betrag' : ''),
     knopf:{t:'Alle Posten',onclick:'kostenListe()'}});
   /* App-Funktionen */
   Z.push({grp:'App',nm:'Funktionen',st: sMap.push===false?'off':'ok', v: sch.filter(s=>s.an).length+' / '+sch.length, u:'eingeschaltet',
@@ -267,7 +267,8 @@ function bauen(){
   Z.sort(function(a,b){ return REIHE.indexOf(a.nm)-REIHE.indexOf(b.nm); });
   $('pult').innerHTML=Z.map(zug).join('');
   /* Master-Lampe */
-  const rot=Z.filter(z=>z.st==='alarm').length, gelb=Z.filter(z=>z.st==='warn').length;
+  /* 27.10.: Kosten-Kachel ist gelb bis Break-even, zaehlt oben aber nicht mit (nz). */
+  const rot=Z.filter(z=>!z.nz&&z.st==='alarm').length, gelb=Z.filter(z=>!z.nz&&z.st==='warn').length;
   $('mLampe').innerHTML=lampe(rot?'alarm':gelb?'warn':'ok',true);
   $('mText').textContent = rot ? rot+' rot · '+gelb+' gelb' : gelb ? gelb+' gelb' : 'Alles grün';
   $('mSub').textContent = 'von '+Z.length+' Kanalzügen';
