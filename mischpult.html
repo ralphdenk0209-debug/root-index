@@ -199,23 +199,20 @@ function bauen(){
   Z.push({grp:'App',nm:'App Store',st:asSt,v:zahl(as.downloads_ges),u:'Downloads gesamt',viz:bars(as.verlauf,asSt),
     notiz:zahl(as.downloads_7)+' in 7 T · '+zahl(as.rez_offen)+' Rezensionen offen'+(as.sterne?' · ★ '+zahl(as.sterne,1):'')+'<br>Abruf '+zeit(as.sync_zeit),
     knopf:{t:'App Store',href:cb('appstore.html')}});
-  /* Social */
-  const ig=so.instagram||{}, fb=so.facebook||{};
-  Z.push({grp:'Social',nm:'Instagram',st:'ok',v:zahl(ig.follower),u:'Follower',viz:bars(ig.verlauf,'ok'),
-    notiz:zahl(ig.aufrufe_7)+' Aufrufe · '+zahl(ig.reichweite_7)+' erreicht (7 T)',
-    knopf:{t:'Instagram',href:'https://www.instagram.com/root_index.de/'}});
-  Z.push({grp:'Social',nm:'Facebook',st:'ok',v:zahl(fb.follower),u:'Follower',viz:bars(fb.verlauf,'ok'),
-    notiz:'alle Kanäle 7 T: '+zahl(s7.interaktionen)+' Interaktionen · '+zahl(s7.profilaufrufe)+' Profilaufrufe',
-    knopf:{t:'Meta Business Suite',href:'https://business.facebook.com/latest/content_calendar'}});
-  /* 19.10.2026, Ralph: "es fehlt tiktok und youtube". Follower gibt es dort (noch) nicht automatisch:
-     Ralph traegt sie per Knopf ein (cb_admin_social_follower_setzen). Gepostet/Rueckstand kommen aus dem Content-Plan. */
+  /* 27.10.2026, Ralph: "die social kacheln kannst du besser zusammenfassen damit platz kommt" -
+     Instagram, Facebook, YouTube, TikTok in EINER Kachel. YouTube/TikTok-Follower traegt Ralph ein (cb_admin_social_follower_setzen). */
   const po=d.posts||{}, rk=co.rueckstand||{};
-  [['youtube','YouTube','https://studio.youtube.com'],['tiktok','TikTok','https://www.tiktok.com/tiktokstudio']].forEach(function(c){
-    const kd=so[c[0]]||{}, rueck=Number(rk[c[0]]||0);
-    Z.push({grp:'Social',nm:c[1],st: rueck>0?'warn':'ok', v: kd.follower!=null?zahl(kd.follower):'–', u: kd.follower!=null?'Follower':'Follower noch nicht eingetragen',
-      viz:bars(kd.verlauf,'ok'), notiz: zahl(po[c[0]])+' Reels gepostet'+(rueck?' · '+rueck+' im Rückstand':' · gleichauf')+(kd.stand?'<br>Follower-Stand '+new Date(kd.stand).toLocaleDateString('de-DE'):''),
-      knopf:{t:'Follower eintragen',onclick:"followerEintragen('"+c[0]+"','"+c[1]+"')"}, knopf2:{t:c[1]+' Studio',href:c[2]}});
-  });
+  const SK=[['instagram','IG','#D62976'],['facebook','FB','#1877F2'],['youtube','YT','#FF0000'],['tiktok','TT','#25262b']];
+  const sozSumme=SK.reduce(function(a,k){ return a+Number((so[k[0]]||{}).follower||0); },0);
+  const sozRueck=['youtube','tiktok'].reduce(function(a,k){ return a+Number(rk[k]||0); },0);
+  Z.push({grp:'Social',nm:'Social',st: sozRueck>0?'warn':'ok', v:zahl(sozSumme), u:'Follower auf 4 Kanälen',
+    viz:'<div style="display:grid;grid-template-columns:auto 1fr auto;gap:3px 6px;align-items:center;font-size:12px;padding:0 4px">'
+      +SK.map(function(k){ const kd=so[k[0]]||{}, vl=(kd.verlauf||[]).map(Number), m=Math.max(1,...vl);
+        return '<span style="font-weight:800;color:#fff;background:'+k[2]+';border-radius:4px;padding:0 4px;font-size:10px;text-align:center">'+k[1]+'</span>'
+          +'<span style="display:flex;align-items:flex-end;gap:1px;height:12px">'+vl.slice(-10).map(function(v){ return '<i style="flex:1;display:block;background:#4fd18b88;height:'+Math.max(10,v/m*100)+'%"></i>'; }).join('')+'</span>'
+          +'<b style="text-align:right">'+(kd.follower!=null?zahl(kd.follower):'–')+'</b>'; }).join('')+'</div>',
+    notiz:zahl((so.instagram||{}).aufrufe_7)+' IG-Aufrufe · '+zahl(s7.interaktionen)+' Interaktionen (7 T)<br>Reels gepostet: YT '+zahl(po.youtube)+' · TT '+zahl(po.tiktok)+(sozRueck?' · '+sozRueck+' im Rückstand':''),
+    knopf:{t:'Follower eintragen',onclick:'followerWahl()'}, knopf2:{t:'Meta Business Suite',href:'https://business.facebook.com/latest/content_calendar'}});
   /* Content-Plan */
   const rs=co.rueckstand||{}, rsTxt=Object.keys(rs).filter(k=>rs[k]>0).map(k=>({youtube:'YouTube',tiktok:'TikTok',pinterest:'Pinterest',substack:'Substack'}[k]||k)+' '+rs[k]);
   const coSt = !co.naechstes ? 'alarm' : (co.luecke_tage>2 || rsTxt.length) ? 'warn' : 'ok';
@@ -244,6 +241,18 @@ function bauen(){
     notiz:'heute '+usd(ri.heute)+' · die Schalter stoppen die bezahlten Scans für alle Nutzer',
     schalter:[{k:'etikett_riki',an:sMap.etikett_riki},{k:'rezept_riki',an:sMap.rezept_riki}],
     knopf:{t:'Kosten je Aufruf',href:cb('riki-kosten.html')}});
+  /* 27.10.2026, Ralph: "kostenaufstellung ... kachel einbauen und dann irgendwann die einnahmen".
+     Nur belegte Betraege (Tabelle kosten_posten); fehlende stehen als "Betrag fehlt". KI-API automatisch aus v_riki_kosten (USD). */
+  const ko=d.kosten||{};
+  const ein=Number(ko.einnahmen_eur||0), aus=Number(ko.eur_bezahlt||0);
+  Z.push({grp:'Geld',nm:'Kosten & Einnahmen',st: ko.fehlt>0?'warn':'ok', v: eur(aus), u:'ausgegeben seit Start (bekannt)',
+    viz:'<div style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;font-size:12px;padding:0 6px">'
+      +'<span>Werbung</span><b style="text-align:right">'+eur(ko.werbung_eur)+'</b>'
+      +'<span>KI-API (Riki)</span><b style="text-align:right">'+usd(ko.ki_usd)+'</b>'
+      +'<span>offen (Marke)</span><b style="text-align:right;color:var(--warn)">'+eur(ko.eur_offen)+'</b>'
+      +'<span>Einnahmen</span><b style="text-align:right;color:'+(ein>0?'var(--ok)':'var(--muted)')+'">'+eur(ein)+'</b></div>',
+    notiz: ko.fehlt ? zahl(ko.fehlt)+' Posten ohne Betrag (Konten, Webspace, Domains, Supabase, Claude-Abo)' : 'alle Beträge erfasst',
+    knopf:{t:'Alle Posten',onclick:'kostenListe()'}});
   /* App-Funktionen */
   Z.push({grp:'App',nm:'Funktionen',st: sMap.push===false?'off':'ok', v: sch.filter(s=>s.an).length+' / '+sch.length, u:'eingeschaltet',
     viz:'<div class="bars"></div>', notiz:'Push-Mitteilungen für alle Nutzer an/aus',
@@ -251,7 +260,7 @@ function bauen(){
 
   /* 19.10.2026, Ralph: "social media sollten nebeneinander sein" - feste Reihenfolge: erst Betrieb, dann Social & Post & Geld. */
   const REIHE=['Kette & Takte','Wächter','Produkte','Datenbank','Seite & Google','Nutzer','App Store','Funktionen',
-               'Instagram','Facebook','YouTube','TikTok','Content-Plan','Newsletter','Claude-Kosten','Riki-Scans'];
+               'Social','Content-Plan','Newsletter','Claude-Kosten','Riki-Scans','Kosten & Einnahmen'];
   Z.sort(function(a,b){ return REIHE.indexOf(a.nm)-REIHE.indexOf(b.nm); });
   $('pult').innerHTML=Z.map(zug).join('');
   /* Master-Lampe */
@@ -295,6 +304,21 @@ async function schalten(k, an){
   const {data,error}=await client.rpc('cb_admin_mischpult_schalten',{p_schalter:k,p_an:an});
   if(error||!data||!data.ok){ alert('Nicht geschaltet: '+(error?error.message:(data&&data.fehler))); return; }
   await laden();
+}
+const eur = x => x==null ? '–' : Number(x).toLocaleString('de-DE',{minimumFractionDigits:2,maximumFractionDigits:2})+' €';
+function followerWahl(){
+  const k=prompt('Für welchen Kanal? yt = YouTube, tt = TikTok'); if(!k) return;
+  const m={yt:['youtube','YouTube'],tt:['tiktok','TikTok']}[String(k).trim().toLowerCase()];
+  if(!m){ alert('Bitte yt oder tt eingeben.'); return; } followerEintragen(m[0],m[1]);
+}
+function kostenListe(){
+  const ko=(D&&D.kosten)||{}, KAT={werbung:'Werbung',ki:'KI',technik:'Technik',konten:'Konten',marke:'Marke',sonstiges:'Sonstiges'};
+  const ST={bezahlt:'bezahlt',laufend:'läuft',offen:'offen',fehlt:'Betrag fehlt'};
+  popAuf('<h3><span>Kosten seit Start</span><button class="knopf" onclick="popZu()">schließen</button></h3>'
+    +'<table><thead><tr><th>Bereich</th><th>Posten</th><th style="text-align:right">Betrag</th><th>Stand</th></tr></thead><tbody>'
+    +(ko.posten||[]).map(function(p){ return '<tr><td>'+esc(KAT[p.k]||p.k)+'</td><td>'+esc(p.b)+'</td><td style="text-align:right;white-space:nowrap">'+(p.eur==null?'<span style="color:var(--warn)">fehlt</span>':(p.w==='USD'?usd(p.eur):eur(p.eur)))+'</td><td>'+esc(ST[p.s]||p.s)+'</td></tr>'; }).join('')
+    +(ko.ki_monate||[]).map(function(m){ return '<tr><td>KI</td><td>KI-API Riki '+esc(m.monat)+' (automatisch)</td><td style="text-align:right">'+usd(m.usd)+'</td><td>bezahlt</td></tr>'; }).join('')
+    +'</tbody></table><p style="font-size:12px;color:var(--muted)">Fehlende Beträge bitte Claude im Chat nennen – sie werden eingetragen. Einnahmen: App Store '+eur(ko.einnahmen_eur)+', Stripe noch nicht angebunden.</p>');
 }
 async function followerEintragen(k, name){
   const v=prompt(name+': aktuelle Follower-Zahl?'); if(v==null) return;
