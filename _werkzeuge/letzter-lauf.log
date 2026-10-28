@@ -1,10 +1,10 @@
-Lauf: 127 · Commit: 5d008587bd5f2cd81334e7769fa5c1d6fa7dc6e5 · 2026-10-28 09:14 UTC
+Lauf: 128 · Commit: b961ff7acef11d5bbd655e09c5d1c00254f3bf8b · 2026-10-28 20:09 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
   ... 80 Produkte (zuletzt P10031)
-  ! nach id P10801: 200 Zeilen gingen nicht, versuche kleiner
-  ... 2160 Produkte (zuletzt P12047)
+  ... 2080 Produkte (zuletzt P11969)
+  ! nach id P12753: 200 Zeilen gingen nicht, versuche kleiner
   ... 4160 Produkte (zuletzt P14019)
   ... 6160 Produkte (zuletzt P15979)
   ... 8160 Produkte (zuletzt P17878)
@@ -19,30 +19,29 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 26160 Produkte (zuletzt P36124)
   ... 28160 Produkte (zuletzt P41114)
   ... 30160 Produkte (zuletzt P43169)
-  ... 32160 Produkte (zuletzt P45183)
-  ... 34160 Produkte (zuletzt P47222)
-  ... 36160 Produkte (zuletzt P49265)
-  ... 38160 Produkte (zuletzt P51303)
-  ... 40160 Produkte (zuletzt P53346)
-  ... 42160 Produkte (zuletzt P55370)
-  ! nach id P57011: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P44584: 200 Zeilen gingen nicht, versuche kleiner
+  ... 32040 Produkte (zuletzt P45062)
+  ... 34040 Produkte (zuletzt P47099)
+  ... 36040 Produkte (zuletzt P49137)
+  ... 38040 Produkte (zuletzt P51177)
+  ... 40040 Produkte (zuletzt P53223)
+  ... 42040 Produkte (zuletzt P55249)
   ... 44040 Produkte (zuletzt P57303)
   ... 46040 Produkte (zuletzt P59343)
   ... 48040 Produkte (zuletzt P61364)
   ... 50040 Produkte (zuletzt P63492)
   ... 52040 Produkte (zuletzt P65553)
-  ! nach id P67020: 200 Zeilen gingen nicht, versuche kleiner
-  ... 54120 Produkte (zuletzt P67720)
-  ... 56120 Produkte (zuletzt P69769)
-  ... 58120 Produkte (zuletzt P71857)
-  ... 60120 Produkte (zuletzt P74343)
-Fertig geladen: 61031 Produkte
+  ... 54040 Produkte (zuletzt P67636)
+  ... 56040 Produkte (zuletzt P69686)
+  ... 58040 Produkte (zuletzt P71776)
+  ... 60040 Produkte (zuletzt P74249)
+Fertig geladen: 61038 Produkte
 Herstellerbilder: 5 mit Freigabe.
 Alte Adressen aus Liste: 15
-Umleitungen (301): 5556
-Sitemap: davon neue Adressen umbenannter Produkte: 5433 von 5450
-↪️  Weiterleitungen alter Adressen: 5556
-✅ Produktseiten: 61031 · Kategorien: 23 · Sitemap-URLs: 10027
+Umleitungen (301): 5558
+Sitemap: davon neue Adressen umbenannter Produkte: 5435 von 5452
+↪️  Weiterleitungen alter Adressen: 5558
+✅ Produktseiten: 61038 · Kategorien: 23 · Sitemap-URLs: 10027
 Geladen: 17614 Produkte (UK/US/FR)
 ✅ en: 1962 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 68
 ✅ fr: 15652 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 212
