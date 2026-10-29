@@ -14893,12 +14893,25 @@ function vorlKarte(d, ean){
    Direkt nach dem Scan legt cb_scan_sofort das Produkt an, zerlegt, bindet und rechnet den
    ECHTEN Index (gemessen 2-5 s) - kein vorlaeufiger Wert, derselbe Score wie ueberall.
    Fehlt etwas (z. B. Zutatenliste), bleibt es bei der Quellenkarte und dem Posteingang. */
+let SCAN_FEHLT = null;
+/* 29.10.2026: Hinweis „fuer den Index fehlt noch …“ mit Foto-Knopf (gleich wie in der iPhone-App) */
+function fehltBanner(ean){
+  const f = SCAN_FEHLT; SCAN_FEHLT = null;
+  if(!f) return "";
+  const z = f.indexOf("Zutatenliste")>=0, n = f.some(x=>["kcal","Eiweiss","Kohlenhydrate","Fett"].indexOf(x)>=0);
+  const satz = z&&n ? "Für den Root Index fehlen noch die Zutatenliste und die Nährwerte." : z ? "Für den Root Index fehlt noch die Zutatenliste." : n ? "Für den Root Index fehlen noch die Nährwerte." : "Für den Root Index fehlen noch Angaben vom Etikett.";
+  return '<div style="margin-top:10px;padding:11px 12px;border:1px solid var(--k-f59e0b);border-radius:10px;background:var(--k-fffbeb);font-size:13px;line-height:1.55;color:var(--ink)">'
+    +'<b style="color:var(--k-b45309)">Fast geschafft.</b> '+satz+'<br>'
+    +'<span style="color:var(--muted)">Ein Foto der Rückseite reicht – Riki liest es, und der Root Index steht meist in unter einer Minute.</span></div>'
+    +'<div style="text-align:center">'+etikettCtaBtn(ean)+'</div>';
+}
 async function scanSofort(ean, d){
   try{
     const {data:{session}} = await client.auth.getSession();
     if(!session) return null;
     const {data:r, error} = await client.rpc("cb_scan_sofort",{p_ean:String(ean)});
-    if(error || !r || !r.ok || r.clean_score==null) return null;
+    /* 29.10.2026 (Ralph jaja): was fuer den Index fehlt, merken - die Karte bittet dann um ein Rueckseitenfoto */
+    if(error || !r || !r.ok || r.clean_score==null){ SCAN_FEHLT = (r && !r.ok && Array.isArray(r.fehlt)) ? r.fehlt : null; return null; }
     const n = (d && (d.naehrwerte || (d.vorschlag && d.vorschlag.naehrwerte_100g))) || null;
     const farbe = r.clean_score>=70 ? "var(--k-16a34a)" : (r.clean_score>=50 ? "var(--k-b45309)" : "var(--k-dc2626)");
     let h='<div style="display:flex;gap:12px;align-items:center;margin-top:12px">'
@@ -15042,14 +15055,14 @@ async function scanKette(ean){
     res.herkunftText = res.herkunft==="riki_etikett" ? "einem Etikettfoto (Riki)" : "OpenFoodFacts";
     const sofortC = await scanSofort(ean, res);
     if(sofortC) return sofortC;
-    return {stufe:"cache", html:vorlKarte(res, ean)};
+    return {stufe:"cache", html:fehltBanner(ean)+vorlKarte(res, ean)};
   }
 
   const off = await offScan(ean);
   if(off){
     const sofortO = await scanSofort(ean, off);
     if(sofortO) return sofortO;
-    return {stufe:"off", html:vorlKarte(off, ean)};
+    return {stufe:"off", html:fehltBanner(ean)+vorlKarte(off, ean)};
   }
 
   return {stufe:"unbekannt", html:
