@@ -1814,7 +1814,7 @@ async function loadProfil(){
      NULL wird zu "" und trifft damit die Option "Keine Angabe". */
   _selVal("pfDiab", b.Diabetes_Typ);
   /* 30.09.2026: Unvertraeglichkeiten (eigener Schreibweg, speichert beim Anklicken). */
-  try{ window._UNV=b.Unvertraeglichkeiten||[]; window._UNV_FUER=ME&&ME.benutzer_id; unvProfilRender(b.Unvertraeglichkeiten, b.Nierenschwaeche); }catch(e){}
+  try{ window._UNV=b.Unvertraeglichkeiten||[]; window._UNV_FUER=ME&&ME.benutzer_id; unvProfilRender(b.Unvertraeglichkeiten, b.Nierenschwaeche, b.Histamin); }catch(e){}
   /* 25.09.2026 (Ralph: "ja, du kannst beides bauen"): Schwangerschaft/Stillzeit.
      Bestimmt zusammen mit Geschlecht und Alter die Naehrstoff-Sollwerte
      (D-A-CH/DGE). Das Feld steht in index.html - die darf ich nicht anfassen;
@@ -18632,7 +18632,7 @@ async function alTagebuchMarkieren(items){
       +'</ul><div style="font-size:11px;color:var(--muted);margin-top:4px">Automatisch aus den Zutatenlisten gelesen – maßgeblich ist das Etikett.</div></div>';
   }catch(e){}
 }
-function unvProfilRender(liste, niere){
+function unvProfilRender(liste, niere, hist){
   var anker=document.getElementById("pfZustandLbl")||document.getElementById("pfDiab");
   if(!anker) return;
   var host=document.getElementById("pfUnvBox");
@@ -18650,7 +18650,16 @@ function unvProfilRender(liste, niere){
   /* 01.10.2026 (Buch Kap. 3, Ralph: ja): Nierenschwaeche -> Phosphat-Zusatzstoffe auf der Produktkarte markieren */
   h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:10px"><input type="checkbox" id="pfNiere"'+(niere?' checked':'')+' onchange="niereSpeichern()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">Nierenschwäche <span style="color:var(--k-9aa7a0);font-size:11px">(freiwillig)</span></label>'
     +'<span id="pfNiereMsg" style="display:block;margin-top:2px;font-size:11px;color:var(--k-9aa7a0);line-height:1.4">Dann markieren wir Phosphat-Zusatzstoffe (E 338–341, 343, 450–452). Keine Diagnose, keine medizinische Empfehlung.</span>';
+  /* 30.10.2026 (Ralph): Histamin als zuschaltbarer Hinweis - ausdruecklich geschaetzt (wie App) */
+  h+='<label style="display:flex;align-items:center;gap:6px;font-size:13px;color:var(--ink);cursor:pointer;margin-top:10px"><input type="checkbox" id="pfHist"'+(hist?' checked':'')+' onchange="histSpeichern()" style="width:16px;height:16px;accent-color:var(--k-16a34a)">Histamin – geschätzt <span style="color:var(--k-9aa7a0);font-size:11px">(freiwillig)</span></label>'
+    +'<span id="pfHistMsg" style="display:block;margin-top:2px;font-size:11px;color:var(--k-9aa7a0);line-height:1.4">Histamin steht auf keinem Etikett. Wir schätzen es aus den Zutaten (z. B. gereifter Käse, Salami, Sauerkraut, Wein) – Reife und Lagerung kennen wir nicht. Keine Diagnose.</span>';
   host.innerHTML=h;
+}
+async function histSpeichern(){
+  var el=document.getElementById("pfHist"), msg=document.getElementById("pfHistMsg"); if(!el) return;
+  var r=await client.rpc("cb_profil_histamin",{p_an:!!el.checked});
+  if(r.error){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+r.error.message; } return; }
+  if(msg){ msg.style.color="var(--k-16a34a)"; msg.textContent="✓ gespeichert"; }
 }
 async function niereSpeichern(){
   var el=document.getElementById("pfNiere"), msg=document.getElementById("pfNiereMsg"); if(!el) return;
