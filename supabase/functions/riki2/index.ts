@@ -23,13 +23,18 @@
 // v3 (2026-10-31, gleicher Fall): Widerspricht eine Quelle dem Foto DIESES Scans bei den Zutaten (andere Rezeptur),
 //   werden auch ihre Naehrwerte nicht uebernommen (Befund naehrwerte_andere_rezeptur). OFF lieferte 162 kcal der alten Rezeptur.
 //
+// v4 (2026-10-31, Pruefung der ersten 36 Laeufe): (a) OFF: ist ingredients_text_de leer, ingredients_text nehmen, wenn
+//   der Text deutsch aussieht (Skyr 4070308071763: lang=en, Text deutsch). (b) Zutatentext-Pruefung fuer jede Quelle:
+//   Bruchstueck („laktose", 20310608) oder Muell („002971 340303 181 kcal …", 4002971340303) wird nicht uebernommen.
+//   (c) kJ gegen kcal: weichen sie > 4 % ab, sperrt der Befund (OFF Choc Pudding: 331 kJ, aber 73,15 kcal).
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v3";
+const VERSION = "riki2 v4";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -108,6 +113,26 @@ function sauberNW(nw: NW | null | undefined): NW | null {
 const nwKomplett = (nw: NW | null | undefined) => !!nw && [nw.kcal, nw.protein, nw.kh, nw.fett].every((v) => typeof v === "number");
 
 // ---------- Pruefungen (fest, ohne Modell) ----------
+const DEUTSCH = /\b(und|enthält|enthalten|kann|spuren|milch|zucker|salz|wasser|säuerungsmittel|emulgator|weizen|aroma|gewürze|pflanzliche|aus|mit)\b/gi;
+function siehtDeutschAus(t: string): boolean {
+  const treffer = (t.match(DEUTSCH) ?? []).length + ((/[äöüß]/i.test(t)) ? 1 : 0);
+  return treffer >= 2;
+}
+// Liefert einen Grund, wenn der Text keine brauchbare Zutatenliste ist, sonst null.
+function zutatenUnbrauchbar(t: string, name: string): string | null {
+  const s = t.trim();
+  if (/\b(kcal|kj|brennwert|nährwert|naehrwert)\b|https?:|www\.|@/i.test(s)) return "Text enthält Nährwert-, Web- oder Adressangaben";
+  const ziffern = (s.match(/\d/g) ?? []).length;
+  if (s.length > 0 && ziffern / s.length > 0.25) return "Text besteht überwiegend aus Ziffern";
+  const posten = ersteN(s, 3);
+  if (posten.length < 2) {
+    const n = name.toLowerCase();
+    const einzel = (posten[0] ?? s).toLowerCase();
+    // Einzutaten-Produkte (Quark, Milch, Nüsse) sind erlaubt, wenn die eine Zutat zum Namen passt
+    if (!einzel || !(n.includes(einzel) || einzel.includes(n.split(/\s+/)[0] ?? "") || gleicheZutat(einzel, n))) return `nur ein Bruchstück („${s.slice(0, 40)}")`;
+  }
+  return null;
+}
 function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[] {
   const b: Befund[] = [];
   if (!nw) return b;
@@ -118,6 +143,10 @@ function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[]
     if (diff > 20 && diff > 0.3 * Math.max(kcal!, 1)) {
       b.push({ art: "atwater", quelle, text: `kcal ${kcal} passt nicht zu den Makros (errechnet ${Math.round(ber)})`, sperrt: true });
     }
+  }
+  if (typeof kcal === "number" && typeof nw.kj === "number" && nw.kj > 0) {
+    const ausKj = nw.kj / 4.184;
+    if (Math.abs(kcal - ausKj) > Math.max(3, 0.04 * ausKj)) b.push({ art: "kj_kcal_widerspruch", quelle, text: `${nw.kj} kJ entsprechen ${Math.round(ausKj)} kcal, angegeben ${kcal} kcal`, sperrt: true });
   }
   if (typeof zucker === "number" && typeof kh === "number" && zucker > kh + 0.5) b.push({ art: "zucker_ueber_kh", quelle, text: `Zucker ${zucker} > KH ${kh}`, sperrt: true });
   if (typeof ges_fett === "number" && typeof fett === "number" && ges_fett > fett + 0.5) b.push({ art: "gesfett_ueber_fett", quelle, text: `ges. Fett ${ges_fett} > Fett ${fett}`, sperrt: true });
@@ -255,7 +284,7 @@ async function quelleOff(ean: string): Promise<Quelle> {
   const t0 = Date.now();
   const q: Quelle = { quelle: "openfoodfacts", url: `https://world.openfoodfacts.org/product/${ean}`, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
   try {
-    const s = await holen(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=code,product_name,product_name_de,brands,ingredients_text_de,nutriments,nutrition_data_per`);
+    const s = await holen(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=code,lang,product_name,product_name_de,brands,ingredients_text,ingredients_text_de,nutriments,nutrition_data_per`);
     q.http = s.status;
     if (s.status === 404) { q.ergebnis = "nicht_gefunden"; return q; }
     if (s.status === 403 || s.status === 429) { q.ergebnis = "gesperrt"; return q; }
@@ -268,6 +297,13 @@ async function quelleOff(ean: string): Promise<Quelle> {
     q.name = (p.product_name_de || p.product_name || "").trim() || null;
     q.marke = String(p.brands ?? "").split(",")[0].trim() || null;
     q.zutaten_text = String(p.ingredients_text_de ?? "").replace(/_/g, "").trim() || null;
+    if (!q.zutaten_text) {
+      const allg = String(p.ingredients_text ?? "").replace(/_/g, "").trim();
+      if (allg && siehtDeutschAus(allg)) {
+        q.zutaten_text = allg;
+        q.befunde.push({ art: "off_sprachfeld", quelle: q.quelle, text: `Liste aus dem allgemeinen OFF-Feld (lang=${p.lang ?? "?"}), sieht deutsch aus` });
+      }
+    }
     const n = p.nutriments ?? {};
     if (p.nutrition_data_per === "serving") {
       q.befunde.push({ art: "portion", quelle: q.quelle, text: "OFF hat nur Portionswerte – nicht uebernommen" });
@@ -415,7 +451,12 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   // Zutaten: volles Etikettfoto > EDEKA > dm > OFF (OFF nur mit Abgleich, sonst Befund)
   const fotoVoll = fotoOk && (fotoOk as any)._lesbar === "voll" ? fotoOk : null;
   const fotoTeil = fotoOk && (fotoOk as any)._lesbar === "teilweise" ? fotoOk : null;
-  const zKand = [fotoVoll, edeka, dm, off].filter((q) => q?.zutaten_text) as Quelle[];
+  const zKand = ([fotoVoll, edeka, dm, off].filter((q) => q?.zutaten_text) as Quelle[]).filter((q) => {
+    const grund = zutatenUnbrauchbar(q.zutaten_text!, name ?? "");
+    if (!grund) return true;
+    befunde.push({ art: "zutaten_unbrauchbar", quelle: q.quelle, text: grund });
+    return false;
+  });
   let zutaten_text: string | null = null, zutaten_quelle: string | null = null;
   const andereRezeptur = new Set<string>();
   for (const k of zKand) {
