@@ -28,13 +28,17 @@
 //   Bruchstueck („laktose", 20310608) oder Muell („002971 340303 181 kcal …", 4002971340303) wird nicht uebernommen.
 //   (c) kJ gegen kcal: weichen sie > 4 % ab, sperrt der Befund (OFF Choc Pudding: 331 kJ, aber 73,15 kcal).
 //
+// v5 (2026-10-31): kJ/kcal-Pruefung nach EU-Umrechnungsfaktoren (VO 1169/2011 Anh. XIV): Eiweiss/KH 17/4, Fett 37/9,
+//   Ballaststoffe 8/2, Polyole 10/2,4 -> Verhaeltnis kJ:kcal liegt zwischen 3,9 und 4,3. v4 pruefte starr gegen 4,184 und
+//   verwarf die Weingummis (Polyole, 1233 kJ / 313 kcal = 3,94) zu Unrecht.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v4";
+const VERSION = "riki2 v5";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -145,8 +149,9 @@ function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[]
     }
   }
   if (typeof kcal === "number" && typeof nw.kj === "number" && nw.kj > 0) {
+    const verh = nw.kj / Math.max(kcal, 0.1);
     const ausKj = nw.kj / 4.184;
-    if (Math.abs(kcal - ausKj) > Math.max(3, 0.04 * ausKj)) b.push({ art: "kj_kcal_widerspruch", quelle, text: `${nw.kj} kJ entsprechen ${Math.round(ausKj)} kcal, angegeben ${kcal} kcal`, sperrt: true });
+    if ((verh < 3.9 || verh > 4.3) && Math.abs(kcal - ausKj) > 3) b.push({ art: "kj_kcal_widerspruch", quelle, text: `${nw.kj} kJ zu ${kcal} kcal (Verhältnis ${verh.toFixed(2)}, erlaubt 3,9–4,3)`, sperrt: true });
   }
   if (typeof zucker === "number" && typeof kh === "number" && zucker > kh + 0.5) b.push({ art: "zucker_ueber_kh", quelle, text: `Zucker ${zucker} > KH ${kh}`, sperrt: true });
   if (typeof ges_fett === "number" && typeof fett === "number" && ges_fett > fett + 0.5) b.push({ art: "gesfett_ueber_fett", quelle, text: `ges. Fett ${ges_fett} > Fett ${fett}`, sperrt: true });
