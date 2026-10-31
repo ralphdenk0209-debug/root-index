@@ -43,13 +43,17 @@
 //   nicht mehr gefragt, ob es passt (Haiku sagte trotz JSON-LD-GTIN „nein"). Seitenauswertung mit effort medium.
 //   dm.de/dm.at aus der Suche: dm lesen wir schon ueber die Schnittstelle, die Seiten sind leere JS-Huellen.
 //
+// v6.3 (2026-10-31, Ralph Entscheid A „nur wie verkauft"): Bruehe/Bouillon/Wuerfel/gekoernte Bruehe unter 50 kcal
+//   je 100 g = wohl zubereitete Werte -> sperrt (Pulver liegt wie verkauft bei 150-300 kcal). OFF fuehrt bei 12 von 12
+//   geprueften Bruehpulvern nur zubereitete Werte, oft im Feld „wie verkauft". Fluessiges (Fond, Glas, Tetra) ausgenommen.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.2";
+const VERSION = "riki2 v6.3";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -170,6 +174,9 @@ function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[]
   if (summe > 108) b.push({ art: "summe_ueber_100", quelle, text: `Makros zusammen ${summe.toFixed(1)} g je 100 g`, sperrt: true });
   const n = name.toLowerCase();
   if (typeof kcal === "number") {
+    if (/(brühe|bruehe|bouillon|brühwürfel|suppenwürfel|würfel|gekörnt|streuwürze)/.test(n) && !/(fond|flüssig|fluessig|fertig|im glas|tetra|knochenbrühe|suppe mit|klare brühe mit)/.test(n) && kcal < 50) {
+      b.push({ art: "wohl_zubereitet", quelle, text: `Brühe/Bouillon mit ${kcal} kcal je 100 g – wohl Werte zubereitet, nicht wie verkauft (Entscheid A)`, sperrt: true });
+    }
     if (/\b(chips|crisps|nachos|tortilla)/.test(n) && kcal < 300) b.push({ art: "portionsfalle", quelle, text: `Chips mit ${kcal} kcal – wohl Portion statt 100 g`, sperrt: true });
     if (/(^|\s)(oel|öl)\b|speiseöl|olivenöl|rapsöl/.test(n) && !/sardin|thunfisch|in öl|dressing/.test(n) && kcal < 700) b.push({ art: "portionsfalle", quelle, text: `Öl mit ${kcal} kcal – wohl Portion statt 100 g`, sperrt: true });
     if (/\b(nüsse|nuesse|mandeln|erdnüsse|cashew|walnüsse|haselnüsse)\b/.test(n) && !/drink|riegel|joghurt|creme/.test(n) && kcal < 450) b.push({ art: "portionsfalle", quelle, text: `Nüsse mit ${kcal} kcal – wohl Portion statt 100 g`, sperrt: true });
