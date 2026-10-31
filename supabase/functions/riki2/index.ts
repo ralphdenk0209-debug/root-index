@@ -55,13 +55,21 @@
 //   Uebernommen nur, wenn der Name ein Zubereitungsprodukt ist (zubereitungsprodukt()); sonst gilt weiter wie verkauft.
 //   v6.3-Sperre (< 50 kcal) ersetzt durch das Gegenteil: Bruehe mit >= 50 kcal = Werte wie verkauft -> sperrt.
 //
+// v6.5 (2026-10-31, Ralph jaja „verbessern", Faelle KoRo + ALDI aus dem 13er-Test):
+//   DEUTSCHE SEITE: Ist eine gefundene Seite nicht deutsch (<html lang>), folgt Riki 2 ihrem Sprachverweis
+//   (hreflang de-DE, sonst de/de-AT/de-CH/de-*) und liest die deutsche Fassung (KoRo /ie -> korodrogerie.de).
+//   Deutsche Adressen stehen vorn; doppelte Ziele werden nur einmal gelesen. Die Suche soll deutsche Seiten nennen.
+//   ANDERE SORTE: Ohne Barcode-Beweis wird eine Seite verworfen, wenn (a) ihre Sorte (Feld sorte_seite) kein Wort
+//   mit dem Scan-Namen teilt (ALDI Skyr „Erdbeere" fuer „HighProtein Skyr Drink") oder (b) die Suche auf demselben
+//   Shop mehrere Seiten derselben Linie fand – dann ist ohne Barcode nicht klar, welche Sorte gescannt wurde.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.4";
+const VERSION = "riki2 v6.5";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -443,6 +451,7 @@ Produktname: ${name}
 EAN: ${ean}
 
 Reihenfolge: 1. offizielle Seite des Herstellers (Domain kann einen Zusatz tragen), 2. deutscher Online-Händler mit Produktseite.
+Nimm die DEUTSCHE Fassung der Seite (deutsche Domain oder /de/), nicht die englische, irische, französische usw.
 Die Seite muss dieses eine Produkt zeigen (Marke passt, Name oder Sorte passt). Keine Kategorie-, Such- oder Startseiten, keine Preisvergleiche, Blogs, Rezepte.
 Suche zuerst mit der EAN, dann mit Marke und Name. Höchstens 2 Suchen. Nichts erfinden.
 Antworte zuletzt nur mit JSON: {"kandidaten":[{"url":"...","art":"hersteller"|"haendler"}]} – höchstens 3, beste zuerst, leer wenn nichts passt.`;
@@ -506,12 +515,53 @@ function unterseiten(html: string, basis: string): string[] {
   return raus;
 }
 
+// v6.5: Sprache der Seite und deutsche Fassung laut hreflang
+function seitenSprache(html: string): string | null {
+  const m = html.match(/<html[^>]*\blang="([a-z]{2})/i);
+  return m ? m[1].toLowerCase() : null;
+}
+function deutscheFassung(html: string, basis: string): string | null {
+  const alt: Record<string, string> = {};
+  for (const m of html.matchAll(/<link[^>]+>/gi)) {
+    const tag = m[0];
+    if (!/rel="alternate"/i.test(tag)) continue;
+    const hl = tag.match(/hreflang="([^"]+)"/i)?.[1]?.toLowerCase(), href = tag.match(/href="([^"]+)"/i)?.[1];
+    if (hl && href && hl.startsWith("de")) { try { alt[hl] = new URL(href.replace(/&amp;/g, "&"), basis).toString(); } catch { /* weiter */ } }
+  }
+  const wahl = alt["de-de"] ?? alt["de"] ?? alt["de-at"] ?? alt["de-ch"] ?? Object.values(alt)[0] ?? null;
+  return wahl && wahl !== basis ? wahl : null;
+}
+const wirktDeutsch = (url: string) => { try { const u = new URL(url); return /\.(de|at|ch)$/.test(u.host) && !/^\/(en|fr|it|es|nl)(-[a-z]{2})?\//i.test(u.pathname) || /^\/de(-[a-z]{2})?\//i.test(u.pathname); } catch { return false; } };
+// v6.5: Woerter fuer den Sortenvergleich (klein, ohne Umlaute, ab 4 Zeichen, ohne Fuellwoerter)
+function sortenWoerter(t: string): string[] {
+  const f = t.toLowerCase().replace(/ä/g, "ae").replace(/ö/g, "oe").replace(/ü/g, "ue").replace(/ß/g, "ss");
+  return [...new Set(f.split(/[^a-z0-9]+/).filter((w) => w.length >= 4 && !/^(sorte|geschmack|style|classic|original|natur|\d+)$/.test(w)))];
+}
+function sortePasst(sorte: string, name: string): boolean {
+  const n = sortenWoerter(name).join(" ");
+  const s = sortenWoerter(sorte);
+  return !s.length || s.some((w) => n.includes(w) || n.includes(w.slice(0, Math.max(4, w.length - 2))));
+}
+// v6.5: Mehrere Kandidaten auf demselben Shop mit gleicher Namenswurzel = Sortenfamilie
+function geschwisterHosts(urls: string[]): Set<string> {
+  const je: Record<string, string[]> = {};
+  for (const u of urls) { try { const x = new URL(u); (je[x.host] ??= []).push(x.pathname.replace(/\/$/, "")); } catch { /* weiter */ } }
+  const raus = new Set<string>();
+  const kopf = (p: string) => (p.split("/").pop() ?? "").split(/[-_]/).slice(0, 3).join("-");
+  for (const [h, pf] of Object.entries(je)) {
+    const eind = [...new Set(pf)];
+    if (eind.some((a, i) => eind.some((b, j) => i !== j && kopf(a) === kopf(b)))) raus.add(h);
+  }
+  return raus;
+}
+
 const SEITEN_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["produkt_passt", "zutaten_text", "naehrwert_basis", "naehrwerte"],
+  required: ["produkt_passt", "sorte_seite", "zutaten_text", "naehrwert_basis", "naehrwerte"],
   properties: {
     produkt_passt: { type: "string", enum: ["ja", "nein", "unklar"] },
+    sorte_seite: { type: ["string", "null"] },
     zutaten_text: { type: ["string", "null"] },
     naehrwert_basis: { type: "string", enum: ["100g", "100ml", "zubereitet", "nur_portion", "keine"] },
     naehrwerte: LESE_SCHEMA.properties.naehrwerte,
@@ -519,6 +569,7 @@ const SEITEN_SCHEMA = {
 };
 const SEITEN_AUFTRAG = (marke: string, name: string, text: string, belegt: boolean) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
 ${belegt ? '- produkt_passt: Die Seite ist über den Barcode als dieses Produkt belegt → "ja". Nur wenn die Seite mehrere Produkte zeigt und die Angaben keinem zuzuordnen sind: "unklar".' : '- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen; Handelsnamen dürfen etwas abweichen). Andere Sorte oder Kategorie-Seite = "nein".'}
+- sorte_seite: Sorte/Geschmack, den die Seite für IHR Produkt nennt (z. B. „Erdbeere", „Paprika"), wörtlich; null, wenn keine genannt.
 - zutaten_text: die deutsche Zutatenliste wörtlich, ohne „Zutaten:" am Anfang; sonst null.
 - naehrwerte: die Spalte je 100 g bzw. 100 ml WIE VERKAUFT. Bei Brühe, Bouillon, Brühwürfel, gekörnter Brühe, Suppen- und Soßenpulver die Spalte ZUBEREITET → naehrwert_basis "zubereitet" (auch wenn beide Spalten da sind); nennt ein anderes Produkt nur zubereitete Werte, diese mit "zubereitet". Nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
 - Nichts ergänzen, nichts schätzen. Was nicht dasteht, ist null.
@@ -545,7 +596,10 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
   let kosten = 0, inT = 0, outT = 0;
   const s = await websuche(client, marke, name, ean);
   kosten += s.kosten; inT += s.inT; outT += s.outT;
-  for (const k of s.kandidaten.slice(0, 2)) {
+  const geschwister = geschwisterHosts(s.kandidaten.map((k) => k.url));
+  const gelesen = new Set<string>();
+  const reihe = [...s.kandidaten].sort((a, b) => Number(wirktDeutsch(b.url)) - Number(wirktDeutsch(a.url)));
+  for (const k of reihe.slice(0, 2)) {
     const t0 = Date.now();
     let host = ""; try { host = new URL(k.url).host.replace(/^www\./, ""); } catch { continue; }
     const q: Quelle = { quelle: "web:" + host, url: k.url, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
@@ -562,8 +616,21 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
           }
         } catch (_) { /* weiter mit HTML */ }
       }
-      const h = await holeSeite(k.url);
+      let h = await holeSeite(k.url);
       q.http = h.status;
+      // v6.5: fremdsprachige Seite -> deutsche Fassung laut hreflang
+      const spr = h.status === 200 ? seitenSprache(h.text) : null;
+      const de = spr && spr !== "de" ? deutscheFassung(h.text, k.url) : null;
+      if (de) {
+        const h2 = await holeSeite(de);
+        if (h2.status === 200) {
+          q.befunde.push({ art: "deutsche_seite", quelle: q.quelle, text: `Seite war „${spr}" – deutsche Fassung gelesen: ${de}` });
+          h = h2; q.url = de; q.http = 200;
+          try { q.quelle = "web:" + new URL(de).host.replace(/^www\./, ""); } catch { /* bleibt */ }
+        }
+      }
+      if (gelesen.has(q.url ?? k.url)) { q.ergebnis = "doppelt"; continue; }
+      gelesen.add(q.url ?? k.url);
       if (h.status === 403 || h.status === 429 || h.status === 503) { q.ergebnis = "gesperrt"; continue; }
       if (h.status !== 200) continue;
       const ea = eansAusHtml(h.text);
@@ -582,6 +649,13 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
       kosten += a.kosten; inT += a.inT; outT += a.outT;
       const l = a.lesung;
       if (!l || l.produkt_passt !== "ja") { q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `Produkt passt: ${l?.produkt_passt ?? "?"}` }); continue; }
+      // v6.5: ohne Barcode-Beweis keine fremde Sorte
+      if (!q.ean_beweis && l.sorte_seite && !sortePasst(String(l.sorte_seite), name)) {
+        q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `andere Sorte: Seite „${l.sorte_seite}", Scan „${name}"` }); continue;
+      }
+      if (!q.ean_beweis && geschwister.has(new URL(k.url).host)) {
+        q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: "mehrere Sorten derselben Linie gefunden, keine per Barcode belegt" }); continue;
+      }
       if (l.zutaten_text) q.zutaten_text = ohneZutatenWort(String(l.zutaten_text));
       if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") q.naehrwerte = sauberNW(l.naehrwerte);
       else if (l.naehrwert_basis === "zubereitet" && zubereitungsprodukt(name)) { q.naehrwerte = sauberNW(l.naehrwerte); q.befunde.push({ art: "zubereitet", quelle: q.quelle, text: "Brühe: zubereitete Werte der Seite (BR-NW-WIE-VERKAUFT F2)" }); }
