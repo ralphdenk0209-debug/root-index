@@ -12,13 +12,21 @@
 //      Portionsfalle, OFF-kcal aus kJ errechnet, Null-Werte gegen zweite Quelle.
 //   4. Nichts wird erfunden: fehlt etwas, steht es in "fehlt". Widerspruch = Befund, nicht Mittelwert.
 //
+// v2 (2026-10-31, erste Messung, Fall Gefro Gemuesebruehe 4250589702734): (a) Etikett nennt nur Werte
+//   „zubereitet" -> nicht uebernehmen (Ralph 13.10.: Naehrwerte wie verkauft), Befund nur_zubereitet. (b) Abgleich
+//   Foto-Teilliste gegen Fremdquelle strenger: bis 6 Zutaten in Reihenfolge, >= 80 % gleich. Vorher reichten 2 von 3,
+//   so kam die alte OFF-Rezeptur („10 % Gemuese, Isomaltulose") gegen das neue Etikett durch.
+//
+//   (c) dm-Bremse: hoechstens eine dm-Anfrage gleichzeitig, 300 ms Abstand. Bei 6 parallelen Laeufen kam 3x HTTP 429.
+//   429 heisst jetzt "ueberlast" (nicht "gesperrt"): Last, keine Sperre.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v1";
+const VERSION = "riki2 v2";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -175,13 +183,21 @@ async function quelleEdeka(ean: string): Promise<Quelle> {
 }
 
 // ---------- Quelle: dm (oeffentliche Produkt-Schnittstelle, kostenlos) ----------
+let dmKette: Promise<void> = Promise.resolve();
+function dmWarten(): Promise<void> {
+  const dran = dmKette.then(() => new Promise<void>((r) => setTimeout(r, 300)));
+  dmKette = dran;
+  return dran;
+}
 async function quelleDm(ean: string): Promise<Quelle> {
+  await dmWarten();
   const t0 = Date.now();
   const q: Quelle = { quelle: "dm", ergebnis: "fehler", befunde: [], dauer_ms: 0 };
   try {
     const s = await holen(`https://product-search.services.dmtech.com/de/search?query=${ean}&pageSize=3`);
     q.http = s.status;
-    if (s.status === 403 || s.status === 429) { q.ergebnis = "gesperrt"; return q; }
+    if (s.status === 429) { q.ergebnis = "ueberlast"; return q; }
+    if (s.status === 403) { q.ergebnis = "gesperrt"; return q; }
     if (s.status !== 200) return q;
     const t = (JSON.parse(s.text)?.products ?? []).find((p: any) => gtinGleich(p?.gtin, ean));
     if (!t?.dan) { q.ergebnis = "nicht_gefunden"; return q; }
@@ -284,7 +300,7 @@ const LESE_SCHEMA = {
     zutatenverzeichnis_sichtbar: { type: "string", enum: ["ja", "nein", "unklar"] },
     zutaten_lesbar: { type: "string", enum: ["voll", "teilweise", "nein"] },
     zutaten_text: { type: ["string", "null"] },
-    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "nur_portion", "keine"] },
+    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "nur_zubereitet", "nur_portion", "keine"] },
     naehrwerte: {
       type: "object",
       additionalProperties: false,
@@ -302,7 +318,7 @@ Regeln:
 - Schreibe nur ab, was auf den Fotos steht. Nichts ergänzen, nichts schätzen, nichts aus Erfahrung einsetzen. Was du nicht sicher lesen kannst, ist null und kommt mit dem Feldnamen in "unsicher".
 - zutatenverzeichnis_sichtbar: "ja" nur, wenn auf einem Foto wirklich ein Zutatenverzeichnis zu sehen ist (meist mit "Zutaten:"). Ein Siegel, eine Werbeaussage oder eine Allergenzeile ist kein Zutatenverzeichnis.
 - zutaten_text: die deutsche Zutatenliste wörtlich in Etikett-Reihenfolge, mit allen Klammern und %-Angaben, ohne das Wort "Zutaten:" am Anfang. Fremdsprachige Fassungen weglassen. Geht die Liste über zwei Fotos, füge sie in der richtigen Reihenfolge zusammen. Ist nur ein Teil lesbar: zutaten_lesbar "teilweise" und nur den lesbaren Anfang abschreiben.
-- naehrwerte: nur die Spalte je 100 g bzw. je 100 ml. Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
+- naehrwerte: nur die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Gibt es zwei Spalten (z. B. „Pulver" und „zubereitet"), nimm die Spalte wie verkauft. Gibt es nur Werte für das zubereitete Produkt („pro 100 ml zubereitet", „nach Zubereitung"), naehrwert_basis "nur_zubereitet" und alle Werte null. Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
 - name: der Handelsname, wie er groß auf der Vorderseite steht, ohne Menge. marke: die Marke des Herstellers oder Händlers. Ein Bio-Siegel, "EU-Bio", "Bioland", "Demeter", "Fairtrade" ist keine Marke.
 - ean_auf_foto: die Ziffern unter dem Strichcode, falls lesbar, sonst null.`;
 
@@ -335,24 +351,47 @@ async function fotoLesen(client: Anthropic, modell: string, fotos: string[]) {
 }
 
 // ---------- Zusammenfuehren (fest, ohne Modell) ----------
-function ersteDrei(text: string): string[] {
+function ersteN(text: string, n: number): string[] {
   const teile: string[] = [];
   let tiefe = 0, akt = "";
   for (const ch of text) {
     if (ch === "(" || ch === "[") tiefe++;
     if (ch === ")" || ch === "]") tiefe = Math.max(0, tiefe - 1);
     if (ch === "," && tiefe === 0) { teile.push(akt); akt = ""; } else akt += ch;
-    if (teile.length >= 3) break;
+    if (teile.length >= n) break;
   }
-  if (teile.length < 3 && akt) teile.push(akt);
-  return teile.map((t) => t.replace(/\(.*$/s, "").replace(/[\d,.%*]+/g, "").trim().toLowerCase()).filter(Boolean).slice(0, 3);
+  if (teile.length < n && akt) teile.push(akt);
+  return teile.map((t) => t.replace(/\(.*$/s, "").replace(/[\d,.%*]+/g, "").trim().toLowerCase()).filter(Boolean).slice(0, n);
 }
+function abstand(a: string, b: string): number {
+  const d = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    let vor = d[0]; d[0] = i;
+    for (let j = 1; j <= b.length; j++) {
+      const t = d[j];
+      d[j] = Math.min(d[j] + 1, d[j - 1] + 1, vor + (a[i - 1] === b[j - 1] ? 0 : 1));
+      vor = t;
+    }
+  }
+  return d[b.length];
+}
+const gleicheZutat = (a: string, b: string) => a === b || abstand(a, b) <= Math.max(1, Math.floor(Math.min(a.length, b.length) / 6));
+// Zwei vollstaendige Listen: von den ersten 3 Zutaten mindestens 2 an gleicher Stelle (wie nachlesen_etikett_abgleich).
 function zutatenPassen(a: string, b: string): boolean {
-  const x = ersteDrei(a), y = ersteDrei(b);
+  const x = ersteN(a, 3), y = ersteN(b, 3);
   if (x.length < 2 || y.length < 2) return true; // nicht pruefbar
   let gleich = 0;
-  for (let i = 0; i < Math.min(x.length, y.length); i++) if (x[i] === y[i]) gleich++;
+  for (let i = 0; i < Math.min(x.length, y.length); i++) if (gleicheZutat(x[i], y[i])) gleich++;
   return gleich >= 2;
+}
+// Teilweise lesbares Foto gegen Fremdquelle: bis 6 Zutaten (die letzte lesbare kann abgeschnitten sein), >= 80 % gleich.
+function passtZumFoto(teil: string, kandidat: string): boolean {
+  const x = ersteN(teil, 7), y = ersteN(kandidat, 7);
+  const vergleich = x.length > 3 ? x.slice(0, -1).slice(0, 6) : x;
+  if (vergleich.length < 3) return zutatenPassen(teil, kandidat);
+  let gleich = 0;
+  vergleich.forEach((z, i) => { if (y[i] && gleicheZutat(z, y[i])) gleich++; });
+  return gleich / vergleich.length >= 0.8;
 }
 
 function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
@@ -376,7 +415,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   const zKand = [fotoVoll, edeka, dm, off].filter((q) => q?.zutaten_text) as Quelle[];
   let zutaten_text: string | null = null, zutaten_quelle: string | null = null;
   for (const k of zKand) {
-    if (fotoTeil?.zutaten_text && !zutatenPassen(fotoTeil.zutaten_text, k.zutaten_text!)) {
+    if (fotoTeil?.zutaten_text && !passtZumFoto(fotoTeil.zutaten_text, k.zutaten_text!)) {
       befunde.push({ art: "zutaten_passen_nicht_zum_foto", quelle: k.quelle, text: "Anfang der Liste weicht vom lesbaren Teil des Fotos ab" });
       continue;
     }
@@ -384,11 +423,12 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   }
   if (zutaten_quelle === "openfoodfacts" && !fotoTeil) befunde.push({ art: "off_ungeprueft", quelle: "openfoodfacts", text: "Zutaten nur von OFF, ohne zweite Quelle geprüft" });
   for (const k of zKand) {
-    if (zutaten_text && k.zutaten_text !== zutaten_text && !zutatenPassen(zutaten_text, k.zutaten_text!)) {
+    if (zutaten_text && k.zutaten_text !== zutaten_text && !passtZumFoto(zutaten_text, k.zutaten_text!)) {
       befunde.push({ art: "zutaten_widerspruch", quelle: k.quelle, text: `${k.quelle} hat eine andere Liste als ${zutaten_quelle} (andere Rezeptur?)` });
     }
   }
-  if (!zutaten_text) fehlt.push("zutaten");
+  const zutaten_teil = !zutaten_text && fotoTeil?.zutaten_text ? fotoTeil.zutaten_text : null;
+  if (!zutaten_text) fehlt.push(zutaten_teil ? "zutaten_unvollstaendig" : "zutaten");
 
   // Naehrwerte: Foto (je 100 g) > EDEKA > dm > OFF; nur wer die Pruefungen besteht
   const nKand = [fotoOk, edeka, dm, off].filter((q) => nwKomplett(q?.naehrwerte)) as Quelle[];
@@ -421,7 +461,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
     befunde.push({ art: "off_kcal_errechnet", text: "kcal stammt aus OFF und ist aus kJ errechnet" });
   }
   const vollstaendig = fehlt.length === 0;
-  return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig };
+  return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, zutaten_teil, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig };
 }
 
 // ---------- Ein Lauf ----------
@@ -460,6 +500,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
         if (l.zutatenverzeichnis_sichtbar !== "ja" && l.zutaten_text) foto.befunde.push({ art: "zutaten_ohne_verzeichnis", quelle: "foto", text: "Zutaten geliefert, obwohl kein Verzeichnis sichtbar – verworfen" });
         if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") foto.naehrwerte = sauberNW(l.naehrwerte);
         else if (l.naehrwert_basis === "nur_portion") foto.befunde.push({ art: "portion", quelle: "foto", text: "Etikett zeigt nur Portionswerte" });
+        else if (l.naehrwert_basis === "nur_zubereitet") foto.befunde.push({ art: "nur_zubereitet", quelle: "foto", text: "Etikett zeigt nur Werte für das zubereitete Produkt – nicht übernommen (wie verkauft, Ralph 13.10.)" });
         if (Array.isArray(l.unsicher) && l.unsicher.length) foto.befunde.push({ art: "unsicher", quelle: "foto", text: l.unsicher.join(", ") });
       }
     } catch (e) {
