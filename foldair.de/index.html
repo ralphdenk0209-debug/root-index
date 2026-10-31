@@ -72,13 +72,21 @@
     nav { display: none; }
     .band { padding: 26px 20px; }
   }
+  .shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 22px; }
+  .shot { margin: 0; }
+  .shot img { width: 100%; height: auto; border-radius: 14px; border: 1px solid var(--line); display: block; cursor: zoom-in; }
+  .shot figcaption { color: var(--muted); font-size: 14px; margin-top: 8px; }
+  .video { width: 100%; border-radius: 16px; border: 1px solid var(--line); display: block; background: #dbe9fb; }
+  #gross { position: fixed; inset: 0; background: rgba(8, 14, 28, 0.85); display: none; align-items: center; justify-content: center; padding: 3vw; z-index: 10; cursor: zoom-out; }
+  #gross img { max-width: 100%; max-height: 100%; border-radius: 12px; }
+  @media (max-width: 820px) { .shots { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <a class="brand" href="#"><img src="foldair.png" alt="">Foldair</a>
-    <nav><a href="#funktionen">Funktionen</a><a href="#agent">KI-Agent</a><a href="#preise">Preise</a><a href="#fragen">Fragen</a></nav>
+    <nav><a href="#ansehen">Ansehen</a><a href="#funktionen">Funktionen</a><a href="#agent">KI-Agent</a><a href="#preise">Preise</a><a href="#fragen">Fragen</a></nav>
   </header>
 
   <div class="hero">
@@ -95,6 +103,24 @@
     <img class="icon" src="foldair.png" alt="Foldair-Symbol: gelber Papierflieger">
   </div>
 </div>
+
+
+<section id="ansehen">
+  <div class="wrap">
+    <h2>So sieht Foldair aus</h2>
+    <p class="sub">30 Sekunden Rundgang – mit Beispieldaten.</p>
+    <video class="video" src="medien/foldair-vorstellung.mp4" poster="medien/video-vorschau.jpg" controls playsinline preload="none"></video>
+    <div class="shots" style="margin-top:28px">
+      <figure class="shot"><img src="medien/01-fotos-raster.jpg" alt="Foldair mit großen Vorschaubildern" loading="lazy"><figcaption>Große Vorschaubilder und Ordnerbaum wie unter Windows</figcaption></figure>
+      <figure class="shot"><img src="medien/02-agent-start.jpg" alt="Startseite des Agenten mit Karten" loading="lazy"><figcaption>Der Agent: alles auf einen Blick</figcaption></figure>
+      <figure class="shot"><img src="medien/10-aufraeumen.jpg" alt="Aufräum-Vorschläge für den Downloads-Ordner" loading="lazy"><figcaption>Downloads aufräumen – nichts ohne deinen Haken</figcaption></figure>
+      <figure class="shot"><img src="medien/03-fotos-sortieren.jpg" alt="Urlaubsfotos nach Reisen gruppiert" loading="lazy"><figcaption>Urlaubsfotos nach Reisen sortiert</figcaption></figure>
+      <figure class="shot"><img src="medien/04-belege.jpg" alt="Rechnungen aus Apple Mail mit Vorschau" loading="lazy"><figcaption>Rechnungen aus allen Postfächern ablegen</figcaption></figure>
+      <figure class="shot"><img src="medien/09-kopieren.jpg" alt="Kopieren mit Fortschrittsanzeige" loading="lazy"><figcaption>Kopieren mit Fortschritt und Restzeit</figcaption></figure>
+    </div>
+  </div>
+</section>
+<div id="gross" onclick="this.style.display='none'"><img alt=""></div>
 
 <section id="funktionen">
   <div class="wrap">
@@ -189,6 +215,9 @@
     familie: "",
     firma: ""
   };
+  document.querySelectorAll(".shot img").forEach(img => img.addEventListener("click", () => {
+    const g = document.getElementById("gross"); g.querySelector("img").src = img.src; g.style.display = "flex";
+  }));
   document.querySelectorAll("[data-kauf]").forEach(a => {
     const url = KAUF[a.dataset.kauf];
     if (url) a.href = url;
