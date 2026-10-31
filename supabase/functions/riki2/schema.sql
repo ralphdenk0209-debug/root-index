@@ -61,10 +61,11 @@ alter table shadow_v1.riki2_lauf enable row level security;
 alter table shadow_v1.riki2_quelle enable row level security;
 
 -- Kosten heute (eigener Deckel)
+-- Neulaeufe ueberschreiben riki2_lauf.kosten_usd; der Deckel zaehlt deshalb jede Buchung in Riki_Nutzung (31.10.).
 create or replace function shadow_v1._riki2_kosten_heute()
 returns numeric language sql stable set search_path = shadow_v1, public as $$
-  select coalesce(sum(kosten_usd), 0) from shadow_v1.riki2_lauf
-  where beendet_am >= date_trunc('day', now());
+  select coalesce(sum(kosten_usd), 0) from public."Riki_Nutzung"
+  where modus like 'riki2%' and erfasst_am >= date_trunc('day', now());
 $$;
 
 -- Neue Scans einreihen (Foto-Jobs und reine Barcode-Scans)

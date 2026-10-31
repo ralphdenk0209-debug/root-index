@@ -45,7 +45,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6";
+const VERSION = "riki2 v6.1";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -438,7 +438,7 @@ async function websuche(client: Anthropic, marke: string, name: string, ean: str
     kandidaten = (JSON.parse(m ? m[0] : text)?.kandidaten ?? []).filter((k: any) => typeof k?.url === "string" && /^https?:\/\//.test(k.url));
   } catch (_) { /* keine Kandidaten */ }
   kandidaten = kandidaten.filter((k) => { try { const h = new URL(k.url).host; return !NICHT_SUCHEN.some((d) => h === d || h.endsWith("." + d)); } catch { return false; } });
-  return { kandidaten: kandidaten.slice(0, 3), kosten, inT, outT, suchen };
+  return { kandidaten: kandidaten.slice(0, 3), kosten, inT, outT, suchen, antwort: text.slice(0, 600), stop: String(r?.stop_reason ?? ""), modell: String(r?.model ?? SUCH_MODELL) };
 }
 
 async function holeSeite(url: string, accept = "text/html"): Promise<{ status: number; text: string }> {
@@ -565,7 +565,9 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
       q.dauer_ms = Date.now() - t0;
     }
   }
-  if (!s.kandidaten.length) quellen.push({ quelle: "websuche", ergebnis: "nicht_gefunden", befunde: [], dauer_ms: 0 });
+  // v6.1: jede Suche protokollieren (was gesucht, wie oft, welche Adressen, Antwort im Wortlaut)
+  quellen.unshift({ quelle: "websuche", ergebnis: s.kandidaten.length ? "treffer" : "nicht_gefunden", url: s.kandidaten.map((k) => k.url).join(" ") || null,
+    befunde: [{ art: "suche", quelle: "websuche", text: `${s.modell}, ${s.suchen} Suche(n), stop=${s.stop}, „${marke} ${name}" – Antwort: ${s.antwort}` }], dauer_ms: 0 });
   return { quellen, kosten, inT, outT, suchen: s.suchen };
 }
 
