@@ -32,13 +32,20 @@
 //   Ballaststoffe 8/2, Polyole 10/2,4 -> Verhaeltnis kJ:kcal liegt zwischen 3,9 und 4,3. v4 pruefte starr gegen 4,184 und
 //   verwarf die Weingummis (Polyole, 1233 kJ / 313 kcal = 3,94) zu Unrecht.
 //
+// v6 (2026-10-31, Ralph „Herstellerseiten einbauen"): HERSTELLERWEG nur bei Luecke (Zutaten oder Naehrwerte fehlen).
+//   Websuche (Haiku 5.5, max. 2 Suchen, gesperrte Shops REWE/Kaufland/Netto per blocked_domains gar nicht erst gesucht)
+//   liefert bis zu 3 Adressen. Riki 2 liest selbst: Shopify-JSON (Barcode der Varianten), JSON-LD (gtin), EAN-Regex,
+//   Text + bis zu 2 Unterseiten „Zutaten/Naehrwerte" (LaVita-Fall), dann Haiku 5.5 mit festem Schema.
+//   Mit Barcode-Beweis zaehlt die Seite wie dm; ohne Beweis nur als Lueckenfueller nach OFF, Befund vorlaeufig_ohne_ean
+//   (Ralph 28.09.: Ladenscan → Herstellerseite vorlaeufig). Ersetzt spaeter riki-research + riki-herstellerseite.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v5";
+const VERSION = "riki2 v6";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -394,6 +401,174 @@ async function fotoLesen(client: Anthropic, modell: string, fotos: string[]) {
   }
 }
 
+// ---------- Herstellerweg: Websuche + Seite lesen (bezahlt, nur bei Luecke) ----------
+const SUCH_MODELL = "claude-haiku-5-5";
+const HAIKU_PREIS: [number, number] = [0.1, 0.5]; // je 1 Mio Tokens (bis 100K Prompt)
+const SUCHE_PREIS = 0.01; // je Websuche
+// Server-Abruf gesperrt (403/Captcha, gemessen 31.10.) – gar nicht erst suchen. Portale haben wir schon direkt.
+const NICHT_SUCHEN = ["rewe.de", "kaufland.de", "netto-online.de", "openfoodfacts.org", "fddb.info", "codecheck.info"];
+const SEITEN_UA = "Mozilla/5.0 (compatible; RootIndex/1.0; +https://root-index.de)";
+
+const SUCH_AUFTRAG = (marke: string, name: string, ean: string) => `Finde Produktseiten zu GENAU diesem Lebensmittel, auf denen die Zutatenliste und/oder die Nährwerttabelle je 100 g stehen.
+Marke: ${marke}
+Produktname: ${name}
+EAN: ${ean}
+
+Reihenfolge: 1. offizielle Seite des Herstellers (Domain kann einen Zusatz tragen), 2. deutscher Online-Händler mit Produktseite.
+Die Seite muss dieses eine Produkt zeigen (Marke passt, Name oder Sorte passt). Keine Kategorie-, Such- oder Startseiten, keine Preisvergleiche, Blogs, Rezepte.
+Suche zuerst mit der EAN, dann mit Marke und Name. Höchstens 2 Suchen. Nichts erfinden.
+Antworte zuletzt nur mit JSON: {"kandidaten":[{"url":"...","art":"hersteller"|"haendler"}]} – höchstens 3, beste zuerst, leer wenn nichts passt.`;
+
+async function websuche(client: Anthropic, marke: string, name: string, ean: string) {
+  const r: any = await client.messages.create({
+    model: SUCH_MODELL,
+    max_tokens: 2000,
+    output_config: { effort: "low" },
+    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 2, blocked_domains: NICHT_SUCHEN, user_location: { type: "approximate", country: "DE" } }],
+    messages: [{ role: "user", content: SUCH_AUFTRAG(marke, name, ean) }],
+  } as any);
+  const inT = Number(r?.usage?.input_tokens ?? 0) + Number(r?.usage?.cache_read_input_tokens ?? 0) + Number(r?.usage?.cache_creation_input_tokens ?? 0);
+  const outT = Number(r?.usage?.output_tokens ?? 0);
+  const suchen = Number(r?.usage?.server_tool_use?.web_search_requests ?? 0);
+  const kosten = (inT * HAIKU_PREIS[0] + outT * HAIKU_PREIS[1]) / 1e6 + suchen * SUCHE_PREIS;
+  const text = (r?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n");
+  let kandidaten: { url: string; art: string }[] = [];
+  try {
+    const m = text.match(/\{[\s\S]*\}/);
+    kandidaten = (JSON.parse(m ? m[0] : text)?.kandidaten ?? []).filter((k: any) => typeof k?.url === "string" && /^https?:\/\//.test(k.url));
+  } catch (_) { /* keine Kandidaten */ }
+  kandidaten = kandidaten.filter((k) => { try { const h = new URL(k.url).host; return !NICHT_SUCHEN.some((d) => h === d || h.endsWith("." + d)); } catch { return false; } });
+  return { kandidaten: kandidaten.slice(0, 3), kosten, inT, outT, suchen };
+}
+
+async function holeSeite(url: string, accept = "text/html"): Promise<{ status: number; text: string }> {
+  const c = new AbortController();
+  const uhr = setTimeout(() => c.abort(), QUELLE_TIMEOUT_MS);
+  try {
+    const r = await fetch(url, { headers: { "User-Agent": SEITEN_UA, "Accept": accept, "Accept-Language": "de-DE,de;q=0.9" }, signal: c.signal, redirect: "follow" });
+    return { status: r.status, text: await r.text() };
+  } finally {
+    clearTimeout(uhr);
+  }
+}
+
+// Barcode auf der Seite: Shopify-Varianten, JSON-LD gtin*, oder Ziffern direkt hinter EAN/GTIN/Barcode.
+function eansAusHtml(html: string): { eans: string[]; weg: string | null } {
+  const raus = new Set<string>();
+  let weg: string | null = null;
+  for (const m of html.matchAll(/"gtin(?:8|12|13|14)?"\s*:\s*"?(\d{8,14})/gi)) if (gtinGueltig(m[1])) { raus.add(m[1]); weg = weg ?? "json_ld_gtin"; }
+  for (const m of html.matchAll(/(EAN|GTIN|Barcode|Strichcode)[^0-9]{0,80}?(\d{13}|\d{8})\b/gi)) if (gtinGueltig(m[2])) { raus.add(m[2]); weg = weg ?? "text_" + m[1].toLowerCase(); }
+  return { eans: [...raus], weg };
+}
+function seitenText(html: string): string {
+  const ld = [...html.matchAll(/<script[^>]+application\/ld\+json[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1].trim()).join("\n").slice(0, 6000);
+  const t = html.replace(/<(script|style|noscript|svg|nav|footer|header)[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<br\s*\/?>|<\/(p|div|li|tr|h\d)>/gi, "\n").replace(/<td[^>]*>/gi, " | ").replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
+  return (ld ? "STRUKTURIERTE DATEN (JSON-LD):\n" + ld + "\n\nSEITENTEXT:\n" : "") + t;
+}
+function unterseiten(html: string, basis: string): string[] {
+  const host = new URL(basis).host;
+  const raus: string[] = [];
+  for (const m of html.matchAll(/<a[^>]+href="([^"#]+)"[^>]*>([\s\S]{0,120}?)<\/a>/gi)) {
+    if (!/zutaten|nährwert|naehrwert|inhaltsstoffe|ingredients/i.test(m[2].replace(/<[^>]+>/g, ""))) continue;
+    try { const u = new URL(m[1], basis); if (u.host === host && !raus.includes(u.toString()) && u.toString() !== basis) raus.push(u.toString()); } catch { /* weiter */ }
+    if (raus.length >= 2) break;
+  }
+  return raus;
+}
+
+const SEITEN_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["produkt_passt", "zutaten_text", "naehrwert_basis", "naehrwerte"],
+  properties: {
+    produkt_passt: { type: "string", enum: ["ja", "nein", "unklar"] },
+    zutaten_text: { type: ["string", "null"] },
+    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "nur_zubereitet", "nur_portion", "keine"] },
+    naehrwerte: LESE_SCHEMA.properties.naehrwerte,
+  },
+};
+const SEITEN_AUFTRAG = (marke: string, name: string, text: string) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
+- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen). Andere Sorte oder Kategorie-Seite = "nein".
+- zutaten_text: die deutsche Zutatenliste wörtlich, ohne „Zutaten:" am Anfang; sonst null.
+- naehrwerte: nur die Spalte je 100 g bzw. 100 ml WIE VERKAUFT; nur zubereitete Werte → naehrwert_basis "nur_zubereitet", Werte null; nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
+- Nichts ergänzen, nichts schätzen. Was nicht dasteht, ist null.
+
+${text.slice(0, 24000)}`;
+
+async function seiteAuswerten(client: Anthropic, marke: string, name: string, text: string) {
+  const r: any = await client.messages.create({
+    model: SUCH_MODELL,
+    max_tokens: 4000,
+    output_config: { effort: "low", format: { type: "json_schema", schema: SEITEN_SCHEMA } },
+    messages: [{ role: "user", content: SEITEN_AUFTRAG(marke, name, text) }],
+  } as any);
+  const inT = Number(r?.usage?.input_tokens ?? 0), outT = Number(r?.usage?.output_tokens ?? 0);
+  const kosten = (inT * HAIKU_PREIS[0] + outT * HAIKU_PREIS[1]) / 1e6;
+  const t = (r?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join("");
+  let lesung: any = null;
+  try { lesung = JSON.parse(t); } catch (_) { /* null */ }
+  return { lesung, kosten, inT, outT };
+}
+
+async function herstellerweg(client: Anthropic, marke: string, name: string, ean: string) {
+  const quellen: Quelle[] = [];
+  let kosten = 0, inT = 0, outT = 0;
+  const s = await websuche(client, marke, name, ean);
+  kosten += s.kosten; inT += s.inT; outT += s.outT;
+  for (const k of s.kandidaten.slice(0, 2)) {
+    const t0 = Date.now();
+    let host = ""; try { host = new URL(k.url).host.replace(/^www\./, ""); } catch { continue; }
+    const q: Quelle = { quelle: "web:" + host, url: k.url, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
+    quellen.push(q);
+    try {
+      let eans: string[] = [], weg: string | null = null;
+      const sh = k.url.match(/^(https?:\/\/[^/]+)(?:\/[a-z]{2})?\/products\/([^/?#]+)/i);
+      if (sh) {
+        try {
+          const j = await holeSeite(`${sh[1]}/products/${sh[2]}.json`, "application/json");
+          if (j.status === 200) {
+            const codes = (JSON.parse(j.text)?.product?.variants ?? []).map((v: any) => String(v?.barcode ?? "")).filter(gtinGueltig);
+            if (codes.length) { eans = codes; weg = "shopify_json"; }
+          }
+        } catch (_) { /* weiter mit HTML */ }
+      }
+      const h = await holeSeite(k.url);
+      q.http = h.status;
+      if (h.status === 403 || h.status === 429 || h.status === 503) { q.ergebnis = "gesperrt"; continue; }
+      if (h.status !== 200) continue;
+      const ea = eansAusHtml(h.text);
+      if (!eans.length) { eans = ea.eans; weg = ea.weg; }
+      if (eans.length && !eans.some((e) => gtinGleich(e, ean))) {
+        // Seite nennt nur andere Barcodes: andere Groesse/Sorte
+        q.ergebnis = "ean_falsch"; q.befunde.push({ art: "ean_falsch", quelle: q.quelle, text: `Seite nennt ${eans.slice(0, 3).join(", ")}` }); continue;
+      }
+      if (eans.some((e) => gtinGleich(e, ean))) q.ean_beweis = `EAN auf der Seite (${weg})`;
+      let text = seitenText(h.text);
+      for (const u of unterseiten(h.text, k.url)) {
+        try { const us = await holeSeite(u); if (us.status === 200) text += `\n\nUNTERSEITE ${u}:\n` + seitenText(us.text).slice(0, 8000); } catch (_) { /* weiter */ }
+      }
+      if (text.length < 400) { q.ergebnis = "leer"; q.befunde.push({ art: "leere_huelle", quelle: q.quelle, text: "Seite lädt Inhalte erst im Browser (JavaScript)" }); continue; }
+      const a = await seiteAuswerten(client, marke, name, text);
+      kosten += a.kosten; inT += a.inT; outT += a.outT;
+      const l = a.lesung;
+      if (!l || l.produkt_passt !== "ja") { q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `Produkt passt: ${l?.produkt_passt ?? "?"}` }); continue; }
+      if (l.zutaten_text) q.zutaten_text = ohneZutatenWort(String(l.zutaten_text));
+      if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") q.naehrwerte = sauberNW(l.naehrwerte);
+      else if (l.naehrwert_basis === "nur_zubereitet") q.befunde.push({ art: "nur_zubereitet", quelle: q.quelle, text: "Seite nennt nur zubereitete Werte" });
+      q.ergebnis = q.zutaten_text || nwKomplett(q.naehrwerte) ? "treffer" : "leer";
+      if (q.ergebnis === "treffer" && q.ean_beweis) break; // bewiesener Treffer reicht
+    } catch (e) {
+      q.befunde.push({ art: "fehler", quelle: q.quelle, text: String((e as Error)?.message ?? e).slice(0, 200) });
+    } finally {
+      q.dauer_ms = Date.now() - t0;
+    }
+  }
+  if (!s.kandidaten.length) quellen.push({ quelle: "websuche", ergebnis: "nicht_gefunden", befunde: [], dauer_ms: 0 });
+  return { quellen, kosten, inT, outT, suchen: s.suchen };
+}
+
 // ---------- Zusammenfuehren (fest, ohne Modell) ----------
 function ersteN(text: string, n: number): string[] {
   const teile: string[] = [];
@@ -443,6 +618,8 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   const fehlt: string[] = [];
   const nach = (n: string) => quellen.find((q) => q.quelle === n && q.ean_beweis);
   const dm = nach("dm"), edeka = nach("edeka-lmiv"), off = nach("openfoodfacts");
+  const web = quellen.filter((q) => q.quelle.startsWith("web:") && q.ergebnis === "treffer");
+  const webMitEan = web.filter((q) => q.ean_beweis), webOhneEan = web.filter((q) => !q.ean_beweis);
   const fotoOk = foto && foto.ergebnis === "treffer" ? foto : null;
 
   // Name/Marke: Haendler und OFF mit Barcode-Beweis vor dem Foto (Ralph 23.09.)
@@ -456,7 +633,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   // Zutaten: volles Etikettfoto > EDEKA > dm > OFF (OFF nur mit Abgleich, sonst Befund)
   const fotoVoll = fotoOk && (fotoOk as any)._lesbar === "voll" ? fotoOk : null;
   const fotoTeil = fotoOk && (fotoOk as any)._lesbar === "teilweise" ? fotoOk : null;
-  const zKand = ([fotoVoll, edeka, dm, off].filter((q) => q?.zutaten_text) as Quelle[]).filter((q) => {
+  const zKand = ([fotoVoll, edeka, dm, ...webMitEan, off, ...webOhneEan].filter((q) => q?.zutaten_text) as Quelle[]).filter((q) => {
     const grund = zutatenUnbrauchbar(q.zutaten_text!, name ?? "");
     if (!grund) return true;
     befunde.push({ art: "zutaten_unbrauchbar", quelle: q.quelle, text: grund });
@@ -483,7 +660,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   if (!zutaten_text) fehlt.push(zutaten_teil ? "zutaten_unvollstaendig" : "zutaten");
 
   // Naehrwerte: Foto (je 100 g) > EDEKA > dm > OFF; nur wer die Pruefungen besteht
-  const nKand = ([fotoOk, edeka, dm, off].filter((q) => nwKomplett(q?.naehrwerte)) as Quelle[]).filter((q) => {
+  const nKand = ([fotoOk, edeka, dm, ...webMitEan, off, ...webOhneEan].filter((q) => nwKomplett(q?.naehrwerte)) as Quelle[]).filter((q) => {
     if (!andereRezeptur.has(q.quelle)) return true;
     befunde.push({ art: "naehrwerte_andere_rezeptur", quelle: q.quelle, text: `Nährwerte von ${q.quelle} nicht übernommen – Zutaten passen nicht zum Foto dieses Scans` });
     return false;
@@ -515,6 +692,9 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   if (!marke) fehlt.push("marke");
   if (naehrwerte_quelle === "openfoodfacts" && quellen.find((q) => q.quelle === "openfoodfacts")?.befunde.some((b) => b.art === "kcal_errechnet")) {
     befunde.push({ art: "off_kcal_errechnet", text: "kcal stammt aus OFF und ist aus kJ errechnet" });
+  }
+  for (const q of webOhneEan) {
+    if (zutaten_quelle === q.quelle || naehrwerte_quelle === q.quelle) befunde.push({ art: "vorlaeufig_ohne_ean", quelle: q.quelle, text: `${q.quelle} genutzt, aber ohne Barcode auf der Seite – vorläufig` });
   }
   const vollstaendig = fehlt.length === 0;
   return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, zutaten_teil, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig };
@@ -571,11 +751,32 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   ]);
   const f = foto as Quelle | null;
   const fotoFuerMerge = f && f.ergebnis === "treffer" ? f : null;
-  const ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
+  let ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
+  // v6: Herstellerweg nur bei Luecke, nur mit Marke + Name, nur im Deckel
+  let kostenWeb = 0;
+  const luecke = ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte");
+  if (luecke && client && ergebnis.marke && ergebnis.name && ean.length >= 8) {
+    if (budgetRest.usd < 0.06) {
+      ergebnis.befunde.push({ art: "tagesdeckel", text: "Herstellerweg übersprungen: Riki-2-Tagesdeckel" });
+    } else {
+      budgetRest.usd -= 0.06;
+      try {
+        const w = await herstellerweg(client, ergebnis.marke, ergebnis.name, ean);
+        kostenWeb = w.kosten; inT += w.inT; outT += w.outT;
+        quellen.push(...w.quellen);
+        ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
+        benutzt = benutzt ?? SUCH_MODELL;
+      } catch (e) {
+        ergebnis.befunde.push({ art: "fehler", quelle: "websuche", text: String((e as Error)?.message ?? e).slice(0, 300) });
+      }
+      budgetRest.usd += 0.06 - kostenWeb;
+    }
+  }
+  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt"].includes(b.art)));
   if (f) ergebnis.befunde.push(...f.befunde);
   const alle = f ? [f, ...quellen] : quellen;
-  const kostenFinal: number = kosten;
-  budgetRest.usd += vorbehalt - kostenFinal; // Vorbehalt durch echte Kosten ersetzen
+  const kostenFinal: number = Math.round((kosten + kostenWeb) * 1e6) / 1e6;
+  budgetRest.usd += vorbehalt - kosten; // Vorbehalt durch echte Kosten ersetzen
 
   const meldung = {
     status: "fertig",
