@@ -201,8 +201,10 @@ select b.lauf_id, b.eingang, b.ean, b.status, b.erstellt_am, b.pid produkt_id,
          when b.pid is null then 'beide_leer'
          when zr."Zutatenliste_Rohtext" is null and b.e->>'zutaten_text' is not null then 'nur_riki2_zutaten'
          when zr."Zutatenliste_Rohtext" is not null and b.e->>'zutaten_text' is null then 'nur_riki_zutaten'
+         when nm."kcal_100g_ml" is not null and (b.e->'naehrwerte'->>'kcal') is null then 'nur_riki_naehrwerte'
+         when nm."kcal_100g_ml" is null and (b.e->'naehrwerte'->>'kcal') is not null then 'nur_riki2_naehrwerte'
          when public.similarity(lower(coalesce(zr."Zutatenliste_Rohtext",'')), lower(coalesce(b.e->>'zutaten_text',''))) >= 0.85
-              and (nm."kcal_100g_ml" is null or (b.e->'naehrwerte'->>'kcal') is null
+              and (nm."kcal_100g_ml" is null
                    or abs(nm."kcal_100g_ml" - (b.e->'naehrwerte'->>'kcal')::numeric) <= greatest(5, nm."kcal_100g_ml"*0.05)) then 'gleich'
          else 'abweichend'
        end urteil,
