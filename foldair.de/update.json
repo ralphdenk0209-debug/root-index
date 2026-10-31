@@ -1,7 +1,7 @@
 {
-  "build": 202610311741,
-  "version": "1.0.1",
-  "notes": "Belege: alle Mail-Konten durchsuchen, Postfächer per Häkchen wählbar",
-  "url": "https://foldair.de/download/Foldair-1.0.1.update",
-  "sha256": "f6d1ac8f4f8c76973655e1d0a09774a5f7f59fe7e7045761c2a546af6843f299"
+  "build": 202610311749,
+  "version": "1.0.2",
+  "notes": "Agent mit neuer Startseite: Karten für Aufräumen, Fotos, Belege, Rezepte; Regeln und Einstellungen als eigene Fenster",
+  "url": "https://foldair.de/download/Foldair-1.0.2.update",
+  "sha256": "bf08a8a74506131f82a8e56d585c115b50a3fa647ea6e4f7be257a6e0b520fda"
 }
