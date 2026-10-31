@@ -39,13 +39,17 @@
 //   Mit Barcode-Beweis zaehlt die Seite wie dm; ohne Beweis nur als Lueckenfueller nach OFF, Befund vorlaeufig_ohne_ean
 //   (Ralph 28.09.: Ladenscan → Herstellerseite vorlaeufig). Ersetzt spaeter riki-research + riki-herstellerseite.
 //
+// v6.2 (2026-10-31, Fall gefro.de): Steht die Scan-EAN auf der Seite, ist das Produkt belegt – das Modell wird
+//   nicht mehr gefragt, ob es passt (Haiku sagte trotz JSON-LD-GTIN „nein"). Seitenauswertung mit effort medium.
+//   dm.de/dm.at aus der Suche: dm lesen wir schon ueber die Schnittstelle, die Seiten sind leere JS-Huellen.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.1";
+const VERSION = "riki2 v6.2";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -406,7 +410,7 @@ const SUCH_MODELL = "claude-haiku-5-5";
 const HAIKU_PREIS: [number, number] = [0.1, 0.5]; // je 1 Mio Tokens (bis 100K Prompt)
 const SUCHE_PREIS = 0.01; // je Websuche
 // Server-Abruf gesperrt (403/Captcha, gemessen 31.10.) – gar nicht erst suchen. Portale haben wir schon direkt.
-const NICHT_SUCHEN = ["rewe.de", "kaufland.de", "netto-online.de", "openfoodfacts.org", "fddb.info", "codecheck.info"];
+const NICHT_SUCHEN = ["rewe.de", "kaufland.de", "netto-online.de", "openfoodfacts.org", "fddb.info", "codecheck.info", "dm.de", "dm.at"];
 const SEITEN_UA = "Mozilla/5.0 (compatible; RootIndex/1.0; +https://root-index.de)";
 
 const SUCH_AUFTRAG = (marke: string, name: string, ean: string) => `Finde Produktseiten zu GENAU diesem Lebensmittel, auf denen die Zutatenliste und/oder die Nährwerttabelle je 100 g stehen.
@@ -489,20 +493,20 @@ const SEITEN_SCHEMA = {
     naehrwerte: LESE_SCHEMA.properties.naehrwerte,
   },
 };
-const SEITEN_AUFTRAG = (marke: string, name: string, text: string) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
-- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen). Andere Sorte oder Kategorie-Seite = "nein".
+const SEITEN_AUFTRAG = (marke: string, name: string, text: string, belegt: boolean) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
+${belegt ? '- produkt_passt: Die Seite ist über den Barcode als dieses Produkt belegt → "ja". Nur wenn die Seite mehrere Produkte zeigt und die Angaben keinem zuzuordnen sind: "unklar".' : '- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen; Handelsnamen dürfen etwas abweichen). Andere Sorte oder Kategorie-Seite = "nein".'}
 - zutaten_text: die deutsche Zutatenliste wörtlich, ohne „Zutaten:" am Anfang; sonst null.
 - naehrwerte: nur die Spalte je 100 g bzw. 100 ml WIE VERKAUFT; nur zubereitete Werte → naehrwert_basis "nur_zubereitet", Werte null; nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
 - Nichts ergänzen, nichts schätzen. Was nicht dasteht, ist null.
 
 ${text.slice(0, 24000)}`;
 
-async function seiteAuswerten(client: Anthropic, marke: string, name: string, text: string) {
+async function seiteAuswerten(client: Anthropic, marke: string, name: string, text: string, belegt: boolean) {
   const r: any = await client.messages.create({
     model: SUCH_MODELL,
-    max_tokens: 4000,
-    output_config: { effort: "low", format: { type: "json_schema", schema: SEITEN_SCHEMA } },
-    messages: [{ role: "user", content: SEITEN_AUFTRAG(marke, name, text) }],
+    max_tokens: 6000,
+    output_config: { effort: "medium", format: { type: "json_schema", schema: SEITEN_SCHEMA } },
+    messages: [{ role: "user", content: SEITEN_AUFTRAG(marke, name, text, belegt) }],
   } as any);
   const inT = Number(r?.usage?.input_tokens ?? 0), outT = Number(r?.usage?.output_tokens ?? 0);
   const kosten = (inT * HAIKU_PREIS[0] + outT * HAIKU_PREIS[1]) / 1e6;
@@ -550,7 +554,7 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
         try { const us = await holeSeite(u); if (us.status === 200) text += `\n\nUNTERSEITE ${u}:\n` + seitenText(us.text).slice(0, 8000); } catch (_) { /* weiter */ }
       }
       if (text.length < 400) { q.ergebnis = "leer"; q.befunde.push({ art: "leere_huelle", quelle: q.quelle, text: "Seite lädt Inhalte erst im Browser (JavaScript)" }); continue; }
-      const a = await seiteAuswerten(client, marke, name, text);
+      const a = await seiteAuswerten(client, marke, name, text, !!q.ean_beweis);
       kosten += a.kosten; inT += a.inT; outT += a.outT;
       const l = a.lesung;
       if (!l || l.produkt_passt !== "ja") { q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `Produkt passt: ${l?.produkt_passt ?? "?"}` }); continue; }
