@@ -20,13 +20,16 @@
 //   (c) dm-Bremse: hoechstens eine dm-Anfrage gleichzeitig, 300 ms Abstand. Bei 6 parallelen Laeufen kam 3x HTTP 429.
 //   429 heisst jetzt "ueberlast" (nicht "gesperrt"): Last, keine Sperre.
 //
+// v3 (2026-10-31, gleicher Fall): Widerspricht eine Quelle dem Foto DIESES Scans bei den Zutaten (andere Rezeptur),
+//   werden auch ihre Naehrwerte nicht uebernommen (Befund naehrwerte_andere_rezeptur). OFF lieferte 162 kcal der alten Rezeptur.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v2";
+const VERSION = "riki2 v3";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -414,9 +417,11 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   const fotoTeil = fotoOk && (fotoOk as any)._lesbar === "teilweise" ? fotoOk : null;
   const zKand = [fotoVoll, edeka, dm, off].filter((q) => q?.zutaten_text) as Quelle[];
   let zutaten_text: string | null = null, zutaten_quelle: string | null = null;
+  const andereRezeptur = new Set<string>();
   for (const k of zKand) {
     if (fotoTeil?.zutaten_text && !passtZumFoto(fotoTeil.zutaten_text, k.zutaten_text!)) {
       befunde.push({ art: "zutaten_passen_nicht_zum_foto", quelle: k.quelle, text: "Anfang der Liste weicht vom lesbaren Teil des Fotos ab" });
+      andereRezeptur.add(k.quelle);
       continue;
     }
     zutaten_text = k.zutaten_text!; zutaten_quelle = k.quelle; break;
@@ -425,13 +430,18 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   for (const k of zKand) {
     if (zutaten_text && k.zutaten_text !== zutaten_text && !passtZumFoto(zutaten_text, k.zutaten_text!)) {
       befunde.push({ art: "zutaten_widerspruch", quelle: k.quelle, text: `${k.quelle} hat eine andere Liste als ${zutaten_quelle} (andere Rezeptur?)` });
+      if (zutaten_quelle === "foto") andereRezeptur.add(k.quelle);
     }
   }
   const zutaten_teil = !zutaten_text && fotoTeil?.zutaten_text ? fotoTeil.zutaten_text : null;
   if (!zutaten_text) fehlt.push(zutaten_teil ? "zutaten_unvollstaendig" : "zutaten");
 
   // Naehrwerte: Foto (je 100 g) > EDEKA > dm > OFF; nur wer die Pruefungen besteht
-  const nKand = [fotoOk, edeka, dm, off].filter((q) => nwKomplett(q?.naehrwerte)) as Quelle[];
+  const nKand = ([fotoOk, edeka, dm, off].filter((q) => nwKomplett(q?.naehrwerte)) as Quelle[]).filter((q) => {
+    if (!andereRezeptur.has(q.quelle)) return true;
+    befunde.push({ art: "naehrwerte_andere_rezeptur", quelle: q.quelle, text: `Nährwerte von ${q.quelle} nicht übernommen – Zutaten passen nicht zum Foto dieses Scans` });
+    return false;
+  });
   let naehrwerte: NW | null = null, naehrwerte_quelle: string | null = null;
   for (const k of nKand) {
     const pb = pruefeNaehrwerte(k.naehrwerte!, name ?? "", k.quelle);
