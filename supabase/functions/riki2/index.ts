@@ -47,13 +47,21 @@
 //   je 100 g = wohl zubereitete Werte -> sperrt (Pulver liegt wie verkauft bei 150-300 kcal). OFF fuehrt bei 12 von 12
 //   geprueften Bruehpulvern nur zubereitete Werte, oft im Feld „wie verkauft". Fluessiges (Fond, Glas, Tetra) ausgenommen.
 //
+// v6.4 (2026-10-31, Ralph „dann zubereitet verwenden und Regelwerk wieder aendern mit Begruendung" + jaja „anpassen"):
+//   Regel BR-NW-WIE-VERKAUFT Fassung 2: Zubereitungsprodukte (Bruehe, Bouillon, Wuerfel, gekoernte Bruehe, Suppen- und
+//   Sossenpulver) werden ZUBEREITET bewertet, wie das Etikett es nennt – auch wenn beide Spalten da sind. Grund: wie
+//   verkauft liess sich nur fuer 15 von 185 Bruehpulvern belegen (Nachholen 31.10.). Fotolesung und Seitenauswertung
+//   liefern dafuer naehrwert_basis "zubereitet" mit der zubereiteten Spalte; OFF nimmt bei Bruehe die *_prepared_100g-Felder.
+//   Uebernommen nur, wenn der Name ein Zubereitungsprodukt ist (zubereitungsprodukt()); sonst gilt weiter wie verkauft.
+//   v6.3-Sperre (< 50 kcal) ersetzt durch das Gegenteil: Bruehe mit >= 50 kcal = Werte wie verkauft -> sperrt.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.3";
+const VERSION = "riki2 v6.4";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -152,6 +160,12 @@ function zutatenUnbrauchbar(t: string, name: string): string | null {
   }
   return null;
 }
+// v6.4: Produkte, die nur zubereitet gegessen werden (Regel BR-NW-WIE-VERKAUFT Fassung 2)
+function zubereitungsprodukt(name: string): boolean {
+  const n = name.toLowerCase();
+  return /(brühe|bruehe|bouillon|brühwürfel|suppenwürfel|gekörnt|streuwürze|suppenpulver|soßenpulver|saucenpulver|bratensoße|bratensauce|tassensuppe|tütensuppe|instantsuppe)/.test(n)
+    && !/(fond|flüssig|fluessig|fertig|im glas|tetra|knochenbrühe|suppe mit|klare brühe mit)/.test(n);
+}
 function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[] {
   const b: Befund[] = [];
   if (!nw) return b;
@@ -174,8 +188,8 @@ function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[]
   if (summe > 108) b.push({ art: "summe_ueber_100", quelle, text: `Makros zusammen ${summe.toFixed(1)} g je 100 g`, sperrt: true });
   const n = name.toLowerCase();
   if (typeof kcal === "number") {
-    if (/(brühe|bruehe|bouillon|brühwürfel|suppenwürfel|würfel|gekörnt|streuwürze)/.test(n) && !/(fond|flüssig|fluessig|fertig|im glas|tetra|knochenbrühe|suppe mit|klare brühe mit)/.test(n) && kcal < 50) {
-      b.push({ art: "wohl_zubereitet", quelle, text: `Brühe/Bouillon mit ${kcal} kcal je 100 g – wohl Werte zubereitet, nicht wie verkauft (Entscheid A)`, sperrt: true });
+    if (zubereitungsprodukt(name) && kcal >= 50) {
+      b.push({ art: "wie_verkauft_statt_zubereitet", quelle, text: `Brühe/Pulver mit ${kcal} kcal je 100 g – Werte wie verkauft; bewertet wird zubereitet (BR-NW-WIE-VERKAUFT F2)`, sperrt: true });
     }
     if (/\b(chips|crisps|nachos|tortilla)/.test(n) && kcal < 300) b.push({ art: "portionsfalle", quelle, text: `Chips mit ${kcal} kcal – wohl Portion statt 100 g`, sperrt: true });
     if (/(^|\s)(oel|öl)\b|speiseöl|olivenöl|rapsöl/.test(n) && !/sardin|thunfisch|in öl|dressing/.test(n) && kcal < 700) b.push({ art: "portionsfalle", quelle, text: `Öl mit ${kcal} kcal – wohl Portion statt 100 g`, sperrt: true });
@@ -331,8 +345,11 @@ async function quelleOff(ean: string): Promise<Quelle> {
     if (p.nutrition_data_per === "serving") {
       q.befunde.push({ art: "portion", quelle: q.quelle, text: "OFF hat nur Portionswerte – nicht uebernommen" });
     } else {
-      q.naehrwerte = sauberNW({ kcal: n["energy-kcal_100g"], kj: n["energy-kj_100g"], fett: n["fat_100g"], ges_fett: n["saturated-fat_100g"],
-        kh: n["carbohydrates_100g"], zucker: n["sugars_100g"], ballaststoffe: n["fiber_100g"], protein: n["proteins_100g"], salz: n["salt_100g"] });
+      // v6.4: Bruehe zubereitet bewerten – OFF fuehrt die zubereitete Spalte als *_prepared_100g
+      const zub = zubereitungsprodukt(q.name ?? "") && typeof n["energy-kcal_prepared_100g"] === "number" ? "_prepared_100g" : "_100g";
+      if (zub !== "_100g") q.befunde.push({ art: "zubereitet", quelle: q.quelle, text: "Brühe: zubereitete Spalte von OFF genommen (BR-NW-WIE-VERKAUFT F2)" });
+      q.naehrwerte = sauberNW({ kcal: n["energy-kcal" + zub], kj: n["energy-kj" + zub], fett: n["fat" + zub], ges_fett: n["saturated-fat" + zub],
+        kh: n["carbohydrates" + zub], zucker: n["sugars" + zub], ballaststoffe: n["fiber" + zub], protein: n["proteins" + zub], salz: n["salt" + zub] });
       const kc = q.naehrwerte?.kcal, kj = q.naehrwerte?.kj;
       // Etiketten nennen kcal als ganze Zahl. Krumme kcal = kJ/4,184 → von OFF errechnet, nicht vom Etikett.
       if (typeof kc === "number" && typeof kj === "number" && !Number.isInteger(kc) && Math.abs(kc - kj / 4.184) < 0.6) {
@@ -362,7 +379,7 @@ const LESE_SCHEMA = {
     zutatenverzeichnis_sichtbar: { type: "string", enum: ["ja", "nein", "unklar"] },
     zutaten_lesbar: { type: "string", enum: ["voll", "teilweise", "nein"] },
     zutaten_text: { type: ["string", "null"] },
-    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "nur_zubereitet", "nur_portion", "keine"] },
+    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "zubereitet", "nur_portion", "keine"] },
     naehrwerte: {
       type: "object",
       additionalProperties: false,
@@ -380,7 +397,7 @@ Regeln:
 - Schreibe nur ab, was auf den Fotos steht. Nichts ergänzen, nichts schätzen, nichts aus Erfahrung einsetzen. Was du nicht sicher lesen kannst, ist null und kommt mit dem Feldnamen in "unsicher".
 - zutatenverzeichnis_sichtbar: "ja" nur, wenn auf einem Foto wirklich ein Zutatenverzeichnis zu sehen ist (meist mit "Zutaten:"). Ein Siegel, eine Werbeaussage oder eine Allergenzeile ist kein Zutatenverzeichnis.
 - zutaten_text: die deutsche Zutatenliste wörtlich in Etikett-Reihenfolge, mit allen Klammern und %-Angaben, ohne das Wort "Zutaten:" am Anfang. Fremdsprachige Fassungen weglassen. Geht die Liste über zwei Fotos, füge sie in der richtigen Reihenfolge zusammen. Ist nur ein Teil lesbar: zutaten_lesbar "teilweise" und nur den lesbaren Anfang abschreiben.
-- naehrwerte: nur die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Gibt es zwei Spalten (z. B. „Pulver" und „zubereitet"), nimm die Spalte wie verkauft. Gibt es nur Werte für das zubereitete Produkt („pro 100 ml zubereitet", „nach Zubereitung"), naehrwert_basis "nur_zubereitet" und alle Werte null. Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
+- naehrwerte: die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Ausnahme Brühe, Bouillon, Brühwürfel, gekörnte Brühe, Suppen- und Soßenpulver: dort die Spalte ZUBEREITET („pro 100 ml zubereitet"), naehrwert_basis "zubereitet" – auch wenn es zwei Spalten gibt. Nennt ein anderes Produkt nur zubereitete Werte, ebenfalls diese mit naehrwert_basis "zubereitet". Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
 - name: der Handelsname, wie er groß auf der Vorderseite steht, ohne Menge. marke: die Marke des Herstellers oder Händlers. Ein Bio-Siegel, "EU-Bio", "Bioland", "Demeter", "Fairtrade" ist keine Marke.
 - ean_auf_foto: die Ziffern unter dem Strichcode, falls lesbar, sonst null.`;
 
@@ -496,14 +513,14 @@ const SEITEN_SCHEMA = {
   properties: {
     produkt_passt: { type: "string", enum: ["ja", "nein", "unklar"] },
     zutaten_text: { type: ["string", "null"] },
-    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "nur_zubereitet", "nur_portion", "keine"] },
+    naehrwert_basis: { type: "string", enum: ["100g", "100ml", "zubereitet", "nur_portion", "keine"] },
     naehrwerte: LESE_SCHEMA.properties.naehrwerte,
   },
 };
 const SEITEN_AUFTRAG = (marke: string, name: string, text: string, belegt: boolean) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
 ${belegt ? '- produkt_passt: Die Seite ist über den Barcode als dieses Produkt belegt → "ja". Nur wenn die Seite mehrere Produkte zeigt und die Angaben keinem zuzuordnen sind: "unklar".' : '- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen; Handelsnamen dürfen etwas abweichen). Andere Sorte oder Kategorie-Seite = "nein".'}
 - zutaten_text: die deutsche Zutatenliste wörtlich, ohne „Zutaten:" am Anfang; sonst null.
-- naehrwerte: nur die Spalte je 100 g bzw. 100 ml WIE VERKAUFT; nur zubereitete Werte → naehrwert_basis "nur_zubereitet", Werte null; nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
+- naehrwerte: die Spalte je 100 g bzw. 100 ml WIE VERKAUFT. Bei Brühe, Bouillon, Brühwürfel, gekörnter Brühe, Suppen- und Soßenpulver die Spalte ZUBEREITET → naehrwert_basis "zubereitet" (auch wenn beide Spalten da sind); nennt ein anderes Produkt nur zubereitete Werte, diese mit "zubereitet". Nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
 - Nichts ergänzen, nichts schätzen. Was nicht dasteht, ist null.
 
 ${text.slice(0, 24000)}`;
@@ -567,7 +584,8 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
       if (!l || l.produkt_passt !== "ja") { q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `Produkt passt: ${l?.produkt_passt ?? "?"}` }); continue; }
       if (l.zutaten_text) q.zutaten_text = ohneZutatenWort(String(l.zutaten_text));
       if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") q.naehrwerte = sauberNW(l.naehrwerte);
-      else if (l.naehrwert_basis === "nur_zubereitet") q.befunde.push({ art: "nur_zubereitet", quelle: q.quelle, text: "Seite nennt nur zubereitete Werte" });
+      else if (l.naehrwert_basis === "zubereitet" && zubereitungsprodukt(name)) { q.naehrwerte = sauberNW(l.naehrwerte); q.befunde.push({ art: "zubereitet", quelle: q.quelle, text: "Brühe: zubereitete Werte der Seite (BR-NW-WIE-VERKAUFT F2)" }); }
+      else if (l.naehrwert_basis === "zubereitet") q.befunde.push({ art: "nur_zubereitet", quelle: q.quelle, text: "Seite nennt nur zubereitete Werte – kein Zubereitungsprodukt, nicht übernommen" });
       q.ergebnis = q.zutaten_text || nwKomplett(q.naehrwerte) ? "treffer" : "leer";
       if (q.ergebnis === "treffer" && q.ean_beweis) break; // bewiesener Treffer reicht
     } catch (e) {
@@ -749,7 +767,8 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
         if (l.zutatenverzeichnis_sichtbar !== "ja" && l.zutaten_text) foto.befunde.push({ art: "zutaten_ohne_verzeichnis", quelle: "foto", text: "Zutaten geliefert, obwohl kein Verzeichnis sichtbar – verworfen" });
         if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") foto.naehrwerte = sauberNW(l.naehrwerte);
         else if (l.naehrwert_basis === "nur_portion") foto.befunde.push({ art: "portion", quelle: "foto", text: "Etikett zeigt nur Portionswerte" });
-        else if (l.naehrwert_basis === "nur_zubereitet") foto.befunde.push({ art: "nur_zubereitet", quelle: "foto", text: "Etikett zeigt nur Werte für das zubereitete Produkt – nicht übernommen (wie verkauft, Ralph 13.10.)" });
+        else if (l.naehrwert_basis === "zubereitet" && zubereitungsprodukt(String(l.name ?? ""))) { foto.naehrwerte = sauberNW(l.naehrwerte); foto.befunde.push({ art: "zubereitet", quelle: "foto", text: "Brühe: zubereitete Werte vom Etikett (BR-NW-WIE-VERKAUFT F2)" }); }
+        else if (l.naehrwert_basis === "zubereitet") foto.befunde.push({ art: "nur_zubereitet", quelle: "foto", text: "Etikett zeigt nur Werte für das zubereitete Produkt – kein Zubereitungsprodukt, nicht übernommen" });
         if (Array.isArray(l.unsicher) && l.unsicher.length) foto.befunde.push({ art: "unsicher", quelle: "foto", text: l.unsicher.join(", ") });
       }
     } catch (e) {
