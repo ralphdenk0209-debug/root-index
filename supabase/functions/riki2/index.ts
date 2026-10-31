@@ -63,13 +63,17 @@
 //   mit dem Scan-Namen teilt (ALDI Skyr „Erdbeere" fuer „HighProtein Skyr Drink") oder (b) die Suche auf demselben
 //   Shop mehrere Seiten derselben Linie fand – dann ist ohne Barcode nicht klar, welche Sorte gescannt wurde.
 //
+// v6.6 (2026-10-31, Nachpruefung v6.5): Suche nannte bei KoRo gar keine Seite mehr, weil nur deutsche verlangt waren –
+//   jetzt: deutsche bevorzugen, sonst die fremdsprachige trotzdem nennen (Riki 2 folgt selbst dem hreflang).
+//   sorte_seite = VOLLSTAENDIGE Sortenbezeichnung (My Vay: „Chicken Style" statt „Spicy Sticks Chicken Style" verwarf die richtige Seite).
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.5";
+const VERSION = "riki2 v6.6";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
@@ -451,7 +455,7 @@ Produktname: ${name}
 EAN: ${ean}
 
 Reihenfolge: 1. offizielle Seite des Herstellers (Domain kann einen Zusatz tragen), 2. deutscher Online-Händler mit Produktseite.
-Nimm die DEUTSCHE Fassung der Seite (deutsche Domain oder /de/), nicht die englische, irische, französische usw.
+Bevorzuge die deutsche Fassung der Seite (deutsche Domain oder /de/). Gibt es nur eine fremdsprachige Fassung, nenne sie trotzdem.
 Die Seite muss dieses eine Produkt zeigen (Marke passt, Name oder Sorte passt). Keine Kategorie-, Such- oder Startseiten, keine Preisvergleiche, Blogs, Rezepte.
 Suche zuerst mit der EAN, dann mit Marke und Name. Höchstens 2 Suchen. Nichts erfinden.
 Antworte zuletzt nur mit JSON: {"kandidaten":[{"url":"...","art":"hersteller"|"haendler"}]} – höchstens 3, beste zuerst, leer wenn nichts passt.`;
@@ -569,7 +573,7 @@ const SEITEN_SCHEMA = {
 };
 const SEITEN_AUFTRAG = (marke: string, name: string, text: string, belegt: boolean) => `Unten steht der Text einer Produktseite. Gesucht: Angaben zu GENAU diesem Produkt – Marke „${marke}", Produkt „${name}".
 ${belegt ? '- produkt_passt: Die Seite ist über den Barcode als dieses Produkt belegt → "ja". Nur wenn die Seite mehrere Produkte zeigt und die Angaben keinem zuzuordnen sind: "unklar".' : '- produkt_passt: "ja" nur, wenn die Seite dieses Produkt zeigt (Marke und Name/Sorte passen; Handelsnamen dürfen etwas abweichen). Andere Sorte oder Kategorie-Seite = "nein".'}
-- sorte_seite: Sorte/Geschmack, den die Seite für IHR Produkt nennt (z. B. „Erdbeere", „Paprika"), wörtlich; null, wenn keine genannt.
+- sorte_seite: die VOLLSTÄNDIGE Sortenbezeichnung, die die Seite für IHR Produkt nennt – alles, was diese Variante von anderen derselben Produktlinie unterscheidet (z. B. „Erdbeere", „Spicy Sticks Chicken Style"), wörtlich; null, wenn keine genannt.
 - zutaten_text: die deutsche Zutatenliste wörtlich, ohne „Zutaten:" am Anfang; sonst null.
 - naehrwerte: die Spalte je 100 g bzw. 100 ml WIE VERKAUFT. Bei Brühe, Bouillon, Brühwürfel, gekörnter Brühe, Suppen- und Soßenpulver die Spalte ZUBEREITET → naehrwert_basis "zubereitet" (auch wenn beide Spalten da sind); nennt ein anderes Produkt nur zubereitete Werte, diese mit "zubereitet". Nur Portion → "nur_portion", Werte null. kcal als kcal, kJ als kJ.
 - Nichts ergänzen, nichts schätzen. Was nicht dasteht, ist null.
