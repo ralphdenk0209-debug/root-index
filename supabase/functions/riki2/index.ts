@@ -67,15 +67,23 @@
 //   jetzt: deutsche bevorzugen, sonst die fremdsprachige trotzdem nennen (Riki 2 folgt selbst dem hreflang).
 //   sorte_seite = VOLLSTAENDIGE Sortenbezeichnung (My Vay: „Chicken Style" statt „Spicy Sticks Chicken Style" verwarf die richtige Seite).
 //
+// v6.7 (2026-10-31, Ralph jaja „v6.7", Abgleich der Faelle „nur Riki"):
+//   CODECHECK als vierte kostenlose Quelle, nur Zutaten: Suche per Barcode -> Produktseite -> Liste aus
+//   id="ingredients_list" (wie Rikis off_abgleich). Uebernommen nur, wenn die Scan-EAN auf der Seite steht.
+//   Rang nach OFF (beide gemeinschaftlich gepflegt). Faelle: Ehrmann Choc Pudding 4002971340303, Kania Curry Ketchup 4335619446403.
+//   VORRANG ECHTER SCANS: Laeufe mit Eingang „nachholen" (Tests, Bestand) duerfen den Tagesdeckel nur bis auf
+//   0,50 $ Rest nutzen (31.10.: Tests verbrauchten den Deckel, 3 echte Scans liefen ohne Foto/Herstellerweg).
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.6";
+const VERSION = "riki2 v6.7";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
+const RESERVE_ECHTE_SCANS = 0.5;
 // Sonnet 5.5: 2 $ / 10 $ je 1 Mio Tokens (Stand 06.10.2026)
 const PREIS: Record<string, [number, number]> = {
   "claude-sonnet-5-5": [2, 10],
@@ -319,6 +327,41 @@ async function quelleDm(ean: string): Promise<Quelle> {
     }
     q.naehrwerte = Object.keys(nw).length ? nw : null;
     q.ergebnis = q.zutaten_text || nwKomplett(q.naehrwerte) ? "treffer" : "leer";
+    return q;
+  } catch (e) {
+    q.befunde.push({ art: "fehler", quelle: q.quelle, text: String((e as Error)?.message ?? e).slice(0, 200) });
+    return q;
+  } finally {
+    q.dauer_ms = Date.now() - t0;
+  }
+}
+
+// ---------- Quelle: Codecheck (v6.7, gemeinschaftlich, nur Zutaten) ----------
+async function quelleCodecheck(ean: string): Promise<Quelle> {
+  const t0 = Date.now();
+  const q: Quelle = { quelle: "codecheck", url: null, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
+  try {
+    const s = await holen(`https://www.codecheck.info/product.search?q=${ean}`, "text/html");
+    q.http = s.status;
+    if (s.status === 403 || s.status === 429 || s.status === 503) { q.ergebnis = "gesperrt"; return q; }
+    if (s.status !== 200) return q;
+    const link = s.text.match(/href="(\/p\/lebensmittel\/[^"]+\.html)"/)?.[1];
+    if (!link) { q.ergebnis = "nicht_gefunden"; return q; }
+    q.url = "https://www.codecheck.info" + link;
+    const p = await holen(q.url, "text/html");
+    q.http = p.status;
+    if (p.status !== 200) return q;
+    if (!new RegExp(`(^|\\D)0*${ohneNullen(ean)}(\\D|$)`).test(p.text)) { q.ergebnis = "ean_falsch"; return q; }
+    q.ean_beweis = "EAN auf der Codecheck-Seite";
+    const roh = p.text.match(/id="ingredients_list">([\s\S]*?)(<span class="fs-8">|\*Aufgrund)/)?.[1] ?? "";
+    const z = roh.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ").trim();
+    q.zutaten_text = z ? ohneZutatenWort(z) : null;
+    if (q.zutaten_text && !siehtDeutschAus(q.zutaten_text)) {
+      q.befunde.push({ art: "nicht_deutsch", quelle: q.quelle, text: "Codecheck-Liste sieht nicht deutsch aus – nicht übernommen" });
+      q.zutaten_text = null;
+    }
+    q.ergebnis = q.zutaten_text ? "treffer" : "leer";
     return q;
   } catch (e) {
     q.befunde.push({ art: "fehler", quelle: q.quelle, text: String((e as Error)?.message ?? e).slice(0, 200) });
@@ -726,7 +769,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   const befunde: Befund[] = [];
   const fehlt: string[] = [];
   const nach = (n: string) => quellen.find((q) => q.quelle === n && q.ean_beweis);
-  const dm = nach("dm"), edeka = nach("edeka-lmiv"), off = nach("openfoodfacts");
+  const dm = nach("dm"), edeka = nach("edeka-lmiv"), off = nach("openfoodfacts"), cc = nach("codecheck");
   const web = quellen.filter((q) => q.quelle.startsWith("web:") && q.ergebnis === "treffer");
   const webMitEan = web.filter((q) => q.ean_beweis), webOhneEan = web.filter((q) => !q.ean_beweis);
   const fotoOk = foto && foto.ergebnis === "treffer" ? foto : null;
@@ -742,7 +785,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   // Zutaten: volles Etikettfoto > EDEKA > dm > OFF (OFF nur mit Abgleich, sonst Befund)
   const fotoVoll = fotoOk && (fotoOk as any)._lesbar === "voll" ? fotoOk : null;
   const fotoTeil = fotoOk && (fotoOk as any)._lesbar === "teilweise" ? fotoOk : null;
-  const zKand = ([fotoVoll, edeka, dm, ...webMitEan, off, ...webOhneEan].filter((q) => q?.zutaten_text) as Quelle[]).filter((q) => {
+  const zKand = ([fotoVoll, edeka, dm, ...webMitEan, off, cc, ...webOhneEan].filter((q) => q?.zutaten_text) as Quelle[]).filter((q) => {
     const grund = zutatenUnbrauchbar(q.zutaten_text!, name ?? "");
     if (!grund) return true;
     befunde.push({ art: "zutaten_unbrauchbar", quelle: q.quelle, text: grund });
@@ -819,11 +862,13 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   let kosten = 0, inT = 0, outT = 0, benutzt: string | null = null, fehler: string | null = null;
   let foto: Quelle | null = null;
   let vorbehalt = 0;
+  // v6.7: Nachholen/Tests lassen 0,50 $ des Tagesdeckels fuer echte Scans uebrig
+  const reserve = lauf.eingang === "nachholen" ? RESERVE_ECHTE_SCANS : 0;
   const fotoAufgabe = (async () => {
     if (lauf.eingang !== "foto" || !fotos_eindeutig.length) return;
     const tf = Date.now();
     if (!client) { fehler = "Kein Anthropic-Schlüssel"; return; }
-    if (budgetRest.usd < 0.1) { foto = { quelle: "foto", ergebnis: "uebersprungen", befunde: [{ art: "tagesdeckel", text: "Riki-2-Tagesdeckel erreicht" }], dauer_ms: 0 }; return; }
+    if (budgetRest.usd - reserve < 0.1) { foto = { quelle: "foto", ergebnis: "uebersprungen", befunde: [{ art: "tagesdeckel", text: "Riki-2-Tagesdeckel erreicht" }], dauer_ms: 0 }; return; }
     vorbehalt = 0.1; budgetRest.usd -= vorbehalt; // Vorbehalt, damit parallele Laeufe den Deckel nicht gemeinsam reissen
     try {
       const r = await fotoLesen(client, modell, fotos_eindeutig);
@@ -856,7 +901,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   })();
 
   const [quellen] = await Promise.all([
-    ean.length >= 8 ? Promise.all([quelleEdeka(ean), quelleDm(ean), quelleOff(ean)]) : Promise.resolve([] as Quelle[]),
+    ean.length >= 8 ? Promise.all([quelleEdeka(ean), quelleDm(ean), quelleOff(ean), quelleCodecheck(ean)]) : Promise.resolve([] as Quelle[]),
     fotoAufgabe,
   ]);
   const f = foto as Quelle | null;
@@ -866,8 +911,8 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   let kostenWeb = 0;
   const luecke = ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte");
   if (luecke && client && ergebnis.marke && ergebnis.name && ean.length >= 8) {
-    if (budgetRest.usd < 0.06) {
-      ergebnis.befunde.push({ art: "tagesdeckel", text: "Herstellerweg übersprungen: Riki-2-Tagesdeckel" });
+    if (budgetRest.usd - reserve < 0.06) {
+      ergebnis.befunde.push({ art: "tagesdeckel", text: reserve ? "Herstellerweg übersprungen: Rest des Tagesdeckels bleibt echten Scans" : "Herstellerweg übersprungen: Riki-2-Tagesdeckel" });
     } else {
       budgetRest.usd -= 0.06;
       try {
