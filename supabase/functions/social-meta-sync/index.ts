@@ -1,4 +1,4 @@
-// SOCIAL-META-SYNC  (22.09.2026, Ralph, Work #787)
+// SOCIAL-META-SYNC  (22.09.2026, Ralph, Work #787; erweitert 01.11.2026: Reel-Wiedergabedauer, Facebook-Reels)
 //
 // Holt Instagram- und Facebook-Kennzahlen aus der Meta Graph API und schreibt
 // je Tag und Kanal eine Zeile in social_kennzahlen_taeglich (Cockpit-Kachel Social).
@@ -150,7 +150,23 @@ Deno.serve(async (req: Request) => {
             if (k.name === "comments") z.kommentare = v; if (k.name === "saved") z.gespeichert = v; if (k.name === "shares") z.geteilt = v;
           }
         } catch (e) { if (zFehler.length < 3) zFehler.push((e as Error).message); }
-        const up = await sb.from("social_beitrag").update({ ...z, kennzahlen_am: new Date().toISOString() })
+        // Reels: durchschnittliche Wiedergabedauer (Hook-Test, Ralph 01.11.2026). Eigener Abruf, weil die
+        // Kennzahl bei Bildern abgelehnt wird; Fehler hier stoppen die anderen Zahlen nicht.
+        let avgS: number | null = null;
+        let roh: Record<string, unknown> | null = null;
+        if (m.media_product_type === "REELS") {
+          try {
+            const r2 = await graph(`${m.id}/insights`, token, { metric: "ig_reels_avg_watch_time,ig_reels_video_view_total_time" });
+            roh = {};
+            for (const k of r2.data || []) {
+              const v = (k.values || [])[0]?.value ?? k.total_value?.value ?? null;
+              roh[k.name] = v;
+              if (k.name === "ig_reels_avg_watch_time" && typeof v === "number") avgS = Math.round(v / 100) / 10;
+            }
+          } catch (e) { if (zFehler.length < 3) zFehler.push((e as Error).message); }
+        }
+        const up = await sb.from("social_beitrag").update({ ...z, ...(avgS !== null ? { wiedergabe_avg_s: avgS } : {}),
+          ...(roh ? { kennzahlen_roh: roh } : {}), kennzahlen_am: new Date().toISOString() })
           .eq("kanal", "instagram").eq("extern_id", String(m.id));
         if (!up.error) mitZahlen++;
       }
@@ -173,6 +189,38 @@ Deno.serve(async (req: Request) => {
     const e2 = await sb.from("social_kennzahlen_taeglich").upsert(zFb);
     if (e2.error) throw new Error(`Upsert facebook: ${e2.error.message}`);
     ergebnis.facebook = zFb;
+
+    // Facebook-Reels je Beitrag (Ralph 01.11.2026): Aufrufe, Reichweite, Ø Wiedergabedauer, Reaktionen,
+    // Kommentare, Geteilt. Status 'ignoriert', damit der Newsletter-Abgleich sie nicht anfasst.
+    try {
+      const reels = await graph(`${FB_PAGE_ID}/video_reels`, token, { fields: "id,description,created_time,permalink_url,picture", limit: "25" });
+      let fbN = 0;
+      const fbFehler: string[] = [];
+      for (const v of (reels.data || []) as Record<string, string>[]) {
+        const z: Record<string, unknown> = { aufrufe: null, reichweite: null, likes: null, kommentare: null, geteilt: null, wiedergabe_avg_s: null };
+        const roh: Record<string, unknown> = {};
+        try {
+          const ins = await graph(`${v.id}/video_insights`, token);
+          for (const k of ins.data || []) {
+            const w = (k.values || [])[0]?.value ?? null;
+            roh[k.name] = w;
+            if (k.name === "blue_reels_play_count") z.aufrufe = w;
+            if (k.name === "post_impressions_unique") z.reichweite = w;
+            if (k.name === "post_video_avg_time_watched" && typeof w === "number") z.wiedergabe_avg_s = Math.round(w / 100) / 10;
+            if (k.name === "post_video_likes_by_reaction_type" && w && typeof w === "object") z.likes = Object.values(w as Record<string, number>).reduce((a, b) => a + (b || 0), 0);
+            if (k.name === "post_video_social_actions" && w && typeof w === "object") { const o = w as Record<string, number>; z.kommentare = o.COMMENT ?? null; z.geteilt = o.SHARE ?? null; }
+          }
+        } catch (e) { if (fbFehler.length < 3) fbFehler.push((e as Error).message); }
+        const link = v.permalink_url ? (v.permalink_url.startsWith("http") ? v.permalink_url : `https://www.facebook.com${v.permalink_url}`) : null;
+        const up = await sb.from("social_beitrag").upsert({
+          kanal: "facebook", extern_id: String(v.id), typ: "VIDEO", produkt_typ: "REELS", permalink: link, caption: v.description ?? null,
+          meta_bild_url: v.picture ?? null, veroeffentlicht_am: v.created_time, status: "ignoriert",
+          ...z, kennzahlen_roh: roh, kennzahlen_am: new Date().toISOString(),
+        }, { onConflict: "kanal,extern_id" });
+        if (!up.error) fbN++; else if (fbFehler.length < 3) fbFehler.push(up.error.message);
+      }
+      ergebnis.facebook_reels = { gelesen: (reels.data || []).length, gespeichert: fbN, fehler: fbFehler };
+    } catch (e) { ergebnis.facebook_reels_fehler = (e as Error).message; }
 
     return new Response(JSON.stringify(ergebnis), { headers: { "Content-Type": "application/json" } });
   } catch (e) {
