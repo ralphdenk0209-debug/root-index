@@ -79,13 +79,21 @@
 //   Name reine Kuhmilch ohne Zusatz und Naehrwerte wie Milch (25–75 kcal, KH <= 6 g, Fett <= 4,5 g, Eiweiss 2,8–4,5 g), gilt „Milch" (Quelle regel:einzutat).
 //   Spart dann auch die Websuche (vorher 0,023 $ und 7 s fuer nichts).
 //
+// v6.9 (2026-11-01, Ralph „ja, verbesserung bauen", Idee Quellenkette REWE/Ehrmann High Protein Mango):
+//   OFF-NAMENSSUCHE: Bleibt nach den Barcode-Quellen eine Luecke, sucht Riki 2 kostenlos bei OFF nach Marke + Name
+//   (0,5 s). Nur ein eindeutiger Kandidat (Marke gleich, alle Sortenwoerter, eine Zutatenliste) zaehlt – immer „vorläufig".
+//   Erst wenn danach noch etwas fehlt, kommt die bezahlte Websuche. REWE bleibt gesperrt (403 + Captcha auch fuer
+//   rewe.de/shop/p/…), wird nicht umgangen.
+//   SALZ 0 bei Milchprodukten (Name oder erste Zutat Milch/Joghurt/Quark …, Eiweiss >= 2,5 g) -> „salz_ungeklaert".
+//   NAECHSTER SCHRITT: ergebnis.naechster_schritt = "etikettfoto", wenn etwas fehlt oder nur Vorlaeufiges da ist.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.8";
+const VERSION = "riki2 v6.9";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -190,6 +198,15 @@ function zubereitungsprodukt(name: string): boolean {
   const n = name.toLowerCase();
   return /(brühe|bruehe|bouillon|brühwürfel|suppenwürfel|gekörnt|streuwürze|suppenpulver|soßenpulver|saucenpulver|bratensoße|bratensauce|tassensuppe|tütensuppe|instantsuppe)/.test(n)
     && !/(fond|flüssig|fluessig|fertig|im glas|tetra|knochenbrühe|suppe mit|klare brühe mit)/.test(n);
+}
+// v6.9: Erzeugnis auf Milchbasis (Name oder erste Zutat), nicht pflanzlich, mit nennenswert Eiweiss
+function milchprodukt(name: string, zutaten: string | null, nw: NW): boolean {
+  const n = name.toLowerCase();
+  if (/(hafer|soja|mandel|kokos|vegan|pflanz|reisdrink|cashew|erbse|butter|schokolade|riegel|keks)/.test(n)) return false;
+  if (typeof nw.protein !== "number" || nw.protein < 2.5) return false;
+  const z = (zutaten ?? "").toLowerCase().replace(/[_*]/g, "").trim();
+  return /(milch|joghurt|jogurt|quark|skyr|kefir|käse|kaese|pudding|sahne)/.test(n)
+    || /^(pasteurisierte |entrahmte |teilentrahmte |frische |fettarme )*(mager|voll)?(milch|joghurt|quark|skyr|kefir|sahne|buttermilch)/.test(z);
 }
 // v6.8: Reine Kuhmilch (Voll-, H-, Frisch-, fettarme Milch). Sie braucht keine Zutatenliste (LMIV Art. 19:
 // ein Erzeugnis aus einer Zutat) – die eine Zutat ist „Milch". Alles mit Zusatz, Geschmack oder anderer Tierart gilt nicht.
@@ -429,6 +446,62 @@ async function quelleOff(ean: string): Promise<Quelle> {
         q.befunde.push({ art: "kcal_errechnet", quelle: q.quelle, text: `kcal ${kc} ist aus kJ ${kj} errechnet, nicht vom Etikett` });
       }
     }
+    q.ergebnis = q.zutaten_text || nwKomplett(q.naehrwerte) ? "treffer" : "leer";
+    return q;
+  } catch (e) {
+    q.befunde.push({ art: "fehler", quelle: q.quelle, text: String((e as Error)?.message ?? e).slice(0, 200) });
+    return q;
+  } finally {
+    q.dauer_ms = Date.now() - t0;
+  }
+}
+
+// ---------- v6.9: Open Food Facts per Name (kostenlos, nur vorlaeufig) ----------
+// Findet OFF den Barcode nicht, sucht Riki 2 dort nach Marke + Name. Uebernommen wird nur ein EINDEUTIGER
+// Kandidat: gleiche Marke, alle Sortenwoerter des Scan-Namens im Namen, und alle passenden Eintraege mit derselben
+// Zutatenliste. Ohne Barcode-Beweis -> landet als „web:"-Quelle ohne EAN, also immer „vorläufig".
+async function quelleOffName(marke: string, name: string, ean: string): Promise<Quelle> {
+  const t0 = Date.now();
+  const such = `${marke} ${name}`.replace(/\s+/g, " ").trim();
+  const q: Quelle = { quelle: "web:off-namenssuche", url: `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(such)}`, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
+  try {
+    const s = await holen(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(such)}&search_simple=1&action=process&json=1&page_size=20&fields=code,lang,product_name,product_name_de,brands,quantity,ingredients_text,ingredients_text_de,nutriments,nutrition_data_per`);
+    q.http = s.status;
+    if (s.status === 429 || s.status === 503) { q.ergebnis = "ueberlast"; return q; }
+    if (s.status === 403) { q.ergebnis = "gesperrt"; return q; }
+    if (s.status !== 200) return q;
+    const d = JSON.parse(s.text);
+    const mk = marke.toLowerCase().split(/[\s,]+/)[0];
+    const woerter = sortenWoerter(name);
+    const passt = ((d?.products ?? []) as any[]).filter((p) => {
+      if (gtinGleich(p.code, ean)) return false; // der Barcode selbst ist Sache von quelleOff
+      if (!String(p.brands ?? "").toLowerCase().includes(mk)) return false;
+      const pn = sortenWoerter(String(p.product_name_de || p.product_name || "")).join(" ");
+      return woerter.length > 0 && woerter.every((w) => pn.includes(w.slice(0, Math.max(4, w.length - 2))));
+    });
+    if (!passt.length) { q.ergebnis = "nicht_gefunden"; return q; }
+    const zt = (p: any) => {
+      const de = String(p.ingredients_text_de ?? "").replace(/_/g, "").trim();
+      const allg = String(p.ingredients_text ?? "").replace(/_/g, "").trim();
+      return de || (allg && siehtDeutschAus(allg) ? allg : "");
+    };
+    const listen = new Set(passt.map((p) => zt(p).toLowerCase().replace(/[^a-zäöüß]/g, "")).filter(Boolean));
+    if (listen.size > 1 || (passt.length > 1 && !listen.size)) {
+      q.ergebnis = "mehrdeutig";
+      q.befunde.push({ art: "off_name_mehrdeutig", quelle: q.quelle, text: `${passt.length} OFF-Einträge passen zu „${such}" – ohne Barcode nicht klar, welcher gescannt wurde` });
+      return q;
+    }
+    const p = passt.find((x) => zt(x)) ?? passt[0];
+    q.url = `https://world.openfoodfacts.org/product/${p.code}`;
+    q.name = (p.product_name_de || p.product_name || "").trim() || null;
+    q.marke = String(p.brands ?? "").split(",")[0].trim() || null;
+    q.zutaten_text = zt(p) || null;
+    const n = p.nutriments ?? {};
+    if (p.nutrition_data_per !== "serving" && !zubereitungsprodukt(q.name ?? "")) {
+      q.naehrwerte = sauberNW({ kcal: n["energy-kcal_100g"], kj: n["energy-kj_100g"], fett: n["fat_100g"], ges_fett: n["saturated-fat_100g"],
+        kh: n["carbohydrates_100g"], zucker: n["sugars_100g"], ballaststoffe: n["fiber_100g"], protein: n["proteins_100g"], salz: n["salt_100g"] });
+    }
+    q.befunde.push({ art: "off_name_kandidat", quelle: q.quelle, text: `OFF-Eintrag ${p.code} „${q.name}" (${p.quantity ?? "?"}) passt nach Marke + Name, Barcode ≠ Scan ${ean}` });
     q.ergebnis = q.zutaten_text || nwKomplett(q.naehrwerte) ? "treffer" : "leer";
     return q;
   } catch (e) {
@@ -858,6 +931,12 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   } else {
     fehlt.push("naehrwerte");
   }
+  // v6.9: Salz 0 bei Milchprodukten ist fast nie echt (Milch hat von Natur aus ~0,1 g) -> offen statt uebernehmen
+  if (naehrwerte && naehrwerte.salz === 0 && milchprodukt(name ?? "", zutaten_text, naehrwerte)) {
+    const anders = nKand.find((k) => k.quelle !== naehrwerte_quelle && typeof k.naehrwerte?.salz === "number" && k.naehrwerte.salz > 0);
+    befunde.push({ art: "salz_null_unplausibel", quelle: naehrwerte_quelle ?? undefined, text: `Salz 0 bei einem Milchprodukt – Milch hat von Natur aus etwa 0,1 g${anders ? ` (${anders.quelle}: ${anders.naehrwerte!.salz} g)` : ""}; Etikett nötig` });
+    fehlt.push("salz_ungeklaert");
+  }
   // v6.8: reine Milch ohne Zutatenliste -> „Milch" (Ralph 01.11.: „Ja, so eintragen"); nie gegen ein lesbares Teilfoto
   if (!zutaten_text && !zutaten_teil && name && reineMilch(name, naehrwerte)) {
     zutaten_text = "Milch"; zutaten_quelle = "regel:einzutat";
@@ -873,7 +952,9 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
     if (zutaten_quelle === q.quelle || naehrwerte_quelle === q.quelle) befunde.push({ art: "vorlaeufig_ohne_ean", quelle: q.quelle, text: `${q.quelle} genutzt, aber ohne Barcode auf der Seite – vorläufig` });
   }
   const vollstaendig = fehlt.length === 0;
-  return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, zutaten_teil, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig };
+  // v6.9: Was die Kette als Naechstes braucht – fehlt etwas oder ist nur Vorlaeufiges da, hilft nur das Etikettfoto
+  const naechster_schritt = !vollstaendig || befunde.some((b) => b.art === "vorlaeufig_ohne_ean") ? "etikettfoto" : null;
+  return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, zutaten_teil, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig, naechster_schritt };
 }
 
 // ---------- Ein Lauf ----------
@@ -931,9 +1012,15 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   const f = foto as Quelle | null;
   const fotoFuerMerge = f && f.ergebnis === "treffer" ? f : null;
   let ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
+  // v6.9: erst kostenlos bei OFF nach Marke + Name suchen (0,5 s), dann erst die bezahlte Websuche
+  const lueckeDa = () => ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte");
+  if (lueckeDa() && ergebnis.marke && ergebnis.name && ean.length >= 8) {
+    quellen.push(await quelleOffName(ergebnis.marke, ergebnis.name, ean));
+    ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
+  }
   // v6: Herstellerweg nur bei Luecke, nur mit Marke + Name, nur im Deckel
   let kostenWeb = 0;
-  const luecke = ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte");
+  const luecke = lueckeDa();
   if (luecke && client && ergebnis.marke && ergebnis.name && ean.length >= 8) {
     if (budgetRest.usd - reserve < 0.06) {
       ergebnis.befunde.push({ art: "tagesdeckel", text: reserve ? "Herstellerweg übersprungen: Rest des Tagesdeckels bleibt echten Scans" : "Herstellerweg übersprungen: Riki-2-Tagesdeckel" });
@@ -951,7 +1038,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
       budgetRest.usd += 0.06 - kostenWeb;
     }
   }
-  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt"].includes(b.art)));
+  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt", "off_name_kandidat", "off_name_mehrdeutig"].includes(b.art)));
   if (f) ergebnis.befunde.push(...f.befunde);
   const alle = f ? [f, ...quellen] : quellen;
   const kostenFinal: number = Math.round((kosten + kostenWeb) * 1e6) / 1e6;
