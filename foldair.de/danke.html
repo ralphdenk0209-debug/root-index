@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Danke für deinen Kauf – Foldair</title>
+<link rel="icon" href="favicon.png">
+<style>
+  :root { --bg:#f6f9fd; --card:#fff; --text:#16202e; --muted:#5b6778; --line:#e3e9f2; --accent:#2563eb; --gold:#f6b02e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1420; --card:#171e2d; --text:#e8edf5; --muted:#9aa6b8; --line:#263045; --accent:#6ea8ff; } }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  .wrap { max-width:720px; margin:0 auto; padding:40px 20px 60px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; text-decoration:none; color:var(--text); margin-bottom:30px; }
+  .brand img { width:36px; height:36px; }
+  h1 { font-size:34px; margin:0 0 8px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:24px; margin-top:22px; }
+  #key { font-family:ui-monospace,Menlo,monospace; font-size:13px; word-break:break-all; background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:14px; }
+  .btn { display:inline-block; padding:12px 20px; border-radius:12px; font-weight:600; font-size:15px; text-decoration:none; border:0; cursor:pointer; }
+  .primary { background:var(--accent); color:#fff; } .gold { background:var(--gold); color:#2a1a00; }
+  .muted { color:var(--muted); font-size:14px; }
+  ol li { margin-bottom:6px; }
+  .err { color:#c0392b; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="brand" href="index.html"><img src="foldair.png" alt="">Foldair</a>
+  <h1>Danke für deinen Kauf!</h1>
+  <p class="muted" id="hallo">Dein Lizenzschlüssel wird geladen …</p>
+
+  <div class="card" id="box" hidden>
+    <p style="margin-top:0"><b>Dein Lizenzschlüssel</b> <span class="muted" id="art"></span></p>
+    <div id="key"></div>
+    <p style="margin:14px 0 0"><button class="btn primary" id="kopieren">Schlüssel kopieren</button> <span class="muted" id="ok"></span></p>
+  </div>
+
+  <div class="card">
+    <b>So schaltest du Foldair frei</b>
+    <ol>
+      <li>Foldair öffnen – noch nicht installiert? <a href="download/Foldair.dmg">Hier herunterladen</a>, öffnen und in „Programme“ ziehen.</li>
+      <li>Oben im Menü <b>Foldair › Lizenz …</b> wählen.</li>
+      <li>Schlüssel einfügen und <b>Aktivieren</b> klicken – fertig, auch ohne Internet.</li>
+    </ol>
+    <p class="muted">Bitte speichere den Schlüssel, z. B. in der App „Passwörter“ oder als Notiz. Du kannst diese Seite jederzeit über den Link in deiner Kaufbestätigung wieder öffnen.
+      Fragen oder Schlüssel verloren? Schreib an <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>.</p>
+  </div>
+</div>
+<script>
+  const FUNKTION = "https://haurbpfkfaaehorirzee.supabase.co/functions/v1/foldair-lizenz";
+  const arten = { persoenlich: "Persönliche Lizenz", familie: "Familienlizenz", firma: "Firmenlizenz" };
+  const id = new URLSearchParams(location.search).get("session_id");
+  const hallo = document.getElementById("hallo");
+  async function laden(versuch = 1) {
+    if (!id) { hallo.innerHTML = '<span class="err">Diese Seite braucht den Link aus deiner Kaufbestätigung.</span>'; return; }
+    try {
+      const r = await fetch(FUNKTION + "?session_id=" + encodeURIComponent(id));
+      const d = await r.json();
+      if (r.status === 402 && versuch < 6) { hallo.textContent = "Zahlung wird bestätigt …"; setTimeout(() => laden(versuch + 1), 2500); return; }
+      if (!r.ok) throw new Error(d.fehler || "Fehler");
+      hallo.textContent = "Hallo " + d.name + " – hier ist dein Schlüssel. Viel Freude mit Foldair!";
+      document.getElementById("art").textContent = "· " + (arten[d.art] || d.art);
+      document.getElementById("key").textContent = d.schluessel;
+      document.getElementById("box").hidden = false;
+    } catch (e) {
+      hallo.innerHTML = '<span class="err">' + e.message + '</span> Bitte schreib an kontakt@root-index.de – du bekommst deinen Schlüssel umgehend.';
+    }
+  }
+  document.getElementById("kopieren").onclick = async () => {
+    await navigator.clipboard.writeText(document.getElementById("key").textContent);
+    document.getElementById("ok").textContent = "Kopiert ✓";
+  };
+  laden();
+</script>
+</body>
+</html>

@@ -164,7 +164,7 @@
 <section id="preise">
   <div class="wrap">
     <h2>Preise</h2>
-    <p class="sub">Startangebot für die ersten Wochen. Alle Preise inklusive Mehrwertsteuer.</p>
+    <p class="sub">Startangebot für die ersten Wochen. Endpreise – gemäß § 19 UStG ohne Umsatzsteuer.</p>
     <div class="prices">
       <div class="price">
         <h3>Persönlich</h3><div class="small">1 Person, bis zu 2 Macs</div>
@@ -203,7 +203,7 @@
 
 <footer>
   <div class="wrap">
-    <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="mailto:kontakt@root-index.de">Kontakt</a>
+    <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB und Widerruf</a><a href="mailto:kontakt@root-index.de">Kontakt</a>
     <div style="margin-top:10px">© 2026 Ralph Denk – Root Index · Foldair ist nicht mit Microsoft oder Apple verbunden. Windows ist eine Marke von Microsoft, Mac und macOS sind Marken von Apple.</div>
   </div>
 </footer>
@@ -211,9 +211,9 @@
 <script>
   // Links zum Zahlungsanbieter (Lemon Squeezy oder Paddle) – nach dem Anlegen der Produkte hier eintragen
   const KAUF = {
-    persoenlich: "",
-    familie: "",
-    firma: ""
+    persoenlich: "https://buy.stripe.com/7sY28qeAO0MUcI0dFJ1gs01",
+    familie: "https://buy.stripe.com/9B68wO64ibry4bu59d1gs02",
+    firma: "https://buy.stripe.com/aFaeVccsG53aeQ89pt1gs03"
   };
   document.querySelectorAll(".shot img").forEach(img => img.addEventListener("click", () => {
     const g = document.getElementById("gross"); g.querySelector("img").src = img.src; g.style.display = "flex";
