@@ -14,6 +14,8 @@
 // gegen die Umgebung geprueft (das scheiterte bei seo-search-console-sync bei allen
 // Laeufen, weil GitHub einen anderen Schluessel als die Funktionsumgebung hat), sondern
 // bei Supabase selbst: nur ein Service-Schluessel darf die Auth-Admin-Liste lesen.
+//
+// 01.11.2026: Content Studio liest die Zahlen ueber die RPC cs_meta_zahlen (nur Kennzahlen, keine Zugaenge).
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
