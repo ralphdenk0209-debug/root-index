@@ -195,7 +195,7 @@ Deno.serve(async (req: Request) => {
     // Facebook-Reels je Beitrag (Ralph 01.11.2026): Aufrufe, Reichweite, Ø Wiedergabedauer, Reaktionen,
     // Kommentare, Geteilt. Status 'ignoriert', damit der Newsletter-Abgleich sie nicht anfasst.
     try {
-      const reels = await graph(`${FB_PAGE_ID}/video_reels`, token, { fields: "id,description,created_time,permalink_url,picture", limit: "25" });
+      const reels = await graph(`${FB_PAGE_ID}/video_reels`, token, { fields: "id,description,created_time,permalink_url,picture,post_id", limit: "25" });
       let fbN = 0;
       const fbFehler: string[] = [];
       for (const v of (reels.data || []) as Record<string, string>[]) {
@@ -220,6 +220,17 @@ Deno.serve(async (req: Request) => {
             const r3 = await graph(`${v.id}/video_insights`, token, { metric: m });
             for (const k of r3.data || []) { const w = (k.values || [])[0]?.value ?? null; roh[k.name] = w; if (z.betrachter == null && typeof w === "number") z.betrachter = w; }
           } catch (_) { /* Name nicht verfügbar */ }
+        }
+        // Seit 30.06.2026 heißt die Betrachter-Zahl je Beitrag post_total_media_view(s)_unique und hängt am Beitrag, nicht am Video
+        if (z.betrachter == null && v.post_id) {
+          const pid = String(v.post_id).includes("_") ? String(v.post_id) : `${FB_PAGE_ID}_${v.post_id}`;
+          for (const m of ["post_total_media_view_unique", "post_total_media_views_unique"]) {
+            try {
+              const r4 = await graph(`${pid}/insights`, token, { metric: m });
+              for (const k of r4.data || []) { const w = (k.values || []).slice(-1)[0]?.value ?? null; roh[k.name] = w; if (z.betrachter == null && typeof w === "number") z.betrachter = w; }
+            } catch (e) { roh[`fehler_${m}`] = (e as Error).message.slice(0, 120); }
+            if (z.betrachter != null) break;
+          }
         }
         if (typeof roh.fb_reels_replay_count === "number") z.wiederholungen = roh.fb_reels_replay_count;
         const link = v.permalink_url ? (v.permalink_url.startsWith("http") ? v.permalink_url : `https://www.facebook.com${v.permalink_url}`) : null;
