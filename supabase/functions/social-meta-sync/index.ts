@@ -199,7 +199,7 @@ Deno.serve(async (req: Request) => {
       let fbN = 0;
       const fbFehler: string[] = [];
       for (const v of (reels.data || []) as Record<string, string>[]) {
-        const z: Record<string, unknown> = { aufrufe: null, reichweite: null, likes: null, kommentare: null, geteilt: null, wiedergabe_avg_s: null };
+        const z: Record<string, unknown> = { aufrufe: null, reichweite: null, likes: null, kommentare: null, geteilt: null, wiedergabe_avg_s: null, betrachter: null, wiederholungen: null };
         const roh: Record<string, unknown> = {};
         try {
           const ins = await graph(`${v.id}/video_insights`, token);
@@ -213,6 +213,15 @@ Deno.serve(async (req: Request) => {
             if (k.name === "post_video_social_actions" && w && typeof w === "object") { const o = w as Record<string, number>; z.kommentare = o.COMMENT ?? null; z.geteilt = o.SHARE ?? null; }
           }
         } catch (e) { if (fbFehler.length < 3) fbFehler.push((e as Error).message); }
+        // „Betrachter“ (seit 31.10.2026 Metas Hauptzahl statt Reichweite): mögliche Kennzahl-Namen einzeln probieren,
+        // ein unbekannter Name stoppt die anderen nicht. Treffer -> betrachter, alles -> kennzahlen_roh.
+        for (const m of ["post_video_viewers", "post_video_views_unique", "post_impressions_unique", "blue_reels_viewers", "fb_reels_viewers"]) {
+          try {
+            const r3 = await graph(`${v.id}/video_insights`, token, { metric: m });
+            for (const k of r3.data || []) { const w = (k.values || [])[0]?.value ?? null; roh[k.name] = w; if (z.betrachter == null && typeof w === "number") z.betrachter = w; }
+          } catch (_) { /* Name nicht verfügbar */ }
+        }
+        if (typeof roh.fb_reels_replay_count === "number") z.wiederholungen = roh.fb_reels_replay_count;
         const link = v.permalink_url ? (v.permalink_url.startsWith("http") ? v.permalink_url : `https://www.facebook.com${v.permalink_url}`) : null;
         const up = await sb.from("social_beitrag").upsert({
           kanal: "facebook", extern_id: String(v.id), typ: "VIDEO", produkt_typ: "REELS", permalink: link, caption: v.description ?? null,
