@@ -58,3 +58,6 @@ verify_jwt = true
 # prueft selbst: Apple-Signatur (Root-Zertifikat) bzw. Nutzer-JWT beim Kauf aus der App.
 [functions.apple-kauf]
 verify_jwt = false
+
+[functions.foldair-lizenz]
+verify_jwt = false

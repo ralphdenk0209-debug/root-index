@@ -74,13 +74,18 @@
 //   VORRANG ECHTER SCANS: Laeufe mit Eingang „nachholen" (Tests, Bestand) duerfen den Tagesdeckel nur bis auf
 //   0,50 $ Rest nutzen (31.10.: Tests verbrauchten den Deckel, 3 echte Scans liefen ohne Foto/Herstellerweg).
 //
+// v6.8 (2026-11-01, Ralph „Ja, so eintragen", Fall Jeden Tag H-Vollmilch 4306188362593):
+//   REINE MILCH: Packung hat keine Zutatenliste (LMIV Art. 19, eine Zutat). Findet keine Quelle eine Liste und ist der
+//   Name reine Kuhmilch ohne Zusatz und Naehrwerte wie Milch (25–75 kcal, KH <= 6 g, Fett <= 4,5 g, Eiweiss 2,8–4,5 g), gilt „Milch" (Quelle regel:einzutat).
+//   Spart dann auch die Websuche (vorher 0,023 $ und 7 s fuer nichts).
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.7";
+const VERSION = "riki2 v6.8";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -185,6 +190,19 @@ function zubereitungsprodukt(name: string): boolean {
   const n = name.toLowerCase();
   return /(brühe|bruehe|bouillon|brühwürfel|suppenwürfel|gekörnt|streuwürze|suppenpulver|soßenpulver|saucenpulver|bratensoße|bratensauce|tassensuppe|tütensuppe|instantsuppe)/.test(n)
     && !/(fond|flüssig|fluessig|fertig|im glas|tetra|knochenbrühe|suppe mit|klare brühe mit)/.test(n);
+}
+// v6.8: Reine Kuhmilch (Voll-, H-, Frisch-, fettarme Milch). Sie braucht keine Zutatenliste (LMIV Art. 19:
+// ein Erzeugnis aus einer Zutat) – die eine Zutat ist „Milch". Alles mit Zusatz, Geschmack oder anderer Tierart gilt nicht.
+function reineMilch(name: string, nw: NW | null): boolean {
+  const n = name.toLowerCase();
+  if (/(kakao|schoko|choco|erdbeer|vanill|banan|kaffee|latte|mokka|drink|getränk|getraenk|mix|shake|protein|laktosefrei|lactosefrei|laktase|hafer|soja|mandel|reis|kokos|cashew|erbse|dinkel|butter|dick|sauer|kondens|pulver|schnitte|ziege|schaf|stute|kamel|joghurt|kefir|quark|käse|kaese|sahne|creme|eis|zucker|vitamin|omega|calcium|kalzium|yog|gouda|caramel|nois|praline|riegel|tafel|keks|aus )/.test(n)) return false;
+  const wort = n.split(/[\s,;()/]+/).some((w) => /^(h-?)?(bio-?)?(voll|frisch|weide|heu|land|alpen|berg|bergbauern|mager|roh|vorzugs|teilentrahmte|entrahmte)?-?milch$/.test(w));
+  if (!wort) return false;
+  // Nur mit Nährwerten wie Milch: „Vollmilch" steht auch auf Schokolade, Käse und Joghurt
+  if (!nw || typeof nw.kcal !== "number" || typeof nw.kh !== "number" || typeof nw.fett !== "number") return false;
+  if (nw.kcal < 25 || nw.kcal > 75 || nw.kh > 6 || nw.fett > 4.5) return false; // mehr KH als Milchzucker = Zusatz
+  if (typeof nw.protein === "number" && (nw.protein < 2.8 || nw.protein > 4.5)) return false;
+  return true;
 }
 function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[] {
   const b: Befund[] = [];
@@ -839,6 +857,12 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
     }
   } else {
     fehlt.push("naehrwerte");
+  }
+  // v6.8: reine Milch ohne Zutatenliste -> „Milch" (Ralph 01.11.: „Ja, so eintragen"); nie gegen ein lesbares Teilfoto
+  if (!zutaten_text && !zutaten_teil && name && reineMilch(name, naehrwerte)) {
+    zutaten_text = "Milch"; zutaten_quelle = "regel:einzutat";
+    fehlt.splice(fehlt.indexOf("zutaten"), 1);
+    befunde.push({ art: "einzutat", text: `„${name}" ist reine Milch – keine Zutatenliste nötig (LMIV Art. 19), Zutat „Milch"` });
   }
   if (!name) fehlt.push("name");
   if (!marke) fehlt.push("marke");
