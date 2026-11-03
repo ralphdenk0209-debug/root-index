@@ -179,13 +179,17 @@ Deno.serve(async (req: Request) => {
 
     const fb = await graph(FB_PAGE_ID, token, { fields: "followers_count,fan_count" });
     let fbReich = null, fbProfil = null, fbInter = null;
-    try {
-      const ins = await graph(`${FB_PAGE_ID}/insights`, token, { metric: "page_impressions_unique,page_views_total,page_post_engagements", period: "day" });
-      for (const m of ins.data || []) {
-        const v = (m.values || []).slice(-1)[0]?.value ?? null;
-        if (m.name === "page_impressions_unique") fbReich = v; if (m.name === "page_views_total") fbProfil = v; if (m.name === "page_post_engagements") fbInter = v;
-      }
-    } catch (e) { ergebnis.facebook_insights_fehler = (e as Error).message; }
+    // page_impressions_unique hat Meta abgeschafft, Ersatz page_total_media_view_unique (Meta-Doku „Deprecated Page Insights Metrics“, 03.11.2026).
+    // Einzeln abfragen: lehnt Meta eine Kennzahl ab, fällt sonst die ganze Anfrage aus.
+    const fbInsFehler: string[] = [];
+    for (const metric of ["page_total_media_view_unique", "page_views_total", "page_post_engagements"]) {
+      try {
+        const ins = await graph(`${FB_PAGE_ID}/insights`, token, { metric, period: "day" });
+        const v = (ins.data?.[0]?.values || []).slice(-1)[0]?.value ?? null;
+        if (metric === "page_total_media_view_unique") fbReich = v; if (metric === "page_views_total") fbProfil = v; if (metric === "page_post_engagements") fbInter = v;
+      } catch (e) { fbInsFehler.push(`${metric}: ${(e as Error).message}`); }
+    }
+    if (fbInsFehler.length) ergebnis.facebook_insights_fehler = fbInsFehler.join(" | ");
     const zFb = { tag: heute, kanal: "facebook", follower: fb.followers_count ?? fb.fan_count ?? null, beitraege: null,
       reichweite: fbReich, profilaufrufe: fbProfil, interaktionen: fbInter, aktualisiert_am: new Date().toISOString() };
     const e2 = await sb.from("social_kennzahlen_taeglich").upsert(zFb);
@@ -207,7 +211,7 @@ Deno.serve(async (req: Request) => {
             const w = (k.values || [])[0]?.value ?? null;
             roh[k.name] = w;
             if (k.name === "blue_reels_play_count") z.aufrufe = w;
-            if (k.name === "post_impressions_unique") z.reichweite = w;
+            if (k.name === "post_impressions_unique" || k.name === "post_total_media_view_unique") z.reichweite = w;
             if (k.name === "post_video_avg_time_watched" && typeof w === "number") z.wiedergabe_avg_s = Math.round(w / 100) / 10;
             if (k.name === "post_video_likes_by_reaction_type" && w && typeof w === "object") z.likes = Object.values(w as Record<string, number>).reduce((a, b) => a + (b || 0), 0);
             if (k.name === "post_video_social_actions" && w && typeof w === "object") { const o = w as Record<string, number>; z.kommentare = o.COMMENT ?? null; z.geteilt = o.SHARE ?? null; }
