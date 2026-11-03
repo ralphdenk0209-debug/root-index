@@ -95,7 +95,8 @@ jobs:
           while read -r fn; do
             [ -z "$fn" ] && continue
             echo "::group::$fn"
-            if supabase functions deploy "$fn" --project-ref "$PROJEKT_REF"; then
+            # --yes: neuere CLI fragt sonst nach und liefert ohne Terminal nichts aus (03.11.2026)
+            if supabase functions deploy "$fn" --project-ref "$PROJEKT_REF" --yes; then
               echo "$fn ausgeliefert."
             else
               echo "::error::$fn konnte nicht ausgeliefert werden."
