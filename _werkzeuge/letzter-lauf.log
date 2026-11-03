@@ -1,4 +1,4 @@
-Lauf: 138 · Commit: 72acf2621cef829478ed18fd23af1962e163e1cf · 2026-11-02 23:08 UTC
+Lauf: 139 · Commit: e1f1d375271e2022b5ebaea6a6ca1329f2afb53b · 2026-11-03 10:19 UTC
 ---
 Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ! nach id null: 200 Zeilen gingen nicht, versuche kleiner
@@ -16,10 +16,10 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 22080 Produkte (zuletzt P31912)
   ... 24080 Produkte (zuletzt P34009)
   ... 26080 Produkte (zuletzt P36043)
-  ... 28080 Produkte (zuletzt P41034)
-  ... 30080 Produkte (zuletzt P43088)
-  ... 32080 Produkte (zuletzt P45102)
-  ! nach id P46525: 200 Zeilen gingen nicht, versuche kleiner
+  ! nach id P40834: 200 Zeilen gingen nicht, versuche kleiner
+  ... 28160 Produkte (zuletzt P41114)
+  ... 30160 Produkte (zuletzt P43169)
+  ... 32160 Produkte (zuletzt P45183)
   ... 34160 Produkte (zuletzt P47222)
   ... 36160 Produkte (zuletzt P49265)
   ... 38160 Produkte (zuletzt P51303)
@@ -32,15 +32,15 @@ Lade am Schluessel entlang, Seitengroesse 200/80/30/10/3/1 ...
   ... 52160 Produkte (zuletzt P65684)
   ... 54160 Produkte (zuletzt P67760)
   ... 56160 Produkte (zuletzt P69808)
-  ... 58160 Produkte (zuletzt P71899)
-  ... 60160 Produkte (zuletzt P74707)
-Fertig geladen: 61121 Produkte
+  ... 58160 Produkte (zuletzt P71898)
+  ... 60160 Produkte (zuletzt P74706)
+Fertig geladen: 61130 Produkte
 Herstellerbilder: 5 mit Freigabe.
 Alte Adressen aus Liste: 15
-Umleitungen (301): 5560
-Sitemap: davon neue Adressen umbenannter Produkte: 5437 von 5454
-↪️  Weiterleitungen alter Adressen: 5560
-✅ Produktseiten: 61121 · Kategorien: 23 · Sitemap-URLs: 10027
+Umleitungen (301): 5561
+Sitemap: davon neue Adressen umbenannter Produkte: 5438 von 5455
+↪️  Weiterleitungen alter Adressen: 5561
+✅ Produktseiten: 61130 · Kategorien: 23 · Sitemap-URLs: 10027
 Geladen: 17614 Produkte (UK/US/FR)
 ✅ en: 1962 Produktseiten · 19 Kategorien · Zutatennamen ohne Übersetzung: 68
 ✅ fr: 15652 Produktseiten · 21 Kategorien · Zutatennamen ohne Übersetzung: 212
