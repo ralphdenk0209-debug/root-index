@@ -87,13 +87,21 @@
 //   SALZ 0 bei Milchprodukten (Name oder erste Zutat Milch/Joghurt/Quark …, Eiweiss >= 2,5 g) -> „salz_ungeklaert".
 //   NAECHSTER SCHRITT: ergebnis.naechster_schritt = "etikettfoto", wenn etwas fehlt oder nur Vorlaeufiges da ist.
 //
+// v7.0 (2026-11-03, Ralph „jaja, bauen", Test an 8 Produkten):
+//   SPRACHE: fremdsprachige Listen werden abgewiesen (Pilos Duo Mus kam italienisch durch, „aroma" zaehlte als deutsch);
+//   gezaehlt werden verschiedene Woerter, nicht Wiederholungen.
+//   NAEHRWERTE: fehlen Salz, Zucker oder ges. Fett -> fehlt „naehrwerte_teilweise" (Milsani Skyr galt als vollstaendig);
+//   Quellen mit vollstaendiger Tabelle werden vorgezogen. Viele Nachkommastellen (528,037 kcal) = umgerechnet -> „nw_umgerechnet", vorlaeufig.
+//   EINE ZUTAT: Mineral-/Quellwasser (nur mit Sorte im Namen) und purer Honig wie Milch – Naehrwerte nie dazuerfunden.
+//   SORTE UNBEKANNT: nennt der Scan-Name nur die Marke, wird eine Seite ohne Barcode nicht als „anderes Produkt" gefuehrt, sondern „sorte_unbekannt".
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v6.9";
+const VERSION = "riki2 v7.0";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -171,16 +179,30 @@ function sauberNW(nw: NW | null | undefined): NW | null {
   return Object.keys(o).length ? o : null;
 }
 const nwKomplett = (nw: NW | null | undefined) => !!nw && [nw.kcal, nw.protein, nw.kh, nw.fett].every((v) => typeof v === "number");
+const NW_PFLICHT = ["salz", "zucker", "ges_fett"] as const;
+const NW_WORT: Record<string, string> = { salz: "Salz", zucker: "Zucker", ges_fett: "gesättigte Fette" };
 
 // ---------- Pruefungen (fest, ohne Modell) ----------
-const DEUTSCH = /\b(und|enthält|enthalten|kann|spuren|milch|zucker|salz|wasser|säuerungsmittel|emulgator|weizen|aroma|gewürze|pflanzliche|aus|mit)\b/gi;
+// v7.0: verschiedene Woerter zaehlen, nicht Wiederholungen; „aroma" ist auch italienisch/spanisch – zaehlt nur,
+// wenn keine fremden Woerter ueberwiegen (Kraeutertee „Grüner Tee, Aroma, Ingwer" bleibt deutsch)
+const DEUTSCH = /\b(und|enthält|enthalten|kann|spuren|milch|zucker|salz|wasser|säuerungsmittel|emulgator|weizen|gewürze|pflanzliche|aus|mit|sahne|stärke|natürliches|süßungsmittel|verdickungsmittel)\b/gi;
+const FREMD = /\b(ingredienti|ingrédients|ingredients|ingredientes|ingrediënten|ingrediencie|składniki|latte|zucchero|panna|acqua|edulcoranti|addensanti|conservare|sucre|lait|sel|eau|farine|beurre|huile|émulsifiant|arôme|sugar|milk|salt|water|flour|azúcar|leche|harina|aceite|suiker|melk|zout|meel|olie|smaakstof)\b/gi;
+const verschiedene = (t: string, re: RegExp) => new Set((t.match(re) ?? []).map((w) => w.toLowerCase())).size;
 function siehtDeutschAus(t: string): boolean {
-  const treffer = (t.match(DEUTSCH) ?? []).length + ((/[äöüß]/i.test(t)) ? 1 : 0);
-  return treffer >= 2;
+  if (fremdsprachig(t)) return false;
+  const punkte = verschiedene(t, DEUTSCH) + (/\baroma\b/i.test(t) ? 1 : 0) + ((/[äöüß]/i.test(t)) ? 1 : 0);
+  // ohne jedes fremde Wort reicht ein deutsches Wort, das mehrfach vorkommt (Brot: „Wasser … Wasser")
+  return punkte >= 2 || (verschiedene(t, FREMD) === 0 && (t.match(DEUTSCH) ?? []).length >= 2);
+}
+// v7.0 (Pilos Duo Mus 4335619348585: OFF hatte die italienische Liste, „aroma" zweimal liess sie als deutsch durch)
+function fremdsprachig(t: string): boolean {
+  const fremd = verschiedene(t, FREMD), deutsch = verschiedene(t, DEUTSCH) + ((/[äöüß]/i.test(t)) ? 1 : 0);
+  return fremd >= 3 && fremd > deutsch;
 }
 // Liefert einen Grund, wenn der Text keine brauchbare Zutatenliste ist, sonst null.
 function zutatenUnbrauchbar(t: string, name: string): string | null {
   const s = t.trim();
+  if (fremdsprachig(s)) return "Liste ist nicht deutsch";
   if (/\b(kcal|kj|brennwert|nährwert|naehrwert)\b|https?:|www\.|@/i.test(s)) return "Text enthält Nährwert-, Web- oder Adressangaben";
   const ziffern = (s.match(/\d/g) ?? []).length;
   if (s.length > 0 && ziffern / s.length > 0.25) return "Text besteht überwiegend aus Ziffern";
@@ -220,6 +242,46 @@ function reineMilch(name: string, nw: NW | null): boolean {
   if (nw.kcal < 25 || nw.kcal > 75 || nw.kh > 6 || nw.fett > 4.5) return false; // mehr KH als Milchzucker = Zusatz
   if (typeof nw.protein === "number" && (nw.protein < 2.8 || nw.protein > 4.5)) return false;
   return true;
+}
+// v7.0: Weitere Erzeugnisse aus einer Zutat. Mineral-/Quellwasser nur, wenn der Name die Sorte (mit/ohne Kohlensaeure)
+// verraet – „Elisabethen" allein reicht nicht. Honig nur pur (Honigverordnung: kein Zusatz erlaubt). Liefert die Zutat oder null.
+function einzutatWasser(name: string, nw: NW | null): string | null {
+  const roh = name.toLowerCase();
+  const sprudel = /(medium|classic|klassik|klassisch|spritzig|sprudel|perlend|perlig|prickelnd|mild|sanft|mit kohlensäure|mit kohlensaeure)/.test(roh);
+  const n = roh.replace(/mit kohlens(ä|ae)ure( versetzt)?/g, "");
+  if (/(tafelwasser|heilwasser|aroma|geschmack|zitrone|limette|apfel|orange|frucht|vitamin|plus|tee|schorle|limo|sirup|mit )/.test(n)) return null;
+  const art = /mineralwasser/.test(n) ? "Natürliches Mineralwasser" : /quellwasser/.test(n) ? "Quellwasser" : null;
+  if (!art) return null;
+  if (nw && ((typeof nw.kcal === "number" && nw.kcal > 1) || (typeof nw.kh === "number" && nw.kh > 0.5))) return null;
+  const still = /(naturell|still|ohne kohlensäure|ohne kohlensaeure|ohne zusatz von kohlens)/.test(roh);
+  if (sprudel && !still) return `${art}, mit Kohlensäure versetzt`;
+  if (still && !sprudel) return art;
+  return null;
+}
+// Honig: der Name darf nur aus Honigsorte + Beschreibung + Marke bestehen (Liste statt Ausschluss: „Erdbeer in Honig",
+// „Honig & Ostseesalz", „Hanfhonig" mit Hanfoel sind keine reinen Honige)
+const HONIGSORTE = "(blüten|bluten|akazien|raps|linden|wald|tannen|kastanien|heide|klee|sonnenblumen|orangenblüten|lavendel|manuka|kanuka|thymian|eukalyptus|buchweizen|löwenzahn|sommertracht|frühtracht|frühlingsblüten|sommerblüten|wildblüten|wildblumen|obstblüten|bienen|imker|tropen|wiesen|sommer|frühlings|berg|alpen|gebirgs|koriander|rosmarin|salbei|zitrus|orangen|edelkastanien)";
+const HONIGWORT = new RegExp(`^(${HONIGSORTE}-?)?honig$`);
+const HONIG_BESCHREIBUNG = /^(bio|flüssig(er|e|es)?|cremig(er|e|es)?|gerührt(er|e|es)?|fest(er|e|es)?|echt(er|e|es)?|deutsch(er|e|es)?|naturrein(er|e|es)?|rein(er|e|es)?|natur|aus|von|der|dem|den|region|regional(er|e|es)?|heimisch(er|e|es)?|multifloral|monofloral|mgo|umf|premium|fein(er|e|es)?|mild(er|e|es)?|kräftig(er|e|es)?|original|traditionell(er|e|es)?|spender|glas|deutschland|österreich|neuseeland|europa|eu|nicht-eu|eu-?länder|\d+\+?|\d+([.,]\d+)?(g|kg)|g|kg|\+)$/;
+function einzutatHonig(name: string, nw: NW | null, marke: string | null = null): string | null {
+  const n = name.toLowerCase();
+  if (/[&]| und | mit | in | im /.test(` ${n} `)) return null;
+  const mw = (marke ?? "").toLowerCase().split(/[\s,;()/]+/).filter(Boolean);
+  const woerter = n.split(/[\s,;()/]+/).filter(Boolean);
+  // „Blüten Honig" getrennt geschrieben: Sortenwort direkt vor „honig" zaehlt mit
+  let honig: string | null = null;
+  for (let k = 0; k < woerter.length; k++) {
+    const w = woerter[k];
+    if (HONIGWORT.test(w)) { honig = honig ?? w; continue; }
+    if (new RegExp(`^${HONIGSORTE}$`).test(w) && woerter[k + 1] === "honig") continue;
+    if (HONIG_BESCHREIBUNG.test(w) || mw.includes(w)) continue;
+    return null;
+  }
+  if (!honig) return null;
+  if (nw && typeof nw.kcal === "number" && (nw.kcal < 260 || nw.kcal > 360 || (typeof nw.fett === "number" && nw.fett > 0.5))) return null;
+  // Schreibweise aus dem Namen uebernehmen (Manuka-Honig, Waldhonig)
+  const orig = name.split(/[\s,;()/]+/).find((w) => w.toLowerCase() === honig) ?? honig;
+  return orig.charAt(0).toUpperCase() + orig.slice(1);
 }
 function pruefeNaehrwerte(nw: NW | null, name: string, quelle: string): Befund[] {
   const b: Befund[] = [];
@@ -429,6 +491,8 @@ async function quelleOff(ean: string): Promise<Quelle> {
       if (allg && siehtDeutschAus(allg)) {
         q.zutaten_text = allg;
         q.befunde.push({ art: "off_sprachfeld", quelle: q.quelle, text: `Liste aus dem allgemeinen OFF-Feld (lang=${p.lang ?? "?"}), sieht deutsch aus` });
+      } else if (allg) {
+        q.befunde.push({ art: "nicht_deutsch", quelle: q.quelle, text: `OFF hat nur eine fremdsprachige Liste (lang=${p.lang ?? "?"}) – nicht übernommen` });
       }
     }
     const n = p.nutriments ?? {};
@@ -789,7 +853,14 @@ async function herstellerweg(client: Anthropic, marke: string, name: string, ean
       if (!l || l.produkt_passt !== "ja") { q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `Produkt passt: ${l?.produkt_passt ?? "?"}` }); continue; }
       // v6.5: ohne Barcode-Beweis keine fremde Sorte
       if (!q.ean_beweis && l.sorte_seite && !sortePasst(String(l.sorte_seite), name)) {
-        q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: `andere Sorte: Seite „${l.sorte_seite}", Scan „${name}"` }); continue;
+        // v7.0: Nennt der Scan-Name nur die Marke (Elisabethen Quelle -> „Elisabethen"), ist die Sorte unbekannt, nicht anders
+        const mw = sortenWoerter(marke);
+        const eigene = sortenWoerter(name).filter((w) => !mw.some((m) => m.startsWith(w) || w.startsWith(m)));
+        q.ergebnis = "leer";
+        q.befunde.push(eigene.length
+          ? { art: "anderes_produkt", quelle: q.quelle, text: `andere Sorte: Seite „${l.sorte_seite}", Scan „${name}"` }
+          : { art: "sorte_unbekannt", quelle: q.quelle, text: `Seite nennt Sorte „${l.sorte_seite}", der Scan-Name „${name}" nennt keine – ohne Barcode nicht übernommen, Etikett nötig` });
+        continue;
       }
       if (!q.ean_beweis && geschwister.has(new URL(k.url).host)) {
         q.ergebnis = "leer"; q.befunde.push({ art: "anderes_produkt", quelle: q.quelle, text: "mehrere Sorten derselben Linie gefunden, keine per Barcode belegt" }); continue;
@@ -909,12 +980,17 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
     return false;
   });
   let naehrwerte: NW | null = null, naehrwerte_quelle: string | null = null;
+  const gut: Quelle[] = [];
   for (const k of nKand) {
     const pb = pruefeNaehrwerte(k.naehrwerte!, name ?? "", k.quelle);
     befunde.push(...pb);
     if (pb.some((x) => x.sperrt)) continue;
-    if (!naehrwerte) { naehrwerte = k.naehrwerte!; naehrwerte_quelle = k.quelle; }
+    gut.push(k);
   }
+  // v7.0: unter den Quellen mit Barcode-Beweis die mit Salz, Zucker und ges. Fett vorziehen (Milsani Skyr: OFF ohne Salz)
+  const voll = gut.find((k) => !webOhneEan.includes(k) && NW_PFLICHT.every((f) => typeof k.naehrwerte![f] === "number"));
+  const wahl = voll ?? gut[0];
+  if (wahl) { naehrwerte = wahl.naehrwerte!; naehrwerte_quelle = wahl.quelle; }
   if (naehrwerte) {
     for (const k of nKand) {
       if (k.quelle === naehrwerte_quelle) continue;
@@ -927,6 +1003,17 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
           fehlt.push(`${f}_ungeklaert`);
         }
       }
+    }
+    // v7.0: Salz, Zucker, ges. Fett gehoeren zur Bewertung – fehlen sie, ist die Tabelle nicht vollstaendig
+    const ohne = NW_PFLICHT.filter((f) => typeof naehrwerte![f] !== "number");
+    if (ohne.length) {
+      fehlt.push("naehrwerte_teilweise");
+      befunde.push({ art: "naehrwerte_teilweise", quelle: naehrwerte_quelle ?? undefined, text: `Es fehlen ${ohne.map((f) => NW_WORT[f]).join(", ")} – Etikett nötig` });
+    }
+    // v7.0: Werte mit vielen Nachkommastellen stehen so auf keinem Etikett – aus Portionswerten umgerechnet (Côte d'Or 5410081201008)
+    const krumm = (Object.keys(naehrwerte) as (keyof NW)[]).filter((f) => { const v = naehrwerte![f]; return typeof v === "number" && /\.\d{4,}/.test(String(v)); });
+    if (krumm.length >= 2) {
+      befunde.push({ art: "nw_umgerechnet", quelle: naehrwerte_quelle ?? undefined, text: `Nährwerte von ${naehrwerte_quelle} sind umgerechnet (z. B. ${krumm[0]} ${naehrwerte[krumm[0]]}), nicht vom Etikett – vorläufig` });
     }
   } else {
     fehlt.push("naehrwerte");
@@ -943,6 +1030,13 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
     fehlt.splice(fehlt.indexOf("zutaten"), 1);
     befunde.push({ art: "einzutat", text: `„${name}" ist reine Milch – keine Zutatenliste nötig (LMIV Art. 19), Zutat „Milch"` });
   }
+  // v7.0: Wasser und Honig genauso – nur die Zutat, Naehrwerte werden nie dazuerfunden
+  const ez = !zutaten_text && !zutaten_teil && name ? (einzutatWasser(name, naehrwerte) ?? einzutatHonig(name, naehrwerte, marke)) : null;
+  if (ez) {
+    zutaten_text = ez; zutaten_quelle = "regel:einzutat";
+    fehlt.splice(fehlt.indexOf("zutaten"), 1);
+    befunde.push({ art: "einzutat", text: `„${name}" besteht aus einer Zutat – keine Zutatenliste nötig (LMIV Art. 19), Zutat „${ez}"` });
+  }
   if (!name) fehlt.push("name");
   if (!marke) fehlt.push("marke");
   if (naehrwerte_quelle === "openfoodfacts" && quellen.find((q) => q.quelle === "openfoodfacts")?.befunde.some((b) => b.art === "kcal_errechnet")) {
@@ -953,7 +1047,7 @@ function zusammenfuehren(ean: string, quellen: Quelle[], foto: Quelle | null) {
   }
   const vollstaendig = fehlt.length === 0;
   // v6.9: Was die Kette als Naechstes braucht – fehlt etwas oder ist nur Vorlaeufiges da, hilft nur das Etikettfoto
-  const naechster_schritt = !vollstaendig || befunde.some((b) => b.art === "vorlaeufig_ohne_ean") ? "etikettfoto" : null;
+  const naechster_schritt = !vollstaendig || befunde.some((b) => b.art === "vorlaeufig_ohne_ean" || b.art === "nw_umgerechnet") ? "etikettfoto" : null;
   return { ean, name, name_quelle, marke, zutaten_text, zutaten_quelle, zutaten_teil, naehrwerte, naehrwerte_quelle, fehlt, befunde, vollstaendig, naechster_schritt };
 }
 
@@ -1013,7 +1107,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   const fotoFuerMerge = f && f.ergebnis === "treffer" ? f : null;
   let ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
   // v6.9: erst kostenlos bei OFF nach Marke + Name suchen (0,5 s), dann erst die bezahlte Websuche
-  const lueckeDa = () => ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte");
+  const lueckeDa = () => ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte" || x === "naehrwerte_teilweise");
   if (lueckeDa() && ergebnis.marke && ergebnis.name && ean.length >= 8) {
     quellen.push(await quelleOffName(ergebnis.marke, ergebnis.name, ean));
     ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
@@ -1038,7 +1132,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
       budgetRest.usd += 0.06 - kostenWeb;
     }
   }
-  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt", "off_name_kandidat", "off_name_mehrdeutig"].includes(b.art)));
+  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt", "sorte_unbekannt", "off_name_kandidat", "off_name_mehrdeutig"].includes(b.art)));
   if (f) ergebnis.befunde.push(...f.befunde);
   const alle = f ? [f, ...quellen] : quellen;
   const kostenFinal: number = Math.round((kosten + kostenWeb) * 1e6) / 1e6;
