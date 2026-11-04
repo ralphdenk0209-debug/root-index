@@ -1,5 +1,8 @@
 // RIKI-SCAN-WORKER
 //
+// v21 (2026-11-04, Ralph „jaja, erst messen“): MESSMODUS MIT PRODUKTART. schnellcheck_probe.mit_art = true stellt
+//   Frage 4 (Lebensmittel/Supplement/Arznei/Kosmetik/Haushalt/Tier). Nur Messung, der normale Weg ist unveraendert.
+//
 // v16 (2026-10-25, Ralph jaja): VORLESUNG NUR BEI EINEM FOTO. Bei mehreren Fotos liest riki-etikett alle
 //   gemeinsam (Weg wie v14) - sonst fehlten Zutaten von Foto 2 und "pro Portion" von Foto 2 ueberstimmte
 //   die 100-g-Tabelle von Foto 1 (Fall P96433, Job 183).
@@ -136,7 +139,12 @@ const CHECK_PREIS: Record<string, [number, number]> = {
   "claude-sonnet-4-6": [3.0, 15.0], "claude-sonnet-5-5": [2.0, 10.0],
 };
 const CHECK_DENKEN: Record<string, unknown> = { "claude-haiku-5-5": { type: "disabled" }, "claude-sonnet-5-5": { type: "between_tools" } };
-async function schnellCheck(images: string[], modell: string = CHECK_MODELL): Promise<any> {
+/* v21 (04.11.2026, Ralph „jaja, erst messen“ – Non-Food-Blocker): Frage 4 „Was fuer ein Produkt?“ NUR im Messmodus
+   (schnellcheck_probe.mit_art = true). Der normale Weg fragt weiter genau die drei Fragen von v20 und sperrt nichts.
+   Regel von Ralph (04.11.): Supplements muessen durchgehen – Nahrungsergaenzung und Arzneimittel zaehlen nie als Non-Food,
+   gesperrt werden spaeter hoechstens KOSMETIK, HAUSHALT und TIER. */
+const ART_NONFOOD = ["kosmetik", "haushalt", "tier"];
+async function schnellCheck(images: string[], modell: string = CHECK_MODELL, mitArt = false): Promise<any> {
   const key = findeKey();
   if (!key) return { antwort: "unklar", lesbar: null, marke: null, grund: "kein_key" };
   const t0 = Date.now();
@@ -150,17 +158,22 @@ async function schnellCheck(images: string[], modell: string = CHECK_MODELL): Pr
     "1. Steht auf einem Foto ein Zutatenverzeichnis (Aufzaehlung der Zutaten, meist nach dem Wort \"Zutaten\")? Eine Naehrwerttabelle ist KEIN Zutatenverzeichnis.\n" +
     "2. Ist dieses Zutatenverzeichnis VOLLSTAENDIG im Bild und SCHARF genug, um jedes Wort sicher zu lesen?\n" +
     "3. Welcher Markenname steht auf der Packung? Ein Siegel ist keine Marke. Nicht sicher: UNBEKANNT.\n" +
-    "Antworte in genau einer Zeile: JA|SCHARF|Marke oder JA|UNSCHARF|Marke oder NEIN|-|Marke" });
+    (mitArt
+      ? "4. Was fuer ein Produkt ist das? LEBENSMITTEL (auch Getraenk, Gewuerz, Babynahrung), SUPPLEMENT (Nahrungsergaenzung, Vitamine, Proteinpulver), ARZNEI, KOSMETIK (Pflege, Duschgel, Zahnpasta, Kosmetik), HAUSHALT (Reinigung, Waschmittel), TIER (Tiernahrung), UNKLAR.\n" +
+        "Antworte in genau einer Zeile: JA|SCHARF|Marke|ART oder JA|UNSCHARF|Marke|ART oder NEIN|-|Marke|ART"
+      : "Antworte in genau einer Zeile: JA|SCHARF|Marke oder JA|UNSCHARF|Marke oder NEIN|-|Marke") });
   try {
     const ai = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: modell, max_tokens: 30, ...(CHECK_DENKEN[modell] ? { thinking: CHECK_DENKEN[modell] } : {}), messages: [{ role: "user", content: inhalt }] }),
+      body: JSON.stringify({ model: modell, max_tokens: mitArt ? 40 : 30, ...(CHECK_DENKEN[modell] ? { thinking: CHECK_DENKEN[modell] } : {}), messages: [{ role: "user", content: inhalt }] }),
     });
     const j = await ai.json();
     if (!ai.ok) return { antwort: "unklar", lesbar: null, marke: null, grund: "http_" + ai.status + (j?.error?.message ? ": " + String(j.error.message).slice(0, 160) : ""), ms: Date.now() - t0, modell };
     const roh = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
-    const [a1, a2, a3] = roh.split("|").map((x: string) => (x ?? "").trim());
+    const [a1, a2, a3, a4] = roh.split("|").map((x: string) => (x ?? "").trim());
+    const artRoh = (a4 ?? "").toLowerCase();
+    const art = !mitArt ? undefined : (["lebensmittel", "supplement", "arznei", "kosmetik", "haushalt", "tier"].find((k) => artRoh.startsWith(k)) ?? "unklar");
     const antwort = /^ja\b/i.test(a1 ?? "") ? "ja" : /^nein\b/i.test(a1 ?? "") ? "nein" : "unklar";
     const lesbar = antwort === "ja" ? (/^scharf/i.test(a2 ?? "") ? true : /^unscharf/i.test(a2 ?? "") ? false : null) : (antwort === "nein" ? false : null);
     let marke: string | null = (a3 ?? "").trim();
@@ -169,7 +182,7 @@ async function schnellCheck(images: string[], modell: string = CHECK_MODELL): Pr
     const inTok = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
     const outTok = u.output_tokens ?? 0;
     const [pIn, pOut] = CHECK_PREIS[modell] ?? [1.0, 5.0];
-    return { antwort, lesbar, marke, roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * pIn + (outTok / 1e6) * pOut).toFixed(6)), in: inTok, out: outTok, modell };
+    return { antwort, lesbar, marke, ...(mitArt ? { art, nonfood: ART_NONFOOD.includes(art as string) } : {}), roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * pIn + (outTok / 1e6) * pOut).toFixed(6)), in: inTok, out: outTok, modell };
   } catch (e) {
     return { antwort: "unklar", lesbar: null, marke: null, grund: String(e).slice(0, 120), ms: Date.now() - t0 };
   }
@@ -319,9 +332,26 @@ Deno.serve(async (req: Request) => {
       const { data: zeilen, error: zErr } = await sb.from("Scan_Warteschlange").select("Eintrag_ID,Fotos_Base64,Foto_Base64").in("Eintrag_ID", ids);
       if (zErr) return response({ ok: false, fehler: fehlerText(zErr) }, 500);
       const aufgaben: Array<() => Promise<any>> = [];
+      /* v21: Fremdfotos fuer die Non-Food-Messung (z. B. Packungsfotos von Open Beauty Facts) - nur Bildadressen
+         von openfoodfacts.org/openbeautyfacts.org/openpetfoodfacts.org/openproductsfacts.org, hoechstens 30 Saetze je 3 Fotos. */
+      const saetze: any[] = Array.isArray(body.schnellcheck_probe.bilder_saetze) ? body.schnellcheck_probe.bilder_saetze.slice(0, 30) : [];
+      for (const satz of saetze) {
+        const urls: string[] = (Array.isArray(satz?.urls) ? satz.urls : []).filter((u: unknown) => typeof u === "string" && /^https:\/\/images\.open(food|beauty|petfood|products)facts\.org\//.test(u as string)).slice(0, 3);
+        if (!urls.length) continue;
+        aufgaben.push(async () => {
+          const bilder: string[] = [];
+          for (const u of urls) {
+            try { const r = await fetch(u); if (!r.ok) continue; const typ = r.headers.get("content-type") || "image/jpeg"; const buf = new Uint8Array(await r.arrayBuffer());
+              if (buf.length > 4_000_000) continue; let bin = ""; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
+              bilder.push(`data:${typ.split(";")[0]};base64,${btoa(bin)}`); } catch (_) { /* Bild fehlt -> ohne */ }
+          }
+          if (!bilder.length) return { satz: String(satz?.name ?? "").slice(0, 60), fehler: "keine_bilder" };
+          return { satz: String(satz?.name ?? "").slice(0, 60), erwartet: String(satz?.erwartet ?? "").slice(0, 20), fotos: bilder.length, ...(await schnellCheck(bilder, modelle[0] ?? CHECK_MODELL, body.schnellcheck_probe.mit_art === true)) };
+        });
+      }
       for (const z of zeilen ?? []) {
         const bilder = cleanImages({ fotos: z.Fotos_Base64, foto: z.Foto_Base64 });
-        for (const m of modelle) aufgaben.push(async () => ({ scan_id: z.Eintrag_ID, fotos: bilder.length, ...(await schnellCheck(bilder, m)) }));
+        for (const m of modelle) aufgaben.push(async () => ({ scan_id: z.Eintrag_ID, fotos: bilder.length, ...(await schnellCheck(bilder, m, body.schnellcheck_probe.mit_art === true)) }));
       }
       const ergebnis: any[] = [];
       for (let i = 0; i < aufgaben.length; i += 6) ergebnis.push(...await Promise.all(aufgaben.slice(i, i + 6).map((f) => f())));
