@@ -83,7 +83,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v19";
+const WORKER = "riki-scan-worker v20";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
    Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
@@ -109,7 +109,11 @@ function nurSiegel(teil: string): boolean {
 //   (nur service_role kann Auftraege anlegen/holen) und schreibt Zeiten + Lesung zurueck. Kein Ingest, kein Job-Status.
 const NUR_ZEILEN = true; // 23.09.2026 Tempo C (Ralph jaja): Riki liefert je Zutat nur name + original_text; Probe 10 Jobs im Mittel 13 s statt 20 s
 const SCHLANK = true; // 23.09.2026 nach Probe (13 Lesungen: Zutaten/Naehrwerte/Name/Marke gleich, -35 % Zeit)
-const CHECK_MODELL = "claude-haiku-4-5-20251001";
+/* v20 (04.11.2026, #859, Ralph „ggf tauschen wir das Modell“): Schnell-Check auf Haiku 5.5. Gemessen an 82 echten Scans
+   (Messmodus v19): NEIN Haiku 4.5 37x / Haiku 5.5 24x; Stichproben (Nudeln P96, Skyr, Gnocchi) zeigen die Zutatenliste -
+   Haiku 4.5 lag dort falsch, Haiku 5.5 richtig. Kosten je Check 0,29 -> 0,045 Cent, Dauer 0,8 -> 1,1 s. Sonnet 5.5 haelt
+   das Einzeilen-Format nicht (12 von 82 abgeschnitten). Zurueck: "claude-haiku-4-5-20251001". */
+const CHECK_MODELL = "claude-haiku-5-5";
 
 /* v10, 23.09.2026 (Ralph A Foto-Tempo): SCHNELL-CHECK VOR DEM GROSSEN LESEN.
    Frueher merkte man ein unscharfes Foto erst nach 20-60 s am Ende. Jetzt fragt ein
