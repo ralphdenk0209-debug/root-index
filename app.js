@@ -938,6 +938,21 @@ function rikiWarteFluxTakt(start){
   var t=document.getElementById("rwfText"); if(t) t.textContent=RWF_SAETZE[Math.min(3,Math.floor(s/3.5))];
   var n=document.getElementById("rwfNach"); if(n && s>=12) n.textContent="Du musst nicht warten – das Produkt steht danach in der Suche.";
 }
+/* 04.11.2026 (#859): „Noch kein Index“ mit dem Grund vom Server (cb_riki_scan_job_stand.grund) und Foto-Knopf. */
+function rikiNichtFreiHinweis(st, ean, stempel){
+  try{ rikiWartegrenzeStoppen(); }catch(e){}
+  try{ if(typeof rikiFabZustand==="function") rikiFabZustand("normal"); }catch(e){}
+  try{ clearInterval(window._rikiWebUhr); }catch(e){}
+  var gText = st.grund || ((Array.isArray(st.warnungen) && st.warnungen.length) ? String(st.warnungen[0]) : "");
+  var grund = gText ? '<br><span style="color:var(--muted);font-size:12px">Grund: '+esc(gText)+'</span>' : '';
+  var pidT=String(st.produkt_id||"").replace(/[^A-Za-z0-9]/g,"");
+  rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml(stempel)
+    +'<div style="min-width:0"><b>Noch kein Index.</b> Wir prüfen das Produkt im Hintergrund. Sobald der Index steht, bekommst du eine Mitteilung.'+grund
+    +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
+    +(pidT?'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();prodInsTagebuch(\''+pidT+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green,#16a34a);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">📒 Ins Tagebuch</button>':'')
+    +'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();if(typeof etikettOpen===\'function\')etikettOpen(\''+String(ean||"").replace(/[^0-9]/g,"")+'\')" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;cursor:pointer">📷 Neue Fotos</button>'
+    +'</div></div></div>', null);
+}
 function rikiScanNachfassen(jobId, ean){
   if(!jobId || typeof client==="undefined") return;
   var start=Date.now(), schnellGemeldet=false;
@@ -956,6 +971,14 @@ function rikiScanNachfassen(jobId, ean){
     var st=null;
     try{ var r=await client.rpc("cb_riki_scan_job_stand",{p_job_id:jobId}); st=(typeof r.data==="string")?JSON.parse(r.data):r.data; }catch(e){ return; }
     if(!st || !st.ok) return;
+    /* 04.11.2026 (#859, Ralph: „darf nicht sein, dass er so lange hängt“): nach 20 s ohne Ergebnis sagt der
+       Server zustand "zu_lange" – die Anzeige hört auf zu zählen und bietet neue Fotos an. Riki arbeitet im
+       Hintergrund weiter; die Mitteilung „Der Index ist da“ kommt trotzdem. */
+    if(st.zustand==="zu_lange"){
+      clearInterval(window._rikiNachfassUhr);
+      rikiNichtFreiHinweis(st, ean, "pruefung");
+      return;
+    }
     var sc=st.schnellcheck||null;
     if(!schnellGemeldet && sc && (sc.antwort==="nein" || sc.lesbar===false)){
       schnellGemeldet=true;
@@ -970,18 +993,12 @@ function rikiScanNachfassen(jobId, ean){
     }
     if(st.status==="fertig" || st.status==="gehalten" || st.status==="fehler"){
       clearInterval(window._rikiNachfassUhr);
-      /* 07.10.2026: laeuft es nicht durch, steht da, was jetzt passiert - und wie es weitergeht. */
-      if(!(st.freigegeben && st.produkt_id) && !schnellGemeldet){
-        var grund=(Array.isArray(st.warnungen) && st.warnungen.length) ? '<br><span style="color:var(--muted);font-size:12px">Grund: '+esc(String(st.warnungen[0]))+'</span>' : '';
-        var pidT=String(st.produkt_id||"").replace(/[^A-Za-z0-9]/g,"");
-        rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml(st.status==="fehler"?"fehler":"pruefung")
-          +'<div style="min-width:0"><b>Noch kein Index.</b> Wir prüfen das Produkt im Hintergrund. Sobald der Index steht, bekommst du eine Mitteilung.'+grund
-          +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
-          +(pidT?'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();prodInsTagebuch(\''+pidT+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green,#16a34a);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">📒 Ins Tagebuch</button>':'')
-          +'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();if(typeof etikettOpen===\'function\')etikettOpen(\''+String(ean||"").replace(/[^0-9]/g,"")+'\')" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;cursor:pointer">📷 Neue Fotos</button>'
-          +'</div></div></div>', null);
-      }
-      if(st.freigegeben && st.produkt_id){
+      /* 07.10.2026: laeuft es nicht durch, steht da, was jetzt passiert - und wie es weitergeht.
+         04.11.2026 (#859): auch wenn vorher schon „Keine Zutatenliste … Riki sucht auf der Herstellerseite“ stand –
+         sonst blieb dieser Satz stehen, obwohl der Auftrag längst fertig war (P155: 866 s). Ob frei, sagt der Server (zustand). */
+      var frei = st.zustand ? st.zustand==="fertig_frei" : !!(st.freigegeben && st.produkt_id);
+      if(!frei) rikiNichtFreiHinweis(st, ean, st.status==="fehler"?"fehler":"pruefung");
+      if(frei && st.produkt_id){
         try{ rikiWartegrenzeStoppen(); }catch(e){}
         try{ if(typeof rikiFabZustand==="function") rikiFabZustand("bereit"); }catch(e){}
         rikiScanHinweis('&#10003; <b>'+esc(st.produktname||"Produkt")+'</b> ist fertig'
@@ -18115,7 +18132,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-01-01";
+const APP_BUILD="2026-11-04-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
