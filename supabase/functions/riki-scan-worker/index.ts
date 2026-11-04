@@ -83,7 +83,26 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v17";
+const WORKER = "riki-scan-worker v18";
+/* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
+   Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
+   Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
+   wer eine der beiden Listen aendert, aendert die andere mit. Bleibt aus OFF nichts uebrig, gilt Rikis Marke. */
+const SIEGEL = [
+  "bioland", "demeter", "naturland", "ecoland", "biokreis", "gaea",
+  "eu-bio", "eu bio", "eg-oeko", "eg-öko", "oekotest", "ökotest",
+  "fairtrade", "rainforest alliance", "utz", "msc", "asc", "gots",
+  "v-label", "vegan", "vegetarisch", "ohne gentechnik", "gentechnikfrei",
+  "regionalfenster", "qs", "ivo", "haccp", "ce",
+  "bio", "oeko", "öko", "organic",
+];
+function nurSiegel(teil: string): boolean {
+  const n = teil.toLowerCase().replace(/\s+/g, " ").trim();
+  if (SIEGEL.includes(n)) return true;
+  // "EDEKA Bio" -> "edeka" bleibt uebrig, das ist eine Marke. "Bio Bioland" loest sich ganz auf.
+  const rest = n.split(/\s+/).filter((w) => !SIEGEL.includes(w)).join(" ").trim();
+  return rest.length < 2;
+}
 // v11 (23.09.2026, Ralph jaja Foto-Tempo B): SCHLANK-LESEN. Riki schreibt keine Note/Begruendung je Zutat mehr -
 //   die Maschine bewertet aus dem Stamm (cb_produkt_ingest liest rating nie). Schalter SCHLANK; erst nach Probe an.
 //   Probe-Modus: body.probe=true arbeitet genau einen offenen Auftrag aus shadow_v1.riki_probe_auftrag ab
@@ -466,7 +485,7 @@ Deno.serve(async (req: Request) => {
           const { data: sc } = await sb.from("Scan_Cache").select("Marke,Name").eq("EAN", String(job.ean)).maybeSingle();
           // OFF fuehrt Marken als Liste. Ganze Liste weitergeben - der Trigger trg_marke_normalisieren waehlt
           // die Eigenmarke vor dem Haendler und die feste Schreibweise (Ralph B, 23.09.2026).
-          const liste = typeof sc?.Marke === "string" ? sc.Marke.split(/[,;|]/).map((x: string) => x.trim()).filter(Boolean) : [];
+          const liste = typeof sc?.Marke === "string" ? sc.Marke.split(/[,;|]/).map((x: string) => x.trim()).filter(Boolean).filter((x: string) => !nurSiegel(x)) : [];
           if (liste.length) offMarke = liste.join(", ");
           /* 23.09.2026 (Ralph „ja"): auch der Name zuerst aus OFF. Steht die Marke vorn/hinten im Namen, faellt sie weg;
              bleibt weniger als 3 Zeichen uebrig oder ist der Name nur die Marke, gilt Rikis Name. */
