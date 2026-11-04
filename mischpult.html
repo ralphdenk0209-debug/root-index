@@ -8,7 +8,8 @@
 <!-- mischpult.html · 18.10.2026 · Ralph: "setz mal c um" (Entwurf C aus den Cockpit-Vorschlaegen:
      "ich muss alles verwalten können und im blick haben").
      Jeder Bereich ein Kanalzug: Lampe, Wert, Verlauf, Notiz, Schalter, Knopf.
-     Liest NUR cb_admin_mischpult_lesen (Vorrat aus cb_admin_mischpult, alle 5 Min.; baut auf cb_admin_cockpit_ampel / _dblast / _social auf - keine eigene Fachlogik).
+     Liest NUR cb_admin_mischpult_lesen (Vorrat aus cb_admin_mischpult, gerechnet beim Öffnen/Aktualisieren
+     über cb_admin_mischpult_anfordern, seit 04.11.; baut auf cb_admin_cockpit_ampel / _dblast / _social auf - keine eigene Fachlogik).
      Schreibt NUR ueber cb_admin_mischpult_schalten (Feature-Flags etikett_riki, rezept_riki, push; mit Protokoll)
      und cb_claude_kosten_sync (Knopf "Jetzt abrufen"). Waechter-Faelle ueber cb_admin_cockpit_waechter_faelle. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -85,7 +86,7 @@
   <header>
     <div>
       <h1>Root Index · Mischpult</h1>
-      <p class="lead"><span id="tag"></span> · <span id="stand">lädt …</span> · aktualisiert sich jede Minute</p>
+      <p class="lead"><span id="tag"></span> · <span id="stand">lädt …</span> · <a href="#" onclick="anfordern();return false">Aktualisieren</a></p>
     </div>
     <div class="master"><span id="mLampe"></span><div><b id="mText">…</b><small id="mSub"></small></div></div>
   </header>
@@ -294,12 +295,25 @@ document.addEventListener('click',function(ev){
     ev.preventDefault(); window.parent.adminGo(new URL(a.href,location.href).searchParams.get('go')); } }catch(e){}
 });
 
+/* 04.11.2026 (Ralph: „reicht beim Öffnen oder wenn ich aktualisieren klicke“): der Stand wird nur noch
+   auf Anforderung gerechnet (cb_admin_mischpult_anfordern -> Minutentakt mischpult-cache, ~1 Min.).
+   Bis er da ist, zeigt die Seite den letzten Stand und fragt alle 15 s nach. */
+let ANGEFORDERT=0, NACHFRAGE=null;
+async function anfordern(){
+  const {data,error}=await client.rpc('cb_admin_mischpult_anfordern');
+  if(error||!data||!data.ok) return;
+  ANGEFORDERT=new Date(data.angefordert_am).getTime();
+  $('stand').textContent+=' · wird neu berechnet …';
+  if(!NACHFRAGE) NACHFRAGE=setInterval(()=>{ if(!document.hidden) laden(); }, 15000);
+}
 async function laden(){
-  /* 18.10. abends: liest den vorgerechneten Stand (alle 5 Min., Cron mischpult-cache) - die Live-Rechnung dauert > 8 s. */
+  /* 18.10. abends: liest den vorgerechneten Stand - die Live-Rechnung dauert > 8 s. */
   const {data,error}=await client.rpc('cb_admin_mischpult_lesen');
   if(error||!data||data.ok===false){ $('hinweis').style.display='block'; $('stand').textContent=error?('Fehler: '+error.message):(data&&data.fehler)||'kein Zugriff'; return; }
   $('hinweis').style.display='none'; D=data;
-  $('stand').textContent='Stand '+new Date(data.cache_stand||data.stand).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+' (alle 5 Min. neu)';
+  const st=new Date(data.cache_stand||data.stand), frisch=st.getTime()>=ANGEFORDERT;
+  if(frisch&&NACHFRAGE){ clearInterval(NACHFRAGE); NACHFRAGE=null; }
+  $('stand').textContent='Stand '+st.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+(frisch?'':' · wird neu berechnet …');
   bauen();
 }
 async function schalten(k, an){
@@ -408,7 +422,7 @@ document.addEventListener('click',async function(ev){
   if(error||!data||!data.ok){ row.querySelectorAll('button').forEach(x=>x.disabled=false); alert('Nicht gespeichert: '+(error?error.message:'')); return; }
   aufgabenLaden();
 });
-laden(); aufgabenLaden();
+laden().then(anfordern); aufgabenLaden();
 setInterval(()=>{ if(!document.hidden){ laden(); aufgabenLaden(); } }, 60000);
 </script>
 </body>
