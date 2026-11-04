@@ -83,7 +83,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v18";
+const WORKER = "riki-scan-worker v19";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
    Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
@@ -124,7 +124,15 @@ function findeKey(): string | null {
   for (const v of Object.values(env)) if (typeof v === "string" && v.trim().startsWith("sk-ant-api")) return v.trim();
   return null;
 }
-async function schnellCheck(images: string[]): Promise<any> {
+/* v19 (04.11.2026, #859, Ralph „Test machen“): Modell waehlbar fuer die Messung (Probe unten). Der normale
+   Weg ruft schnellCheck(images) wie bisher mit CHECK_MODELL auf. Neuere Modelle denken von sich aus -
+   bei 30 Token Antwort muss das aus sein (Haiku 5.5: disabled, Sonnet 5.5: between_tools). */
+const CHECK_PREIS: Record<string, [number, number]> = {
+  "claude-haiku-4-5-20251001": [1.0, 5.0], "claude-haiku-5-5": [0.10, 0.50],
+  "claude-sonnet-4-6": [3.0, 15.0], "claude-sonnet-5-5": [2.0, 10.0],
+};
+const CHECK_DENKEN: Record<string, unknown> = { "claude-haiku-5-5": { type: "disabled" }, "claude-sonnet-5-5": { type: "between_tools" } };
+async function schnellCheck(images: string[], modell: string = CHECK_MODELL): Promise<any> {
   const key = findeKey();
   if (!key) return { antwort: "unklar", lesbar: null, marke: null, grund: "kein_key" };
   const t0 = Date.now();
@@ -143,10 +151,10 @@ async function schnellCheck(images: string[]): Promise<any> {
     const ai = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: CHECK_MODELL, max_tokens: 30, messages: [{ role: "user", content: inhalt }] }),
+      body: JSON.stringify({ model: modell, max_tokens: 30, ...(CHECK_DENKEN[modell] ? { thinking: CHECK_DENKEN[modell] } : {}), messages: [{ role: "user", content: inhalt }] }),
     });
     const j = await ai.json();
-    if (!ai.ok) return { antwort: "unklar", lesbar: null, marke: null, grund: "http_" + ai.status, ms: Date.now() - t0 };
+    if (!ai.ok) return { antwort: "unklar", lesbar: null, marke: null, grund: "http_" + ai.status + (j?.error?.message ? ": " + String(j.error.message).slice(0, 160) : ""), ms: Date.now() - t0, modell };
     const roh = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
     const [a1, a2, a3] = roh.split("|").map((x: string) => (x ?? "").trim());
     const antwort = /^ja\b/i.test(a1 ?? "") ? "ja" : /^nein\b/i.test(a1 ?? "") ? "nein" : "unklar";
@@ -156,7 +164,8 @@ async function schnellCheck(images: string[]): Promise<any> {
     const u: any = j.usage ?? {};
     const inTok = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
     const outTok = u.output_tokens ?? 0;
-    return { antwort, lesbar, marke, roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * 1.0 + (outTok / 1e6) * 5.0).toFixed(6)), in: inTok, out: outTok };
+    const [pIn, pOut] = CHECK_PREIS[modell] ?? [1.0, 5.0];
+    return { antwort, lesbar, marke, roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * pIn + (outTok / 1e6) * pOut).toFixed(6)), in: inTok, out: outTok, modell };
   } catch (e) {
     return { antwort: "unklar", lesbar: null, marke: null, grund: String(e).slice(0, 120), ms: Date.now() - t0 };
   }
@@ -294,6 +303,34 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json().catch(() => ({}));
+    /* v19 (04.11.2026, #859, Ralph „Test machen“): MESSUNG SCHNELL-CHECK. Nur Admin (cb_ist_admin mit dem
+       Zugang des Aufrufers). Liest die Fotos der genannten Scans und fragt jedes Modell mit genau dem
+       Schnell-Check von oben. Schreibt nichts ausser der Kostenbuchung - kein Job, kein Produkt. */
+    if (body?.schnellcheck_probe) {
+      const nutzer = createClient(url, Deno.env.get("SUPABASE_ANON_KEY")!, { global: { headers: { Authorization: req.headers.get("Authorization") ?? "" } }, auth: { persistSession: false } });
+      const { data: istAdmin } = await nutzer.rpc("cb_ist_admin");
+      if (istAdmin !== true) return response({ ok: false, fehler: "Nur Admin." }, 403);
+      const ids: number[] = (Array.isArray(body.schnellcheck_probe.scan_ids) ? body.schnellcheck_probe.scan_ids : []).map(Number).filter(Number.isFinite).slice(0, 25);
+      const modelle: string[] = (Array.isArray(body.schnellcheck_probe.modelle) ? body.schnellcheck_probe.modelle : [CHECK_MODELL]).filter((m: unknown) => typeof m === "string" && CHECK_PREIS[m as string]).slice(0, 4);
+      const { data: zeilen, error: zErr } = await sb.from("Scan_Warteschlange").select("Eintrag_ID,Fotos_Base64,Foto_Base64").in("Eintrag_ID", ids);
+      if (zErr) return response({ ok: false, fehler: fehlerText(zErr) }, 500);
+      const aufgaben: Array<() => Promise<any>> = [];
+      for (const z of zeilen ?? []) {
+        const bilder = cleanImages({ fotos: z.Fotos_Base64, foto: z.Foto_Base64 });
+        for (const m of modelle) aufgaben.push(async () => ({ scan_id: z.Eintrag_ID, fotos: bilder.length, ...(await schnellCheck(bilder, m)) }));
+      }
+      const ergebnis: any[] = [];
+      for (let i = 0; i < aufgaben.length; i += 6) ergebnis.push(...await Promise.all(aufgaben.slice(i, i + 6).map((f) => f())));
+      const kosten = ergebnis.reduce((s, r) => s + (r.kosten_usd ?? 0), 0);
+      try {
+        for (const m of modelle) {
+          const r = ergebnis.filter((x) => x.modell === m);
+          const k = r.reduce((s, x) => s + (x.kosten_usd ?? 0), 0);
+          if (k > 0) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck-probe", p_modell: m, p_in: r.reduce((s, x) => s + (x.in ?? 0), 0), p_out: r.reduce((s, x) => s + (x.out ?? 0), 0), p_kosten: Number(k.toFixed(6)), p_produkt_id: null, p_erfolg: true, p_fehler: null });
+        }
+      } catch (_) { /* Buchung ist nicht lebenswichtig */ }
+      return response({ ok: true, anzahl: ergebnis.length, kosten_usd: Number(kosten.toFixed(4)), ergebnis, ms: Date.now() - started });
+    }
     if (body?.probe === true) {
       const { data: auftrag } = await sb.rpc("cb_riki_probe_holen");
       if (!auftrag) return response({ ok: true, probe: "kein offener Auftrag" });
