@@ -531,12 +531,18 @@ Deno.serve(async (req) => {
     let zutatenVerworfen = false;
     let markeWiderspruch: string | null = null;
     let gegenprobeMarke: string | null = null;
+    let vorabAntwort: "ja" | "nein" | null = null;
     if (Array.isArray(vorschlag.zutaten) && vorschlag.zutaten.length > 0) {
       /* 23.09.2026 (Ralph A Foto-Tempo): hat der Scan-Worker den Schnell-Check schon gemacht, wird er uebernommen -
          das spart den zweiten Bildaufruf am Ende (3-5 s). Nur "ja"/"nein" zaehlen; sonst wie bisher selbst fragen. */
+      /* 04.11.2026 (#859, Ralph „Ja die Änderung machen“): nur ein vorab-JA wird übernommen. Ein vorab-NEIN
+         kommt vom kleinen Haiku-Schnell-Check und darf Sonnets Lesung nicht allein verwerfen - bei P155 (Job 226)
+         sagte Haiku NEIN, obwohl die Zutatenliste scharf und vollständig auf beiden Fotos stand. Dann fragt die
+         Gegenprobe wie am 04.09. (KV-488) mit dem Lesemodell selbst nach; erst deren NEIN verwirft. */
       const vorab = body?.gegenprobe;
-      const beleg = (vorab && (vorab.antwort === "ja" || vorab.antwort === "nein"))
-        ? { antwort: vorab.antwort as "ja" | "nein", marke: (typeof vorab.marke === "string" && vorab.marke.trim()) ? vorab.marke.trim() : null, inTok: 0, outTok: 0 }
+      vorabAntwort = (vorab && (vorab.antwort === "ja" || vorab.antwort === "nein")) ? vorab.antwort : null;
+      const beleg = vorabAntwort === "ja"
+        ? { antwort: "ja" as const, marke: (typeof vorab.marke === "string" && vorab.marke.trim()) ? vorab.marke.trim() : null, inTok: 0, outTok: 0 }
         : await etikettGegenprobe(inhalt, key, modell);
       belegAntwort = beleg.antwort;
       if (beleg.inTok || beleg.outTok) {
@@ -578,6 +584,6 @@ Deno.serve(async (req) => {
     /* 23.09.2026: Verkehrsbezeichnung mit Zutaten/Prozenten im Namen -> Klammerteil abschneiden. */
     try{ if(typeof vorschlag.name==="string"){ const nm=vorschlag.name.trim(); const kurz=nm.replace(/\s*\([^()]*\d+([.,]\d+)?\s*%[^()]*\)\s*$/,"").replace(/\s+-\s+.*\d+([.,]\d+)?\s*%.*$/,"").trim(); if(kurz && kurz!==nm){ vorschlag.name_etikett=nm; vorschlag.name=kurz; } } }catch{}
     try{vorschlag.bezug=normBezug(vorschlag.bezug);}catch{}try{vorschlag.bio=normBio(vorschlag.bio);}catch{vorschlag.bio=null;}
-    return new Response(JSON.stringify({vorschlag,warnungen:blocker.length?blocker:hinweise,score_erlaubt:erlaubt,guete:erlaubt?"vorlaeufig":"zweifelhaft",hinweis:erlaubt?"Von Riki aus deinem Foto gelesen. Root Index hat dieses Produkt noch nicht geprüft.":"Die Angaben auf dem Foto sind unstimmig oder unvollständig. Wir zeigen keinen Score, bis das geklärt ist.",meta:{modell,kosten_usd:Number(kosten.toFixed(6)),dauer_ms:Date.now()-t0,heute_genutzt:istAutopilot?null:(limit?.heute_genutzt??0)+1,limit_tag:limit?.limit_tag??null,zutaten_bereinigt:clean.warnungen.length>0,zutatenbeleg:belegAntwort,zutaten_verworfen:zutatenVerworfen,marke_widerspruch:markeWiderspruch,contract_version:CONTRACT_VERSION,schlank:body.schlank===true,nur_zeilen:body.nur_zeilen===true,ohne_zutaten:body.ohne_zutaten===true,in_token:inTok,out_token:outTok,ingredient_structure_version:"work78_v1"}}),{headers:{...CORS,"Content-Type":"application/json"}});
+    return new Response(JSON.stringify({vorschlag,warnungen:blocker.length?blocker:hinweise,score_erlaubt:erlaubt,guete:erlaubt?"vorlaeufig":"zweifelhaft",hinweis:erlaubt?"Von Riki aus deinem Foto gelesen. Root Index hat dieses Produkt noch nicht geprüft.":"Die Angaben auf dem Foto sind unstimmig oder unvollständig. Wir zeigen keinen Score, bis das geklärt ist.",meta:{modell,kosten_usd:Number(kosten.toFixed(6)),dauer_ms:Date.now()-t0,heute_genutzt:istAutopilot?null:(limit?.heute_genutzt??0)+1,limit_tag:limit?.limit_tag??null,zutaten_bereinigt:clean.warnungen.length>0,zutatenbeleg:belegAntwort,zutatenbeleg_vorab:vorabAntwort,zutaten_verworfen:zutatenVerworfen,marke_widerspruch:markeWiderspruch,contract_version:CONTRACT_VERSION,schlank:body.schlank===true,nur_zeilen:body.nur_zeilen===true,ohne_zutaten:body.ohne_zutaten===true,in_token:inTok,out_token:outTok,ingredient_structure_version:"work78_v1"}}),{headers:{...CORS,"Content-Type":"application/json"}});
   }catch(e){return new Response(JSON.stringify({error:String(e)}),{status:500,headers:{...CORS,"Content-Type":"application/json"}});}
 });
