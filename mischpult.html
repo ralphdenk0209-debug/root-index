@@ -233,9 +233,12 @@ function bauen(){
     knopf:{t: nlSt==='warn'?'Freigeben':'Newsletter',href:cb('newsletter.html')}});
   /* Claude-Kosten (echte Rechnung aus der Claude Console, taeglich 06:47 UTC) */
   const clTage=(cl.tage||[]).map(t=>Number(t.usd)||0), clMax=Math.max(0,...clTage);
-  const tb=Number(ri.tagesbudget||5), clSt = clMax>tb ? 'alarm' : clMax>tb*0.6 ? 'warn' : 'ok';
+  const tb=Number(ri.tagesbudget||5), kk=d.claude_konto;
+  /* Guthaben unter 20 $ oder Monatslimit über 80 % → gelb, unter 5 $ oder über 95 % → rot (04.11.2026) */
+  const kkSt = !kk ? 'ok' : (kk.guthaben_usd<5 || kk.limit_anteil>95) ? 'alarm' : (kk.guthaben_usd<20 || kk.limit_anteil>80) ? 'warn' : 'ok';
+  const clSt0 = clMax>tb ? 'alarm' : clMax>tb*0.6 ? 'warn' : 'ok', clSt = [clSt0,kkSt].includes('alarm') ? 'alarm' : [clSt0,kkSt].includes('warn') ? 'warn' : 'ok';
   Z.push({grp:'Geld',nm:'Claude-Kosten',st:clSt,v:usd(cl.monat),u:'diesen Monat (Rechnung)',viz:bars(clTage,clSt),
-    notiz:usd(cl.summe_7)+' in 7 Tagen · Tagesgrenze '+usd(tb)+'<br>Stand '+zeit(cl.geholt),
+    notiz:(kk ? 'Guthaben ~'+usd(kk.guthaben_usd)+' · Limit '+usd(kk.limit_monat_usd)+'/Monat ('+(kk.limit_anteil??'–')+' %)<br>' : '')+usd(cl.summe_7)+' in 7 Tagen · Tagesgrenze '+usd(tb)+'<br>Stand '+zeit(cl.geholt),
     knopf:{t:'Jetzt abrufen',onclick:'claudeAbrufen(this)'}, knopf2:{t:'Console',href:'https://console.anthropic.com/settings/cost'}});
   /* Riki-Scans + Kostenschalter */
   const riSt = Number(ri.heute)>tb ? 'alarm' : Number(ri.monat)>Number(ri.budget||150)*0.8 ? 'warn' : 'ok';
@@ -311,6 +314,8 @@ async function laden(){
   const {data,error}=await client.rpc('cb_admin_mischpult_lesen');
   if(error||!data||data.ok===false){ $('hinweis').style.display='block'; $('stand').textContent=error?('Fehler: '+error.message):(data&&data.fehler)||'kein Zugriff'; return; }
   $('hinweis').style.display='none'; D=data;
+  /* 04.11.2026 (Ralph): Guthaben und Monatslimit aus der Console – eigene kleine Abfrage, cb_admin_mischpult_lesen bleibt unberührt */
+  try{ const k=await client.rpc('cb_admin_claude_konto_lesen'); D.claude_konto=(k.data&&k.data.ok)?k.data:null; }catch(e){ D.claude_konto=null; }
   const st=new Date(data.cache_stand||data.stand), frisch=st.getTime()>=ANGEFORDERT;
   if(frisch&&NACHFRAGE){ clearInterval(NACHFRAGE); NACHFRAGE=null; }
   $('stand').textContent='Stand '+st.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+(frisch?'':' · wird neu berechnet …');
