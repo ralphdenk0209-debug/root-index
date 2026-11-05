@@ -45,7 +45,7 @@ const FELDER = "code,product_name,brands,quantity,nutriments,ingredients_text_de
 
 /* v3.3 (#865): nur diese beiden Produktarten von OFF sperren. Nie "product" (dort liegen auch Supplements). */
 const NONFOOD_ART: Record<string, string> = { beauty: "Kosmetik", petfood: "Tiernahrung" };
-const NONFOOD_MELDUNG = "Kein Lebensmittel – Root Index bewertet nur Lebensmittel und Supplements.";
+const NONFOOD_MELDUNG = "Root Index bewertet nur Lebensmittel und Supplements.";
 
 type Makro = {
   kcal: number | null; protein: number | null; kh: number | null;
