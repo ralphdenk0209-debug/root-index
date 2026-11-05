@@ -123,7 +123,10 @@ async function loadUsers(){
   try{ if(inner){ inner.style.maxWidth='1240px'; inner.style.margin='0 auto'; } }catch(e){}
   /* 05.11.2026: Kopfzahlen aus der Datenbank (cb_admin_nutzer_zahlen), nicht aus der Zeilenzahl. */
   var zahlen=null; try{ const z=await client.rpc("cb_admin_nutzer_zahlen"); zahlen=z.data||null; }catch(e){}
-  renderUsers(data||[], zahlen);
+  /* 05.11.2026 (#889, Ralph): welche Funktionen nutzen die Nutzer - gezaehlt im Server (cb_admin_funktionsnutzung). */
+  var fn=null; try{ const f=await client.rpc("cb_admin_funktionsnutzung"); fn=f.data||null;
+    if(fn&&fn.nutzer) (data||[]).forEach(function(u){ u._fn=fn.nutzer[u.benutzer_id]||null; }); }catch(e){}
+  renderUsers(data||[], zahlen, fn);
 }
 var _UP_FARBE={'iPhone-App':['#0a84ff','📱'],'Play-App':['#1a9c4a','🤖'],'Android':['#5f7f6a','🤖'],'iPhone-Browser':['#6b7280','🌐'],'Web':['#6b7280','🌐']};
 function _uUeber(u){
@@ -224,7 +227,35 @@ async function setUserPremiumBis(bid, aktuell){
   loadUsers();
 }
 if(typeof window!=='undefined'){ window.setUserPremiumBis=setUserPremiumBis; }
-function renderUsers(rows, z){
+/* 05.11.2026 (#889): Uebersicht je Funktion. Alle Zahlen kommen fertig aus cb_admin_funktionsnutzung. */
+function _uFnUebersicht(fn){
+  if(!fn||!fn.funktionen) return '';
+  var genutzt=fn.funktionen.filter(function(f){ return !f.nie_genutzt; }), nie=fn.funktionen.filter(function(f){ return f.nie_genutzt; });
+  var td='padding:5px 8px;font-size:12.5px;border-top:1px solid var(--line)';
+  var h='<details open style="margin:0 0 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px">'
+    +'<summary style="cursor:pointer;font-weight:700;font-size:14px">Welche Funktionen werden genutzt? <span style="font-weight:400;color:var(--muted);font-size:12px">'+genutzt.length+' von '+fn.funktionen_gesamt+' Funktionen in Gebrauch</span></summary>'
+    +'<div style="font-size:12px;color:var(--muted);margin:6px 0 8px">Basis: '+fn.basis_nutzer+' Nutzer (ohne '+fn.intern_ausgenommen+' interne Konten). '
+    +fn.ohne_jede_nutzung+' davon haben noch nichts gespeichert. Gezählt wird, wer in einer Funktion etwas angelegt hat. Suche, Produkt ansehen und Vergleich hinterlassen keine Daten und fehlen hier noch.</div>'
+    +'<table style="width:100%;border-collapse:collapse"><tr style="font-size:11.5px;color:var(--muted);text-align:left"><th style="padding:4px 8px">Funktion</th><th style="padding:4px 8px">Bereich</th><th style="padding:4px 8px;text-align:right">7 Tage</th><th style="padding:4px 8px;text-align:right">30 Tage</th><th style="padding:4px 8px;text-align:right">jemals</th><th style="padding:4px 8px;width:30%">Anteil der Nutzer</th><th style="padding:4px 8px">zuletzt</th></tr>';
+  genutzt.forEach(function(f){
+    var a=Number(f.anteil_prozent||0);
+    h+='<tr><td style="'+td+';font-weight:600">'+esc(f.name)+'</td><td style="'+td+';color:var(--muted)">'+esc(f.bereich)+'</td>'
+      +'<td style="'+td+';text-align:right;font-variant-numeric:tabular-nums">'+f.nutzer_7t+'</td>'
+      +'<td style="'+td+';text-align:right;font-variant-numeric:tabular-nums;font-weight:700">'+f.nutzer_30t+'</td>'
+      +'<td style="'+td+';text-align:right;font-variant-numeric:tabular-nums">'+f.nutzer_gesamt+'</td>'
+      +'<td style="'+td+'"><div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:8px;background:var(--bg);border-radius:4px;overflow:hidden"><div style="width:'+Math.min(a,100)+'%;height:100%;background:var(--greendk)"></div></div><span style="font-size:11.5px;color:var(--muted);min-width:42px;text-align:right">'+a.toLocaleString('de-DE')+' %</span></div></td>'
+      +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+_uDate(f.zuletzt)+'</td></tr>';
+  });
+  h+='</table>';
+  if(nie.length) h+='<div style="font-size:12.5px;margin-top:8px"><b>Nie genutzt ('+nie.length+'):</b> <span style="color:var(--muted)">'+nie.map(function(f){ return esc(f.name); }).join(' · ')+'</span></div>';
+  return h+'</details>';
+}
+function _uFn(u){
+  var f=u._fn; if(!f) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
+  var namen=(f.namen||[]).map(esc).join(', ');
+  return '<div title="'+namen+'" style="font-weight:700">'+f.anzahl+'</div><div style="font-size:11px;color:var(--muted);max-width:160px;white-space:normal;line-height:1.3">'+namen+'</div>';
+}
+function renderUsers(rows, z, fn){
   ensureRpillCss();
   const th='padding:8px 7px;font-size:11.5px;text-align:left;white-space:nowrap';
   let kopf;
@@ -252,9 +283,10 @@ function renderUsers(rows, z){
      Loesung ohne Ausbruch und ohne Scroll: die zehn Spalten muessen in die
      vorhandene Breite passen. Dafuer engeres Innenmass und kleinere Schrift -
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
+  h+=_uFnUebersicht(fn);
   h+='<div style="width:100%">'
    +'<table class="usrTab" style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
-  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Passwort</th></tr>';
+  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center" title="Funktionen, in denen der Nutzer etwas gespeichert hat">Funk&shy;tionen</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Passwort</th></tr>';
   rows.forEach(u=>{
     /* 05.11.2026: Art und Datum kommen vom Server (premium_art / premium_gueltig_bis). */
     const art=u.premium_aktiv?u.premium_art:null;
@@ -272,6 +304,7 @@ function renderUsers(rows, z){
         ? '<span title="'+esc(u.premium_quelle||'')+' – nicht von Hand änderbar" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--greenlt);color:var(--greendk)">Ja</span>'
         : rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')"))+'</td>'
       +'<td style="'+td+'">'+abo+'</td>'
+      +'<td style="'+td+';text-align:center">'+_uFn(u)+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uErf(u)+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uTb(u)+'</td>'
       +'<td style="'+td+';font-size:12.5px">'+_uAktiv(u.letzte_aktivitaet)+'</td>'
