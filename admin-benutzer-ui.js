@@ -120,7 +120,7 @@ async function loadUsers(){
   try{ const tb=await client.rpc("cb_admin_nutzer_tagebuchtage"); var tm={}; (tb.data||[]).forEach(function(x){ tm[x.benutzer_id]=x; });
     (data||[]).forEach(function(u){ u._tb=tm[u.benutzer_id]||null; }); }catch(e){}
   /* 27.10.2026, Ralph: "die tabelle mittig ausrichten" */
-  try{ if(inner){ inner.style.maxWidth='1240px'; inner.style.margin='0 auto'; } }catch(e){}
+  try{ if(inner){ inner.style.maxWidth='1440px'; inner.style.margin='0 auto'; } }catch(e){}
   /* 05.11.2026: Kopfzahlen aus der Datenbank (cb_admin_nutzer_zahlen), nicht aus der Zeilenzahl. */
   var zahlen=null; try{ const z=await client.rpc("cb_admin_nutzer_zahlen"); zahlen=z.data||null; }catch(e){}
   /* 05.11.2026 (#889, Ralph): welche Funktionen nutzen die Nutzer - gezaehlt im Server (cb_admin_funktionsnutzung). */
@@ -250,14 +250,33 @@ function _uFnUebersicht(fn){
   if(nie.length) h+='<div style="font-size:12.5px;margin-top:8px"><b>Nie genutzt ('+nie.length+'):</b> <span style="color:var(--muted)">'+nie.map(function(f){ return esc(f.name); }).join(' · ')+'</span></div>';
   return h+'</details>';
 }
+/* 05.11.2026, Ralph: "nutzer infos ... sauber ueber die gesamte breite, uebersichtlich".
+   Funktionen als kurze Plaketten (Kurzname kommt vom Server, liste[].kurz); gruen = in den
+   letzten 30 Tagen genutzt (aktiv_30t, vom Server), grau = frueher. Langer Name im Tooltip. */
 function _uFn(u){
   var f=u._fn; if(!f) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
-  var namen=(f.namen||[]).map(esc).join(', ');
-  return '<div title="'+namen+'" style="font-weight:700">'+f.anzahl+'</div><div style="font-size:11px;color:var(--muted);max-width:160px;white-space:normal;line-height:1.3">'+namen+'</div>';
+  var l=f.liste||(f.namen||[]).map(function(n){ return {kurz:n,name:n,aktiv_30t:false}; });
+  return '<div style="display:flex;flex-wrap:wrap;gap:3px;justify-content:flex-start">'
+    +l.map(function(x){ var a=!!x.aktiv_30t;
+      return '<span title="'+esc(x.name)+(x.zuletzt?' – zuletzt '+_uDate(x.zuletzt):'')+'" style="display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;white-space:nowrap;'
+        +(a?'background:var(--greenlt);color:var(--greendk);font-weight:600':'background:var(--bg);color:var(--muted)')+'">'+esc(x.kurz)+'</span>'; }).join('')
+    +'</div>';
+}
+/* Premium in einer Spalte: oben Ja/Nein, darunter Art und Zeitraum (alles vom Server). */
+function _uPrem(u){
+  var art=u.premium_aktiv?u.premium_art:null, oben, unten='';
+  if(art&&art!=='manuell') oben='<span title="'+esc(u.premium_quelle||'')+' – nicht von Hand änderbar" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--greenlt);color:var(--greendk)">Ja</span>';
+  else oben=rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')");
+  var klein='font-size:11px;color:var(--muted);white-space:nowrap;margin-top:3px';
+  if(art==='gratis_code'||art==='testzeit'||art==='stripe_test') unten='<div style="'+klein+'">🎁 Test bis '+_uDate(u.premium_gueltig_bis)+'</div><div style="'+klein+';margin-top:0">'+esc(u.premium_quelle||'')+'</div>';
+  else if(art==='stripe_abo') unten='<div style="'+klein+';color:var(--greendk);font-weight:600">Abo aktiv</div>'+(u.premium_gueltig_bis?'<div style="'+klein+';margin-top:0">bis '+_uDate(u.premium_gueltig_bis)+'</div>':'');
+  else if(u.is_premium) unten='<div style="'+klein+'">seit '+_uDate(u.premium_gueltig_von)+'</div><div style="margin-top:3px">'+_uPremBis(u)+'</div>';
+  else if(u.subscription_status==='canceled') unten='<div style="'+klein+';color:var(--k-b45309)">gekündigt</div>';
+  return '<div style="display:flex;flex-direction:column;align-items:center">'+oben+unten+'</div>';
 }
 function renderUsers(rows, z, fn){
   ensureRpillCss();
-  const th='padding:8px 7px;font-size:11.5px;text-align:left;white-space:nowrap';
+  const th='padding:9px 10px;font-size:11.5px;text-align:left;white-space:nowrap;color:var(--muted);font-weight:700';
   let kopf;
   if(z){
     kopf='<b>'+z.nutzer+' Nutzer</b> + '+z.admins+' Admin = '+z.konten+' Konten · <b>'+z.premium+'</b> Nutzer mit Premium';
@@ -284,40 +303,34 @@ function renderUsers(rows, z, fn){
      vorhandene Breite passen. Dafuer engeres Innenmass und kleinere Schrift -
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
   h+=_uFnUebersicht(fn);
-  h+='<div style="width:100%">'
-   +'<table class="usrTab" style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
-  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center" title="Funktionen, in denen der Nutzer etwas gespeichert hat">Funk&shy;tionen</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Passwort</th></tr>';
+  /* 05.11.2026, Ralph: "tabelle oben ist gut, die nutzer infos nicht - sauber ueber die gesamte breite".
+     Vorher 12 Spalten, die rechts ueber den Rand liefen. Jetzt 8: Registriert steht unter dem Namen,
+     Premium/Abo/seit/bis in einer Spalte, Funktionen als Plaketten. Gleiche Breite wie der Block oben. */
+  var td='padding:10px 10px;font-size:12.5px;vertical-align:middle;border-top:1px solid var(--line)';
+  h+='<table class="usrTab" style="width:100%;border-collapse:separate;border-spacing:0;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:fixed;font-size:12.5px">'
+   +'<colgroup><col style="width:19%"><col style="width:14%"><col style="width:12%"><col style="width:24%"><col style="width:8%"><col style="width:8%"><col style="width:8%"><col style="width:7%"></colgroup>';
+  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th>'
+   +'<th style="'+th+'" title="Funktionen, in denen der Nutzer etwas gespeichert hat. Grün = in den letzten 30 Tagen.">Funktionen <span style="font-weight:400;color:var(--muted)">(grün = letzte 30 Tage)</span></th>'
+   +'<th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tagebuch</th><th style="'+th+';text-align:center">Zuletzt aktiv</th><th style="'+th+';text-align:center"></th></tr>';
   rows.forEach(u=>{
-    /* 05.11.2026: Art und Datum kommen vom Server (premium_art / premium_gueltig_bis). */
-    const art=u.premium_aktiv?u.premium_art:null;
-    let abo;
-    if(art==='gratis_code'||art==='testzeit'||art==='stripe_test') abo='<span style="font-size:11px;font-weight:700;background:var(--greenlt);color:var(--greendk);padding:2px 8px;border-radius:999px;white-space:nowrap">🎁 Test bis '+_uDate(u.premium_gueltig_bis)+'</span>'
-      +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;margin-top:2px">'+esc(u.premium_quelle||'')+'</div>';
-    else if(art==='stripe_abo') abo='<span style="font-size:11.5px;color:var(--greendk);font-weight:600">Abo aktiv</span>';
-    else if(u.subscription_status==='canceled') abo='<span style="font-size:11.5px;color:var(--k-b45309)">gekündigt</span>';
-    else abo='<span style="color:var(--k-c7c2b8)">–</span>';
-    const td='padding:8px 7px;font-size:12.5px;vertical-align:top';
-    h+='<tr style="border-top:1px solid var(--line)">'
-      +'<td style="'+td+'"><div style="font-weight:600">'+esc(u.name||u.benutzer_id)+'</div><div style="font-size:12px;color:var(--muted)">'+esc(u.email||"")+'</div></td>'
-      +'<td style="'+td+';min-width:120px">'+_uUeber(u)+'</td>'
-      +'<td style="'+td+';text-align:center">'+((art&&art!=='manuell')
-        ? '<span title="'+esc(u.premium_quelle||'')+' – nicht von Hand änderbar" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--greenlt);color:var(--greendk)">Ja</span>'
-        : rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')"))+'</td>'
-      +'<td style="'+td+'">'+abo+'</td>'
-      +'<td style="'+td+';text-align:center">'+_uFn(u)+'</td>'
-      +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uErf(u)+'</td>'
-      +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uTb(u)+'</td>'
-      +'<td style="'+td+';font-size:12.5px">'+_uAktiv(u.letzte_aktivitaet)+'</td>'
-      +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+_uDate(u.angelegt_am)+'</td>'
-      +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+(u.premium_aktiv?_uDate(u.premium_gueltig_von):'–')+'</td>'
-      +'<td style="'+td+';font-size:12.5px">'+_uPremBis(u)+'</td>'
+    var nm=esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"");
+    h+='<tr>'
+      +'<td style="'+td+'"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(u.name||u.benutzer_id)+'</div>'
+        +'<div title="'+esc(u.email||"")+'" style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(u.email||"")+'</div>'
+        +'<div style="font-size:11px;color:var(--k-c7c2b8);margin-top:2px">dabei seit '+_uDate(u.angelegt_am)+'</div></td>'
+      +'<td style="'+td+'">'+_uUeber(u)+'</td>'
+      +'<td style="'+td+';text-align:center">'+_uPrem(u)+'</td>'
+      +'<td style="'+td+'">'+_uFn(u)+'</td>'
+      +'<td style="'+td+';text-align:center">'+_uErf(u)+'</td>'
+      +'<td style="'+td+';text-align:center">'+_uTb(u)+'</td>'
+      +'<td style="'+td+';text-align:center">'+_uAktiv(u.letzte_aktivitaet)+'</td>'
       /* 05.11.2026, Ralph: "admin schalter kannst du ausblenden, das bin nur ich" - Spalte entfaellt, Admin-Recht setzt Claude bei Bedarf in der DB. */
-      +'<td style="'+td+';text-align:center;white-space:nowrap"><button onclick="adminSetPassword(\''+u.benutzer_id+'\',\''+esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"")+'\')" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font-size:12.5px">🔑</button>'
-      +(u.is_admin?'':'<button title="Nutzer löschen" onclick="adminDeleteUser(\''+u.benutzer_id+'\',\''+esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"")+'\')" style="margin-left:6px;padding:6px 9px;border:1px solid var(--k-fca5a5);border-radius:8px;background:var(--card);color:var(--k-dc2626);cursor:pointer;font-size:12.5px">🗑️</button>')
+      +'<td style="'+td+';text-align:center;white-space:nowrap"><button title="Passwort setzen" onclick="adminSetPassword(\''+u.benutzer_id+'\',\''+nm+'\')" style="padding:5px 7px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font-size:12px">🔑</button>'
+      +(u.is_admin?'':'<button title="Nutzer löschen" onclick="adminDeleteUser(\''+u.benutzer_id+'\',\''+nm+'\')" style="margin-left:4px;padding:5px 7px;border:1px solid var(--k-fca5a5);border-radius:8px;background:var(--card);color:var(--k-dc2626);cursor:pointer;font-size:12px">🗑️</button>')
       +'</td>'
       +'</tr>';
   });
-  h+='</table></div><style>.usrTab th,.usrTab td{text-align:center!important;vertical-align:middle!important}.usrTab th:first-child,.usrTab td:first-child{text-align:left!important}</style><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
+  h+='</table><style>.usrTab tr:hover td{background:var(--bg)}</style><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
   document.getElementById("usersTable").innerHTML=h;
 }
 async function setUserPremium(bid,val){
