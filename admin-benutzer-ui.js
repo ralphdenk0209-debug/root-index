@@ -121,7 +121,9 @@ async function loadUsers(){
     (data||[]).forEach(function(u){ u._tb=tm[u.benutzer_id]||null; }); }catch(e){}
   /* 27.10.2026, Ralph: "die tabelle mittig ausrichten" */
   try{ if(inner){ inner.style.maxWidth='1240px'; inner.style.margin='0 auto'; } }catch(e){}
-  renderUsers(data||[]);
+  /* 05.11.2026: Kopfzahlen aus der Datenbank (cb_admin_nutzer_zahlen), nicht aus der Zeilenzahl. */
+  var zahlen=null; try{ const z=await client.rpc("cb_admin_nutzer_zahlen"); zahlen=z.data||null; }catch(e){}
+  renderUsers(data||[], zahlen);
 }
 var _UP_FARBE={'iPhone-App':['#0a84ff','📱'],'Play-App':['#1a9c4a','🤖'],'Android':['#5f7f6a','🤖'],'iPhone-Browser':['#6b7280','🌐'],'Web':['#6b7280','🌐']};
 function _uUeber(u){
@@ -171,12 +173,12 @@ function _uAktiv(s){
    Stripe entscheidet beim Abo (current_period_end / trial_bis), Ralph entscheidet
    beim manuellen Premium (premium_bis). Nur das Manuelle ist hier editierbar -
    ein Stripe-Datum von Hand zu aendern waere eine zweite Wahrheit. */
+/* 05.11.2026: Ob, woher und bis wann Premium gilt, sagt der Server (cb_users_list:
+   premium_aktiv, premium_art, premium_quelle, premium_gueltig_bis). Hier wird nur angezeigt. */
 function _uPremBis(u){
-  var stripe = (u.subscription_status==='active'||u.subscription_status==='trialing');
-  if(stripe){
-    var ende = u.subscription_status==='trialing' ? u.trial_bis : u.current_period_end;
-    return '<div style="white-space:nowrap;color:var(--muted)">'+(ende?_uDate(ende):'läuft')+'</div>'
-      +'<div style="font-size:11px;color:var(--k-c7c2b8)">über Stripe</div>';
+  if(u.premium_aktiv && u.premium_art!=='manuell'){
+    return '<div style="white-space:nowrap;color:var(--muted)">'+(u.premium_gueltig_bis?_uDate(u.premium_gueltig_bis):'läuft')+'</div>'
+      +'<div style="font-size:11px;color:var(--k-c7c2b8);white-space:nowrap">'+esc(u.premium_quelle||'')+'</div>';
   }
   if(!u.is_premium) return '<span style="color:var(--k-c7c2b8)">–</span>';
   var abgelaufen = u.premium_bis && new Date(u.premium_bis)<=new Date();
@@ -222,10 +224,17 @@ async function setUserPremiumBis(bid, aktuell){
   loadUsers();
 }
 if(typeof window!=='undefined'){ window.setUserPremiumBis=setUserPremiumBis; }
-function renderUsers(rows){
+function renderUsers(rows, z){
   ensureRpillCss();
   const th='padding:8px 7px;font-size:11.5px;text-align:left;white-space:nowrap';
-  let h='<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">'+rows.length+' registrierte Nutzer. Premium-Häkchen = manuell freischalten; Abo/Test kommt automatisch über Stripe. „Premium bis" ist nur beim manuellen Premium änderbar (z. B. 3 Monate für Testnutzer) — nach Ablauf gilt der Nutzer serverseitig als nicht mehr Premium.</div>';
+  let kopf;
+  if(z){
+    kopf='<b>'+z.nutzer+' Nutzer</b> + '+z.admins+' Admin = '+z.konten+' Konten · <b>'+z.premium+'</b> Nutzer mit Premium';
+    var ok=(z.ohne_konto||[]);
+    if(ok.length) kopf+='<br>'+z.anmeldungen+' Registrierungen insgesamt – '+ok.length+' davon ohne Konto (E-Mail nie bestätigt, deshalb nicht in der Liste): '
+      +ok.map(function(x){ return esc(x.email)+' ('+_uDate(x.registriert)+')'; }).join(', ');
+  } else kopf=rows.length+' Konten';
+  let h='<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">'+kopf+'<br>Premium-Häkchen = manuell freischalten; Gratis-Code und Stripe kommen automatisch. „Premium bis" ist nur beim manuellen Premium änderbar (z. B. 3 Monate für Testnutzer) — nach Ablauf gilt der Nutzer serverseitig als nicht mehr Premium.</div>';
   /* 🔴 06.09.2026, Ralph: "fenster ist scrollbar, soll breiter sein."
      Die Tabelle steckte in einem Kasten, der nur so breit war wie die Inhaltsspalte.
      Sie darf jetzt bis an den Fensterrand - width:100vw mit einem Ausbruch aus der
@@ -247,23 +256,27 @@ function renderUsers(rows){
    +'<table class="usrTab" style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
   h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
   rows.forEach(u=>{
-    const trial = u.subscription_status==='trialing' && u.trial_bis && new Date(u.trial_bis)>new Date();
+    /* 05.11.2026: Art und Datum kommen vom Server (premium_art / premium_gueltig_bis). */
+    const art=u.premium_aktiv?u.premium_art:null;
     let abo;
-    if(trial) abo='<span style="font-size:11px;font-weight:700;background:var(--greenlt);color:var(--greendk);padding:2px 8px;border-radius:999px;white-space:nowrap">🎁 Test bis '+_uDate(u.trial_bis)+'</span>';
-    else if(u.subscription_status==='active') abo='<span style="font-size:11.5px;color:var(--greendk);font-weight:600">Abo aktiv</span>';
+    if(art==='gratis_code'||art==='testzeit'||art==='stripe_test') abo='<span style="font-size:11px;font-weight:700;background:var(--greenlt);color:var(--greendk);padding:2px 8px;border-radius:999px;white-space:nowrap">🎁 Test bis '+_uDate(u.premium_gueltig_bis)+'</span>'
+      +'<div style="font-size:11px;color:var(--muted);white-space:nowrap;margin-top:2px">'+esc(u.premium_quelle||'')+'</div>';
+    else if(art==='stripe_abo') abo='<span style="font-size:11.5px;color:var(--greendk);font-weight:600">Abo aktiv</span>';
     else if(u.subscription_status==='canceled') abo='<span style="font-size:11.5px;color:var(--k-b45309)">gekündigt</span>';
     else abo='<span style="color:var(--k-c7c2b8)">–</span>';
     const td='padding:8px 7px;font-size:12.5px;vertical-align:top';
     h+='<tr style="border-top:1px solid var(--line)">'
       +'<td style="'+td+'"><div style="font-weight:600">'+esc(u.name||u.benutzer_id)+'</div><div style="font-size:12px;color:var(--muted)">'+esc(u.email||"")+'</div></td>'
       +'<td style="'+td+';min-width:120px">'+_uUeber(u)+'</td>'
-      +'<td style="'+td+';text-align:center">'+rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')")+'</td>'
+      +'<td style="'+td+';text-align:center">'+((art&&art!=='manuell')
+        ? '<span title="'+esc(u.premium_quelle||'')+' – nicht von Hand änderbar" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--greenlt);color:var(--greendk)">Ja</span>'
+        : rpill(!!u.is_premium,"userPill(this,'"+u.benutzer_id+"','premium')"))+'</td>'
       +'<td style="'+td+'">'+abo+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uErf(u)+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap">'+_uTb(u)+'</td>'
       +'<td style="'+td+';font-size:12.5px">'+_uAktiv(u.letzte_aktivitaet)+'</td>'
       +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+_uDate(u.angelegt_am)+'</td>'
-      +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+(u.is_premium?_uDate(u.premium_since):'–')+'</td>'
+      +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+(u.premium_aktiv?_uDate(u.premium_gueltig_von):'–')+'</td>'
       +'<td style="'+td+';font-size:12.5px">'+_uPremBis(u)+'</td>'
       +'<td style="'+td+';text-align:center">'+rpill(!!u.is_admin,"userPill(this,'"+u.benutzer_id+"','admin')")+'</td>'
       +'<td style="'+td+';text-align:center;white-space:nowrap"><button onclick="adminSetPassword(\''+u.benutzer_id+'\',\''+esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"")+'\')" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font-size:12.5px">🔑</button>'
