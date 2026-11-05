@@ -971,6 +971,17 @@ function rikiScanNachfassen(jobId, ean){
     var st=null;
     try{ var r=await client.rpc("cb_riki_scan_job_stand",{p_job_id:jobId}); st=(typeof r.data==="string")?JSON.parse(r.data):r.data; }catch(e){ return; }
     if(!st || !st.ok) return;
+    /* 05.11.2026 (#865): Riki hat den Auftrag angehalten, weil das Foto kein Lebensmittel zeigt
+       (Kosmetik, Haushalt, Tiernahrung). Der Server sagt es mit zustand "kein_lebensmittel" - kein Foto-Knopf. */
+    if(st.zustand==="kein_lebensmittel"){
+      clearInterval(window._rikiNachfassUhr);
+      try{ rikiWartegrenzeStoppen(); }catch(e){}
+      try{ if(typeof rikiFabZustand==="function") rikiFabZustand("normal"); }catch(e){}
+      try{ clearInterval(window._rikiWebUhr); }catch(e){}
+      rikiScanHinweis('<b>'+esc(st.grund||"Kein Lebensmittel – Root Index bewertet nur Lebensmittel und Supplements.")+'</b>'
+        +' <span style="color:var(--muted)">Tippen zum Schließen.</span>', null);
+      return;
+    }
     /* 04.11.2026 (#859, Ralph: „darf nicht sein, dass er so lange hängt“): nach 20 s ohne Ergebnis sagt der
        Server zustand "zu_lange" – die Anzeige hört auf zu zählen und bietet neue Fotos an. Riki arbeitet im
        Hintergrund weiter; die Mitteilung „Der Index ist da“ kommt trotzdem. */
@@ -12588,7 +12599,7 @@ function tbScanPopup(){
         if(res){
           res.innerHTML =
             (kette && kette.html ? '<div style="margin-top:4px">'+kette.html+'</div>' : '')
-            +'<button onclick="tbAusScan(\''+code+'\')" style="margin-top:14px;width:100%;box-sizing:border-box;padding:16px;border:0;border-radius:12px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:16px;box-shadow:0 3px 10px rgba(22,163,74,.28)">Ins Tagebuch eintragen</button>';
+            +((kette && kette.stufe==="nonfood") ? '' : '<button onclick="tbAusScan(\''+code+'\')" style="margin-top:14px;width:100%;box-sizing:border-box;padding:16px;border:0;border-radius:12px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:16px;box-shadow:0 3px 10px rgba(22,163,74,.28)">Ins Tagebuch eintragen</button>');
         }
         scanWeiterOhneKlick(kette, code);   // OFF hat nichts -> Kamera geht von selbst auf
       }
@@ -14960,6 +14971,9 @@ async function offScan(ean){
     body: JSON.stringify({mode:"ean", ean:String(ean)})
   });
   const d = await r.json();
+  /* 05.11.2026 (#865 Non-Food-Blocker, Ralph „jaja, bauen“): off-lookup meldet Kosmetik/Tiernahrung
+     als nonfood - die Karte sagt „Kein Lebensmittel“, kein Foto-Knopf, Riki startet nicht. */
+  if(d && d.nonfood) return d;
   if(!d || !d.gefunden) return null;
   d.herkunftText = "OpenFoodFacts";
   if(session){
@@ -15057,6 +15071,15 @@ function scanOv(html, ean){
 }
 function scanOvClose(){ const o=document.getElementById("scanOv"); if(o) o.style.display="none"; }
 
+/* 05.11.2026 (#865): Barcode gehoert laut Open Food Facts zu Kosmetik oder Tiernahrung.
+   Der Server (off-lookup) entscheidet und liefert die Meldung; hier wird nur angezeigt. */
+function nonfoodKarte(d){
+  return '<div style="margin-top:10px;padding:11px 12px;border:1px solid var(--k-c9d2cd);border-radius:10px;background:var(--k-f7f9f8);font-size:13px;line-height:1.55;color:var(--k-5a6660)">'
+    +'<b style="color:var(--ink)">Kein Lebensmittel.</b><br>'
+    +esc(d.meldung||"Root Index bewertet nur Lebensmittel und Supplements.")
+    +(d.nonfood_art?'<br><span style="color:var(--muted)">Open Food Facts führt diesen Barcode unter '+esc(d.nonfood_art)+'.</span>':'')
+    +'</div>';
+}
 /* Die ganze Kette an einer Stelle. Gibt fertiges HTML zurück. */
 async function scanKette(ean){
   const {data:res} = await client.rpc("cb_scan_lookup",{p_ean:String(ean)});
@@ -15076,6 +15099,7 @@ async function scanKette(ean){
   }
 
   const off = await offScan(ean);
+  if(off && off.nonfood) return {stufe:"nonfood", html:nonfoodKarte(off)};
   if(off){
     const sofortO = await scanSofort(ean, off);
     if(sofortO) return sofortO;
@@ -15313,7 +15337,7 @@ function prodScan(readerId, msgId){
         scanOv('<div style="padding:12px 0;color:var(--k-b45309)">Produkt ist im Katalog, konnte aber gerade nicht geladen werden. Bitte nochmal scannen.</div>', code);
         return;
       }
-      try{ await client.rpc("ean_vormerken",{p_ean:code,p_quelle:"Barcode-Scan",p_akteur:"Web"}); }catch(e){}
+      if(r.stufe!=="nonfood"){ try{ await client.rpc("ean_vormerken",{p_ean:code,p_quelle:"Barcode-Scan",p_akteur:"Web"}); }catch(e){} }
       scanOv(r.html||"", code);
       if(st) st.textContent="";
       scanWeiterOhneKlick(r, code);
@@ -18132,7 +18156,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-04-01";
+const APP_BUILD="2026-11-05-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

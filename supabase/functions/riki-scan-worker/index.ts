@@ -1,5 +1,11 @@
 // RIKI-SCAN-WORKER
 //
+// v22 (2026-11-05, #865 Non-Food-Blocker, Ralph „jaja, bauen“): FRAGE 4 MIT FESTER ANTWORTFORM. Mit Produktart
+//   antwortet der Schnell-Check ueber ein erzwungenes Werkzeug (tool_choice) statt als Textzeile – in der Messung
+//   vom 04.11. kam bei 29 % der echten Scans Fliesstext. NONFOOD_STOPP schaltet den Stopp ein: Kosmetik, Haushalt,
+//   Tier beenden den Auftrag vor dem Sonnet-Lesen (Fehler „Kein Lebensmittel …“, ergebnis_meta.kein_lebensmittel).
+//   Supplement, Arznei und unklar gehen immer durch. Ausgeliefert zuerst mit NONFOOD_STOPP = false (nur Messung).
+//
 // v21 (2026-11-04, Ralph „jaja, erst messen“): MESSMODUS MIT PRODUKTART. schnellcheck_probe.mit_art = true stellt
 //   Frage 4 (Lebensmittel/Supplement/Arznei/Kosmetik/Haushalt/Tier). Nur Messung, der normale Weg ist unveraendert.
 //
@@ -86,7 +92,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v20";
+const WORKER = "riki-scan-worker v22";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
    Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
@@ -144,6 +150,26 @@ const CHECK_DENKEN: Record<string, unknown> = { "claude-haiku-5-5": { type: "dis
    Regel von Ralph (04.11.): Supplements muessen durchgehen – Nahrungsergaenzung und Arzneimittel zaehlen nie als Non-Food,
    gesperrt werden spaeter hoechstens KOSMETIK, HAUSHALT und TIER. */
 const ART_NONFOOD = ["kosmetik", "haushalt", "tier"];
+const ART_ALLE = ["lebensmittel", "supplement", "arznei", "kosmetik", "haushalt", "tier", "unklar"];
+const ART_NAME: Record<string, string> = { kosmetik: "Kosmetik", haushalt: "Haushaltsprodukt", tier: "Tiernahrung" };
+/* v22 (05.11.2026, #865): Schalter fuer den Stopp im normalen Weg. false = Schnell-Check wie v20, nichts gesperrt.
+   true = Frage 4 wird gestellt und Kosmetik/Haushalt/Tier beenden den Auftrag vor dem teuren Lesen. */
+const NONFOOD_STOPP = false;
+/* v22: feste Antwortform fuer den Check mit Produktart. Das Modell MUSS dieses Werkzeug aufrufen. */
+const BEFUND_WERKZEUG = {
+  name: "befund",
+  description: "Befund zu den Verpackungsfotos.",
+  input_schema: {
+    type: "object",
+    properties: {
+      zutatenliste: { type: "string", enum: ["JA", "NEIN"], description: "Frage 1" },
+      lesbarkeit: { type: "string", enum: ["SCHARF", "UNSCHARF", "-"], description: "Frage 2, bei NEIN: -" },
+      marke: { type: "string", description: "Frage 3, nicht sicher: UNBEKANNT" },
+      art: { type: "string", enum: ART_ALLE.map((a) => a.toUpperCase()), description: "Frage 4" },
+    },
+    required: ["zutatenliste", "lesbarkeit", "marke", "art"],
+  },
+};
 async function schnellCheck(images: string[], modell: string = CHECK_MODELL, mitArt = false): Promise<any> {
   const key = findeKey();
   if (!key) return { antwort: "unklar", lesbar: null, marke: null, grund: "kein_key" };
@@ -160,17 +186,22 @@ async function schnellCheck(images: string[], modell: string = CHECK_MODELL, mit
     "3. Welcher Markenname steht auf der Packung? Ein Siegel ist keine Marke. Nicht sicher: UNBEKANNT.\n" +
     (mitArt
       ? "4. Was fuer ein Produkt ist das? LEBENSMITTEL (auch Getraenk, Gewuerz, Babynahrung), SUPPLEMENT (Nahrungsergaenzung, Vitamine, Proteinpulver), ARZNEI, KOSMETIK (Pflege, Duschgel, Zahnpasta, Kosmetik), HAUSHALT (Reinigung, Waschmittel), TIER (Tiernahrung), UNKLAR.\n" +
-        "Antworte in genau einer Zeile: JA|SCHARF|Marke|ART oder JA|UNSCHARF|Marke|ART oder NEIN|-|Marke|ART"
+        "Melde den Befund mit dem Werkzeug befund."
       : "Antworte in genau einer Zeile: JA|SCHARF|Marke oder JA|UNSCHARF|Marke oder NEIN|-|Marke") });
   try {
     const ai = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({ model: modell, max_tokens: mitArt ? 40 : 30, ...(CHECK_DENKEN[modell] ? { thinking: CHECK_DENKEN[modell] } : {}), messages: [{ role: "user", content: inhalt }] }),
+      body: JSON.stringify({ model: modell, max_tokens: mitArt ? 150 : 30, ...(CHECK_DENKEN[modell] ? { thinking: CHECK_DENKEN[modell] } : {}),
+        ...(mitArt ? { tools: [BEFUND_WERKZEUG], tool_choice: { type: "tool", name: "befund" } } : {}),
+        messages: [{ role: "user", content: inhalt }] }),
     });
     const j = await ai.json();
     if (!ai.ok) return { antwort: "unklar", lesbar: null, marke: null, grund: "http_" + ai.status + (j?.error?.message ? ": " + String(j.error.message).slice(0, 160) : ""), ms: Date.now() - t0, modell };
-    const roh = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
+    const werkzeug = mitArt ? (j.content ?? []).find((c: any) => c.type === "tool_use" && c.name === "befund")?.input : null;
+    const roh = werkzeug
+      ? [werkzeug.zutatenliste, werkzeug.lesbarkeit, werkzeug.marke, werkzeug.art].map((x: unknown) => String(x ?? "")).join("|")
+      : (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("").trim();
     const [a1, a2, a3, a4] = roh.split("|").map((x: string) => (x ?? "").trim());
     const artRoh = (a4 ?? "").toLowerCase();
     const art = !mitArt ? undefined : (["lebensmittel", "supplement", "arznei", "kosmetik", "haushalt", "tier"].find((k) => artRoh.startsWith(k)) ?? "unklar");
@@ -182,7 +213,7 @@ async function schnellCheck(images: string[], modell: string = CHECK_MODELL, mit
     const inTok = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);
     const outTok = u.output_tokens ?? 0;
     const [pIn, pOut] = CHECK_PREIS[modell] ?? [1.0, 5.0];
-    return { antwort, lesbar, marke, ...(mitArt ? { art, nonfood: ART_NONFOOD.includes(art as string) } : {}), roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * pIn + (outTok / 1e6) * pOut).toFixed(6)), in: inTok, out: outTok, modell };
+    return { antwort, lesbar, marke, ...(mitArt ? { art, nonfood: ART_NONFOOD.includes(art as string), format: werkzeug ? "werkzeug" : "text" } : {}), roh: roh.slice(0, 120), ms: Date.now() - t0, kosten_usd: Number(((inTok / 1e6) * pIn + (outTok / 1e6) * pOut).toFixed(6)), in: inTok, out: outTok, modell };
   } catch (e) {
     return { antwort: "unklar", lesbar: null, marke: null, grund: String(e).slice(0, 120), ms: Date.now() - t0 };
   }
@@ -212,6 +243,7 @@ async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, jo
   const { data: v0 } = await sb.rpc("cb_riki_scan_vorlesung_fuer_job", { p_job_id: job.job_id, p_ean: String(job.ean ?? "") });
   if (!v0 || !v0.foto_sha) return null;
   if (v0.schnellcheck?.antwort === "nein") return null;
+  if (NONFOOD_STOPP && v0.schnellcheck?.nonfood) return null; // v22: normaler Weg haelt den Auftrag an
   // v16 (25.10.2026, Ralph jaja): mehr als ein Foto -> keine Abkuerzung. Laeuft die Zutatenliste ueber
   // zwei Fotos (P96433: links/rechts abgeschnitten), las die Vorlesung nur Foto 1 und die Zweitlesung
   // ausdruecklich ohne Zutaten -> Liste verdreht; zudem ueberstimmte "16 g pro Portion" auf Foto 2 die
@@ -404,13 +436,13 @@ Deno.serve(async (req: Request) => {
       const { data: vl } = await sb.rpc("cb_riki_scan_vorlesung_claim", { p_id: Number(body.vorlesung_id) });
       if (!vl) return response({ ok: true, vorlesung: "nicht offen" });
       const bilder = [String(vl.foto)];
-      const sc = await schnellCheck(bilder);
+      const sc = await schnellCheck(bilder, CHECK_MODELL, NONFOOD_STOPP);
       try { await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: sc, p_lesung: null, p_riki_http: null, p_fehler: null }); } catch (_) { /* nur Anzeige */ }
       try {
         if (sc?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: sc.in ?? 0, p_out: sc.out ?? 0, p_kosten: sc.kosten_usd, p_produkt_id: null, p_erfolg: true, p_fehler: null });
       } catch (_) { /* Buchung ist nicht lebenswichtig */ }
-      if (sc?.antwort === "nein") {
-        // Keine Zutatenliste auf dem Foto: nicht teuer lesen. Der Auftrag liest spaeter alles normal.
+      if (sc?.antwort === "nein" || (NONFOOD_STOPP && sc?.nonfood)) {
+        // Keine Zutatenliste auf dem Foto (v22: oder kein Lebensmittel): nicht teuer lesen. Der Auftrag liest spaeter alles normal.
         await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: null, p_lesung: { vorschlag: { zutaten: [] }, leer: true }, p_riki_http: null, p_fehler: null });
         return response({ ok: true, vorlesung: vl.id, ergebnis: "keine_zutatenliste", ms: Date.now() - started });
       }
@@ -476,11 +508,22 @@ Deno.serve(async (req: Request) => {
       }
       // v10: Schnell-Check (nur bei neuer Lesung). Ergebnis sofort am Auftrag ablegen.
       if (!lesungWiederverwendet && !vorlesung) {
-        schnell = await schnellCheck(images);
+        schnell = await schnellCheck(images, CHECK_MODELL, NONFOOD_STOPP);
         try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
         try {
           if (schnell?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: schnell.in ?? 0, p_out: schnell.out ?? 0, p_kosten: schnell.kosten_usd, p_produkt_id: job.produkt_id ?? null, p_erfolg: true, p_fehler: null });
         } catch (_) { /* Buchung ist nicht lebenswichtig */ }
+        // v22 (#865): Kosmetik, Haushalt, Tier -> anhalten, bevor Sonnet liest. Supplement/Arznei/unklar nie.
+        if (NONFOOD_STOPP && schnell?.nonfood) {
+          await sb.rpc("cb_riki_scan_job_abschliessen", {
+            p_job_id: job.job_id,
+            p_ok: false,
+            p_ergebnis_meta: { worker: WORKER, dauer_ms: Date.now() - jobStarted, schnellcheck: schnell, kein_lebensmittel: schnell.art },
+            p_fehler: `Kein Lebensmittel (${ART_NAME[schnell.art] ?? schnell.art}) – Root Index bewertet nur Lebensmittel und Supplements. Riki hat nichts gelesen.`,
+          });
+          results.push({ job_id: job.job_id, produkt_id: job.produkt_id, status: "fehler", grund: "kein_lebensmittel", art: schnell.art });
+          continue;
+        }
       }
       if (!lesungWiederverwendet && !vorlesung) try {
         const r = await fetch(`${url}/functions/v1/riki-etikett`, {

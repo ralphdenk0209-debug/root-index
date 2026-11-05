@@ -61,3 +61,8 @@ verify_jwt = false
 
 [functions.foldair-lizenz]
 verify_jwt = false
+
+# 05.11.2026 (#865): off-lookup liegt ab v3.3 im Repo. Wie bisher mit Anmeldepruefung
+# (Web schickt Nutzer-Token oder den oeffentlichen Schluessel).
+[functions.off-lookup]
+verify_jwt = true
