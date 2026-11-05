@@ -11,8 +11,9 @@
 // App Store Connect, nur fuer Production noetig).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SignedDataVerifier, Environment } from "npm:@apple/app-store-server-library@1";
-import { Buffer } from "node:buffer";
+// 05.11.2026 (#898): eigene Pruefung statt @apple/app-store-server-library - die scheitert in
+// der Edge-Laufzeit an node:crypto (siehe pruefung.ts). Seit dem Start wurde so kein Kauf gebucht.
+import { appleJwsPruefen } from "./pruefung.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -24,45 +25,42 @@ const json = (o: unknown, s = 200) => new Response(JSON.stringify(o), { status: 
 const BUNDLE = Deno.env.get("APPLE_BUNDLE_ID") || "de.root-index.RootIndex";
 const APP_ID = Number(Deno.env.get("APPLE_APP_ID") || "0") || undefined;
 
-let wurzeln: Buffer[] | null = null;
-async function apfelWurzeln(): Promise<Buffer[]> {
+let wurzeln: Uint8Array[] | null = null;
+async function apfelWurzeln(): Promise<Uint8Array[]> {
   if (wurzeln) return wurzeln;
   const urls = ["https://www.apple.com/certificateauthority/AppleRootCA-G3.cer",
                 "https://www.apple.com/appleca/AppleIncRootCertificate.cer"];
-  const liste: Buffer[] = [];
+  const liste: Uint8Array[] = [];
   for (const u of urls) {
     const r = await fetch(u);
-    if (r.ok) liste.push(Buffer.from(new Uint8Array(await r.arrayBuffer())));
+    if (r.ok) liste.push(new Uint8Array(await r.arrayBuffer()));
   }
   if (!liste.length) throw new Error("Apple-Root-Zertifikat nicht ladbar");
   wurzeln = liste;
   return liste;
 }
 
-async function pruefer(): Promise<SignedDataVerifier[]> {
-  const w = await apfelWurzeln();
-  // 11.10.2026 (Apple 2.1(b): Premium nach Kauf nicht frei): Online-Pruefung (OCSP) aus.
-  // Sie scheitert in der Edge-Laufzeit; jeder Kauf aus der Pruefung kam mit 400 zurueck und
-  // wurde nie gebucht. Die Signaturkette bis zum Apple-Root wird weiterhin voll geprueft.
-  const v: SignedDataVerifier[] = [new SignedDataVerifier(w, false, Environment.SANDBOX, BUNDLE)];
-  if (APP_ID) v.unshift(new SignedDataVerifier(w, false, Environment.PRODUCTION, BUNDLE, APP_ID));
-  return v;
+// Wie bei Apples Bibliothek: richtige App, Umgebung Store oder TestFlight (Sandbox).
+// 11.10.2026: keine Online-Pruefung (OCSP) - die Kette bis zum Apple-Root wird voll geprueft.
+function inhaltPruefen(x: any) {
+  if (String(x?.bundleId ?? "") !== BUNDLE) throw new Error("Falsche App: " + String(x?.bundleId ?? "-"));
+  const umgebung = String(x?.environment ?? "");
+  if (umgebung !== "Production" && umgebung !== "Sandbox") throw new Error("Falsche Umgebung: " + umgebung);
+  if (umgebung === "Production" && APP_ID && x?.appAppleId !== undefined && Number(x.appAppleId) !== APP_ID) {
+    throw new Error("Falsche App-ID: " + String(x.appAppleId));
+  }
 }
 
 async function transaktionPruefen(jws: string) {
-  let letzter: unknown = null;
-  for (const v of await pruefer()) {
-    try { return await v.verifyAndDecodeTransaction(jws); } catch (e) { letzter = e; }
-  }
-  throw letzter ?? new Error("Signatur ungueltig");
+  const tx = await appleJwsPruefen(jws, await apfelWurzeln());
+  inhaltPruefen(tx);
+  return tx;
 }
 
 async function meldungPruefen(payload: string) {
-  let letzter: unknown = null;
-  for (const v of await pruefer()) {
-    try { return await v.verifyAndDecodeNotification(payload); } catch (e) { letzter = e; }
-  }
-  throw letzter ?? new Error("Signatur ungueltig");
+  const m = await appleJwsPruefen(payload, await apfelWurzeln());
+  inhaltPruefen(m?.data ?? {});
+  return m;
 }
 
 Deno.serve(async (req) => {
