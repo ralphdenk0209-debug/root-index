@@ -4,7 +4,7 @@
 //   antwortet der Schnell-Check ueber ein erzwungenes Werkzeug (tool_choice) statt als Textzeile – in der Messung
 //   vom 04.11. kam bei 29 % der echten Scans Fliesstext. NONFOOD_STOPP schaltet den Stopp ein: Kosmetik, Haushalt,
 //   Tier beenden den Auftrag vor dem Sonnet-Lesen (Fehler „Kein Lebensmittel …“, ergebnis_meta.kein_lebensmittel).
-//   Supplement, Arznei und unklar gehen immer durch. Ausgeliefert zuerst mit NONFOOD_STOPP = false (nur Messung).
+//   Supplement, Arznei und unklar gehen immer durch. Seit 05.11.2026 NONFOOD_STOPP = true (nach der Nachmessung).
 //
 // v21 (2026-11-04, Ralph „jaja, erst messen“): MESSMODUS MIT PRODUKTART. schnellcheck_probe.mit_art = true stellt
 //   Frage 4 (Lebensmittel/Supplement/Arznei/Kosmetik/Haushalt/Tier). Nur Messung, der normale Weg ist unveraendert.
@@ -154,7 +154,10 @@ const ART_ALLE = ["lebensmittel", "supplement", "arznei", "kosmetik", "haushalt"
 const ART_NAME: Record<string, string> = { kosmetik: "Kosmetik", haushalt: "Haushaltsprodukt", tier: "Tiernahrung" };
 /* v22 (05.11.2026, #865): Schalter fuer den Stopp im normalen Weg. false = Schnell-Check wie v20, nichts gesperrt.
    true = Frage 4 wird gestellt und Kosmetik/Haushalt/Tier beenden den Auftrag vor dem teuren Lesen. */
-const NONFOOD_STOPP = false;
+/* 05.11.2026 scharf (Ralph „jaja, bauen“, „Ok“): Nachmessung mit Werkzeug-Format an 292 echten Scans – 3 gesperrt, alle
+   wirklich kein Lebensmittel (Hundeleberwurst #373, Orlando-Tiernahrung #371, Wischroboter-Reiniger #887), 0 Lebensmittel und
+   0 von 17 Supplements gesperrt; Format 292/292. OFF-Saetze: Tier 6/6, Haushalt 3/3, Proteinpulver 4/4 frei. Zurueck: false. */
+const NONFOOD_STOPP = true;
 /* v22: feste Antwortform fuer den Check mit Produktart. Das Modell MUSS dieses Werkzeug aufrufen. */
 const BEFUND_WERKZEUG = {
   name: "befund",
