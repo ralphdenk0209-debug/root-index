@@ -46,7 +46,7 @@
     + H('Copyright') + P('The content created by us is subject to German copyright law.');
 
   var en_ds = H('Privacy Policy – Root Index')
-    + P('<i>Last updated: September 2026</i>')
+    + P('<i>Last updated: November 2026</i>')
     + P('This is the English version of our privacy policy. Additional information for users in the <b>United Kingdom</b>, the <b>United States</b> and <b>France</b> is set out in sections 21 to 23. Users in the United States should also read our separate <a href="#" onclick="legalOpen(\'gesundheit\');return false" style="color:var(--greendk)">Consumer Health Data Privacy Policy</a>.')
     + H('1. Controller')
     + P('The controller responsible for the processing of personal data is:')
@@ -127,6 +127,7 @@
     + H('15. Visitor statistics')
     + P('Root Index includes a function for counting page views and for the aggregated attribution of traffic sources, for example search engines or direct visits.')
     + P('Only totals per day, page type and traffic source are stored. No IP addresses, cookies, device IDs or user IDs are stored; it is not possible to identify individuals. We keep the daily figures for up to 24 months. The legal basis is Art. 6(1)(f) GDPR; our legitimate interest is to understand the use of our service in anonymous form. Consent is not required because nothing is stored on or read from your device.')
+    + P('In addition, we count how often individual functions are used, for example product search, barcode scan, viewing a product or recipe, questions to RIKI and opening individual sections. Here too, only a total per day, function and platform (web, iPhone app, Android app) is stored, together with whether the use was signed in or as a guest – without user ID, IP address, cookie or device ID. To leave out accounts of our own team, the sign-in is checked briefly but not stored. Retention and legal basis as above.')
     + P('In addition, our host INWX stores technical server logs (including IP address, time, requested address) for security and troubleshooting. We do not analyse these for statistical purposes; they are deleted automatically by the host after a short time.')
     + H('16. No advertising and no affiliate links')
     + P('Root Index contains no advertising and no affiliate links. Links to external pages, for example manufacturer pages or Google Search, do not load any content before you click; a connection is only established when you click the link. The respective operator then processes data under its own responsibility.')
@@ -314,7 +315,7 @@
     + H('Responsabilité quant aux liens') + P('Notre offre peut contenir des liens vers des sites externes de tiers sur le contenu desquels nous n’avons aucune influence. Le fournisseur concerné est toujours responsable de ces contenus.')
     + H('Droit d’auteur') + P('Les contenus que nous créons sont soumis au droit d’auteur allemand.');
 
-  var fr_ds = H('Politique de confidentialité – Root Index')
+    + P('<i>Mise à jour : novembre 2026</i>')
     + P('<i>Mise à jour : septembre 2026</i>')
     + P('Ceci est la version française de notre politique de confidentialité. Les informations complémentaires pour les utilisateurs en France figurent à la section 21.')
     + H('1. Responsable du traitement')
@@ -382,6 +383,7 @@
     + P('Si vous activez les notifications push, des informations techniques de distribution sont traitées (adresse de distribution et clés). Le service push de votre navigateur ou système (Google, Mozilla, Microsoft ou Apple) peut intervenir. Nous n’envoyons actuellement des notifications que pour les modifications d’une liste de courses partagée et la fin prochaine de votre essai Premium ; elles ne contiennent aucune information de santé. Base juridique : votre consentement (art. 6, par. 1, point a) du RGPD et art. 82 de la loi Informatique et Libertés). Vous pouvez retirer l’autorisation dans les paramètres de votre navigateur ou appareil. Nous supprimons les informations de distribution dès que vous désactivez les notifications ou supprimez votre compte ; les notifications envoyées sont supprimées après 90 jours.')
     + H('15. Statistiques de visite')
     + P('Root Index compte les pages vues et attribue de manière agrégée les sources d’accès (moteurs de recherche, accès direct…). Seuls des totaux par jour, type de page et source sont enregistrés. Aucune adresse IP, aucun cookie, identifiant d’appareil ou d’utilisateur n’est enregistré ; aucune personne ne peut être identifiée. Nous conservons ces valeurs 24 mois au maximum. Base juridique : art. 6, par. 1, point f) du RGPD. Aucun consentement n’est requis, car rien n’est enregistré ni lu sur votre appareil. Notre hébergeur INWX enregistre en outre des journaux techniques (dont l’adresse IP) pour la sécurité ; nous ne les exploitons pas à des fins statistiques et ils sont supprimés automatiquement après peu de temps.')
+    + P('Nous comptons en outre la fréquence d’utilisation de certaines fonctions, par exemple la recherche de produits, le scan de code-barres, l’affichage d’un produit ou d’une recette, les questions à RIKI et l’ouverture de certaines rubriques. Là aussi, seul un total par jour, fonction et plateforme (web, app iPhone, app Android) est enregistré, ainsi que l’indication d’une utilisation connectée ou en tant qu’invité – sans identifiant d’utilisateur, adresse IP, cookie ni identifiant d’appareil. Pour exclure les comptes de notre propre équipe, la connexion est brièvement vérifiée mais pas enregistrée. Durée de conservation et base juridique : comme ci-dessus.')
     + H('16. Ni publicité ni liens affiliés')
     + P('Root Index ne contient ni publicité ni liens affiliés. Les liens vers des sites externes, par exemple des sites de fabricants ou la recherche Google, ne chargent aucun contenu avant le clic ; la connexion n’est établie qu’au moment du clic. L’exploitant concerné traite alors les données sous sa propre responsabilité.')
     + H('17. Destinataires et traitements hors de l’Espace économique européen')

@@ -235,7 +235,7 @@ function _uFnUebersicht(fn){
   var h='<details open style="margin:0 0 14px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px">'
     +'<summary style="cursor:pointer;font-weight:700;font-size:14px">Welche Funktionen werden genutzt? <span style="font-weight:400;color:var(--muted);font-size:12px">'+genutzt.length+' von '+fn.funktionen_gesamt+' Funktionen in Gebrauch</span></summary>'
     +'<div style="font-size:12px;color:var(--muted);margin:6px 0 8px">Basis: '+fn.basis_nutzer+' Nutzer (ohne '+fn.intern_ausgenommen+' interne Konten). '
-    +fn.ohne_jede_nutzung+' davon haben noch nichts gespeichert. Gezählt wird, wer in einer Funktion etwas angelegt hat. Suche, Produkt ansehen und Vergleich hinterlassen keine Daten und fehlen hier noch.</div>'
+    +fn.ohne_jede_nutzung+' davon haben noch nichts gespeichert. Gezählt wird, wer in einer Funktion etwas angelegt hat. Was keine Daten hinterlässt (Suche, Produkt öffnen, Scan …), steht unten unter „Aufrufe“.</div>'
     +'<table style="width:100%;border-collapse:collapse"><tr style="font-size:11.5px;color:var(--muted);text-align:left"><th style="padding:4px 8px">Funktion</th><th style="padding:4px 8px">Bereich</th><th style="padding:4px 8px;text-align:right">7 Tage</th><th style="padding:4px 8px;text-align:right">30 Tage</th><th style="padding:4px 8px;text-align:right">jemals</th><th style="padding:4px 8px;width:30%">Anteil der Nutzer</th><th style="padding:4px 8px">zuletzt</th></tr>';
   genutzt.forEach(function(f){
     var a=Number(f.anteil_prozent||0);
@@ -248,11 +248,37 @@ function _uFnUebersicht(fn){
   });
   h+='</table>';
   if(nie.length) h+='<div style="font-size:12.5px;margin-top:8px"><b>Nie genutzt ('+nie.length+'):</b> <span style="color:var(--muted)">'+nie.map(function(f){ return esc(f.name); }).join(' · ')+'</span></div>';
+  h+=_uAufrufe(fn.aufrufe);
   return h+'</details>';
 }
 /* 05.11.2026, Ralph: "nutzer infos ... sauber ueber die gesamte breite, uebersichtlich".
    Funktionen als kurze Plaketten (Kurzname kommt vom Server, liste[].kurz); gruen = in den
    letzten 30 Tagen genutzt (aktiv_30t, vom Server), grau = frueher. Langer Name im Tooltip. */
+/* 05.11.2026 #889 Teil B (Ralph-Entscheid C): Aufrufe OHNE Nutzerkennung - Summen je Tag, Funktion
+   und Plattform aus funktion_aufruf_tag, fertig gerechnet in cb_admin_funktionsnutzung (aufrufe). Es sind
+   Aufrufe, keine Personen - deshalb eigener Block und keine Nutzer-Spalte. */
+function _uAufrufe(a){
+  if(!a||!a.funktionen||!a.funktionen.length) return '';
+  var PL=[['web','🌐 Web'],['ios','📱 iPhone'],['android','🤖 Android']];
+  var th='padding:4px 6px;font-size:11.5px;color:var(--muted);text-align:right;white-space:nowrap';
+  var td='padding:5px 6px;font-size:12.5px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums';
+  var h='<div style="margin-top:18px;padding-top:12px;border-top:2px solid var(--line)">'
+    +'<div style="font-weight:700;font-size:14px">Aufrufe <span style="font-weight:400;color:var(--muted);font-size:12px">ohne Nutzerkennung'+(a.seit?' · gezählt seit '+_uDate(a.seit):' · noch keine Aufrufe')+'</span></div>'
+    +'<div style="font-size:12px;color:var(--muted);margin:4px 0 8px">Wie oft etwas benutzt wurde – Summen je Tag, keine Personen (Ralph-Entscheid, 05.11.2026). Interne Konten zählen nicht, Gäste schon. Die alte Play-App (Web im Rahmen) zählt als Web.</div>'
+    +'<table style="width:100%;border-collapse:collapse"><tr><th style="'+th+';text-align:left"></th>';
+  PL.forEach(function(p){ h+='<th colspan="3" style="'+th+';text-align:center;border-left:1px solid var(--line)">'+p[1]+'</th>'; });
+  h+='<th style="'+th+';border-left:1px solid var(--line)">alle</th></tr><tr><th style="'+th+';text-align:left">Funktion</th>';
+  PL.forEach(function(){ h+='<th style="'+th+';border-left:1px solid var(--line)">7 T</th><th style="'+th+'">30 T</th><th style="'+th+'">jemals</th>'; });
+  h+='<th style="'+th+';border-left:1px solid var(--line)">30 T</th></tr>';
+  a.funktionen.forEach(function(f){
+    var leer=!Number(f.summe_jemals||0);
+    h+='<tr style="'+(leer?'color:var(--k-c7c2b8)':'')+'"><td style="'+td+';text-align:left;font-weight:600">'+esc(f.name)+' <span style="font-weight:400;color:var(--muted);font-size:11.5px">'+esc(f.bereich||'')+'</span></td>';
+    PL.forEach(function(p){ var x=(f.plattformen||{})[p[0]]||{};
+      h+='<td style="'+td+';border-left:1px solid var(--line)">'+(x.t7||0)+'</td><td style="'+td+';font-weight:700">'+(x.t30||0)+'</td><td style="'+td+'">'+(x.jemals||0)+'</td>'; });
+    h+='<td style="'+td+';border-left:1px solid var(--line);font-weight:700">'+(f.summe_30t||0)+(Number(f.gast_30t||0)?'<div style="font-size:11px;font-weight:400;color:var(--muted)">'+f.gast_30t+' Gast</div>':'')+'</td></tr>';
+  });
+  return h+'</table></div>';
+}
 function _uFn(u){
   var f=u._fn; if(!f) return '<span style="color:var(--k-c7c2b8)">\u2013</span>';
   var l=f.liste||(f.namen||[]).map(function(n){ return {kurz:n,name:n,aktiv_30t:false}; });

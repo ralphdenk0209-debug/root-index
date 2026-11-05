@@ -1577,6 +1577,19 @@ if(localStorage.getItem("ri_intern")==="1")q="eigen";}catch(e){}
     }, 3000);
   }catch(e){}
 })();
+/* 05.11.2026 #889 Teil B (Ralph-Entscheid C): Nutzung zaehlen OHNE Nutzerkennung (cb_nutzung_melden).
+   Der Server speichert nur Summen je Tag, Funktion und Plattform und verwirft interne Konten selbst.
+   Feste Schluessel stehen im Server (cb_nutzung_melden / cb_admin_funktionsnutzung).
+   Admin-Seiten laden dieselbe app.js - dort wird nichts gezaehlt. */
+function nutzungMelden(f){
+  try{
+    if(/admin|cockpit|mischpult|steuerung/.test(location.pathname)) return;
+    /* bewusst nichts vom Geraet lesen (kein sessionStorage/Cookie) - Datenschutz Abschnitt 15.
+       Die alte Play-App (Web im Rahmen) zaehlt deshalb als web; android = nur die echte Android-App. */
+    client.rpc("cb_nutzung_melden",{p_funktion:f, p_plattform:"web"}).then(function(){},function(){});
+  }catch(e){}
+}
+if(typeof window!=='undefined'){ window.nutzungMelden=nutzungMelden; }
 async function startPortal(){
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativeManage(); }
   try{
@@ -2784,6 +2797,7 @@ async function altSektionFuellen(d, box, _alleAlt){
   el=document.getElementById(box); if(!el) return;
   if(!(r.data||[]).length){ if(_hinweisHtml) el.innerHTML=_hinweisHtml; return; }
   var alts=r.data;
+  nutzungMelden('alternativen_ansehen');   /* #889: angezeigt, auch bei Premium */
   var _supp=alts.some(function(a){ return /^Statt Kapsel:/.test(a.grund||''); });
   /* 12.10.2026 (Ralph): bei Unvertraeglichkeit liefert der Server die besten vertraeglichen (Grund „für dich verträglich"). */
   var _vertr=alts.some(function(a){ return /^für dich verträglich/.test(a.grund||''); });
@@ -2985,6 +2999,7 @@ async function render(){
     const _b=rawQ, _n=list.length;
     window._sucheLogTimer=setTimeout(function(){
       try{ client.rpc("cb_log_suche",{p_begriff:_b, p_treffer:_n}).then(function(){},function(){}); }catch(e){}
+      nutzungMelden("suche");
     }, 1000);
   }
   /* Sortiert wird SERVERSEITIG (Relevanz, dann Score, dann Name) - dieselbe
@@ -3679,6 +3694,7 @@ function suppFuss(a){
 }
 function detail2(d){
   try{ if(d&&d.id) client.rpc("cb_log_aufruf",{p_id:d.id}).then(function(){},function(){}); }catch(e){}
+  if(d&&d.id) nutzungMelden("produkt_ansehen");
   /* Rueckstands-Hinweis nachtragen, sobald die Referenz da ist. Laeuft nach dem Zeichnen,
      blockiert die Karte also nie. Der Kasten wird nur befuellt, wenn die Karte noch offen
      ist und dasselbe Produkt zeigt - sonst schriebe eine spaete Antwort in die naechste
@@ -3820,8 +3836,9 @@ function detail2(d){
      aufgeklappt statt zugeklappt. Reine Darstellung; der Inhalt ist derselbe,
      er ist nur schon sichtbar. Alle uebrigen Aufrufer uebergeben ihn nicht und
      bekommen unveraendert ein zugeklapptes Akkordeon (undefined ist falsy). */
-  function ACC(icon,titel,inner,offen){
-    return '<details'+(offen?' open':'')+' style="border-top:1px solid var(--line)"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:14px;color:var(--ink)"><span>'+icon+' '+titel+'</span><span style="color:var(--muted);font-size:12px">▾</span></summary><div style="padding:2px 2px 12px">'+inner+'</div></details>';
+  function ACC(icon,titel,inner,offen,melde){
+    /* #889: melde = Schluessel fuer cb_nutzung_melden, gezaehlt beim ersten Aufklappen */
+    return '<details'+(offen?' open':'')+(melde?' ontoggle="if(this.open&&!this.dataset.gez){this.dataset.gez=1;nutzungMelden(\''+melde+'\')}"':'')+' style="border-top:1px solid var(--line)"><summary style="cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:14px;color:var(--ink)"><span>'+icon+' '+titel+'</span><span style="color:var(--muted);font-size:12px">▾</span></summary><div style="padding:2px 2px 12px">'+inner+'</div></details>';
   }
 
   var restRows=MACROS.filter(function(m){ return d[m[0]]!=null; }).map(function(m){  /* Ralph 26.07.: ALLE Makros zeigen (Fett/Energie/Eiweiss/Ballast standen vorher nur als Kachel, dadurch hing 'davon gesaettigte' ohne Fett-Zeile in der Luft). Null=unbekannt bleibt aussen vor, 0 ist ein echter Wert. */
@@ -3985,8 +4002,8 @@ function detail2(d){
              Zweigen. Wer es dorthin schiebt, hat den verworfenen Weg A gebaut.
              Der Satz nennt keine Diagnose und keine Empfehlung - er sagt nur, wofuer
              der Block gebaut ist (Riegel aus dem Knoten W10: Anzeige, keine Therapie). */
-          + (bz?(_fBz?ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes())
-                     :vorschauBox('blutzucker', d.id, ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes()),
+          + (bz?(_fBz?ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes(),'blutzucker_ansehen')
+                     :vorschauBox('blutzucker', d.id, ACC('📈','Blutzucker-Verlauf',bzInner,meDiabetes(),'blutzucker_ansehen'),
                         pkSperre('Blutzucker-Verlauf','Wie stark das Produkt den Blutzucker typischerweise anhebt',
                                meDiabetes()?'Du hast im Profil einen Diabetestyp angegeben – dieser Teil ist dafür gemacht.':''))):'')
           + ACC('🔬','Im Root Index','<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Die vier Achsen mit Punkten und Herleitung.</div>'
@@ -5897,6 +5914,8 @@ function adminThemeAnwenden(m){
 }
 function setMode(m){
   if(m!=='start' && riMussAnmelden()) m='start';
+  /* #889: Bildschirm geoeffnet - nur beim Wechsel, nicht bei jedem Neuzeichnen desselben Modus */
+  if(m!==window._curMode){ var _nk={tagebuch:'tagebuch_ansehen',planer:'wochenplan_ansehen',einkauf:'einkauf_ansehen',profil:'profil_ansehen'}[m]; if(_nk) nutzungMelden(_nk); }
   window._curMode=m;
   adminThemeAnwenden(m);
   try{ window.scrollTo(0,0); }catch(e){}
@@ -9772,7 +9791,7 @@ function legalOpen(which){
     +H("Haftung für Links")+P("Unser Angebot enthält ggf. Links zu externen Websites Dritter, auf deren Inhalte wir keinen Einfluss haben. Dafür ist stets der jeweilige Anbieter verantwortlich.")
     +H("Urheberrecht")+P("Die erstellten Inhalte unterliegen dem deutschen Urheberrecht.");
   const ds = H("Datenschutzerklärung – Root Index")
-    +P("<i>Stand: Oktober 2026</i>")
+    +P("<i>Stand: November 2026</i>")
     +H("1. Verantwortlicher")
     +P("Verantwortlich für die Verarbeitung personenbezogener Daten ist:")
     +P("Ralph Denk – Root Index<br>Auweg 23<br>84103 Postau<br>Deutschland<br>E-Mail: <a href=\"mailto:kontakt@root-index.de\">kontakt@root-index.de</a>")
@@ -9872,6 +9891,7 @@ function legalOpen(which){
     +H("15. Besucherstatistik")
     +P("Root Index enthält eine Funktion zur Zählung von Seitenaufrufen und zur zusammengefassten Zuordnung von Zugriffsquellen, beispielsweise Suchmaschinen oder direkten Aufrufen.")
     +P("Gespeichert werden dabei ausschließlich Summen je Tag, Seitenart und Zugriffsquelle. Es werden weder IP-Adressen noch Cookies, Gerätekennungen oder Nutzerkennungen gespeichert; ein Rückschluss auf einzelne Personen ist nicht möglich. Die Tageswerte bewahren wir bis zu 24 Monate auf. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO; unser berechtigtes Interesse ist es, die Nutzung unseres Angebots in anonymer Form zu verstehen. Eine Einwilligung ist nicht erforderlich, da nichts auf deinem Gerät gespeichert oder ausgelesen wird.")
+    +P("Zusätzlich zählen wir, wie oft einzelne Funktionen genutzt werden, zum Beispiel Produktsuche, Barcode-Scan, Produkt- oder Rezeptansicht, Fragen an RIKI und das Öffnen einzelner Bereiche. Gespeichert wird auch hier nur eine Summe je Tag, Funktion und Plattform (Web, iPhone-App, Android-App) und ob die Nutzung angemeldet oder als Gast erfolgte – ohne Nutzerkennung, IP-Adresse, Cookie oder Gerätekennung. Um Konten unseres eigenen Teams auszunehmen, wird die Anmeldung kurz geprüft, aber nicht gespeichert. Aufbewahrung und Rechtsgrundlage wie oben.")
     +P("Zusätzlich speichert unser Hoster INWX technische Server-Protokolle (unter anderem IP-Adresse, Zeitpunkt, abgerufene Adresse) zur Sicherheit und Fehlerbehebung. Wir werten diese nicht zu Statistikzwecken aus; sie werden vom Hoster nach kurzer Zeit automatisch gelöscht.")
     +H("16. Keine Werbung und keine Partnerlinks")
     +P("Root Index enthält keine Werbung und keine Partnerlinks. Links zu externen Seiten, etwa zu Herstellerseiten oder zur Google-Suche, laden vor einem Klick keine Inhalte; eine Verbindung entsteht erst, wenn du den Link anklickst. Der jeweilige Betreiber verarbeitet Daten dann in eigener Verantwortung.")
@@ -10361,7 +10381,7 @@ function statRange(period){
 async function toggleTbStatistik(){
   const box=document.getElementById("tbStatBox");
   if(box.style.display!=="none"){ box.style.display="none"; return; }
-  box.style.display=""; await loadTbStatistik(); box.scrollIntoView({behavior:"smooth",block:"nearest"});
+  box.style.display=""; nutzungMelden("statistik_ansehen"); await loadTbStatistik(); box.scrollIntoView({behavior:"smooth",block:"nearest"});
 }
 async function loadTbStatistik(){
   const box=document.getElementById("tbStatBox");
@@ -15082,6 +15102,7 @@ function nonfoodKarte(d){
 }
 /* Die ganze Kette an einer Stelle. Gibt fertiges HTML zurück. */
 async function scanKette(ean){
+  nutzungMelden("scan");   /* #889: jeder Scan, auch ohne Speichern */
   const {data:res} = await client.rpc("cb_scan_lookup",{p_ean:String(ean)});
   if(!res) return {stufe:"fehler", html:'<div style="color:var(--k-dc2626)">Barcode konnte nicht geprüft werden.</div>'};
 
@@ -17689,6 +17710,7 @@ function kochZeigen(){
 }
 let _rezept=null, _daySum=null, _goal=null;
 function rezeptDetail(r){
+  nutzungMelden('rezept_ansehen');
   _rezept=r; _daySum=null; _goal=null;
   const steps='<div id="rzSchritte">'+rtSchritteHtml(r)+'</div>';   /* 18.10.2026: Schritte zeigen getauschte Zutaten */
   const pro = ME && hasFeat('rezepte_pro');
@@ -18156,7 +18178,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-05-01";
+const APP_BUILD="2026-11-05-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

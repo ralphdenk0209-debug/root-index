@@ -776,6 +776,7 @@ async function rikiFrageSenden(){
   try{
     var s=(await client.auth.getSession()).data.session;
     if(!s) throw new Error("Bitte anmelden, um RIKI zu fragen.");
+    try{ if(typeof nutzungMelden==="function") nutzungMelden("riki_frage"); }catch(e){}   /* #889: nur echte, angemeldete Fragen */
     var ruf=function(tok){
       return fetch(client.supabaseUrl+"/functions/v1/riki-frage",{
         method:"POST",
