@@ -191,7 +191,7 @@ function bauen(){
     z.notiz += '<br><b>Aus Social (7 T):</b> '+soz; })();
   /* Nutzer */
   const akt=Number(me.aktiv_7t||0), pre=Number(me.premium||0), nut=Number(me.nutzer||0);
-  Z.push({grp:'App',nm:'Nutzer',st:'ok',v:zahl(nut),u:zahl(pre)+' Premium'+(Number(me.premium_geschenkt||0)?' · '+zahl(me.premium_geschenkt)+' geschenkt':''),
+  Z.push({grp:'App',nm:'Nutzer',st:'ok',v:zahl(nut),u:zahl(pre)+' Premium'+(Number(me.premium_geschenkt||0)?' · '+zahl(me.premium_geschenkt)+' geschenkt'+(Number(me.premium_gratis_code||0)?' ('+zahl(me.premium_gratis_code)+' per Code)':''):''),
     viz:seg([[pre,'#ffb547'],[Math.max(0,akt-pre),'#4fd18b'],[Math.max(0,nut-Math.max(akt,pre)),'#3a3c41']]),
     notiz:'ohne '+zahl(me.ausgenommen)+' interne Konten · '+zahl(akt)+' aktiv (7 T) · '+zahl(me.tagebuch_7t)+' Tagebuch-Einträge · '+zahl(me.scans_warteschlange)+' Scans in Warteschlange',
     knopf:{t:'Nutzer',href:'admin.html?go=nutzer',ziel:'_top'}});
@@ -318,7 +318,9 @@ async function laden(){
   try{ const k=await client.rpc('cb_admin_claude_konto_lesen'); D.claude_konto=(k.data&&k.data.ok)?k.data:null; }catch(e){ D.claude_konto=null; }
   const st=new Date(data.cache_stand||data.stand), frisch=st.getTime()>=ANGEFORDERT;
   if(frisch&&NACHFRAGE){ clearInterval(NACHFRAGE); NACHFRAGE=null; }
-  $('stand').textContent='Stand '+st.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+(frisch?'':' · wird neu berechnet …');
+  /* 05.11.2026: ein Stand von gestern stand nur mit Uhrzeit da ("Stand 08:51") und sah aus wie heute. */
+  const heute=st.toDateString()===new Date().toDateString();
+  $('stand').textContent='Stand '+(heute?'':st.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+'. ')+st.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+(frisch?'':' · wird neu berechnet …');
   bauen();
 }
 async function schalten(k, an){
