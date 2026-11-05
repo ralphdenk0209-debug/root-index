@@ -254,7 +254,7 @@ function renderUsers(rows, z){
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
   h+='<div style="width:100%">'
    +'<table class="usrTab" style="width:100%;border-collapse:collapse;background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden;table-layout:auto;font-size:12.5px">';
-  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Admin</th><th style="'+th+';text-align:center">Passwort</th></tr>';
+  h+='<tr style="background:var(--bg)"><th style="'+th+'">Nutzer</th><th style="'+th+'" title="Geräte aus den Anmeldungen, das zuerst gesehene ist umrandet">Über</th><th style="'+th+';text-align:center">Premium</th><th style="'+th+'">Abo /<br>Test</th><th style="'+th+';text-align:center">Erfasst</th><th style="'+th+';text-align:center" title="Tage mit mindestens einem Tagebuch-Eintrag">Tage­buch</th><th style="'+th+'">Zuletzt<br>aktiv</th><th style="'+th+'">Regis&shy;triert</th><th style="'+th+'">Premium<br>seit</th><th style="'+th+'">Premium<br>bis</th><th style="'+th+';text-align:center">Passwort</th></tr>';
   rows.forEach(u=>{
     /* 05.11.2026: Art und Datum kommen vom Server (premium_art / premium_gueltig_bis). */
     const art=u.premium_aktiv?u.premium_art:null;
@@ -278,7 +278,7 @@ function renderUsers(rows, z){
       +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+_uDate(u.angelegt_am)+'</td>'
       +'<td style="'+td+';color:var(--muted);white-space:nowrap">'+(u.premium_aktiv?_uDate(u.premium_gueltig_von):'–')+'</td>'
       +'<td style="'+td+';font-size:12.5px">'+_uPremBis(u)+'</td>'
-      +'<td style="'+td+';text-align:center">'+rpill(!!u.is_admin,"userPill(this,'"+u.benutzer_id+"','admin')")+'</td>'
+      /* 05.11.2026, Ralph: "admin schalter kannst du ausblenden, das bin nur ich" - Spalte entfaellt, Admin-Recht setzt Claude bei Bedarf in der DB. */
       +'<td style="'+td+';text-align:center;white-space:nowrap"><button onclick="adminSetPassword(\''+u.benutzer_id+'\',\''+esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"")+'\')" style="padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);cursor:pointer;font-size:12.5px">🔑</button>'
       +(u.is_admin?'':'<button title="Nutzer löschen" onclick="adminDeleteUser(\''+u.benutzer_id+'\',\''+esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"")+'\')" style="margin-left:6px;padding:6px 9px;border:1px solid var(--k-fca5a5);border-radius:8px;background:var(--card);color:var(--k-dc2626);cursor:pointer;font-size:12.5px">🗑️</button>')
       +'</td>'
