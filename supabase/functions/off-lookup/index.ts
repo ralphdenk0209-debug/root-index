@@ -121,8 +121,10 @@ function portionsfalle(name: string, kcal: number | null, menge: string): string
 async function holeEan(ean: string) {
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(ean)}.json?fields=${FELDER}`;
   const r = await fetch(url, { headers: { "User-Agent": UA } });
-  if (!r.ok) return { gefunden: false, fehler: `OFF antwortete ${r.status}` };
-  const j = await r.json();
+  // v3.3: OFF antwortet bei Non-Food (und bei unbekannten Barcodes) mit HTTP 404, der Text sagt die Produktart.
+  if (!r.ok && r.status !== 404) return { gefunden: false, fehler: `OFF antwortete ${r.status}` };
+  const j = await r.json().catch(() => null);
+  if (!j) return { gefunden: false, fehler: `OFF antwortete ${r.status}` };
   if (j.status !== 1 || !j.product) {
     // v3.3 (#865): Barcode steht bei OFF, aber in Open Beauty Facts / Open Pet Food Facts.
     const typ = String(j?.status_verbose ?? "").match(/different product type:\s*([a-z]+)/i)?.[1]?.toLowerCase() ?? "";
