@@ -95,13 +95,19 @@
 //   EINE ZUTAT: Mineral-/Quellwasser (nur mit Sorte im Namen) und purer Honig wie Milch – Naehrwerte nie dazuerfunden.
 //   SORTE UNBEKANNT: nennt der Scan-Name nur die Marke, wird eine Seite ohne Barcode nicht als „anderes Produkt" gefuehrt, sondern „sorte_unbekannt".
 //
+// v7.1 (2026-11-04, Ralph „jaja bau riki 2 so", Idee „erst abschreiben, dann deuten"):
+//   TABELLE WOERTLICH: das Modell schreibt die Naehrwerttabelle Zeile fuer Zeile ab (Beschriftung, Spalte, Wert);
+//   welche Zahl Fett/Eiweiss/… ist, entscheidet der Code. Die Modell-Zuordnung bleibt als Vergleich.
+//   GEZIELT NACHLESEN: schlaegt eine Rechenprobe an oder ordnen Code und Modell anders zu, liest Riki 2 NUR die Tabelle
+//   (nur das Foto mit der Tabelle) noch einmal – mit anderer Frage: je Wert Zeile + Nachbarzeilen. Nur bei Verdacht.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v7.0";
+const VERSION = "riki2 v7.1";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -581,7 +587,7 @@ const ZAHL_ODER_NULL = { type: ["number", "null"] };
 const LESE_SCHEMA = {
   type: "object",
   additionalProperties: false,
-  required: ["ean_auf_foto", "name", "marke", "zutatenverzeichnis_sichtbar", "zutaten_lesbar", "zutaten_text", "naehrwert_basis", "naehrwerte", "unsicher"],
+  required: ["ean_auf_foto", "name", "marke", "zutatenverzeichnis_sichtbar", "zutaten_lesbar", "zutaten_text", "naehrwert_basis", "tabelle_foto", "tabelle", "naehrwerte", "unsicher"],
   properties: {
     ean_auf_foto: { type: ["string", "null"] },
     name: { type: ["string", "null"] },
@@ -590,6 +596,18 @@ const LESE_SCHEMA = {
     zutaten_lesbar: { type: "string", enum: ["voll", "teilweise", "nein"] },
     zutaten_text: { type: ["string", "null"] },
     naehrwert_basis: { type: "string", enum: ["100g", "100ml", "zubereitet", "nur_portion", "keine"] },
+    // v7.1: Tabelle erst woertlich abschreiben – die Zuordnung zu Fett/Eiweiss/… macht der Code
+    tabelle_foto: { type: ["integer", "null"] },
+    tabelle: {
+      type: "array",
+      items: {
+        type: "object", additionalProperties: false, required: ["beschriftung", "werte"],
+        properties: {
+          beschriftung: { type: "string" },
+          werte: { type: "array", items: { type: "object", additionalProperties: false, required: ["spalte", "wert"], properties: { spalte: { type: "string" }, wert: { type: "string" } } } },
+        },
+      },
+    },
     naehrwerte: {
       type: "object",
       additionalProperties: false,
@@ -608,6 +626,8 @@ Regeln:
 - zutatenverzeichnis_sichtbar: "ja" nur, wenn auf einem Foto wirklich ein Zutatenverzeichnis zu sehen ist (meist mit "Zutaten:"). Ein Siegel, eine Werbeaussage oder eine Allergenzeile ist kein Zutatenverzeichnis.
 - zutaten_text: die deutsche Zutatenliste wörtlich in Etikett-Reihenfolge, mit allen Klammern und %-Angaben, ohne das Wort "Zutaten:" am Anfang. Fremdsprachige Fassungen weglassen. Geht die Liste über zwei Fotos, füge sie in der richtigen Reihenfolge zusammen. Ist nur ein Teil lesbar: zutaten_lesbar "teilweise" und nur den lesbaren Anfang abschreiben.
 - naehrwerte: die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Ausnahme Brühe, Bouillon, Brühwürfel, gekörnte Brühe, Suppen- und Soßenpulver: dort die Spalte ZUBEREITET („pro 100 ml zubereitet"), naehrwert_basis "zubereitet" – auch wenn es zwei Spalten gibt. Nennt ein anderes Produkt nur zubereitete Werte, ebenfalls diese mit naehrwert_basis "zubereitet". Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
+- tabelle: die Nährwerttabelle Zeile für Zeile WÖRTLICH abschreiben, ohne zu deuten oder umzurechnen. beschriftung genau wie gedruckt (z. B. "davon gesättigte Fettsäuren"), dazu jeder Wert der Zeile mit seiner Spaltenüberschrift wie gedruckt (z. B. spalte "pro 100 g", wert "8,0 g"; Brennwert z. B. wert "1500 kJ / 359 kcal"). Steht die Überschrift nur über der Tabelle (z. B. "Nährwerte je 100 g"), diese als spalte nehmen. Ist keine Tabelle zu sehen: leere Liste.
+- tabelle_foto: die Nummer des Fotos (1 = erstes Foto), auf dem die Nährwerttabelle steht, sonst null.
 - name: der Handelsname, wie er groß auf der Vorderseite steht, ohne Menge. marke: die Marke des Herstellers oder Händlers. Ein Bio-Siegel, "EU-Bio", "Bioland", "Demeter", "Fairtrade" ist keine Marke.
 - ean_auf_foto: die Ziffern unter dem Strichcode, falls lesbar, sonst null.`;
 
@@ -636,6 +656,126 @@ async function fotoLesen(client: Anthropic, modell: string, fotos: string[]) {
     return { lesung: JSON.parse(text), fehler: null, kosten, inT, outT, modell: benutzt };
   } catch (_) {
     return { lesung: null, fehler: "Antwort war kein JSON", kosten, inT, outT, modell: benutzt };
+  }
+}
+
+// ---------- v7.1: Naehrwerte aus der woertlich abgeschriebenen Tabelle (Zuordnung im Code, nicht im Modell) ----------
+// Fehler wie „Eiweiß 2,4 statt 8,0" sind Zuordnungsfehler: der Wert ist richtig gelesen, aber der falschen Zeile gegeben.
+type Zeile = { beschriftung: string; werte: { spalte: string; wert: string }[] };
+const NW_FELDER = ["kcal", "kj", "fett", "ges_fett", "kh", "zucker", "ballaststoffe", "protein", "salz"] as const;
+function zahlText(t: string): number | null {
+  const s = t.toLowerCase();
+  if (/spuren/.test(s)) return 0;
+  if (/<\s*\d/.test(s)) return 0; // „<0,5 g" wie bisher als 0
+  const m = s.match(/(\d+(?:[.,]\d+)?)/);
+  return m ? Number(m[1].replace(",", ".")) : null;
+}
+function feldZurZeile(b: string): (typeof NW_FELDER)[number] | "energie" | null {
+  const t = b.toLowerCase().replace(/\s+/g, " ").trim();
+  if (/brennwert|energie/.test(t)) return "energie";
+  if (/^kj\b/.test(t)) return "kj";
+  if (/^kcal\b/.test(t)) return "kcal";
+  if (/ungesättigt|ungesaettigt|trans/.test(t)) return null;
+  if (/gesättigt|gesaettigt/.test(t)) return "ges_fett";
+  if (/zuckeralkohol|mehrwertig|stärke|staerke|polyol/.test(t)) return null;
+  if (/zucker/.test(t)) return "zucker";
+  if (/kohlenhydrat/.test(t)) return "kh";
+  if (/ballaststoff/.test(t)) return "ballaststoffe";
+  if (/eiweiß|eiweiss|protein/.test(t)) return "protein";
+  if (/salz/.test(t)) return "salz";
+  if (/^fett\b/.test(t)) return "fett";
+  return null;
+}
+function nwAusTabelle(tabelle: Zeile[] | null | undefined, zubereitet: boolean): { nw: NW | null; spalte: string | null; befunde: Befund[] } {
+  const befunde: Befund[] = [];
+  if (!Array.isArray(tabelle) || !tabelle.length) return { nw: null, spalte: null, befunde };
+  const spalten = [...new Set(tabelle.flatMap((z) => (z.werte ?? []).map((w) => String(w.spalte ?? "").trim())))];
+  const je100 = (h: string) => /100\s*(g|ml)/i.test(h);
+  const zub = (h: string) => /zubereit/i.test(h);
+  let spalte = zubereitet ? spalten.find((h) => zub(h)) : spalten.find((h) => je100(h) && !zub(h));
+  // eine einzige Spalte ohne Portionsangabe (Ueberschrift fehlt) zaehlt als je 100 g
+  if (!spalte && spalten.length === 1 && !zub(spalten[0]) && !/portion|stück|stueck|riegel|scheibe|glas|becher|\d+\s*(g|ml)\b/i.test(spalten[0])) spalte = spalten[0];
+  if (spalte === undefined) { befunde.push({ art: "tabelle_ohne_100g", quelle: "foto", text: `keine passende Spalte (Spalten: ${spalten.join(" | ").slice(0, 120)})` }); return { nw: null, spalte: null, befunde }; }
+  const o: NW = {};
+  for (const z of tabelle) {
+    const w = (z.werte ?? []).find((x) => String(x.spalte ?? "").trim() === spalte);
+    if (!w) continue;
+    const text = String(w.wert ?? "");
+    // Zeile ohne eigene Beschriftung mit kJ/kcal = zweite Zeile des Brennwerts („1500 kJ" / „359 kcal")
+    const f = feldZurZeile(String(z.beschriftung ?? "")) ?? (!String(z.beschriftung ?? "").trim() && /\d\s*(kj|kcal)\b/i.test(text) ? "energie" : null);
+    if (!f) continue;
+    if (f === "energie" || f === "kj" || f === "kcal") {
+      const kj = text.match(/(\d+(?:[.,]\d+)?)\s*kj/i), kc = text.match(/(\d+(?:[.,]\d+)?)\s*kcal/i);
+      const setz = (k: "kj" | "kcal", v: number) => { if (typeof o[k] !== "number") o[k] = v; };
+      if (kj) setz("kj", Number(kj[1].replace(",", ".")));
+      if (kc) setz("kcal", Number(kc[1].replace(",", ".")));
+      if (!kj && !kc && f !== "energie") { const v = zahlText(text); if (v !== null) setz(f, v); }
+      continue;
+    }
+    const v = zahlText(text);
+    if (v === null) continue;
+    if (typeof o[f] === "number") { if (o[f] !== v) befunde.push({ art: "tabelle_doppelt", quelle: "foto", text: `${f} steht zweimal (${o[f]} und ${v}) – erster Wert genommen` }); continue; }
+    o[f] = v;
+  }
+  return { nw: sauberNW(o), spalte, befunde };
+}
+// Felder, in denen Code-Zuordnung und Modell-Lesung auseinanderliegen
+function nwUnterschiede(a: NW, b: NW): string[] {
+  return NW_FELDER.filter((f) => typeof a[f] === "number" && typeof b[f] === "number" && Math.abs(a[f]! - b[f]!) > Math.max(0.05, 0.02 * Math.abs(a[f]!)));
+}
+// v7.1: Gezielte Nachlesung nur der Naehrwerttabelle – mit ANDERER Frage (je Wert die Nachbarzeilen), damit sie
+// nicht dieselben Fehler wiederholt. Nur bei Verdacht (Rechenprobe oder Widerspruch Code/Modell).
+const NACHLESE_FELD = { type: "object", additionalProperties: false, required: ["wert", "zeile_darueber", "zeile_darunter"],
+  properties: { wert: { type: ["string", "null"] }, zeile_darueber: { type: ["string", "null"] }, zeile_darunter: { type: ["string", "null"] } } };
+const NACHLESE_SCHEMA = { type: "object", additionalProperties: false, required: ["spalte", ...NW_FELDER],
+  properties: { spalte: { type: ["string", "null"] }, ...Object.fromEntries(NW_FELDER.map((f) => [f, NACHLESE_FELD])) } };
+const NACHLESE_WORT: Record<string, string> = { kcal: "Brennwert in kcal", kj: "Brennwert in kJ", fett: "Fett", ges_fett: "davon gesättigte Fettsäuren",
+  kh: "Kohlenhydrate", zucker: "davon Zucker", ballaststoffe: "Ballaststoffe", protein: "Eiweiß", salz: "Salz" };
+function nachleseAuftrag(zubereitet: boolean) {
+  return `Schau NUR auf die Nährwerttabelle. Nimm die Spalte ${zubereitet ? "für das ZUBEREITETE Produkt (je 100 ml zubereitet)" : "je 100 g bzw. je 100 ml (nicht je Portion, nicht zubereitet)"} und nenne in "spalte" ihre Überschrift wörtlich.
+Gehe die Zeilen einzeln durch. Für jeden der folgenden Werte: suche zuerst die Zeile mit genau dieser Beschriftung, dann schreibe die Zahl in DIESER Zeile und DIESER Spalte wörtlich ab (mit Einheit, z. B. "8,0 g"), und nenne die Beschriftung der Zeile direkt darüber und direkt darunter.
+${NW_FELDER.map((f) => `- ${f}: ${NACHLESE_WORT[f]}`).join("\n")}
+Gibt es die Zeile nicht oder ist die Zahl nicht sicher lesbar: wert null. Nichts schätzen, nichts umrechnen.`;
+}
+function nachleseWerte(d: any): NW | null {
+  const o: NW = {};
+  for (const f of NW_FELDER) {
+    const t = String(d?.[f]?.wert ?? "");
+    if (!t) continue;
+    if (f === "kj" || f === "kcal") {
+      const m = t.match(f === "kj" ? /(\d+(?:[.,]\d+)?)\s*kj/i : /(\d+(?:[.,]\d+)?)\s*kcal/i);
+      const v = m ? Number(m[1].replace(",", ".")) : zahlText(t);
+      if (v !== null) o[f] = v;
+      continue;
+    }
+    const v = zahlText(t);
+    if (v !== null) o[f] = v;
+  }
+  return sauberNW(o);
+}
+async function tabelleNachlesen(client: Anthropic, modell: string, fotos: string[], zubereitet: boolean) {
+  const bilder = fotos.map((f) => {
+    const m = f.match(/^data:(image\/[a-z+]+);base64,(.*)$/s);
+    return m ? { type: "image", source: { type: "base64", media_type: m[1], data: m[2] } } : null;
+  }).filter(Boolean);
+  const r: any = await client.beta.messages.create({
+    model: modell,
+    max_tokens: 3000,
+    betas: ["server-side-fallback-2026-07-01"],
+    fallbacks: "default",
+    output_config: { effort: "high", format: { type: "json_schema", schema: NACHLESE_SCHEMA } },
+    messages: [{ role: "user", content: [...bilder, { type: "text", text: nachleseAuftrag(zubereitet) }] }],
+  } as any);
+  const benutzt = String(r?.model ?? modell);
+  const [pe, pa] = PREIS[benutzt] ?? PREIS[modell] ?? [2, 10];
+  const inT = Number(r?.usage?.input_tokens ?? 0), outT = Number(r?.usage?.output_tokens ?? 0);
+  const kosten = Math.round(((inT * pe + outT * pa) / 1e6) * 1e6) / 1e6;
+  if (r?.stop_reason !== "end_turn") return { nw: null as NW | null, kosten, inT, outT, spalte: null as string | null };
+  try {
+    const d = JSON.parse((r?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join(""));
+    return { nw: nachleseWerte(d), kosten, inT, outT, spalte: d?.spalte ?? null };
+  } catch (_) {
+    return { nw: null as NW | null, kosten, inT, outT, spalte: null as string | null };
   }
 }
 
@@ -1087,9 +1227,47 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
         (foto as any)._lesbar = l.zutatenverzeichnis_sichtbar === "ja" ? l.zutaten_lesbar : "nein";
         if (l.zutatenverzeichnis_sichtbar === "ja" && l.zutaten_text) foto.zutaten_text = ohneZutatenWort(String(l.zutaten_text));
         if (l.zutatenverzeichnis_sichtbar !== "ja" && l.zutaten_text) foto.befunde.push({ art: "zutaten_ohne_verzeichnis", quelle: "foto", text: "Zutaten geliefert, obwohl kein Verzeichnis sichtbar – verworfen" });
-        if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml") foto.naehrwerte = sauberNW(l.naehrwerte);
+        const zub = l.naehrwert_basis === "zubereitet" && zubereitungsprodukt(String(l.name ?? ""));
+        if (l.naehrwert_basis === "100g" || l.naehrwert_basis === "100ml" || zub) {
+          // v7.1: Werte aus der woertlich abgeschriebenen Tabelle, Zuordnung im Code; Modell-Zuordnung nur als Vergleich/Ersatz
+          const modellNW = sauberNW(l.naehrwerte);
+          const t = nwAusTabelle(l.tabelle, zub);
+          foto.befunde.push(...t.befunde);
+          let nw = modellNW, abweichend: string[] = [];
+          if (nwKomplett(t.nw)) {
+            nw = t.nw;
+            if (modellNW) abweichend = nwUnterschiede(t.nw!, modellNW);
+            if (abweichend.length) foto.befunde.push({ art: "zuordnung_abweichend", quelle: "foto", text: `Tabelle (Code) und Modell ordnen anders zu: ${abweichend.map((f) => `${f} ${t.nw![f as keyof NW]} / ${modellNW![f as keyof NW]}`).join(", ")}` });
+          } else if (Array.isArray(l.tabelle) && l.tabelle.length) {
+            foto.befunde.push({ art: "tabelle_unvollstaendig", quelle: "foto", text: "Tabelle abgeschrieben, aber nicht alle Grundwerte zuzuordnen – Modell-Zuordnung genommen" });
+          }
+          // v7.1: Verdacht (Rechenprobe schlaegt an oder Zuordnungen widersprechen sich) -> nur die Tabelle gezielt nachlesen
+          const sperrt = (x: NW | null) => !!x && pruefeNaehrwerte(x, String(l.name ?? ""), "foto").some((b) => b.sperrt);
+          if (nw && (abweichend.length || sperrt(nw))) {
+            const nr = Number(l.tabelle_foto);
+            const bild = Number.isInteger(nr) && nr >= 1 && nr <= fotos_eindeutig.length ? [fotos_eindeutig[nr - 1]] : fotos_eindeutig.slice(0, 6);
+            if (budgetRest.usd - reserve >= 0.05) {
+              try {
+                const r2 = await tabelleNachlesen(client, modell, bild, zub);
+                kosten += r2.kosten; inT += r2.inT; outT += r2.outT;
+                if (nwKomplett(r2.nw) && !sperrt(r2.nw)) {
+                  const geaendert = nwUnterschiede(r2.nw!, nw);
+                  foto.befunde.push({ art: "nachgelesen", quelle: "foto", text: `Tabelle gezielt nachgelesen (${bild.length === 1 ? `Foto ${nr}` : "alle Fotos"}, Spalte „${r2.spalte ?? "?"}")${geaendert.length ? `: geändert ${geaendert.map((f) => `${f} ${nw![f as keyof NW]} → ${r2.nw![f as keyof NW]}`).join(", ")}` : ": gleiche Werte"}` });
+                  nw = r2.nw;
+                } else {
+                  foto.befunde.push({ art: "nachlesen_ohne_erfolg", quelle: "foto", text: "Nachlesung brachte keine stimmigen Werte – erste Lesung bleibt, Prüfungen entscheiden" });
+                }
+              } catch (e) {
+                foto.befunde.push({ art: "fehler", quelle: "foto", text: "Nachlesung: " + String((e as Error)?.message ?? e).slice(0, 200) });
+              }
+            } else {
+              foto.befunde.push({ art: "tagesdeckel", quelle: "foto", text: "Nachlesung übersprungen: Tagesdeckel" });
+            }
+          }
+          foto.naehrwerte = nw;
+          if (zub) foto.befunde.push({ art: "zubereitet", quelle: "foto", text: "Brühe: zubereitete Werte vom Etikett (BR-NW-WIE-VERKAUFT F2)" });
+        }
         else if (l.naehrwert_basis === "nur_portion") foto.befunde.push({ art: "portion", quelle: "foto", text: "Etikett zeigt nur Portionswerte" });
-        else if (l.naehrwert_basis === "zubereitet" && zubereitungsprodukt(String(l.name ?? ""))) { foto.naehrwerte = sauberNW(l.naehrwerte); foto.befunde.push({ art: "zubereitet", quelle: "foto", text: "Brühe: zubereitete Werte vom Etikett (BR-NW-WIE-VERKAUFT F2)" }); }
         else if (l.naehrwert_basis === "zubereitet") foto.befunde.push({ art: "nur_zubereitet", quelle: "foto", text: "Etikett zeigt nur Werte für das zubereitete Produkt – kein Zubereitungsprodukt, nicht übernommen" });
         if (Array.isArray(l.unsicher) && l.unsicher.length) foto.befunde.push({ art: "unsicher", quelle: "foto", text: l.unsicher.join(", ") });
       }
