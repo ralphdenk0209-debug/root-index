@@ -100,6 +100,9 @@
 //   welche Zahl Fett/Eiweiss/… ist, entscheidet der Code. Die Modell-Zuordnung bleibt als Vergleich.
 //   GEZIELT NACHLESEN: schlaegt eine Rechenprobe an oder ordnen Code und Modell anders zu, liest Riki 2 NUR die Tabelle
 //   (nur das Foto mit der Tabelle) noch einmal – mit anderer Frage: je Wert Zeile + Nachbarzeilen. Nur bei Verdacht.
+// v7.1b (2026-11-06, Pruefung 21 Fotolaeufe): unlesbare Ziffern („81?") bleiben leer statt errechnet; was das Modell
+//   „unsicher" nennt, wird nicht verwendet; mehrsprachige Beschriftungen („Λιπαρά / Fett / Fat") werden zugeordnet;
+//   „Energie (kJ/kcal)" mit Wert „819/194" wird nach der Reihenfolge der Beschriftung zerlegt.
 //
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
@@ -107,7 +110,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v7.1a";
+const VERSION = "riki2 v7.1b";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -625,8 +628,8 @@ Regeln:
 - Schreibe nur ab, was auf den Fotos steht. Nichts ergänzen, nichts schätzen, nichts aus Erfahrung einsetzen. Was du nicht sicher lesen kannst, ist null und kommt mit dem Feldnamen in "unsicher".
 - zutatenverzeichnis_sichtbar: "ja" nur, wenn auf einem Foto wirklich ein Zutatenverzeichnis zu sehen ist (meist mit "Zutaten:"). Ein Siegel, eine Werbeaussage oder eine Allergenzeile ist kein Zutatenverzeichnis.
 - zutaten_text: die deutsche Zutatenliste wörtlich in Etikett-Reihenfolge, mit allen Klammern und %-Angaben, ohne das Wort "Zutaten:" am Anfang. Fremdsprachige Fassungen weglassen. Geht die Liste über zwei Fotos, füge sie in der richtigen Reihenfolge zusammen. Ist nur ein Teil lesbar: zutaten_lesbar "teilweise" und nur den lesbaren Anfang abschreiben.
-- naehrwerte: die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Ausnahme Brühe, Bouillon, Brühwürfel, gekörnte Brühe, Suppen- und Soßenpulver: dort die Spalte ZUBEREITET („pro 100 ml zubereitet"), naehrwert_basis "zubereitet" – auch wenn es zwei Spalten gibt. Nennt ein anderes Produkt nur zubereitete Werte, ebenfalls diese mit naehrwert_basis "zubereitet". Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
-- tabelle: die Nährwerttabelle Zeile für Zeile WÖRTLICH abschreiben, ohne zu deuten oder umzurechnen. beschriftung genau wie gedruckt (z. B. "davon gesättigte Fettsäuren"), dazu jeder Wert der Zeile mit seiner Spaltenüberschrift wie gedruckt (z. B. spalte "pro 100 g", wert "8,0 g"; Brennwert z. B. wert "1500 kJ / 359 kcal"). Steht die Überschrift nur über der Tabelle (z. B. "Nährwerte je 100 g"), diese als spalte nehmen. Ist keine Tabelle zu sehen: leere Liste.
+- naehrwerte: die Spalte je 100 g bzw. je 100 ml für das Produkt WIE VERKAUFT. Jeder Wert muss so auf dem Foto stehen – nie aus anderen Werten errechnen (z. B. kJ aus kcal); ist er nicht ganz lesbar: null und in "unsicher". Ausnahme Brühe, Bouillon, Brühwürfel, gekörnte Brühe, Suppen- und Soßenpulver: dort die Spalte ZUBEREITET („pro 100 ml zubereitet"), naehrwert_basis "zubereitet" – auch wenn es zwei Spalten gibt. Nennt ein anderes Produkt nur zubereitete Werte, ebenfalls diese mit naehrwert_basis "zubereitet". Gibt es nur Portionsangaben, naehrwert_basis "nur_portion" und alle Werte null – niemals umrechnen. "<0,5 g" bzw. "Spuren" als 0 nur, wenn genau das dasteht; sonst null.
+- tabelle: die Nährwerttabelle Zeile für Zeile WÖRTLICH abschreiben, ohne zu deuten oder umzurechnen. beschriftung genau wie gedruckt (z. B. "davon gesättigte Fettsäuren"), dazu jeder Wert der Zeile mit seiner Spaltenüberschrift wie gedruckt (z. B. spalte "pro 100 g", wert "8,0 g"; Brennwert z. B. wert "1500 kJ / 359 kcal"). Steht die Überschrift nur über der Tabelle (z. B. "Nährwerte je 100 g"), diese als spalte nehmen. Ist eine Ziffer nicht sicher lesbar (Knick, Spiegelung, verdeckt), schreibe an ihre Stelle "?" (z. B. "81?") – niemals aus anderen Werten errechnen (kJ nie aus kcal). Ist keine Tabelle zu sehen: leere Liste.
 - tabelle_foto: die Nummer des Fotos (1 = erstes Foto), auf dem die Nährwerttabelle steht, sonst null.
 - name: der Handelsname, wie er groß auf der Vorderseite steht, ohne Menge. marke: die Marke des Herstellers oder Händlers. Ein Bio-Siegel, "EU-Bio", "Bioland", "Demeter", "Fairtrade" ist keine Marke.
 - ean_auf_foto: die Ziffern unter dem Strichcode, falls lesbar, sonst null.`;
@@ -665,13 +668,33 @@ type Zeile = { beschriftung: string; werte: { spalte: string; wert: string }[] }
 const NW_FELDER = ["kcal", "kj", "fett", "ges_fett", "kh", "zucker", "ballaststoffe", "protein", "salz"] as const;
 function zahlText(t: string): number | null {
   const s = t.toLowerCase();
+  if (/\?/.test(s)) return null; // v7.1b: unlesbare Ziffer („81?") – nie raten
   if (/spuren/.test(s)) return 0;
   if (/<\s*\d/.test(s)) return 0; // „<0,5 g" wie bisher als 0
   const m = s.match(/(\d+(?:[.,]\d+)?)/);
   return m ? Number(m[1].replace(",", ".")) : null;
 }
 function feldZurZeile(b: string): (typeof NW_FELDER)[number] | "energie" | null {
-  const t = b.toLowerCase().replace(/\s+/g, " ").trim();
+  // v7.1b: mehrsprachige Beschriftung – deutscher Teil zuerst, englischer als Ersatz
+  const teile = b.toLowerCase().split("/").map((x) => x.replace(/\s+/g, " ").trim()).filter(Boolean);
+  for (const t of teile) { const f = feldDeutsch(t); if (f) return f; }
+  for (const t of teile) { const f = feldEnglisch(t); if (f) return f; }
+  return null;
+}
+function feldEnglisch(t: string): (typeof NW_FELDER)[number] | "energie" | null {
+  if (/^energy\b/.test(t)) return "energie";
+  if (/unsaturat|trans/.test(t)) return null;
+  if (/saturates|saturated/.test(t)) return "ges_fett";
+  if (/polyol/.test(t)) return null;
+  if (/sugars?\b/.test(t)) return "zucker";
+  if (/carbohydrate/.test(t)) return "kh";
+  if (/fibre|fiber/.test(t)) return "ballaststoffe";
+  if (/^protein/.test(t)) return "protein";
+  if (/^salt\b/.test(t)) return "salz";
+  if (/^fat\b/.test(t)) return "fett";
+  return null;
+}
+function feldDeutsch(t: string): (typeof NW_FELDER)[number] | "energie" | null {
   if (/brennwert|energie/.test(t)) return "energie";
   if (/^kj\b/.test(t)) return "kj";
   if (/^kcal\b/.test(t)) return "kcal";
@@ -683,7 +706,7 @@ function feldZurZeile(b: string): (typeof NW_FELDER)[number] | "energie" | null 
   if (/ballaststoff/.test(t)) return "ballaststoffe";
   if (/eiweiß|eiweiss|protein/.test(t)) return "protein";
   if (/salz/.test(t)) return "salz";
-  if (/^fett\b/.test(t)) return "fett";
+  if (/(^|\s)fett\b/.test(t) && !/fettsäur|fettsaeur/.test(t)) return "fett";
   return null;
 }
 function nwAusTabelle(tabelle: Zeile[] | null | undefined, zubereitet: boolean): { nw: NW | null; spalte: string | null; befunde: Befund[] } {
@@ -710,10 +733,20 @@ function nwAusTabelle(tabelle: Zeile[] | null | undefined, zubereitet: boolean):
       if (kj) setz("kj", Number(kj[1].replace(",", ".")));
       if (kc) setz("kcal", Number(kc[1].replace(",", ".")));
       if (!kj && !kc && f !== "energie") { const v = zahlText(text); if (v !== null) setz(f, v); }
+      // v7.1b: „Energie (kJ/kcal)" mit Wert „819/194" – Reihenfolge laut Beschriftung, „81?" bleibt leer
+      const lb = String(z.beschriftung ?? "").toLowerCase();
+      const paar = text.match(/^\s*([\d.,?]+)\s*\/\s*([\d.,?]+)\s*$/);
+      if (!kj && !kc && paar && /kj/.test(lb) && /kcal/.test(lb)) {
+        const [a, b] = lb.indexOf("kj") < lb.indexOf("kcal") ? ["kj", "kcal"] as const : ["kcal", "kj"] as const;
+        const va = zahlText(paar[1]), vb = zahlText(paar[2]);
+        if (va !== null) setz(a, va);
+        if (vb !== null) setz(b, vb);
+        if (/\?/.test(text)) befunde.push({ art: "ziffer_unlesbar", quelle: "foto", text: `Brennwert „${text}" – unlesbare Ziffer bleibt leer` });
+      }
       continue;
     }
     const v = zahlText(text);
-    if (v === null) continue;
+    if (v === null) { if (/\?/.test(text)) befunde.push({ art: "ziffer_unlesbar", quelle: "foto", text: `${f} „${text}" – unlesbare Ziffer bleibt leer` }); continue; }
     if (typeof o[f] === "number") { if (o[f] !== v) befunde.push({ art: "tabelle_doppelt", quelle: "foto", text: `${f} steht zweimal (${o[f]} und ${v}) – erster Wert genommen` }); continue; }
     o[f] = v;
   }
@@ -1264,6 +1297,19 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
               }
             } else {
               foto.befunde.push({ art: "tagesdeckel", quelle: "foto", text: "Nachlesung übersprungen: Tagesdeckel" });
+            }
+          }
+          // v7.1b: was das Modell selbst unsicher nennt, wird nicht verwendet (Harry: „81?" kJ wurde zu 811 errechnet)
+          const unsicher = (Array.isArray(l.unsicher) ? l.unsicher : []).flatMap((u: string) => String(u).toLowerCase().split(/[,;]\s*/)).map((u: string) => u.trim());
+          if (nw && unsicher.some((u: string) => u === "naehrwerte" || u === "nährwerte" || u === "tabelle")) {
+            foto.befunde.push({ art: "unsicher_entfernt", quelle: "foto", text: "Modell nennt die Nährwerte unsicher – nicht verwendet" });
+            nw = null;
+          } else if (nw) {
+            const weg = NW_FELDER.filter((f) => unsicher.includes(f) && typeof nw![f] === "number");
+            if (weg.length) {
+              nw = { ...nw };
+              for (const f of weg) delete nw[f];
+              foto.befunde.push({ art: "unsicher_entfernt", quelle: "foto", text: `Modell nennt ${weg.join(", ")} unsicher – nicht verwendet` });
             }
           }
           foto.naehrwerte = nw;
