@@ -107,7 +107,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v7.1";
+const VERSION = "riki2 v7.1a";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -725,17 +725,18 @@ function nwUnterschiede(a: NW, b: NW): string[] {
 }
 // v7.1: Gezielte Nachlesung nur der Naehrwerttabelle – mit ANDERER Frage (je Wert die Nachbarzeilen), damit sie
 // nicht dieselben Fehler wiederholt. Nur bei Verdacht (Rechenprobe oder Widerspruch Code/Modell).
+// v7.1a: nur einfache Textfelder – die API erlaubt nur wenige „string|null"-Felder je Schema (28 waren zu viele, 400)
 const NACHLESE_FELD = { type: "object", additionalProperties: false, required: ["wert", "zeile_darueber", "zeile_darunter"],
-  properties: { wert: { type: ["string", "null"] }, zeile_darueber: { type: ["string", "null"] }, zeile_darunter: { type: ["string", "null"] } } };
+  properties: { wert: { type: "string" }, zeile_darueber: { type: "string" }, zeile_darunter: { type: "string" } } };
 const NACHLESE_SCHEMA = { type: "object", additionalProperties: false, required: ["spalte", ...NW_FELDER],
-  properties: { spalte: { type: ["string", "null"] }, ...Object.fromEntries(NW_FELDER.map((f) => [f, NACHLESE_FELD])) } };
+  properties: { spalte: { type: "string" }, ...Object.fromEntries(NW_FELDER.map((f) => [f, NACHLESE_FELD])) } };
 const NACHLESE_WORT: Record<string, string> = { kcal: "Brennwert in kcal", kj: "Brennwert in kJ", fett: "Fett", ges_fett: "davon gesättigte Fettsäuren",
   kh: "Kohlenhydrate", zucker: "davon Zucker", ballaststoffe: "Ballaststoffe", protein: "Eiweiß", salz: "Salz" };
 function nachleseAuftrag(zubereitet: boolean) {
   return `Schau NUR auf die Nährwerttabelle. Nimm die Spalte ${zubereitet ? "für das ZUBEREITETE Produkt (je 100 ml zubereitet)" : "je 100 g bzw. je 100 ml (nicht je Portion, nicht zubereitet)"} und nenne in "spalte" ihre Überschrift wörtlich.
 Gehe die Zeilen einzeln durch. Für jeden der folgenden Werte: suche zuerst die Zeile mit genau dieser Beschriftung, dann schreibe die Zahl in DIESER Zeile und DIESER Spalte wörtlich ab (mit Einheit, z. B. "8,0 g"), und nenne die Beschriftung der Zeile direkt darüber und direkt darunter.
 ${NW_FELDER.map((f) => `- ${f}: ${NACHLESE_WORT[f]}`).join("\n")}
-Gibt es die Zeile nicht oder ist die Zahl nicht sicher lesbar: wert null. Nichts schätzen, nichts umrechnen.`;
+Gibt es die Zeile nicht oder ist die Zahl nicht sicher lesbar: wert "" (leer). Fehlt eine Nachbarzeile: "". Nichts schätzen, nichts umrechnen.`;
 }
 function nachleseWerte(d: any): NW | null {
   const o: NW = {};
@@ -773,7 +774,7 @@ async function tabelleNachlesen(client: Anthropic, modell: string, fotos: string
   if (r?.stop_reason !== "end_turn") return { nw: null as NW | null, kosten, inT, outT, spalte: null as string | null };
   try {
     const d = JSON.parse((r?.content ?? []).filter((b: any) => b.type === "text").map((b: any) => b.text).join(""));
-    return { nw: nachleseWerte(d), kosten, inT, outT, spalte: d?.spalte ?? null };
+    return { nw: nachleseWerte(d), kosten, inT, outT, spalte: d?.spalte || null };
   } catch (_) {
     return { nw: null as NW | null, kosten, inT, outT, spalte: null as string | null };
   }
@@ -1239,7 +1240,8 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
             if (modellNW) abweichend = nwUnterschiede(t.nw!, modellNW);
             if (abweichend.length) foto.befunde.push({ art: "zuordnung_abweichend", quelle: "foto", text: `Tabelle (Code) und Modell ordnen anders zu: ${abweichend.map((f) => `${f} ${t.nw![f as keyof NW]} / ${modellNW![f as keyof NW]}`).join(", ")}` });
           } else if (Array.isArray(l.tabelle) && l.tabelle.length) {
-            foto.befunde.push({ art: "tabelle_unvollstaendig", quelle: "foto", text: "Tabelle abgeschrieben, aber nicht alle Grundwerte zuzuordnen – Modell-Zuordnung genommen" });
+            const ohne = (["kcal", "protein", "kh", "fett"] as const).filter((f) => typeof t.nw?.[f] !== "number");
+            foto.befunde.push({ art: "tabelle_unvollstaendig", quelle: "foto", text: `Tabelle abgeschrieben, aber ${ohne.join(", ")} nicht zuzuordnen (Spalte „${t.spalte ?? "?"}", Zeilen: ${l.tabelle.map((z: Zeile) => `${z.beschriftung}=${(z.werte ?? []).map((w) => w.wert).join("/")}`).join("; ").slice(0, 300)}) – Modell-Zuordnung genommen` });
           }
           // v7.1: Verdacht (Rechenprobe schlaegt an oder Zuordnungen widersprechen sich) -> nur die Tabelle gezielt nachlesen
           const sperrt = (x: NW | null) => !!x && pruefeNaehrwerte(x, String(l.name ?? ""), "foto").some((b) => b.sperrt);
