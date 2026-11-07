@@ -66,3 +66,6 @@ verify_jwt = false
 # (Web schickt Nutzer-Token oder den oeffentlichen Schluessel).
 [functions.off-lookup]
 verify_jwt = true
+
+[functions.play-kauf]
+verify_jwt = false
