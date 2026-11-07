@@ -1,6 +1,23 @@
 const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
 
+/* 07.11.2026 Werbe-Herkunft (W006 ff.): Links wie root-index.de/app?von=w006 oder /?von=w006.
+   Wert (nur a-z0-9-, max. 40) 30 Tage im Browser merken. Bei der Registrierung geht er als
+   Konto-Metadatum mit (Trigger in "Benutzer" uebernimmt ihn), nach der ersten Anmeldung
+   meldet riHerkunftMelden() ihn zusaetzlich per ri_herkunft_setzen. Server prueft: nur neue Konten. */
+const RI_HERKUNFT_KEY="ri_herkunft";
+(function(){ try{ var v=(new URLSearchParams(location.search).get('von')||'').trim().toLowerCase();
+  if(/^[a-z0-9-]{1,40}$/.test(v)) localStorage.setItem(RI_HERKUNFT_KEY, JSON.stringify({v:v,t:Date.now()}));
+}catch(_){} })();
+function riHerkunft(){ try{ var o=JSON.parse(localStorage.getItem(RI_HERKUNFT_KEY)||'null');
+  if(!o||!/^[a-z0-9-]{1,40}$/.test(o.v||'')) return null;
+  if(Date.now()-Number(o.t||0)>30*864e5){ localStorage.removeItem(RI_HERKUNFT_KEY); return null; }
+  return o.v; }catch(_){ return null; } }
+async function riHerkunftMelden(){ var v=riHerkunft(); if(!v) return;
+  try{ var r=await client.rpc('ri_herkunft_setzen',{p_herkunft:v});
+    if(!r.error && /^(gesetzt|schon_gesetzt|kein_neues_konto|ungueltig)$/.test(String(r.data))) localStorage.removeItem(RI_HERKUNFT_KEY);
+  }catch(_){} }
+
 const SCORE_TEIL = [
   ["p_zutaten","Zutatenqualität",30,1,"Zutaten"],
   ["p_zusatzstoffe","Zusatzstoffe",15,1,"Zusatzstoffe"],
@@ -1654,7 +1671,7 @@ async function pwRegistrieren(){
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ msg.style.color="var(--k-dc2626)"; msg.textContent="Bitte oben E-Mail eintragen."; return; }
   if(pass.length<6){ msg.style.color="var(--k-dc2626)"; msg.textContent="Bitte ein Passwort mit mindestens 6 Zeichen eintragen, dann Konto erstellen."; return; }
   msg.style.color="var(--k-374151)"; msg.textContent="⏳ Konto wird erstellt…";
-  const {error}=await client.auth.signUp({ email, password:pass, options:{ emailRedirectTo: location.origin+location.pathname } });
+  const {error}=await client.auth.signUp({ email, password:pass, options:{ emailRedirectTo: location.origin+location.pathname, data: riHerkunft()?{herkunft:riHerkunft()}:undefined } });
   if(error){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+error.message; return; }
   msg.style.color="var(--k-16a34a)";
   msg.innerHTML="🆕 Fast geschafft: Bestätigungs-Mail an <b>"+esc(email)+"</b> gesendet. Nach dem Klick kannst du dich mit E-Mail + Passwort anmelden.";
@@ -1687,7 +1704,7 @@ async function requestCode(){
   msg.style.color="var(--k-374151)"; msg.textContent="⏳ Prüfe E-Mail…";
   let exists=false; try{ const r=await client.rpc("cb_email_exists",{p_email:email}); exists=!!r.data; }catch(e){}
   msg.textContent = exists?"⏳ Sende Code…":"⏳ Neues Konto – sende Code…";
-  const {error}=await client.auth.signInWithOtp({ email, options:{ shouldCreateUser: !exists } });
+  const {error}=await client.auth.signInWithOtp({ email, options:{ shouldCreateUser: !exists, data: (!exists&&riHerkunft())?{herkunft:riHerkunft()}:undefined } });
   if(error){ msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+error.message; return; }
   document.getElementById("codeBox").style.display="block";
   const ci=document.getElementById("loginCode"); if(ci) setTimeout(()=>ci.focus(),60);
@@ -1714,6 +1731,7 @@ async function refreshMe(){
     try{ betaBadge(); }catch(e){}   /* Version/Entwickler-Badge hängt an ME */
     if(ME&&ME.benutzer_id) TB_USER=ME.benutzer_id;
     if(ME){ try{ riEinwilligungPruefen(); }catch(e){} }   /* GL-B7 24.09.2026 */
+    if(ME){ riHerkunftMelden(); }   /* 07.11.2026 Werbe-Herkunft */
     if(ME){ setTimeout(function(){ try{ rikiIndexNeuPruefen(); }catch(e){} }, 3000); }   /* 07.10.2026 */
   }catch(e){ ME=null; }
   await refreshMyFeatures();   /* auch ohne Login: die Gast-Stufe */
@@ -18178,7 +18196,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-05-02";
+const APP_BUILD="2026-11-07-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im

@@ -41,6 +41,18 @@ var APPSTORE_LINK = "https://apps.apple.com/de/app/id6818112011";
 var PLAY_LINK = "";               /* z. B. https://play.google.com/store/apps/details?id=de.rootindex.app */
 var WEB_LINK = "https://root-index.de/";
 
+/* 07.11.2026 Werbe-Herkunft: ?von=w006 merken (gleicher Schluessel wie app.js, 30 Tage).
+   Gilt fuer die Web-Anmeldung auf root-index.de. Fuer das iPhone geht der Wert als
+   App-Store-Kampagne (ct=) mit, sobald APPSTORE_PT (Anbieter-Kennung aus App Store Connect,
+   App-Analyse -> Kampagnen) eingetragen ist - dann zaehlt App Store Connect die Downloads je Werbung. */
+var APPSTORE_PT = "";
+var VON = "";
+try { VON = (new URLSearchParams(location.search).get("von") || "").trim().toLowerCase();
+  if (/^[a-z0-9-]{1,40}$/.test(VON)) localStorage.setItem("ri_herkunft", JSON.stringify({ v: VON, t: Date.now() })); else VON = "";
+} catch (e) { VON = ""; }
+if (VON && APPSTORE_PT) APPSTORE_LINK += "?pt=" + encodeURIComponent(APPSTORE_PT) + "&ct=" + encodeURIComponent(VON) + "&mt=8";
+if (VON) WEB_LINK += "?von=" + encodeURIComponent(VON);
+
 var ua = navigator.userAgent || "";
 var ios = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 var android = /Android/.test(ua);
