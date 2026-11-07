@@ -1,7 +1,7 @@
 {
-  "build": 202611011132,
-  "version": "1.0.5",
-  "notes": "Belege: gleiche Rechnung wird nicht doppelt abgelegt, Mail wird trotzdem verschoben; nur wirklich abgelegte Mails werden verschoben",
-  "url": "https://foldair.de/download/Foldair-1.0.5.update",
-  "sha256": "5af4fbea556fad77a52b11d1f3ac0b7d77205ea31859a33a7ef2c5eb921d0c64"
+  "build": 202611071411,
+  "version": "1.0.6",
+  "notes": "Neu: Spam-Wächter räumt Phishing und Spam weg (z. B. falsche Meta-Mails), Belege werden nach Firma abgelegt (Bereich › Firma › Jahr) und neue Firmen fragt Foldair einmal nach, übersichtliche Einstellungen als Kacheln",
+  "url": "https://foldair.de/download/Foldair-1.0.6.update",
+  "sha256": "254275cb00aa78000dd426ca0dab38dc5e575d9b050966ca3ccf41e1a693c556"
 }
