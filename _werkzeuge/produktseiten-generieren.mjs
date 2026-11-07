@@ -386,6 +386,7 @@ h1{font-weight:800;font-size:clamp(1.55rem,4.6vw,2.25rem);line-height:1.1;letter
 .zeile span:first-child{color:var(--mut)}.zeile b{font-weight:600}
 .zeile.davon span:first-child{padding-left:12px}
 p.einordnung{margin:26px 0 0;padding:14px 16px;border-left:3px solid var(--acc);background:var(--panel);border-radius:0 12px 12px 0}
+h2.vt{font-size:1.05rem;margin:26px 0 8px}p.vt{margin:0;line-height:1.6}ul.vt{margin:0;padding-left:18px;line-height:1.6}details.vt{margin:8px 0;padding:10px 14px;background:var(--panel);border-radius:12px}details.vt summary{font-weight:700;cursor:pointer}details.vt p{margin:8px 0 0;line-height:1.6}
 .appbtn{display:block;margin:22px 0 4px;padding:15px;border-radius:14px;background:var(--acc);color:#123018;font-weight:800;text-align:center;text-decoration:none;font-size:1rem}
 .appbtn span{display:block;font-weight:600;font-size:.78rem;opacity:.75}
 .liste a{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);color:var(--cream);text-decoration:none}
@@ -523,6 +524,53 @@ function achsenHtml(p) {
   }).join("");
 }
 
+/* 07.11.2026 (Ralph A): Google wertet viele Produktseiten als "zu duenn" (gecrawlt - nicht indexiert).
+   Mehr eigener, nuetzlicher Text - ausschliesslich aus den vorhandenen Daten, nichts erfunden:
+   warum die Punktzahl so ist (vier Saeulen), Vergleich mit der Kategorie, Zutaten nach Gruppen,
+   haeufige Fragen. Keine Gesundheitsversprechen, nur was der Root Index misst. */
+function vertiefung(p, kat, rang, zutaten, basis, marke) {
+  const score = num(p.clean_score);
+  if (score === null) return "";
+  const name = esc(p.name);
+  const z = (v) => String(v).replace(".", ",");
+  const saeulen = ACHSEN.map(([f, label, max, , k]) => {
+    const v = num(p[f]) === null ? null : Math.round(num(p[f]) * k * 10) / 10;
+    return { label, max, v, anteil: v === null ? null : v / max };
+  }).filter((s) => s.v !== null);
+  const teile = [];
+  if (saeulen.length >= 2) {
+    const sort = [...saeulen].sort((a, b) => b.anteil - a.anteil);
+    const top = sort[0], tief = sort[sort.length - 1];
+    teile.push(`Der Root Index setzt sich aus vier Säulen zusammen: Qualität der Zutaten (bis 30 Punkte), Zusatzstoffe (bis 15), Verarbeitungsgrad (bis 15) und Nährwerte (bis 40).`);
+    teile.push(top.anteil === tief.anteil
+      ? `Alle Säulen liegen etwa gleich auf.`
+      : `Am stärksten ist das Produkt bei <b>${top.label}</b> (${z(top.v)} von ${top.max}), die meisten Punkte verliert es bei <b>${tief.label}</b> (${z(tief.v)} von ${tief.max}).`);
+    const zs = saeulen.find((s) => s.label === "Zusatzstoffe");
+    if (zs) teile.push(zs.anteil >= 0.97 ? "Bei den Zusatzstoffen gibt es die volle Punktzahl – nichts, was abwertet."
+      : zs.anteil <= 0.5 ? `Zusatzstoffe kosten deutlich Punkte (${z(zs.v)} von 15).` : `Zusatzstoffe: ${z(zs.v)} von 15 Punkten.`);
+    const vb = saeulen.find((s) => s.label === "Verarbeitung");
+    if (vb) teile.push(vb.anteil >= 0.8 ? "Das Produkt ist wenig verarbeitet." : vb.anteil <= 0.4 ? "Das Produkt ist stark verarbeitet." : "Das Produkt ist mittelstark verarbeitet.");
+  }
+  if (rang && rang.schnitt !== null && rang.schnitt !== undefined && kat) {
+    const d = score - rang.schnitt;
+    teile.push(`Zum Vergleich: Die ${rang.gesamt} bewerteten Produkte in „${esc(kat)}“ erreichen im Schnitt ${rang.schnitt} Punkte – dieses Produkt liegt ${
+      d === 0 ? "genau im Schnitt" : `${Math.abs(d)} ${Math.abs(d) === 1 ? "Punkt" : "Punkte"} ${d > 0 ? "darüber" : "darunter"}`} (Platz ${rang.platz}).`);
+  }
+  // Zutaten nach Gruppen (nur wenn es etwas zu gruppieren gibt)
+  const gruppen = new Map();
+  for (const t of zutaten) { const g = t.kategorie || null; if (!g) continue; if (!gruppen.has(g)) gruppen.set(g, []); gruppen.get(g).push(t.name); }
+  const gruppenHtml = gruppen.size >= 2
+    ? `<h2 class="vt">Zutaten nach Gruppen</h2><ul class="vt">${[...gruppen].map(([g, l]) => `<li><b>${esc(g)}:</b> ${l.map(esc).join(", ")}</li>`).join("")}</ul>` : "";
+  // Haeufige Fragen
+  const fragen = [];
+  fragen.push([`Wie gut ist ${name}?`, `Der Root Index bewertet ${name}${marke ? " von " + esc(marke) : ""} mit ${score} von 100 Punkten${p.bewertung ? ` („${esc(p.bewertung)}“)` : ""}. Bewertet werden Zutaten, Zusatzstoffe, Verarbeitung und Nährwerte – keine Werbung, keine Hersteller-Angaben zur Wirkung.`]);
+  if (zutaten.length) fragen.push([`Welche Zutaten sind in ${name}?`, `${zutaten.length === 1 ? "Eine Zutat" : zutaten.length + " Zutaten"}${zutaten.length > 8 ? ", die ersten acht" : ""}: ${zutaten.slice(0, 8).map((t) => esc(t.name)).join(", ")}.`]);
+  if (num(p.m_zucker) !== null || num(p.m_salz) !== null) fragen.push([`Wie viel Zucker und Salz hat ${name}?`, [
+    num(p.m_zucker) !== null ? `${zahl(p.m_zucker)} g Zucker` : null, num(p.m_salz) !== null ? `${zahl(p.m_salz)} g Salz` : null].filter(Boolean).join(" und ") + ` je ${basis}.`]);
+  const fragenHtml = `<h2 class="vt">Häufige Fragen</h2>${fragen.map(([f, a]) => `<details class="vt" open><summary>${f}</summary><p>${a}</p></details>`).join("")}`;
+  return `<h2 class="vt">Warum ${score} von 100 Punkten?</h2><p class="vt">${teile.join(" ")}</p>${gruppenHtml}${fragenHtml}`;
+}
+
 function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const name = p.name;
   // Handelsmarken stehen im Stamm oft als Kommaliste ("Best Moments,Guschlbauer,Penny"):
@@ -619,6 +667,7 @@ ${zutaten.length ? `<span class="lab">In der Zutatenliste · ${zutaten.length}</
 ${p.spuren_hinweis ? `<p class="legende"><b>Allergiker-Hinweis vom Etikett:</b> ${esc(p.spuren_hinweis)} – Spuren sind keine Zutat und zählen nicht in den Root Index.</p>` : ""}
 ${nwHtml ? `<span class="lab">Nährwerte je ${basis}</span><div class="nw">${nwHtml}</div>` : ""}
 ${einordnung ? `<p class="einordnung">${einordnung}</p>` : ""}
+${vertiefung(p, kat, rang, zutaten, basis, marke)}
 <a class="appbtn" href="/?p=${encodeURIComponent(p.id)}">In der App öffnen<span>mit Tagebuch, Einkaufsliste und besseren Alternativen</span></a>
 ${alternativen && alternativen.length ? `<span class="lab">Besser bewertet${kat ? ` in ${esc(kat)}` : ""}</span><div class="liste">${
   alternativen.map((a) => `<a href="/produkt/${a.datei}"><span>${esc(a.name)}${a.marke ? ` <span style="color:var(--mut)">· ${esc(a.marke)}</span>` : ""}</span><b>${a.score}/100</b></a>`).join("")
@@ -754,9 +803,10 @@ async function main() {
     const bewertet = eintraege.filter((e) => num(e.p.clean_score) !== null)
       .sort((a, b) => num(b.p.clean_score) - num(a.p.clean_score));
     const platzVon = new Map(bewertet.map((e, i) => [e.p.id, i + 1]));
+    const katSchnitt = bewertet.length ? Math.round(bewertet.reduce((t, e) => t + num(e.p.clean_score), 0) / bewertet.length) : null;
     for (const { p, datei } of eintraege) {
       const rang = platzVon.has(p.id) && bewertet.length >= 3
-        ? { platz: platzVon.get(p.id), gesamt: bewertet.length } : null;
+        ? { platz: platzVon.get(p.id), gesamt: bewertet.length, schnitt: katSchnitt } : null;
       writeFileSync(join(ZIEL, datei), produktSeite(p, datei, katDatei, kat, querverweise(p, kat), rang));
       kandidaten.push({ url: `${DOMAIN}/produkt/${datei}`, q: qualitaet(p), score: num(p.clean_score) ?? -1, lastmod: p.verifiziert_am ? String(p.verifiziert_am).slice(0, 10) : null });
       geschrieben++;
