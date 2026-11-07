@@ -49,6 +49,7 @@ h1{font-weight:800;font-size:clamp(1.55rem,4.6vw,2.25rem);line-height:1.1;letter
 .zeile span:first-child{color:var(--mut)}.zeile b{font-weight:600}
 .zeile.davon span:first-child{padding-left:12px}
 p.einordnung{margin:26px 0 0;padding:14px 16px;border-left:3px solid var(--acc);background:var(--panel);border-radius:0 12px 12px 0}
+h2.vt{font-size:1.05rem;margin:26px 0 8px}p.vt{margin:0;line-height:1.6}ul.vt{margin:0;padding-left:18px;line-height:1.6}details.vt{margin:8px 0;padding:10px 14px;background:var(--panel);border-radius:12px}details.vt summary{font-weight:700;cursor:pointer}details.vt p{margin:8px 0 0;line-height:1.6}
 .appbtn{display:block;margin:22px 0 4px;padding:15px;border-radius:14px;background:var(--acc);color:#123018;font-weight:800;text-align:center;text-decoration:none;font-size:1rem}
 .appbtn span{display:block;font-weight:600;font-size:.78rem;opacity:.75}
 .liste a{display:flex;justify-content:space-between;gap:12px;padding:10px 2px;border-bottom:1px solid var(--line);color:var(--cream);text-decoration:none}
