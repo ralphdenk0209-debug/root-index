@@ -1,3 +1,6 @@
+// v2 (05.11.2026, Ralph A): Fotos ohne Naehrwerttabelle -> Name UND Marke vom Foto muessen zum Scan passen
+//   (name_marke_passt). Zutaten noetig, aber keine auf den Fotos -> Status keine_zutaten_auf_foto (endgueltig,
+//   kein zweites Bezahlen).
 // RIKI-OFF-FOTO v1 (03.11.2026, Ralph „ja“: „das sollte doch riki können“)
 //
 // WARUM: Scans ohne Zutatenliste/Naehrwerte blieben haengen, bis jemand ein Etikettfoto machte.
@@ -57,6 +60,20 @@ function istDeutsch(t: string): boolean {
   const de = (t.match(/\b(und|mit|aus|zucker|salz|speisesalz|wasser|milch|säuerungsmittel|emulgator|aroma|verdickungsmittel|stärke|weizenmehl|enthält)\b/gi) ?? []).length;
   const fremd = (t.match(/\b(ingredienti|ingrédients|ingredients|ingredientes|sucre|zucchero|azúcar|sugar|water|eau|acqua|agua|sel|sale|salt|lait|latte|leche|milk|farine|farina|harina|flour|huile|olio|aceite|oil|suiker|zout|melk)\b/gi) ?? []).length;
   return de >= 2 && de >= fremd;
+}
+
+function woerter(t: unknown): string[] {
+  return String(t ?? "").toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").split(/[^a-z0-9]+/).filter((w) => w.length >= 3);
+}
+/** v2: Name und Marke des Scans muessen auf dem Foto wiederzufinden sein. */
+function nameMarkePasst(scanName: unknown, scanMarke: unknown, fotoName: unknown, fotoMarke: unknown): boolean {
+  const foto = new Set([...woerter(fotoName), ...woerter(fotoMarke)]);
+  const n = woerter(scanName).filter((w) => !/^\d+$/.test(w));
+  const m = woerter(scanMarke);
+  if (!n.length || !m.length) return false;
+  const nTreffer = n.filter((w) => foto.has(w)).length / n.length;
+  const mTreffer = m.some((w) => foto.has(w));
+  return nTreffer >= 0.5 && mTreffer;
 }
 
 /** Bildauswahl: ausgewaehlte Zutaten-/Naehrwertfotos (deutsch zuerst), dann Rohfotos (neueste zuerst). */
@@ -174,8 +191,9 @@ async function einFall(sb: any, url: string, serviceKey: string, k: any) {
   else if (scanKcal !== null && fotoKcal !== null) {
     pruefung = Math.abs(scanKcal - fotoKcal) <= Math.max(10, 0.12 * scanKcal) ? "kcal_passt" : "kcal_anders";
   } else if (eanGleich) pruefung = "barcode_gleich";
+  else if (fotoKcal === null && nameMarkePasst(k.name, k.marke, v.name, v.marke)) pruefung = "name_marke_passt";
   else pruefung = "nicht_pruefbar";
-  if (!(pruefung === "kcal_passt" || pruefung === "barcode_gleich")) {
+  if (!(pruefung === "kcal_passt" || pruefung === "barcode_gleich" || pruefung === "name_marke_passt")) {
     await sb.rpc("cb_riki_off_foto_status", { p_ean: ean, p_status: "nicht_passend", p_ergebnis: { grund: `Foto nicht sicher dasselbe Produkt (${pruefung}, Scan ${scanKcal ?? "–"} kcal, Foto ${fotoKcal ?? "–"} kcal)`, fotos: geladen }, p_kosten: kosten });
     return { ean, status: "nicht_passend", pruefung };
   }
@@ -188,6 +206,10 @@ async function einFall(sb: any, url: string, serviceKey: string, k: any) {
     kosten += u.kosten;
     if (u.text && istDeutsch(u.text)) { rohtext = u.text; uebersetzt = true; }
     else rohtext = null; // lieber nichts als eine fremdsprachige Liste
+  }
+  if (k.braucht_zutaten && !rohtext && !(k.produkt_id && k.braucht_nw && Object.keys(nw).length)) {
+    await sb.rpc("cb_riki_off_foto_status", { p_ean: ean, p_status: "keine_zutaten_auf_foto", p_ergebnis: { grund: `Auf den ${geladen.length} Fotos steht keine (deutsche) Zutatenliste`, pruefung, fotos: geladen }, p_kosten: kosten });
+    return { ean, status: "keine_zutaten_auf_foto" };
   }
   if (!rohtext && Object.keys(nw).length === 0) {
     await sb.rpc("cb_riki_off_foto_status", { p_ean: ean, p_status: "nichts_gelesen", p_ergebnis: { grund: "Fotos zeigen weder Zutaten noch Nährwerte lesbar", fotos: geladen }, p_kosten: kosten });
