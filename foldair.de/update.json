@@ -1,7 +1,7 @@
 {
-  "build": 202611071411,
-  "version": "1.0.6",
-  "notes": "Neu: Spam-Wächter räumt Phishing und Spam weg (z. B. falsche Meta-Mails), Belege werden nach Firma abgelegt (Bereich › Firma › Jahr) und neue Firmen fragt Foldair einmal nach, übersichtliche Einstellungen als Kacheln",
-  "url": "https://foldair.de/download/Foldair-1.0.6.update",
-  "sha256": "254275cb00aa78000dd426ca0dab38dc5e575d9b050966ca3ccf41e1a693c556"
+  "build": 202611081113,
+  "version": "1.0.7",
+  "notes": "Neu: neues Logo, Server als Laufwerk (SFTP, FTP, FTPS, NAS, WebDAV) mit Fortschritt, zwei Ordner nebeneinander wie im Commander (F5–F8, Tab, Ordner vergleichen), ⌘Z für Dateiarbeit, Vorschau auch für Server-Dateien, schnellere Ordnergrößen, Symbolleiste mit Text, englische Oberfläche und eine einfache Anleitung (⌘?)",
+  "url": "https://foldair.de/download/Foldair-1.0.7.update",
+  "sha256": "8d16a3ebafd0da1111a2ba940f875979f2688679c4434b064db7b39f1f805491"
 }
