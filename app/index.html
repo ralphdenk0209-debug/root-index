@@ -45,7 +45,7 @@ var WEB_LINK = "https://root-index.de/";
    Gilt fuer die Web-Anmeldung auf root-index.de. Fuer das iPhone geht der Wert als
    App-Store-Kampagne (ct=) mit, sobald APPSTORE_PT (Anbieter-Kennung aus App Store Connect,
    App-Analyse -> Kampagnen) eingetragen ist - dann zaehlt App Store Connect die Downloads je Werbung. */
-var APPSTORE_PT = "";
+var APPSTORE_PT = "129545171"; // 08.11.2026 aus App Store Connect (Analyse › Kampagnen)
 var VON = "";
 try { VON = (new URLSearchParams(location.search).get("von") || "").trim().toLowerCase();
   if (/^[a-z0-9-]{1,40}$/.test(VON)) localStorage.setItem("ri_herkunft", JSON.stringify({ v: VON, t: Date.now() })); else VON = "";
