@@ -224,5 +224,30 @@
     else a.addEventListener("click", e => { e.preventDefault(); alert("Der Kauf ist in Kürze möglich. Bis dahin: 14 Tage kostenlos testen!"); });
   });
 </script>
+<script>
+/* Zähler (08.11.2026): Tagessummen ohne Cookie und ohne Kennung – Seitenaufrufe, Download- und Kauf-Klicks, Herkunft. */
+(function(){
+  try{
+    if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent)) return;
+    var U="https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/fd_zaehlen", K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+    var r=(document.referrer||"").toLowerCase(), ua=navigator.userAgent, h="", q="direkt";
+    try{ h=new URL(r).hostname; }catch(e){}
+    if(r){ q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/foldair\.de$/.test(h)?"intern":/reddit\./.test(h)?"reddit":/producthunt/.test(h)?"producthunt":/youtube|youtu\.be/.test(h)?"youtube":"andere"; }
+    if(/instagram\./.test(r)||/Instagram/.test(ua)) q="instagram"; else if(/facebook\.com|fb\.com|fb\.me/.test(r)||/FBAN|FBAV|FB_IAB/.test(ua)) q="facebook";
+    var m={ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter"};
+    var v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1];
+    try{ if(v&&m[v]) sessionStorage.setItem("fd_von",m[v]); var s=sessionStorage.getItem("fd_von"); if(s) q=s;
+         if(/[?&]intern=1/.test(location.search)) localStorage.setItem("fd_intern","1");
+         if(localStorage.getItem("fd_intern")==="1") q="eigen"; }catch(e){}
+    function z(e){ fetch(U,{method:"POST",keepalive:true,headers:{"apikey":K,"Content-Type":"application/json"},body:JSON.stringify({p_ereignis:e,p_quelle:q})}).catch(function(){}); }
+    z("seite");
+    document.addEventListener("click",function(ev){
+      var a=ev.target.closest&&ev.target.closest("a"); if(!a) return;
+      if(/Foldair\.dmg/.test(a.getAttribute("href")||"")) z("download");
+      else if(a.hasAttribute("data-kauf")) z("kaufen");
+    },true);
+  }catch(e){}
+})();
+</script>
 </body>
 </html>
