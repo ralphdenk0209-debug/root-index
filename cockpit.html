@@ -100,7 +100,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
 .kliste .kv i{display:block;height:6px;border-radius:3px;background:var(--acc);flex:0 0 auto}
 .kfuss{font-size:11.5px;color:var(--ink3);margin-top:8px}
 @media(max-width:900px){.karte{grid-template-columns:1fr}}
-.reihe2{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.reihe2{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .klein{background:var(--card);border-radius:18px;box-shadow:var(--out);padding:14px 18px;display:flex;flex-direction:column;gap:8px;min-width:0;color:inherit;border:1px solid transparent}
 .klein:hover{border-color:var(--acc)}
 /* 27.09.2026 (Ralph): Aufgaben-Fenster aus der Projekte-Karte */
@@ -263,7 +263,7 @@ body.eingebettet .right .nav,body.eingebettet .fuss{display:none}
   <a class="klein" href="admin.html"><h4>Stamm &amp; Katalog <span class="st" id="stSt"></span></h4>
    <div class="lead"><span class="n" id="stN">–</span><span class="u">Zutaten im Stamm</span></div>
    <div class="hb" id="stamm"></div></a>
-  <div class="klein" id="projKarte" style="cursor:pointer" onclick="aufgabenAuf()" title="Alle offenen Aufgaben anzeigen"><h4>Projekte <span class="st" id="projSt">fertig / gesamt</span></h4><div class="hb" id="projekte"></div><div style="font-size:12px;color:var(--acc)" id="projHinweis">Alle Aufgaben anzeigen ›</div></div>
+  <!-- 03.11.2026 (Ralph B): Karte „Projekte“ entfernt – Aufgaben stehen im Obsidian-Vault „Projekte“ -->
  </div>
  <div class="fuss">Jede Kachel ist ein Klick auf die Detailseite · Wächter-Kachel anklicken zeigt die Fälle · Farbe nur für Status · aktualisiert jede Minute.</div>
 </div>
@@ -377,8 +377,8 @@ function zeichnen(){
   $('stamm').innerHTML=prog([['Zutaten bewertet',Number(st.bewertet)||0,zut,'gruen'],['Zutaten in Produkten gebunden',geb,zut],['Produkte aktiv (Rest: Entwürfe)',akt,akt+ent,'gruen']])
     +`<div><span class="lab">Schnitt-Score aller aktiven Produkte</span><i class="${st.schnitt_score>=60?'gruen':'gelb'}" style="width:${Math.max(3,Number(st.schnitt_score)||0)}%"></i><span class="n">${st.schnitt_score!=null?Number(st.schnitt_score).toLocaleString('de-DE',{maximumFractionDigits:1}):'–'} / 100</span></div>`;
   const pr=M.projekte||[];
-  aufgabenZaehler();
-  $('projekte').innerHTML=pr.slice(0,6).map(x=>{const g=x.ok+x.offen,q=g?x.ok/g:0;return `<div><span class="lab">${esc(x.p)}</span><i class="${q>=1?'gruen':q>=.5?'':'gelb'}" style="width:${Math.max(3,100*q)}%"></i><span class="n">${x.ok}/${g}</span></div>`}).join('');
+  /* 03.11.2026: Projekte-Karte entfernt (Aufgaben im Vault) */
+  if($('projekte')) $('projekte').innerHTML=pr.slice(0,6).map(x=>{const g=x.ok+x.offen,q=g?x.ok/g:0;return `<div><span class="lab">${esc(x.p)}</span><i class="${q>=1?'gruen':q>=.5?'':'gelb'}" style="width:${Math.max(3,100*q)}%"></i><span class="n">${x.ok}/${g}</span></div>`}).join('');
 
   // Kette
   const k=A.kette;
@@ -797,4 +797,5 @@ async function dbLaden(){
 dbLaden(); setInterval(dbLaden,5000);
 
 </script>
+<script src="riki-geld-hinweis.js?v=1"></script><!-- 10.11.2026: Popup, wenn Riki nur noch 2 $ hat -->
 </body></html>
