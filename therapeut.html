@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Für Fachleute – Root Index</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="Root Index für Ernährungsfachleute: Klienten-Keys anlegen und verwalten.">
+<!-- therapeut.html · 11.11.2026 · FL-1 Fundament Fachleute-Zugang.
+     Eigene Anmeldung fuer Fachleute (E-Mail + Passwort, Passwort vergessen, Abmelden).
+     Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth).
+     Alles entscheidet der Server: cb_fp_ich, cb_fp_keys, cb_fp_key_anlegen, cb_fp_key_laufzeit,
+     cb_fp_key_beenden, cb_fp_key_bezeichnung, cb_fp_abrechnung. Freischalten als Fachperson:
+     nur Admin (cb_admin_fachperson_setzen). Dashboard mit Auswertungen kommt in FL-4. -->
+<link rel="icon" href="favicon-96.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+  :root{--gruen:#2e7d46;--dunkel:#133521;--creme:#F3EEDC;--text:#1f2a22;--muted:#5d6b61;--karte:#fff;--linie:#dfe6df;--hell:#7CFF9B;--rot:#b42318;--gelb:#fff8e6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .kopf{background:var(--dunkel);color:var(--creme);padding:14px 18px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .kopf a{color:var(--creme);text-decoration:none}
+  .kopf button{background:transparent;color:var(--creme);border:1px solid rgba(243,238,220,.4);border-radius:9px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+  .wrap{max-width:720px;margin:0 auto;padding:22px 16px 60px}
+  h1{font-size:26px;line-height:1.2;margin:4px 0 4px;color:var(--dunkel)}
+  .unter{color:var(--muted);margin:0 0 8px;font-size:15px}
+  .karte{background:var(--karte);border:1px solid var(--linie);border-radius:16px;padding:18px;margin:16px 0}
+  .karte h2{font-size:19px;margin:0 0 4px;color:var(--dunkel)}
+  .karte p{margin:0 0 12px;color:var(--muted);font-size:15px}
+  label{display:block;font-size:14px;font-weight:800;margin:10px 0 4px}
+  input,select{width:100%;padding:12px;border:1px solid var(--linie);border-radius:11px;font:inherit;font-size:17px;background:#fff;color:var(--text)}
+  .reihe{display:flex;gap:8px;align-items:end;flex-wrap:wrap}
+  .reihe > *{flex:1;min-width:110px}
+  .knopf{display:block;width:100%;text-align:center;background:var(--gruen);color:#fff;text-decoration:none;font-weight:800;border:0;border-radius:12px;padding:13px 16px;font:inherit;font-weight:800;font-size:16px;margin-top:14px;cursor:pointer}
+  .knopf.zwei{background:#fff;color:var(--dunkel);border:1px solid var(--linie)}
+  .knopf:disabled{opacity:.6}
+  .klein-knopf{background:#fff;color:var(--dunkel);border:1px solid var(--linie);border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .klein-knopf.rot{color:var(--rot);border-color:#f0c6c2}
+  .klein-knopf:disabled{opacity:.5}
+  .tabs{display:flex;gap:8px;margin-bottom:6px}
+  .tabs button{flex:1;padding:10px;border-radius:10px;border:1px solid var(--linie);background:#fff;font:inherit;font-weight:800;color:var(--muted);cursor:pointer;font-size:15px}
+  .tabs button.an{background:var(--dunkel);color:#fff;border-color:var(--dunkel)}
+  .meld{font-size:15px;margin-top:10px;min-height:1px}
+  .meld.fehler{color:var(--rot)} .meld.ok{color:var(--gruen)}
+  .link{background:none;border:0;color:var(--gruen);font:inherit;font-size:15px;text-decoration:underline;cursor:pointer;padding:0;margin-top:12px}
+  .hinweis{background:var(--gelb);border:1px solid #f3d27a;border-radius:12px;padding:12px 14px;font-size:14px;color:#5b4500;margin-top:12px}
+  .check{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:15px;margin-top:12px}
+  .check input{width:22px;height:22px;flex:0 0 22px;margin-top:1px}
+  .zahlen{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .zahl{background:var(--creme);border-radius:12px;padding:10px;text-align:center}
+  .zahl b{display:block;font-size:24px;color:var(--dunkel)}
+  .zahl span{font-size:13px;color:var(--muted)}
+  .neu-code{background:var(--dunkel);color:var(--creme);border-radius:14px;padding:16px;margin-top:14px;text-align:center}
+  .neu-code .c{font-size:24px;font-weight:800;letter-spacing:.08em;color:#fff}
+  .neu-code .l{font-size:13px;word-break:break-all;color:rgba(243,238,220,.8);margin:6px 0 10px}
+  .key{border:1px solid var(--linie);border-radius:14px;padding:14px;margin-top:10px}
+  .key-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+  .key-code{font-weight:800;letter-spacing:.06em;color:var(--dunkel)}
+  .key-bez{color:var(--muted);font-size:15px}
+  .chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800;margin:2px 4px 2px 0}
+  .chip.laeuft{background:#dff3e5;color:var(--gruen)} .chip.offen{background:#eef1f7;color:#3a4a6b}
+  .chip.abgelaufen,.chip.beendet{background:#f1f1f1;color:#666}
+  .chip.erteilt{background:#dff3e5;color:var(--gruen)} .chip.keine{background:var(--gelb);color:#7a5a00} .chip.widerrufen{background:#fde7e5;color:var(--rot)}
+  .key-info{font-size:15px;margin:6px 0 0}
+  .aktionen{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .aktionen input,.aktionen select{width:auto;padding:7px 9px;font-size:15px;border-radius:9px}
+  .aktionen input{width:64px}
+  .leer{color:var(--muted);font-size:15px;text-align:center;padding:10px}
+  .filter{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
+  .filter button{border:1px solid var(--linie);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;cursor:pointer;color:var(--muted)}
+  .filter button.an{background:var(--dunkel);border-color:var(--dunkel);color:#fff}
+  .vertrag{background:var(--creme);border-radius:12px;padding:12px 14px;font-size:15px;max-height:340px;overflow:auto}
+  .vertrag p{margin:0 0 8px;color:var(--text);font-size:15px}
+  .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  [hidden]{display:none!important}
+  @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
+</style>
+</head>
+<body>
+<div class="kopf"><a href="https://root-index.de">Root Index™ · Für Fachleute</a><button id="abmelden" type="button" hidden>Abmelden</button></div>
+<div class="wrap">
+
+  <!-- Anmelden / Konto anlegen -->
+  <section id="bLogin" hidden>
+    <h1>Anmeldung für Fachleute</h1>
+    <p class="unter">Für Ernährungsfachleute, die ihre Klientinnen und Klienten mit Root Index begleiten.</p>
+    <div class="karte">
+      <div class="tabs">
+        <button id="tabAn" class="an" type="button">Anmelden</button>
+        <button id="tabNeu" type="button">Konto anlegen</button>
+      </div>
+      <label for="mail">E-Mail</label>
+      <input id="mail" type="email" autocomplete="email" inputmode="email" placeholder="name@praxis.de">
+      <label for="pass">Passwort <span id="passRegel" hidden>(mind. 8 Zeichen)</span></label>
+      <input id="pass" type="password" autocomplete="current-password" placeholder="••••••••">
+      <button class="knopf" id="los" type="button">Anmelden</button>
+      <div class="meld" id="meldLogin"></div>
+      <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
+      <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir dein Konto als Fachperson frei. Bitte gib uns kurz Bescheid: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+    </div>
+  </section>
+
+  <!-- Bestaetigungs-Mail / Reset-Mail -->
+  <section id="bMail" hidden>
+    <div class="karte">
+      <h2 id="mailTitel">Bitte E-Mail bestätigen</h2>
+      <p id="mailText"></p>
+      <button class="knopf zwei" type="button" onclick="zeige('bLogin')">Zurück zur Anmeldung</button>
+    </div>
+  </section>
+
+  <!-- Neues Passwort (nach Link aus der Mail) -->
+  <section id="bNeuPass" hidden>
+    <div class="karte">
+      <h2>Neues Passwort festlegen</h2>
+      <label for="neuPass">Neues Passwort (mind. 8 Zeichen)</label>
+      <input id="neuPass" type="password" autocomplete="new-password">
+      <button class="knopf" id="neuPassLos" type="button">Passwort speichern</button>
+      <div class="meld" id="meldNeuPass"></div>
+    </div>
+  </section>
+
+  <!-- Angemeldet, aber noch nicht freigeschaltet -->
+  <section id="bWartet" hidden>
+    <div class="karte">
+      <h2>Noch nicht freigeschaltet</h2>
+      <p>Du bist als <b id="wartetMail"></b> angemeldet. Dieses Konto ist noch nicht als Fachperson freigeschaltet.</p>
+      <p style="margin:0">Bitte schreib uns kurz mit deinem Namen und deiner Praxis: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>. Danach diese Seite neu laden.</p>
+    </div>
+  </section>
+
+  <!-- Verschwiegenheitsvereinbarung Root Index <-> Fachperson (Pflicht, je Version) -->
+  <section id="bVertrag" hidden>
+    <div class="karte">
+      <h2 id="vertragTitel">Verschwiegenheitsvereinbarung</h2>
+      <p>Bevor du loslegst, bestätige bitte die Vereinbarung zwischen dir und Root Index.</p>
+      <div class="vertrag" id="vertragText"></div>
+      <label class="check"><input type="checkbox" id="vertragOk"><span>Ich habe die Vereinbarung gelesen und stimme ihr zu.</span></label>
+      <button class="knopf" id="vertragLos" type="button">Bestätigen und weiter</button>
+      <div class="meld" id="meldVertrag"></div>
+    </div>
+  </section>
+
+  <!-- Fachperson -->
+  <section id="bHaupt" hidden>
+    <h1 id="hName">–</h1>
+    <p class="unter" id="hPraxis"></p>
+
+    <div class="karte">
+      <h2>Neuer Klienten-Key</h2>
+      <p>Jeder Key ist für genau eine Person. Die Laufzeit beginnt, wenn sie den Key einlöst. Danach kannst du sie jederzeit verlängern, kürzen oder beenden.</p>
+      <label for="neuBez">Deine Notiz zum Key (nur für dich sichtbar)</label>
+      <input id="neuBez" maxlength="80" placeholder="z. B. Initialen oder Termin – bitte keine Diagnosen">
+      <div class="reihe">
+        <div><label for="neuMenge">Laufzeit</label><input id="neuMenge" type="number" min="1" max="730" value="3" inputmode="numeric"></div>
+        <div><label for="neuEinheit">&nbsp;</label>
+          <select id="neuEinheit"><option value="tage">Tage</option><option value="wochen">Wochen</option><option value="monate" selected>Monate</option></select></div>
+      </div>
+      <label class="check" id="vereinbarungZeile" hidden><input type="checkbox" id="vereinbarung">
+        <span>Ich habe mit meinen Klientinnen und Klienten eine Vereinbarung zur Verschwiegenheit getroffen und erfülle sie. <span style="color:var(--muted)">(einmalig beim ersten Key)</span></span></label>
+      <button class="knopf" id="anlegen" type="button">Key anlegen</button>
+      <div class="meld" id="meldNeu"></div>
+      <div class="neu-code" id="neuCode" hidden>
+        <div style="font-size:14px;color:rgba(243,238,220,.8)">Neuer Key</div>
+        <div class="c" id="neuCodeText"></div>
+        <div class="l" id="neuCodeLink"></div>
+        <button class="klein-knopf" id="neuCodeKopieren" type="button">Link kopieren</button>
+      </div>
+      <p style="margin:12px 0 0;font-size:14px">So geht's weiter: Gib den Link deiner Klientin. Sie legt damit ein Konto an, bekommt Premium für die Laufzeit und entscheidet selbst, ob du ihre Einträge sehen darfst. Ohne ihre Einwilligung siehst du nichts.</p>
+    </div>
+
+    <div class="karte">
+      <h2>Diesen Monat</h2>
+      <div class="zahlen">
+        <div class="zahl"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
+        <div class="zahl"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
+        <div class="zahl"><b id="zNeu">–</b><span>neu eingelöst</span></div>
+      </div>
+      <p style="margin:10px 0 0;font-size:13px" id="zRegel">Grundlage der monatlichen Abrechnung.</p>
+    </div>
+
+    <div class="karte">
+      <h2>Deine Keys und Klienten</h2>
+      <div class="filter" id="filter">
+        <button data-f="aktiv" class="an" type="button">Aktiv &amp; offen</button>
+        <button data-f="alle" type="button">Alle</button>
+      </div>
+      <div id="liste"><div class="leer">Lädt …</div></div>
+      <div class="meld" id="meldListe"></div>
+    </div>
+  </section>
+
+  <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+</div>
+
+<script>
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+// Link aus der "Passwort vergessen"-Mail: vor dem Client merken, der raeumt die Adresse sofort auf
+let inRecovery = /type=recovery/.test(location.hash);
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit", storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
+const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
+const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
+const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bHaupt'];
+function zeige(id){ BEREICHE.forEach(b => $(b).hidden = (b!==id)); $('abmelden').hidden = !['bWartet','bVertrag','bHaupt'].includes(id); }
+function meld(el, t, art){ const m=$(el); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
+let ICH = null, KEYS = [], FILTER = 'aktiv', modus = 'an';
+
+/* ---------- Anmelden ---------- */
+function setModus(m){
+  modus = m;
+  $('tabAn').classList.toggle('an', m==='an'); $('tabNeu').classList.toggle('an', m==='neu');
+  $('los').textContent = m==='an' ? 'Anmelden' : 'Konto anlegen';
+  $('pass').autocomplete = m==='an' ? 'current-password' : 'new-password';
+  $('passRegel').hidden = m==='an'; $('neuHinweis').hidden = m==='an'; $('vergessen').hidden = m!=='an';
+  meld('meldLogin','');
+}
+$('tabAn').onclick = () => setModus('an');
+$('tabNeu').onclick = () => setModus('neu');
+$('pass').addEventListener('keydown', e => { if(e.key==='Enter') $('los').click(); });
+
+$('los').onclick = async function(){
+  const email = $('mail').value.trim(), pass = $('pass').value;
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldLogin','Bitte eine gültige E-Mail eintragen.','fehler');
+  if(modus==='neu' && pass.length < 8) return meld('meldLogin','Das Passwort braucht mindestens 8 Zeichen.','fehler');
+  if(!pass) return meld('meldLogin','Bitte das Passwort eintragen.','fehler');
+  this.disabled = true; meld('meldLogin','⏳ Einen Moment …');
+  try{
+    if(modus==='neu'){
+      const {data, error} = await client.auth.signUp({ email, password: pass, options:{ emailRedirectTo: location.origin + location.pathname } });
+      if(error){
+        if(/registered|exists/i.test(error.message)){ setModus('an'); meld('meldLogin','Diese E-Mail hat schon ein Konto – bitte anmelden.','fehler'); }
+        else meld('meldLogin','Fehler: ' + error.message,'fehler');
+        return;
+      }
+      if(data.session) return start();
+      $('mailTitel').textContent = 'Bitte E-Mail bestätigen';
+      $('mailText').innerHTML = 'Wir haben dir eine Mail an <b>' + esc(email) + '</b> geschickt. Tippe dort auf den Link – du landest wieder hier. Keine Mail da? Schau im Spam-Ordner nach.';
+      zeige('bMail');
+    } else {
+      const {error} = await client.auth.signInWithPassword({ email, password: pass });
+      if(error) return meld('meldLogin', /invalid/i.test(error.message) ? 'E-Mail oder Passwort stimmt nicht.' : ('Fehler: ' + error.message), 'fehler');
+      $('pass').value = '';
+      start();
+    }
+  } finally { this.disabled = false; }
+};
+
+$('vergessen').onclick = async function(){
+  const email = $('mail').value.trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldLogin','Bitte oben zuerst deine E-Mail eintragen.','fehler');
+  this.disabled = true;
+  const {error} = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+  this.disabled = false;
+  if(error) return meld('meldLogin','Fehler: ' + error.message,'fehler');
+  $('mailTitel').textContent = 'Mail ist unterwegs';
+  $('mailText').innerHTML = 'Wenn es zu <b>' + esc(email) + '</b> ein Konto gibt, kommt gleich eine Mail mit einem Link. Darüber legst du ein neues Passwort fest.';
+  zeige('bMail');
+};
+
+$('neuPassLos').onclick = async function(){
+  const p = $('neuPass').value;
+  if(p.length < 8) return meld('meldNeuPass','Mindestens 8 Zeichen.','fehler');
+  this.disabled = true;
+  const {error} = await client.auth.updateUser({ password: p });
+  this.disabled = false;
+  if(error) return meld('meldNeuPass','Fehler: ' + error.message,'fehler');
+  inRecovery = false; $('neuPass').value = '';
+  meld('meldNeuPass','✓ Gespeichert.','ok');
+  setTimeout(start, 600);
+};
+
+$('abmelden').onclick = async () => { await client.auth.signOut(); ICH = null; KEYS = []; setModus('an'); zeige('bLogin'); };
+
+client.auth.onAuthStateChange((ev) => {
+  if(ev === 'PASSWORD_RECOVERY'){ inRecovery = true; zeige('bNeuPass'); }
+});
+
+/* ---------- Start ---------- */
+async function start(){
+  if(inRecovery){ zeige('bNeuPass'); return; }
+  const {data:{session}} = await client.auth.getSession();
+  if(!session){ zeige('bLogin'); return; }
+  try{ await client.rpc('cb_link_me'); }catch(e){}
+  const {data, error} = await client.rpc('cb_fp_ich');
+  const d = json(data);
+  if(error){ zeige('bLogin'); meld('meldLogin','Fehler: ' + error.message,'fehler'); return; }
+  if(!d.fachperson){ $('wartetMail').textContent = d.email || session.user.email || ''; zeige('bWartet'); return; }
+  ICH = d;
+  if(d.lizenz_ok === false){
+    $('wartetMail').textContent = d.email || '';
+    $('bWartet').querySelector('h2').textContent = 'Lizenz abgelaufen';
+    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Du bist als <b>' + esc(d.email||'') + '</b> angemeldet. Deine Lizenz ist abgelaufen, deshalb sind Keys und Klienten gerade gesperrt.';
+    zeige('bWartet'); return;
+  }
+  if(!d.vertrag_ok){
+    $('vertragTitel').textContent = d.vertrag_titel || 'Verschwiegenheitsvereinbarung';
+    $('vertragText').innerHTML = String(d.vertrag_text||'').split(/\n\s*\n/).map(x => '<p>' + esc(x) + '</p>').join('');
+    $('vertragOk').checked = false; meld('meldVertrag','');
+    zeige('bVertrag'); return;
+  }
+  $('hName').textContent = d.name;
+  $('hPraxis').textContent = [d.praxis, d.email].filter(Boolean).join(' · ');
+  $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
+  zeige('bHaupt');
+  ladeAlles();
+}
+async function ladeAlles(){ await Promise.all([ladeKeys(), ladeZahlen()]); }
+
+async function ladeZahlen(){
+  const {data, error} = await client.rpc('cb_fp_abrechnung', {p_monat: null});
+  if(error) return;
+  const d = json(data);
+  const euro = c => (Number(c||0)/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+  $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
+  $('zBetrag').textContent = d.betrag_cent==null ? '–' : euro(d.betrag_cent);
+  $('zRegel').textContent = (d.abrechnung==='tag'
+      ? 'Abrechnung tagesgenau: ' + euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage).'
+      : 'Abrechnung: ' + euro(d.preis_cent) + ' je Key und Monat. Jeder angefangene Monat zählt voll.') + ' Grundlage der monatlichen Rechnung, Stand heute.';
+}
+
+$('vertragLos').onclick = async function(){
+  if(!$('vertragOk').checked) return meld('meldVertrag','Bitte das Häkchen setzen.','fehler');
+  this.disabled = true;
+  const {data, error} = await client.rpc('cb_fp_vertrag_bestaetigen', { p_version: ICH && ICH.vertrag_version });
+  this.disabled = false;
+  const d = json(data);
+  if(error || !d.ok) return meld('meldVertrag', error ? error.message : d.grund, 'fehler');
+  start();
+};
+
+/* ---------- Key anlegen ---------- */
+$('anlegen').onclick = async function(){
+  const menge = parseInt($('neuMenge').value, 10), einheit = $('neuEinheit').value;
+  if(!(menge >= 1)) return meld('meldNeu','Bitte eine Laufzeit eintragen.','fehler');
+  const tage = einheit==='tage' ? menge : einheit==='wochen' ? menge*7 : tageFuerMonate(menge);
+  if(tage > 730) return meld('meldNeu','Höchstens 2 Jahre.','fehler');
+  if(!$('vereinbarungZeile').hidden && !$('vereinbarung').checked) return meld('meldNeu','Bitte zuerst die Vereinbarung zur Verschwiegenheit bestätigen.','fehler');
+  this.disabled = true; meld('meldNeu','⏳ …');
+  const {data, error} = await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
+  this.disabled = false;
+  const d = json(data);
+  if(error || !d.ok){ meld('meldNeu', error ? error.message : d.grund, 'fehler'); if(d.vereinbarung_noetig) $('vereinbarungZeile').hidden = false; return; }
+  meld('meldNeu','');
+  $('neuBez').value = ''; $('vereinbarungZeile').hidden = true;
+  $('neuCodeText').textContent = d.code; $('neuCodeLink').textContent = d.link; $('neuCode').hidden = false;
+  $('neuCodeKopieren').onclick = () => kopiere(d.link, $('neuCodeKopieren'));
+  ladeAlles();
+};
+/* Monate fuer einen noch nicht eingeloesten Key: Kalendermonate ab heute in Tage umrechnen (Server rechnet beim Aendern genauso) */
+function tageFuerMonate(m){ const a = new Date(); a.setHours(12,0,0,0); const b = new Date(a); b.setMonth(b.getMonth()+m); return Math.round((b-a)/86400000); }
+async function kopiere(text, knopf){
+  try{ await navigator.clipboard.writeText(text); const alt = knopf.textContent; knopf.textContent = '✓ Kopiert'; setTimeout(()=>knopf.textContent = alt, 1500); }
+  catch(e){ prompt('Link kopieren:', text); }
+}
+
+/* ---------- Liste ---------- */
+document.querySelectorAll('#filter button').forEach(b => b.onclick = () => {
+  FILTER = b.dataset.f; document.querySelectorAll('#filter button').forEach(x => x.classList.toggle('an', x===b)); zeichne();
+});
+async function ladeKeys(){
+  const {data, error} = await client.rpc('cb_fp_keys');
+  if(error){ $('liste').innerHTML = '<div class="leer">Konnte die Liste nicht laden: ' + esc(error.message) + '</div>'; return; }
+  KEYS = Array.isArray(data) ? data : json(data);
+  zeichne();
+}
+const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abgelaufen', beendet:'Beendet'};
+const EINW = {erteilt:'Einwilligung erteilt', keine:'Keine Einwilligung', widerrufen:'Einwilligung widerrufen'};
+function zeichne(){
+  const liste = KEYS.filter(k => FILTER==='alle' || k.status==='offen' || k.status==='laeuft');
+  if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : 'Noch keine Keys. Leg oben den ersten an.') + '</div>'; return; }
+  $('liste').innerHTML = liste.map(k => {
+    let info;
+    if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.';
+    else if(k.status==='laeuft') info = 'Seit ' + datum(k.start_am) + ', läuft bis <b>' + datum(k.laeuft_bis) + '</b> (noch ' + restTage(k.laeuft_bis) + ' Tage).';
+    else if(k.status==='abgelaufen') info = 'Lief vom ' + datum(k.start_am) + ' bis ' + datum(k.laeuft_bis) + '.';
+    else info = 'Beendet am ' + datum(k.beendet_am) + (k.start_am ? ' (eingelöst am ' + datum(k.start_am) + ')' : ' (nie eingelöst)') + '.' +
+      (k.beendet_grund==='wechsel' ? ' Die Person ist zu einer anderen Fachperson gewechselt.' : k.beendet_grund==='admin' ? ' Beendet durch Root Index.' : '');
+    let klient = '';
+    if(k.status!=='offen'){
+      klient = '<div class="key-info">' + (k.klient_name ? 'Klient/in: <b>' + esc(k.klient_name) + '</b>' + (k.aeltere_freigegeben ? ' · alle Einträge freigegeben' : k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
+        (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, siehst du keine Daten.' + (k.status==='laeuft' && !k.besprochen ? ' Die Bestätigung „über Verschwiegenheit gesprochen“ fehlt noch.' : ''))) + '</div>';
+    }
+    const aktiv = k.status==='offen' || k.status==='laeuft' || k.status==='abgelaufen';
+    const aktionen = k.status==='beendet' ? '' :
+      '<div class="aktionen">' +
+        '<input type="number" min="1" max="730" value="1" aria-label="Anzahl" data-menge>' +
+        '<select aria-label="Einheit" data-einheit><option value="tage">Tage</option><option value="wochen">Wochen</option><option value="monate" selected>Monate</option></select>' +
+        '<button class="klein-knopf" data-akt="plus" type="button">Verlängern</button>' +
+        (k.status!=='abgelaufen' ? '<button class="klein-knopf" data-akt="minus" type="button">Kürzen</button>' : '') +
+        (k.status==='offen' ? '<button class="klein-knopf" data-akt="link" type="button">Link kopieren</button>' : '') +
+        '<button class="klein-knopf" data-akt="bez" type="button">Notiz ändern</button>' +
+        '<button class="klein-knopf rot" data-akt="ende" type="button">Beenden</button>' +
+      '</div>';
+    return '<div class="key" data-code="' + esc(k.code) + '">' +
+      '<div class="key-kopf"><div><div class="key-code">' + esc(k.code) + '</div>' + (k.bezeichnung ? '<div class="key-bez">' + esc(k.bezeichnung) + '</div>' : '') + '</div>' +
+      '<div><span class="chip ' + esc(k.status) + '">' + STATUS[k.status] + '</span>' + (k.status!=='offen' ? '<span class="chip ' + esc(k.einwilligung) + '">' + EINW[k.einwilligung] + '</span>' : '') + '</div></div>' +
+      '<div class="key-info">' + info + '</div>' + klient + (aktiv ? aktionen : '') + '<div class="meld"></div></div>';
+  }).join('');
+}
+$('liste').addEventListener('click', async e => {
+  const b = e.target.closest('button[data-akt]'); if(!b) return;
+  const box = b.closest('.key'), code = box.dataset.code, k = KEYS.find(x => x.code===code), m = box.querySelector('.meld');
+  const setM = (t, art) => { m.textContent = t||''; m.className = 'meld' + (art?' '+art:''); };
+  const akt = b.dataset.akt;
+  if(akt==='link') return kopiere('https://root-index.de/klientin.html?code=' + encodeURIComponent(code), b);
+  let rpc, args;
+  if(akt==='plus' || akt==='minus'){
+    const menge = parseInt(box.querySelector('[data-menge]').value, 10), einheit = box.querySelector('[data-einheit]').value;
+    if(!(menge >= 1)) return setM('Bitte eine Anzahl eintragen.','fehler');
+    const name = {tage:menge===1?'Tag':'Tage', wochen:menge===1?'Woche':'Wochen', monate:menge===1?'Monat':'Monate'}[einheit];
+    if(akt==='minus' && !confirm('Laufzeit von ' + code + ' um ' + menge + ' ' + name + ' kürzen?' + (k.status==='laeuft' ? ' Ist die neue Laufzeit vorbei, endet der Zugang sofort.' : ''))) return;
+    rpc = 'cb_fp_key_laufzeit'; args = { p_code: code, p_menge: akt==='plus' ? menge : -menge, p_einheit: einheit };
+  } else if(akt==='bez'){
+    const t = prompt('Deine Notiz zu ' + code + ' (nur für dich sichtbar, bitte keine Diagnosen):', k.bezeichnung || '');
+    if(t===null) return;
+    rpc = 'cb_fp_key_bezeichnung'; args = { p_code: code, p_bezeichnung: t };
+  } else if(akt==='ende'){
+    if(!confirm('Key ' + code + ' endgültig beenden? Premium und dein Zugriff enden sofort. Das lässt sich nicht rückgängig machen.')) return;
+    rpc = 'cb_fp_key_beenden'; args = { p_code: code };
+  }
+  box.querySelectorAll('button').forEach(x => x.disabled = true); setM('⏳ …');
+  const {data, error} = await client.rpc(rpc, args);
+  const d = json(data);
+  if(error || !d.ok){ box.querySelectorAll('button').forEach(x => x.disabled = false); return setM(error ? error.message : d.grund, 'fehler'); }
+  ladeAlles();
+});
+
+start();
+</script>
+</body>
+</html>
