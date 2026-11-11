@@ -14,7 +14,6 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="fachleute-dashboard.js?v=2"></script>
-<script src="fachleute-fl5.js?v=1"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
   @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
@@ -61,7 +60,7 @@
     <div class="karte">
       <h2>Was zu sehen ist und was noch kommt</h2>
       <p class="unter">Je Person: Tag, Woche und Monat · Gemüse und Obst in Gramm gegen die DGE-Orientierung · Kalorien und Makros gegen eigene Vorgaben · alle gegessenen Produkte mit Root-Index-Score · Rezepte und Wochenplanung.</p>
-      <div class="bald"><b>Je Person zusätzlich:</b> Bericht zum Drucken oder als PDF und Ernährungspläne mit Ist gegen Plan. Im eigenen Konto: Pläne schreiben, die die Person in ihren Wochenplan und auf die Einkaufsliste übernimmt, und Rezepte gezielt teilen und gemeinsam bearbeiten.</div>
+      <div class="bald"><b>In Planung:</b> Rezepte gemeinsam mit der Klientin anlegen und teilen.</div>
       <div class="bald"><b>Vorführung anfragen:</b> per E-Mail an <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a></div>
       <div class="bald"><b>Wünsche?</b> In der <a href="fachleute-wuensche.html">Wunschliste der Fachleute</a> sehen alle Therapeutinnen alle Wünsche und können „Ich auch“ sagen (Anmeldung nötig).</div>
     </div>
@@ -69,7 +68,6 @@
 
   <section id="bKlient" hidden>
     <button class="zurueck" id="zurueck" type="button">‹ Alle Klienten</button>
-    <div id="fl5"></div>
     <div id="dash"></div>
   </section>
 
@@ -111,12 +109,10 @@ function route(){
   if(!m || !PRAXIS){ zeige('bPraxis'); return; }
   const nr = Number(m[1]);
   zeige('bKlient');
-  const laden = (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: TOKEN, p_nr: nr, p_von: von, p_bis: bis});
-  const k = (PRAXIS.klienten||[]).find(x => x.nr===nr) || {};
-  $('fl5').innerHTML = ''; $('fl5').className = '';
-  FL5.mount($('fl5'), { muster: true, nr, token: TOKEN, code: k.code, name: k.name, heute: PRAXIS.heute,   // FL-5: Bericht und Pläne
-    praxis: PRAXIS.praxis || 'Praxis Muster', fachperson: 'Musterpraxis (erfundene Daten)', rpc, ladeDashboard: laden });
-  FLDash.mount($('dash'), { heute: PRAXIS.heute, nurLesen: true, laden });
+  FLDash.mount($('dash'), {
+    heute: PRAXIS.heute, nurLesen: true,
+    laden: (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: TOKEN, p_nr: nr, p_von: von, p_bis: bis})
+  });
 }
 window.addEventListener('hashchange', route);
 $('zurueck').onclick = () => { location.hash = ''; };
