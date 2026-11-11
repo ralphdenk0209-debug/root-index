@@ -86,7 +86,7 @@ const CSS = `
 .fd details summary{cursor:pointer;font-weight:800;color:var(--fd-dunkel);font-size:15px}
 .fd .fd-laden{color:var(--fd-muted);padding:30px 0;text-align:center}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
-@media (max-width:560px){ .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
+@media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
 `;
 function css(){ if(document.getElementById('fd-css')) return; const s=document.createElement('style'); s.id='fd-css'; s.textContent=CSS; document.head.appendChild(s); }
 
