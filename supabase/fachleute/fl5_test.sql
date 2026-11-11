@@ -181,7 +181,7 @@ begin
   insert into _erg(ok,txt) values ((select count(*) from public."Wochenplan" where "Benutzer_ID" = 'U-fl5test-k1') = 3, 'Erneut übernehmen ersetzt, keine Doppelten');
   -- Tagebuch für Ist gegen Plan: vorgestern nichts, gestern das Planrezept
   insert into public."Ernaehrungstagebuch"("Benutzer_ID","Datum","Mahlzeit","Produkt_ID","Menge_g","Rezept_ID") values
-    ('U-fl5test-k1',heute-1,'Mittag','P274',150,r1), ('U-fl5test-k1',heute-1,'Snack','P195',100);
+    ('U-fl5test-k1',heute-1,'Mittag','P274',150,r1), ('U-fl5test-k1',heute-1,'Snack','P195',100,null);
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k2)::text, true);
   begin perform public.cb_fl5_plan_uebernehmen(pl, false); insert into _erg(ok,txt) values (false,'K2 übernimmt fremden Plan!');

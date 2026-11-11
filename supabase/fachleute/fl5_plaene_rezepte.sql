@@ -469,7 +469,7 @@ begin
   select * into k from public._fp_klient(p_code);
   return jsonb_build_object('ok', true, 'plaene', coalesce((
     select jsonb_agg(public._fl5_plan_json(p.id, k.benutzer_id, true)
-             || jsonb_build_object('uebernommen_am', (select u.am from public.fl5_plan_uebernahme u where u.plan_id = p.id)))
+             || jsonb_build_object('uebernommen_am', (select u.am from public.fl5_plan_uebernahme u where u.plan_id = p.id))
              order by p.von desc, p.id desc)
       from public.fl5_plan p where p.code = c and p.fachperson_auth = v.auth_id), '[]'::jsonb));
 end $f$;
@@ -564,7 +564,7 @@ begin
   return jsonb_build_object('ok', true,
     'fachperson', jsonb_build_object('name', f.name, 'praxis', f.praxis),
     'plaene', coalesce((select jsonb_agg(public._fl5_plan_json(p.id, null, false)
-                         || jsonb_build_object('uebernommen_am', (select u.am from public.fl5_plan_uebernahme u where u.plan_id = p.id and u.klient_auth = auth.uid())))
+                         || jsonb_build_object('uebernommen_am', (select u.am from public.fl5_plan_uebernahme u where u.plan_id = p.id and u.klient_auth = auth.uid()))
                          order by p.von desc, p.id desc)
                  from public.fl5_plan p where p.code = c and p.geteilt_am is not null), '[]'::jsonb),
     'rezepte', coalesce((select jsonb_agg(jsonb_build_object('rezept_id', r."Rezept_ID", 'name', r."Rezeptname", 'kcal_portion', r."Kcal_Portion",
