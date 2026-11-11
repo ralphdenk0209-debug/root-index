@@ -34,11 +34,13 @@ insert into public.fachleute_einstellung(schluessel, wert, notiz) values
 on conflict (schluessel) do nothing;
 
 -- 1) Rolle Fachperson + Verschwiegenheitsvertrag ------------------------
-create table if not exists public.fachperson (
+-- public.fachperson (seit 26.10., Kuerzel-Verzeichnis GOERGENS/RALPH, cb_admin_fachperson_*)
+-- bleibt unveraendert. Das Konto mit Login haengt ueber das Kuerzel daran.
+create table if not exists public.fachperson_konto (
   auth_id uuid primary key references auth.users(id),
   name text not null,
   praxis text,
-  kuerzel text not null unique check (kuerzel ~ '^[A-Z0-9]{2,12}$'),
+  kuerzel text not null unique references public.fachperson(kuerzel),
   aktiv boolean not null default true,
   seit timestamptz not null default now(),
   vereinbarung_bestaetigt_am timestamptz,   -- "Verschwiegenheit mit Klienten vereinbart und erfuellt", Pflicht beim ersten Key
@@ -50,8 +52,8 @@ create table if not exists public.fachperson (
   lizenz_intervall text check (lizenz_intervall is null or lizenz_intervall in ('monat','jahr')),
   notiz text
 );
-alter table public.fachperson enable row level security;
-revoke all on public.fachperson from anon, authenticated;
+alter table public.fachperson_konto enable row level security;
+revoke all on public.fachperson_konto from anon, authenticated;
 
 create table if not exists public.fachperson_vertrag_text (
   version text primary key,
@@ -69,7 +71,7 @@ Sinngemäß: Ich behandle alle Informationen über Root Index, die ich als Fachp
 on conflict (version) do nothing;
 
 create table if not exists public.fachperson_vertrag_bestaetigung (
-  auth_id uuid not null references public.fachperson(auth_id),
+  auth_id uuid not null references public.fachperson_konto(auth_id),
   version text not null references public.fachperson_vertrag_text(version),
   am timestamptz not null default now(),
   primary key (auth_id, version)
@@ -79,7 +81,7 @@ revoke all on public.fachperson_vertrag_bestaetigung from anon, authenticated;
 
 -- 2) Keys: gratis_code erweitern ---------------------------------------
 alter table public.gratis_code
-  add column if not exists fachperson_auth uuid references public.fachperson(auth_id),
+  add column if not exists fachperson_auth uuid references public.fachperson_konto(auth_id),
   add column if not exists klient_auth uuid references auth.users(id) on delete set null,
   add column if not exists bezeichnung text,          -- eigene Notiz der Fachperson (z. B. "Frau M.")
   add column if not exists start_am timestamptz,      -- Einloesung = Laufzeitbeginn
@@ -160,16 +162,16 @@ $$;
 -- Lizenz gueltig? Gruenderin immer; bezahlte Lizenz bis lizenz_bis (null = offen)
 create or replace function public._fp_lizenz_ok(p_auth uuid)
 returns boolean language sql stable security definer set search_path to 'public' as $$
-  select exists (select 1 from public.fachperson f where f.auth_id = p_auth and f.aktiv
+  select exists (select 1 from public.fachperson_konto f where f.auth_id = p_auth and f.aktiv
                     and (f.lizenz_art = 'gruenderin_gratis' or f.lizenz_bis is null or f.lizenz_bis > now()));
 $$;
 
 -- Angemeldete Fachperson: aktiv, Lizenz gueltig UND aktueller Vertrag bestaetigt, sonst Fehler
-create or replace function public._fp_ich() returns public.fachperson
+create or replace function public._fp_ich() returns public.fachperson_konto
 language plpgsql stable security definer set search_path to 'public' as $$
-declare v public.fachperson;
+declare v public.fachperson_konto;
 begin
-  select * into v from public.fachperson where auth_id = auth.uid() and aktiv;
+  select * into v from public.fachperson_konto where auth_id = auth.uid() and aktiv;
   if v.auth_id is null then raise exception 'Nur für freigeschaltete Fachleute.' using errcode = '42501'; end if;
   if not public._fp_lizenz_ok(v.auth_id) then raise exception 'Deine Lizenz ist abgelaufen. Bitte melde dich bei Root Index.' using errcode = '42501'; end if;
   if not public._fp_vertrag_ok(v.auth_id) then raise exception 'Bitte zuerst die Verschwiegenheitsvereinbarung bestätigen.' using errcode = '42501'; end if;
@@ -186,7 +188,7 @@ begin
   select b."Benutzer_ID", case when e.aeltere_freigegeben then date '1900-01-01' else e.daten_ab end
     into benutzer_id, daten_ab
     from public.gratis_code g
-    join public.fachperson f on f.auth_id = g.fachperson_auth and f.aktiv
+    join public.fachperson_konto f on f.auth_id = g.fachperson_auth and f.aktiv
     join public.fachperson_einwilligung e on e.code = g.code and e.klient_auth = g.klient_auth
     join public."Benutzer" b on b.auth_id = g.klient_auth
    where g.code = upper(trim(p_code))
@@ -208,7 +210,7 @@ returns boolean language sql stable security definer set search_path to 'public'
         or coalesce(b.subscription_status = 'active', false)
         or coalesce(b.subscription_status = 'trialing' and b.trial_bis > now(), false)
       from public."Benutzer" b where b.auth_id = p_auth limit 1), false)
-  or exists (select 1 from public.fachperson f where f.auth_id = p_auth and f.aktiv
+  or exists (select 1 from public.fachperson_konto f where f.auth_id = p_auth and f.aktiv
                and (f.lizenz_art = 'gruenderin_gratis' or f.lizenz_bis is null or f.lizenz_bis > now()))
   or exists (select 1 from public.gratis_code g
               where g.klient_auth = p_auth and g.fachperson_auth is not null
@@ -226,7 +228,7 @@ $$;
 -- 5) Code-Einloesung (klientin.html) erweitern ---------------------------
 create or replace function public.cb_gratis_code_info(p_code text)
 returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
-declare v public.gratis_code; v_fp public.fachperson;
+declare v public.gratis_code; v_fp public.fachperson_konto;
 begin
   select * into v from public.gratis_code where code = upper(trim(p_code));
   if not found or not v.aktiv then return jsonb_build_object('gueltig',false,'grund','Diesen Code gibt es nicht.'); end if;
@@ -234,7 +236,7 @@ begin
   if v.beendet_am is not null then return jsonb_build_object('gueltig',false,'grund','Der Code wurde beendet.'); end if;
   if v.max_einloesungen is not null and v.eingeloest >= v.max_einloesungen then return jsonb_build_object('gueltig',false,'grund','Der Code wurde schon eingelöst.'); end if;
   if v.fachperson_auth is not null then
-    select * into v_fp from public.fachperson where auth_id = v.fachperson_auth;
+    select * into v_fp from public.fachperson_konto where auth_id = v.fachperson_auth;
     if not coalesce(v_fp.aktiv,false) then return jsonb_build_object('gueltig',false,'grund','Der Code ist nicht mehr gültig.'); end if;
     return jsonb_build_object('gueltig',true,'tage',v.tage,'fachperson',v_fp.name,'praxis',v_fp.praxis);
   end if;
@@ -246,7 +248,7 @@ drop function if exists public.cb_gratis_code_einloesen(text);
 create or replace function public.cb_gratis_code_einloesen(p_code text, p_wechsel boolean default false)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
 declare v_uid uuid := auth.uid(); v_c public.gratis_code; v_bis timestamptz; v_code text := upper(trim(p_code));
-        v_fp public.fachperson; v_alt record;
+        v_fp public.fachperson_konto; v_alt record;
 begin
   if v_uid is null then return jsonb_build_object('ok',false,'grund','Bitte zuerst anmelden.'); end if;
   perform public.cb_link_me();   -- Benutzer-Zeile sicherstellen (sonst ginge die Testzeit verloren)
@@ -259,13 +261,13 @@ begin
   if v_c.max_einloesungen is not null and v_c.eingeloest >= v_c.max_einloesungen then return jsonb_build_object('ok',false,'grund','Der Code ist schon aufgebraucht.'); end if;
 
   if v_c.fachperson_auth is not null then
-    select * into v_fp from public.fachperson where auth_id = v_c.fachperson_auth;
+    select * into v_fp from public.fachperson_konto where auth_id = v_c.fachperson_auth;
     if not coalesce(v_fp.aktiv,false) then return jsonb_build_object('ok',false,'grund','Der Code ist nicht mehr gültig.'); end if;
     if v_c.fachperson_auth = v_uid then return jsonb_build_object('ok',false,'grund','Den eigenen Klienten-Code kann man nicht selbst einlösen.'); end if;
     -- Ein Klient hat immer nur EINE Fachperson
     perform pg_advisory_xact_lock(hashtext('fp_klient:' || v_uid::text));
     select g.code, g.fachperson_auth, f.name into v_alt
-      from public.gratis_code g join public.fachperson f on f.auth_id = g.fachperson_auth
+      from public.gratis_code g join public.fachperson_konto f on f.auth_id = g.fachperson_auth
      where g.klient_auth = v_uid and public._fp_key_laeuft(g) limit 1;
     if v_alt.code is not null then
       if v_alt.fachperson_auth = v_c.fachperson_auth then
@@ -338,7 +340,7 @@ begin
         'text_aeltere', replace(replace(t.text_aeltere, '{fachperson}', f.name), '{ab}', to_char(w.ab, 'DD.MM.YYYY')),
         'text_besprochen', replace(t.text_besprochen, '{fachperson}', f.name)) j
       from public.gratis_code g
-      join public.fachperson f on f.auth_id = g.fachperson_auth
+      join public.fachperson_konto f on f.auth_id = g.fachperson_auth
       left join public.fachperson_einwilligung e on e.code = g.code
       cross join lateral (select f.name || coalesce(' (' || f.praxis || ')','') wer,
                                  coalesce(case when e.einwilligung_am is not null and e.widerruf_am is null then e.daten_ab end, v_heute) ab) w
@@ -398,11 +400,11 @@ end $$;
 -- 7) Fachperson: Konto, Vertrag, Keys ------------------------------------
 create or replace function public.cb_fp_ich()
 returns jsonb language plpgsql stable security definer set search_path to 'public', 'auth' as $$
-declare v public.fachperson; v_mail text; t public.fachperson_vertrag_text;
+declare v public.fachperson_konto; v_mail text; t public.fachperson_vertrag_text;
 begin
   if auth.uid() is null then return jsonb_build_object('fachperson',false,'angemeldet',false); end if;
   select email into v_mail from auth.users where id = auth.uid();
-  select * into v from public.fachperson where auth_id = auth.uid() and aktiv;
+  select * into v from public.fachperson_konto where auth_id = auth.uid() and aktiv;
   if v.auth_id is null then return jsonb_build_object('fachperson',false,'angemeldet',true,'email',v_mail); end if;
   select * into t from public.fachperson_vertrag_text where version = public._fp_vertrag_aktuell();
   return jsonb_build_object('fachperson',true,'angemeldet',true,'name',v.name,'praxis',v.praxis,'kuerzel',v.kuerzel,'email',v_mail,
@@ -418,7 +420,7 @@ create or replace function public.cb_fp_vertrag_bestaetigen(p_version text)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
 declare v_ver text := public._fp_vertrag_aktuell();
 begin
-  if not exists (select 1 from public.fachperson where auth_id = auth.uid() and aktiv) then
+  if not exists (select 1 from public.fachperson_konto where auth_id = auth.uid() and aktiv) then
     raise exception 'Nur für freigeschaltete Fachleute.' using errcode = '42501'; end if;
   if p_version is distinct from v_ver then return jsonb_build_object('ok',false,'grund','Der Vertragstext hat sich geändert. Bitte Seite neu laden.'); end if;
   insert into public.fachperson_vertrag_bestaetigung(auth_id, version) values (auth.uid(), v_ver) on conflict do nothing;
@@ -427,7 +429,7 @@ end $$;
 
 create or replace function public.cb_fp_keys()
 returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich();
+declare v public.fachperson_konto := public._fp_ich();
 begin
   return coalesce((
     select jsonb_agg(jsonb_build_object(
@@ -452,13 +454,13 @@ end $$;
 
 create or replace function public.cb_fp_key_anlegen(p_tage integer, p_bezeichnung text default null, p_vereinbarung_bestaetigt boolean default false)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich(); v_code text; v_z text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; i int;
+declare v public.fachperson_konto := public._fp_ich(); v_code text; v_z text := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; i int;
 begin
   if p_tage is null or p_tage < 1 or p_tage > 730 then return jsonb_build_object('ok',false,'grund','Laufzeit: 1 Tag bis 2 Jahre.'); end if;
   if v.vereinbarung_bestaetigt_am is null then
     if not coalesce(p_vereinbarung_bestaetigt,false) then
       return jsonb_build_object('ok',false,'grund','Bitte bestätige zuerst die Vereinbarung zur Verschwiegenheit mit deinen Klienten.','vereinbarung_noetig',true); end if;
-    update public.fachperson set vereinbarung_bestaetigt_am = now() where auth_id = v.auth_id;
+    update public.fachperson_konto set vereinbarung_bestaetigt_am = now() where auth_id = v.auth_id;
   end if;
   loop
     v_code := v.kuerzel || '-';
@@ -473,7 +475,7 @@ end $$;
 -- Laufzeit verlaengern (p_menge > 0) oder kuerzen (p_menge < 0); Einheit tage|wochen|monate
 create or replace function public.cb_fp_key_laufzeit(p_code text, p_menge integer, p_einheit text default 'tage')
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich(); g public.gratis_code; v_iv interval; v_tage int; v_bis timestamptz;
+declare v public.fachperson_konto := public._fp_ich(); g public.gratis_code; v_iv interval; v_tage int; v_bis timestamptz;
 begin
   select * into g from public.gratis_code where code = upper(trim(p_code)) and fachperson_auth = v.auth_id for update;
   if not found then raise exception 'Diesen Key gibt es bei dir nicht.' using errcode = '42501'; end if;
@@ -508,7 +510,7 @@ end $$;
 
 create or replace function public.cb_fp_key_beenden(p_code text)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich();
+declare v public.fachperson_konto := public._fp_ich();
 begin
   update public.gratis_code set beendet_am = now(), beendet_grund = 'fachperson', aktiv = false,
          laeuft_bis = case when laeuft_bis > now() then now() else laeuft_bis end
@@ -519,7 +521,7 @@ end $$;
 
 create or replace function public.cb_fp_key_bezeichnung(p_code text, p_bezeichnung text)
 returns jsonb language plpgsql security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich();
+declare v public.fachperson_konto := public._fp_ich();
 begin
   update public.gratis_code set bezeichnung = nullif(left(trim(coalesce(p_bezeichnung,'')),80),'')
    where code = upper(trim(p_code)) and fachperson_auth = v.auth_id;
@@ -551,7 +553,7 @@ end $$;
 -- Endtag nicht; jeder gestartete Key zaehlt mindestens 1 Tag). Laufende
 -- Keys zaehlen nur bis jetzt, nicht im Voraus.
 create or replace function public._fp_key_tage(p_start timestamptz, p_ende timestamptz, p_monat date)
-returns integer language sql immutable as $$
+returns integer language sql immutable set search_path to pg_catalog as $$
   with t as (
     select (p_start at time zone 'Europe/Berlin')::date s,
            greatest((p_ende at time zone 'Europe/Berlin')::date, (p_start at time zone 'Europe/Berlin')::date + 1) e,
@@ -581,7 +583,7 @@ language sql stable security definer set search_path to 'public' as $$
            count(k.tage) filter (where k.tage > 0)::int aktiv,
            coalesce(sum(k.tage),0)::int tage,
            count(k.start_am) filter (where date_trunc('month', k.start_am at time zone 'Europe/Berlin')::date = m.monat)::int neu
-      from public.fachperson f cross join m
+      from public.fachperson_konto f cross join m
       left join k on k.fachperson_auth = f.auth_id
      where (p_fp is null or f.auth_id = p_fp)
      group by f.auth_id, m.monat)
@@ -590,12 +592,12 @@ language sql stable security definer set search_path to 'public' as $$
               then round(z.tage * e.preis::numeric / extract(day from (z.monat + interval '1 month' - interval '1 day')))::int
               else z.aktiv * e.preis end,
          f.lizenz_art, f.lizenz_preis_cent, f.lizenz_intervall, f.lizenz_bis
-    from z cross join e join public.fachperson f on f.auth_id = z.auth_id;
+    from z cross join e join public.fachperson_konto f on f.auth_id = z.auth_id;
 $$;
 
 create or replace function public.cb_fp_abrechnung(p_monat date default null)
 returns jsonb language plpgsql stable security definer set search_path to 'public' as $$
-declare v public.fachperson := public._fp_ich(); r record;
+declare v public.fachperson_konto := public._fp_ich(); r record;
 begin
   select * into r from public._fp_abrechnung(v.auth_id, p_monat);
   return jsonb_build_object('monat', r.monat, 'keys_aktiv', r.keys_aktiv, 'key_tage', r.key_tage, 'keys_neu', r.keys_neu,
@@ -659,22 +661,28 @@ create or replace function public.cb_admin_fachperson_setzen(p_email text, p_nam
                                                              p_lizenz_art text default null, p_lizenz_bis timestamptz default null,
                                                              p_lizenz_preis_cent integer default null, p_lizenz_intervall text default null)
 returns jsonb language plpgsql security definer set search_path to 'public', 'auth' as $$
-declare v_uid uuid; v_alt public.fachperson; v_kz text := upper(regexp_replace(coalesce(p_kuerzel,''),'[^A-Za-z0-9]','','g'));
+declare v_uid uuid; v_alt public.fachperson_konto; v_kz text := upper(regexp_replace(coalesce(p_kuerzel,''),'[^A-Za-z0-9]','','g'));
 begin
   if not public.cb_ist_admin() then raise exception 'Nur Admins.' using errcode = '42501'; end if;
   select id into v_uid from auth.users where lower(email) = lower(trim(p_email)) limit 1;
   if v_uid is null then return jsonb_build_object('ok',false,'grund','Zu dieser E-Mail gibt es noch kein Konto. Die Fachperson legt es auf root-index.de/therapeut.html an.'); end if;
-  select * into v_alt from public.fachperson where auth_id = v_uid;
+  select * into v_alt from public.fachperson_konto where auth_id = v_uid;
   if v_alt.auth_id is null then
     if coalesce(p_name,'') = '' or v_kz = '' then return jsonb_build_object('ok',false,'grund','Name und Kürzel nötig.'); end if;
     if p_lizenz_art is null then return jsonb_build_object('ok',false,'grund','Lizenzart nötig: gruenderin_gratis oder lizenz_bezahlt.'); end if;
-    insert into public.fachperson(auth_id, name, praxis, kuerzel, aktiv, lizenz_art, lizenz_bis, lizenz_preis_cent, lizenz_intervall)
+    if v_kz !~ '^[A-Z0-9]{3,16}$' then return jsonb_build_object('ok',false,'grund','Kürzel: 3–16 Buchstaben oder Ziffern.'); end if;
+    if exists (select 1 from public.fachperson_konto k where k.kuerzel = v_kz) then return jsonb_build_object('ok',false,'grund','Kürzel gehört schon zu einem anderen Konto.'); end if;
+    -- Kuerzel-Verzeichnis (vorhanden seit 26.10.) ergaenzen, falls neu
+    insert into public.fachperson(kuerzel, name, email, eigener_code, klienten_code, status)
+    values (v_kz, trim(p_name), lower(trim(p_email)), '-', v_kz || '-*', 'konto')
+    on conflict (kuerzel) do nothing;
+    insert into public.fachperson_konto(auth_id, name, praxis, kuerzel, aktiv, lizenz_art, lizenz_bis, lizenz_preis_cent, lizenz_intervall)
     values (v_uid, trim(p_name), nullif(trim(coalesce(p_praxis,'')),''), v_kz, coalesce(p_aktiv,true),
             p_lizenz_art, p_lizenz_bis, p_lizenz_preis_cent, p_lizenz_intervall);
   else
-    update public.fachperson set name = coalesce(nullif(trim(coalesce(p_name,'')),''), name),
+    update public.fachperson_konto set name = coalesce(nullif(trim(coalesce(p_name,'')),''), name),
            praxis = coalesce(nullif(trim(coalesce(p_praxis,'')),''), praxis),
-           kuerzel = coalesce(nullif(v_kz,''), kuerzel), aktiv = coalesce(p_aktiv, aktiv),
+           aktiv = coalesce(p_aktiv, aktiv),   -- Kuerzel bleibt fest (steckt in den ausgegebenen Codes)
            lizenz_art = coalesce(p_lizenz_art, lizenz_art), lizenz_bis = coalesce(p_lizenz_bis, lizenz_bis),
            lizenz_preis_cent = coalesce(p_lizenz_preis_cent, lizenz_preis_cent), lizenz_intervall = coalesce(p_lizenz_intervall, lizenz_intervall)
      where auth_id = v_uid;
@@ -685,7 +693,7 @@ begin
            laeuft_bis = case when laeuft_bis > now() then now() else laeuft_bis end
      where fachperson_auth = v_uid and beendet_am is null;
   end if;
-  return jsonb_build_object('ok',true,'fachperson',(select to_jsonb(f) from public.fachperson f where auth_id = v_uid));
+  return jsonb_build_object('ok',true,'fachperson',(select to_jsonb(f) from public.fachperson_konto f where auth_id = v_uid));
 end $$;
 
 create or replace function public.cb_admin_fachleute(p_monat date default null)
@@ -700,7 +708,7 @@ begin
              'abrechnung',a.abrechnung,'betrag_cent',a.betrag_cent,
              'lizenz_art',a.lizenz_art,'lizenz_preis_cent',a.lizenz_preis_cent,'lizenz_intervall',a.lizenz_intervall,'lizenz_bis',a.lizenz_bis,
              'keys_gesamt',(select count(*) from public.gratis_code g where g.fachperson_auth = f.auth_id)) order by f.name)
-      from public.fachperson f
+      from public.fachperson_konto f
       join public._fp_abrechnung(null, p_monat) a on a.fachperson_auth = f.auth_id), '[]'::jsonb);
 end $$;
 
