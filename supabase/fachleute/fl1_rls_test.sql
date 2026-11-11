@@ -64,6 +64,15 @@ begin
   insert into _erg(ok,txt) values ((select vereinbarung_bestaetigt_am is not null from public.fachperson_konto where auth_id=t1), 'Klienten-Vereinbarung mit Zeitstempel gespeichert');
   j := public.cb_fp_key_anlegen(14,'Herr Zwei bei T1'); c := j->>'code';
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'T1 legt Key C an (spaeter fuer Uebertrag K2)');
+  -- Einlöse-Link per E-Mail: Pruefung, Sperre
+  j := public.cb_fp_key_mail_vorbereiten(a, 'kein-mail');
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Mail: ungueltige Adresse abgelehnt');
+  j := public.cb_fp_key_mail_vorbereiten(a, 'Klientin@Example.invalid');
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->>'an'='klientin@example.invalid' and j->>'link' like '%klientin.html?code='||a, 'Mail: T1 bereitet Versand fuer A vor');
+  perform public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  perform public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  j := public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Mail: 4. Mail je Key und Tag gesperrt');
 
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   perform public.cb_fp_vertrag_bestaetigen(vv);
@@ -78,11 +87,15 @@ begin
   exception when others then insert into _erg(ok,txt) values (true,'T2 kann A nicht beenden'); end;
   begin perform public.cb_fp_key_bezeichnung(a,'x'); insert into _erg(ok,txt) values (false,'T2 benennt A um!');
   exception when others then insert into _erg(ok,txt) values (true,'T2 kann A nicht umbenennen'); end;
+  begin perform public.cb_fp_key_mail_vorbereiten(a,'x@example.invalid'); insert into _erg(ok,txt) values (false,'T2 verschickt Mail fuer fremden Key A!');
+  exception when others then insert into _erg(ok,txt) values (true,'Mail: T2 kann fuer A nichts verschicken'); end;
 
   -- Einloesen: K1 -> A, K2 -> B
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
   j := public.cb_gratis_code_einloesen(a);
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and (j->>'einwilligung_offen')::boolean and not (j->>'eigenes_abo')::boolean, 'K1 loest A ein');
+  insert into _erg(ok,txt) values (not exists(select 1 from public.fp_key_mail_log where code=a and an_email is not null)
+                               and (select count(*) from public.fp_key_mail_log where code=a)=3, 'Mail: E-Mail nach Einloesen geloescht, Protokoll bleibt');
   insert into _erg(ok,txt) values (public.cb_ist_premium(k1), 'K1 hat Premium ueber Key');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k2)::text, true);
   j := public.cb_gratis_code_einloesen(a);
@@ -234,6 +247,8 @@ begin
   exception when others then insert into _erg(ok,txt) values (true,'gratis_code direkt gesperrt'); end;
   begin perform 1 from public.fachperson_konto limit 1; insert into _erg(ok,txt) values (false,'authenticated liest fachperson!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson direkt gesperrt'); end;
+  begin perform 1 from public.fp_key_mail_log limit 1; insert into _erg(ok,txt) values (false,'authenticated liest Mail-Protokoll!');
+  exception when others then insert into _erg(ok,txt) values (true,'fp_key_mail_log direkt gesperrt'); end;
   begin perform 1 from public.fachperson_einwilligung limit 1; insert into _erg(ok,txt) values (false,'authenticated liest einwilligung!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson_einwilligung direkt gesperrt'); end;
   begin perform * from public._fp_klient(c); insert into _erg(ok,txt) values (false,'authenticated ruft _fp_klient!');

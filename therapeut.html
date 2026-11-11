@@ -14,6 +14,7 @@
      nur Admin (cb_admin_fachperson_setzen). Dashboard mit Auswertungen kommt in FL-4. -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
   @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
@@ -74,6 +75,22 @@
   .vertrag{background:var(--creme);border-radius:12px;padding:12px 14px;font-size:15px;max-height:340px;overflow:auto}
   .vertrag p{margin:0 0 8px;color:var(--text);font-size:15px}
   .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:0 20px 60px rgba(0,0,0,.25)}
+  dialog::backdrop{background:rgba(19,53,33,.45)}
+  .dlg{padding:20px}
+  .dlg h2{margin:0 0 6px;font-size:19px;color:var(--dunkel)}
+  .dlg p{margin:0 0 10px;color:var(--muted);font-size:15px}
+  .dlg .reihe-k{display:flex;gap:8px;margin-top:14px}
+  .dlg .reihe-k .knopf{margin-top:0}
+  #qrKarte{width:100%;border-radius:12px;display:block;margin:6px 0 4px}
+  #druck{display:none}
+  @media print{
+    @page{margin:15mm}
+    body{background:#fff}
+    body > *:not(#druck){display:none!important}
+    #druck{display:block!important}
+    #druck img{width:85mm;height:55mm;border-radius:3mm}
+  }
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -166,7 +183,11 @@
         <div style="font-size:14px;color:rgba(243,238,220,.8)">Neuer Key</div>
         <div class="c" id="neuCodeText"></div>
         <div class="l" id="neuCodeLink"></div>
-        <button class="klein-knopf" id="neuCodeKopieren" type="button">Link kopieren</button>
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <button class="klein-knopf" id="neuCodeMail" type="button">Per E-Mail senden</button>
+          <button class="klein-knopf" id="neuCodeQr" type="button">QR-Code</button>
+          <button class="klein-knopf" id="neuCodeKopieren" type="button">Link kopieren</button>
+        </div>
       </div>
       <p style="margin:12px 0 0;font-size:14px">So geht's weiter: Gib den Link deiner Klientin. Sie legt damit ein Konto an, bekommt Premium für die Laufzeit und entscheidet selbst, ob du ihre Einträge sehen darfst. Ohne ihre Einwilligung siehst du nichts.</p>
     </div>
@@ -194,6 +215,27 @@
 
   <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
 </div>
+
+<!-- Einlöse-Link per E-Mail (Edge-Funktion fp-key-mail) -->
+<dialog id="dlgMail"><div class="dlg">
+  <h2>Link per E-Mail senden</h2>
+  <p id="mailFuer"></p>
+  <label for="mailAn">E-Mail deines Klienten</label>
+  <input id="mailAn" type="email" inputmode="email" autocomplete="off" placeholder="name@beispiel.de">
+  <p style="font-size:13px;margin-top:10px">Datenschutz: Die Adresse wird nur für diesen Versand genutzt und gespeichert, damit du siehst, wohin der Link ging. Sobald der Key eingelöst oder beendet ist, wird sie gelöscht. Bitte nur mit Einverständnis deines Klienten eintragen. Antworten auf die Mail gehen an dich.</p>
+  <div class="reihe-k"><button class="knopf zwei" type="button" id="mailAbbrechen">Abbrechen</button><button class="knopf" type="button" id="mailSenden">Senden</button></div>
+  <div class="meld" id="meldMail"></div>
+</div></dialog>
+
+<!-- QR-Code als Karte (PNG oder Drucken/PDF) -->
+<dialog id="dlgQr"><div class="dlg">
+  <h2>QR-Code</h2>
+  <p>Zum Abfotografieren in der Praxis, als Bild verschicken oder als Karte drucken. Der Link öffnet im Browser.</p>
+  <img id="qrKarte" alt="Karte mit QR-Code">
+  <div class="reihe-k"><button class="knopf zwei" type="button" id="qrPng">Als Bild (PNG)</button><button class="knopf" type="button" id="qrDruck">Drucken / PDF</button></div>
+  <button class="knopf zwei" type="button" id="qrZu" style="margin-top:8px">Schließen</button>
+</div></dialog>
+<div id="druck"><img id="druckKarte" alt=""></div>
 
 <script>
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
@@ -352,6 +394,8 @@ $('anlegen').onclick = async function(){
   $('neuBez').value = ''; $('vereinbarungZeile').hidden = true;
   $('neuCodeText').textContent = d.code; $('neuCodeLink').textContent = d.link; $('neuCode').hidden = false;
   $('neuCodeKopieren').onclick = () => kopiere(d.link, $('neuCodeKopieren'));
+  $('neuCodeMail').onclick = () => mailDialog(d.code, d.tage);
+  $('neuCodeQr').onclick = () => qrDialog(d.code, d.tage);
   ladeAlles();
 };
 /* Monate fuer einen noch nicht eingeloesten Key: Kalendermonate ab heute in Tage umrechnen (Server rechnet beim Aendern genauso) */
@@ -378,7 +422,8 @@ function zeichne(){
   if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : 'Noch keine Keys. Leg oben den ersten an.') + '</div>'; return; }
   $('liste').innerHTML = liste.map(k => {
     let info;
-    if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.';
+    if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.' +
+      (k.mail_am ? ' Link per E-Mail an ' + esc(k.mail_an || '–') + ' am ' + datum(k.mail_am) + '.' : '');
     else if(k.status==='laeuft') info = 'Seit ' + datum(k.start_am) + ', läuft bis <b>' + datum(k.laeuft_bis) + '</b> (noch ' + restTage(k.laeuft_bis) + ' Tage).';
     else if(k.status==='abgelaufen') info = 'Lief vom ' + datum(k.start_am) + ' bis ' + datum(k.laeuft_bis) + '.';
     else info = 'Beendet am ' + datum(k.beendet_am) + (k.start_am ? ' (eingelöst am ' + datum(k.start_am) + ')' : ' (nie eingelöst)') + '.' +
@@ -395,7 +440,7 @@ function zeichne(){
         '<select aria-label="Einheit" data-einheit><option value="tage">Tage</option><option value="wochen">Wochen</option><option value="monate" selected>Monate</option></select>' +
         '<button class="klein-knopf" data-akt="plus" type="button">Verlängern</button>' +
         (k.status!=='abgelaufen' ? '<button class="klein-knopf" data-akt="minus" type="button">Kürzen</button>' : '') +
-        (k.status==='offen' ? '<button class="klein-knopf" data-akt="link" type="button">Link kopieren</button>' : '') +
+        (k.status==='offen' ? '<button class="klein-knopf" data-akt="mail" type="button">Per E-Mail</button><button class="klein-knopf" data-akt="qr" type="button">QR-Code</button><button class="klein-knopf" data-akt="link" type="button">Link kopieren</button>' : '') +
         '<button class="klein-knopf" data-akt="bez" type="button">Notiz ändern</button>' +
         '<button class="klein-knopf rot" data-akt="ende" type="button">Beenden</button>' +
       '</div>';
@@ -411,6 +456,8 @@ $('liste').addEventListener('click', async e => {
   const setM = (t, art) => { m.textContent = t||''; m.className = 'meld' + (art?' '+art:''); };
   const akt = b.dataset.akt;
   if(akt==='link') return kopiere('https://root-index.de/klientin.html?code=' + encodeURIComponent(code), b);
+  if(akt==='mail') return mailDialog(code, k.tage);
+  if(akt==='qr') return qrDialog(code, k.tage);
   let rpc, args;
   if(akt==='plus' || akt==='minus'){
     const menge = parseInt(box.querySelector('[data-menge]').value, 10), einheit = box.querySelector('[data-einheit]').value;
@@ -432,6 +479,68 @@ $('liste').addEventListener('click', async e => {
   if(error || !d.ok){ box.querySelectorAll('button').forEach(x => x.disabled = false); return setM(error ? error.message : d.grund, 'fehler'); }
   ladeAlles();
 });
+
+/* ---------- Link per E-Mail ---------- */
+let MAILCODE = null;
+function mailDialog(code, tage){
+  MAILCODE = code;
+  $('mailFuer').textContent = 'Key ' + code + ' · ' + dauerText(tage) + ' Premium. Dein Klient bekommt den Link mit kurzer Erklärung und deinem Namen.';
+  $('mailAn').value = ''; meld('meldMail',''); $('mailSenden').disabled = false;
+  $('dlgMail').showModal(); setTimeout(() => $('mailAn').focus(), 50);
+}
+$('mailAbbrechen').onclick = () => $('dlgMail').close();
+$('mailSenden').onclick = async function(){
+  const email = $('mailAn').value.trim();
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldMail','Bitte eine gültige E-Mail eintragen.','fehler');
+  this.disabled = true; meld('meldMail','⏳ Wird gesendet …');
+  const {data, error} = await client.functions.invoke('fp-key-mail', { body: { code: MAILCODE, email } });
+  let d = json(data);
+  if(error){ try{ d = await error.context.json(); }catch(e){ d = {grund: error.message}; } }
+  if(!d || !d.ok){ this.disabled = false; return meld('meldMail', (d && d.grund) || 'Senden ging nicht.', 'fehler'); }
+  meld('meldMail','✓ Gesendet an ' + d.an + '.','ok');
+  ladeKeys();
+  setTimeout(() => $('dlgMail').close(), 1400);
+};
+
+/* ---------- QR-Code als Karte (85 x 55 mm, 300 dpi) ---------- */
+function dauerText(tage){ const t = Number(tage)||0, m = Math.round(t/30); return (t>=300 && t<=400) ? '1 Jahr' : t<28 ? t + (t===1?' Tag':' Tage') : m + (m===1?' Monat':' Monate'); }
+let LOGO = null; (function(){ const i = new Image(); i.onload = () => LOGO = i; i.src = 'logo-mark.png'; })();
+function karteZeichnen(code, tage){
+  const url = 'https://root-index.de/klientin.html?code=' + encodeURIComponent(code);
+  const W = 1004, H = 650, c = document.createElement('canvas'); c.width = W; c.height = H;
+  const g = c.getContext('2d');
+  g.fillStyle = '#133521'; g.beginPath(); g.roundRect(0,0,W,H,36); g.fill();
+  // QR rechts auf weissem Feld
+  const qr = qrcode(0,'M'); qr.addData(url); qr.make();
+  const n = qr.getModuleCount(), feld = 430, rand = 22, zelle = Math.floor((feld - 2*rand)/n), qrw = zelle*n;
+  const fx = W - feld - 50, fy = (H - feld)/2;
+  g.fillStyle = '#fff'; g.beginPath(); g.roundRect(fx,fy,feld,feld,24); g.fill();
+  const ox = fx + (feld-qrw)/2, oy = fy + (feld-qrw)/2;
+  g.fillStyle = '#000';
+  for(let r=0;r<n;r++) for(let s=0;s<n;s++) if(qr.isDark(r,s)) g.fillRect(ox+s*zelle, oy+r*zelle, zelle, zelle);
+  // Text links
+  const tx = 56; let y = 96;
+  if(LOGO) g.drawImage(LOGO, tx, y-58, 70, 70);
+  g.fillStyle = '#F3EEDC'; g.font = '800 40px Inter, Helvetica, Arial, sans-serif'; g.fillText('Root Index', tx + (LOGO?86:0), y);
+  y += 104; g.fillStyle = '#fff'; g.font = '800 44px Inter, Helvetica, Arial, sans-serif'; g.fillText(dauerText(tage) + ' Premium', tx, y, fx - tx - 30);
+  y += 56; g.fillStyle = '#7CFF9B'; g.font = '800 34px Inter, Helvetica, Arial, sans-serif'; g.fillText('geschenkt', tx, y);
+  const von = ICH ? (ICH.praxis || ICH.name || '') : '';
+  if(von){ y += 62; g.fillStyle = 'rgba(243,238,220,.85)'; g.font = '400 28px Inter, Helvetica, Arial, sans-serif';
+    let t = 'von ' + von; while(g.measureText(t).width > fx - tx - 30 && t.length > 8) t = t.slice(0,-2); if(t !== 'von ' + von) t += '…'; g.fillText(t, tx, y); }
+  y = H - 118; g.fillStyle = 'rgba(243,238,220,.85)'; g.font = '400 26px Inter, Helvetica, Arial, sans-serif'; g.fillText('Code scannen, im Browser öffnen', tx, y);
+  y += 54; g.fillStyle = '#fff'; g.font = '800 40px Inter, Helvetica, Arial, sans-serif'; g.fillText(code, tx, y);
+  return c.toDataURL('image/png');
+}
+let QRCODE = null;
+function qrDialog(code, tage){
+  QRCODE = code;
+  const png = karteZeichnen(code, tage);
+  $('qrKarte').src = png; $('druckKarte').src = png;
+  $('dlgQr').showModal();
+}
+$('qrZu').onclick = () => $('dlgQr').close();
+$('qrPng').onclick = () => { const a = document.createElement('a'); a.href = $('qrKarte').src; a.download = 'Root-Index-' + QRCODE + '.png'; document.body.appendChild(a); a.click(); a.remove(); };
+$('qrDruck').onclick = () => { $('dlgQr').close(); setTimeout(() => window.print(), 100); };
 
 start();
 </script>
