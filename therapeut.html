@@ -294,6 +294,12 @@ async function start(){
   if(error){ zeige('bLogin'); meld('meldLogin','Fehler: ' + error.message,'fehler'); return; }
   if(!d.fachperson){ $('wartetMail').textContent = d.email || session.user.email || ''; zeige('bWartet'); return; }
   ICH = d;
+  if(d.lizenz_ok === false){
+    $('wartetMail').textContent = d.email || '';
+    $('bWartet').querySelector('h2').textContent = 'Lizenz abgelaufen';
+    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Du bist als <b>' + esc(d.email||'') + '</b> angemeldet. Deine Lizenz ist abgelaufen, deshalb sind Keys und Klienten gerade gesperrt.';
+    zeige('bWartet'); return;
+  }
   if(!d.vertrag_ok){
     $('vertragTitel').textContent = d.vertrag_titel || 'Verschwiegenheitsvereinbarung';
     $('vertragText').innerHTML = String(d.vertrag_text||'').split(/\n\s*\n/).map(x => '<p>' + esc(x) + '</p>').join('');
