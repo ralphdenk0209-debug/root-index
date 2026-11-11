@@ -61,7 +61,7 @@ begin
   insert into _erg(ok,txt) values (not (j->>'ok')::boolean and (j->>'vereinbarung_noetig')::boolean, 'T1 erster Key ohne Klienten-Vereinbarung abgelehnt');
   j := public.cb_fp_key_anlegen(30,'Frau Eins',true); a := j->>'code';
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and a like 'TESTA-%', 'T1 legt Key A an');
-  insert into _erg(ok,txt) values ((select vereinbarung_bestaetigt_am is not null from public.fachperson where auth_id=t1), 'Klienten-Vereinbarung mit Zeitstempel gespeichert');
+  insert into _erg(ok,txt) values ((select vereinbarung_bestaetigt_am is not null from public.fachperson_konto where auth_id=t1), 'Klienten-Vereinbarung mit Zeitstempel gespeichert');
   j := public.cb_fp_key_anlegen(14,'Herr Zwei bei T1'); c := j->>'code';
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'T1 legt Key C an (spaeter fuer Uebertrag K2)');
 
@@ -206,12 +206,12 @@ begin
   -- Bezahlte Lizenz abgelaufen: T2 gesperrt, kein Premium; verlaengert: wieder frei
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   perform public.cb_fp_vertrag_bestaetigen('test-v2');   -- Vertrag ok, damit nur die Lizenz sperrt
-  update public.fachperson set lizenz_bis = now() - interval '1 day' where auth_id = t2;
+  update public.fachperson_konto set lizenz_bis = now() - interval '1 day' where auth_id = t2;
   insert into _erg(ok,txt) values (not public.cb_ist_premium(t2), 'T2 Lizenz abgelaufen: kein Premium');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   begin perform public.cb_fp_keys(); insert into _erg(ok,txt) values (false,'T2 arbeitet mit abgelaufener Lizenz!');
   exception when others then insert into _erg(ok,txt) values (true,'T2 Lizenz abgelaufen: gesperrt'); end;
-  update public.fachperson set lizenz_bis = now() + interval '30 days' where auth_id = t2;
+  update public.fachperson_konto set lizenz_bis = now() + interval '30 days' where auth_id = t2;
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
 
   -- Abrechnung (Modell monat, 499 Cent): T1 hat A und C diesen Monat = 2 Keys
@@ -232,7 +232,7 @@ begin
   perform set_config('role','authenticated',true);
   begin perform 1 from public.gratis_code limit 1; insert into _erg(ok,txt) values (false,'authenticated liest gratis_code!');
   exception when others then insert into _erg(ok,txt) values (true,'gratis_code direkt gesperrt'); end;
-  begin perform 1 from public.fachperson limit 1; insert into _erg(ok,txt) values (false,'authenticated liest fachperson!');
+  begin perform 1 from public.fachperson_konto limit 1; insert into _erg(ok,txt) values (false,'authenticated liest fachperson!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson direkt gesperrt'); end;
   begin perform 1 from public.fachperson_einwilligung limit 1; insert into _erg(ok,txt) values (false,'authenticated liest einwilligung!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson_einwilligung direkt gesperrt'); end;
