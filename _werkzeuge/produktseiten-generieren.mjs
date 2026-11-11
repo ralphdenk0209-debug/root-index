@@ -572,6 +572,8 @@ function vertiefung(p, kat, rang, zutaten, basis, marke) {
 }
 
 function istDuenn(p) {
+  // Supplements haben keinen Lebensmittel-Score, sondern den Reinheits-Index - nie als duenn werten.
+  if (p.kategorie === "Supplement") return false;
   const z = Array.isArray(p.zutaten) ? p.zutaten.filter((t) => t && t.name).length : 0;
   return num(p.clean_score) === null || z === 0 ||
     (num(p.m_kcal) === null && num(p.m_zucker) === null && num(p.m_salz) === null);
