@@ -493,19 +493,20 @@ function shellRender(id, el, ctx){
   css(); el.classList.add('f5');
   const tab = {plaene:'plaene', rezepte:'rezepte', berichte:'bericht'}[id];
   const rpc = async (n, a) => { const {data, error} = await ctx.client.rpc(n, a); if(error) throw new Error(error.message); return typeof data==='string' ? JSON.parse(data) : data; };
-  const verb = (ctx.keys || []).filter(k => k.status==='laeuft' && k.einwilligung==='erteilt');
+  const verb = ctx.demo ? [] : (ctx.keys || []).filter(k => k.status==='laeuft' && k.einwilligung==='erteilt');
   const nm = k => k.klient_name || k.bezeichnung || k.code;
   const ich = ctx.ich || {};
   el.innerHTML = '<div class="f5-reihe"><label>Person<select data-f5p><option value="">Lädt …</option></select></label></div><div data-f5z></div>';
   const $s = el.querySelector('[data-f5p]'), $z = el.querySelector('[data-f5z]');
   let muster = null;
+  const tok = ctx.demo ? (ctx.musterToken || null) : null;          // Demo-Modus: nur Musterpraxis, mit Demo-Passwort
   const zeige = w => {
     $z.innerHTML = ''; $z.className = '';
-    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine verbundenen Klienten. Sobald jemand einen Key einlöst und einwilligt, steht die Person hier; bis dahin zeigt die Musterpraxis alles zum Ausprobieren.</p>'; return; }
+    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine verbundenen Klienten. Sobald jemand einen Key einlöst und einwilligt, steht die Person hier.</p>'; return; }
     if(w.startsWith('muster-')){
       const nr = Number(w.slice(7)), k = muster && (muster.klienten || []).find(x => x.nr===nr) || {};
-      mount($z, { nurTab: tab, muster: true, nr, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
-                  fachperson: 'Musterpraxis (erfundene Daten)', rpc, ladeDashboard: (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}) });
+      mount($z, { nurTab: tab, muster: true, nr, token: tok, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
+                  fachperson: 'Musterpraxis (erfundene Daten)', rpc, ladeDashboard: (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: tok, p_nr: nr, p_von: von, p_bis: bis}) });
     } else {
       const k = verb.find(x => x.code===w) || {code: w};
       mount($z, { nurTab: tab, muster: false, code: w, name: nm(k), heute: ctx.heute, praxis: ich.praxis || ich.name, fachperson: ich.name, rpc,
@@ -513,7 +514,8 @@ function shellRender(id, el, ctx){
                   klienten: verb.map(x => ({code: x.code, name: nm(x)})) });
     }
   };
-  return rpc('cb_fl_muster', {p_token: null}).catch(() => null).then(m => {
+  // Musterdaten nur im Demo-Modus (Ralph 11.11.: nach echter Anmeldung keine Musterdaten)
+  return (ctx.demo ? rpc('cb_fl_muster', {p_token: tok}).catch(() => null) : Promise.resolve(null)).then(m => {
     muster = m;
     const opts = verb.map(k => '<option value="' + esc(k.code) + '">' + esc(nm(k)) + ' · ' + esc(k.code) + '</option>').join('') +
       (muster ? '<optgroup label="Musterpraxis (erfunden)">' + (muster.klienten || []).map(k => '<option value="muster-' + k.nr + '">' + esc(k.name) + '</option>').join('') + '</optgroup>' : '');
