@@ -124,6 +124,7 @@
   .band svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.7}
   .werkzeug{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:8px 14px;background:#fff;border-bottom:1px solid var(--linie)}
   .tb{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--linie);background:#fff;color:var(--dunkel);border-radius:9px;padding:7px 12px;font:inherit;font-size:14px;cursor:pointer;white-space:nowrap}
+  a.tb{text-decoration:none}
   .tb:hover{background:#F4F6F2}
   .tb.haupt{background:var(--gruen);border-color:var(--gruen);color:#fff;font-weight:800}
   .tb.haupt:hover{background:#286d3d}
@@ -190,6 +191,8 @@
   .keyliste{background:#fff}
   .keyliste .key{border:0;border-bottom:1px solid #EEF0EC;border-radius:0;margin:0;padding:12px 18px}
   .keyliste .leer{padding:24px}
+  .bew-rahmen{background:#f3f6f2}
+  #bewFrame{display:block;width:100%;height:80vh;border:0}
   #wunschFrame{display:block;width:100%;height:calc(100vh - 92px);border:0;background:#F7F7F3}
   .nur-handy{display:none}
   body.app-an .wrap{display:none}
@@ -250,6 +253,7 @@
     <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne</button>
     <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte</button>
     <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte</button>
+    <button type="button" data-v="bewertung"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 7.5h14M5 7.5l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7.5l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>So bewertet Root Index</button>
     <button type="button" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16.5 6.5l3 3M13.5 9.5l2 2"/></svg>Keys</button>
     <button type="button" data-v="wunschliste"><svg viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Wunschliste</button>
     <button type="button" data-v="einstellungen"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Einstellungen</button>
@@ -374,6 +378,16 @@
   <section class="ansicht" data-v="plaene"><div class="band"><h1>Pläne</h1></div><div class="fl5" data-fl5="plaene"></div></section>
   <section class="ansicht" data-v="rezepte"><div class="band"><h1>Rezepte</h1></div><div class="fl5" data-fl5="rezepte"></div></section>
   <section class="ansicht" data-v="berichte"><div class="band"><h1>Berichte</h1></div><div class="fl5" data-fl5="berichte"></div></section>
+
+  <section class="ansicht" data-v="bewertung">
+    <div class="band"><h1>So bewertet Root Index</h1><span>vertraulich, nur für Fachleute mit Vereinbarung</span></div>
+    <div class="werkzeug">
+      <a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung für Klientinnen</a>
+      <button class="tb" type="button" id="bewDruck">Drucken</button>
+    </div>
+    <div class="bew-rahmen"><iframe id="bewFrame" title="Root Index für Fachleute" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe></div>
+    <p class="fuss" id="bewStand"></p>
+  </section>
 
   <section class="ansicht" data-v="keys">
     <div class="band"><h1>Keys</h1><span>jeder Key ist für genau eine Person</span></div>
@@ -546,7 +560,7 @@ $('neuPassLos').onclick = async function(){
   setTimeout(start, 600);
 };
 
-$('abmelden').onclick = async () => { await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; MUSTER = null; MUSTER_FEHLER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
+$('abmelden').onclick = async () => { await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; MUSTER_FEHLER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
 
 client.auth.onAuthStateChange((ev) => {
   if(ev === 'PASSWORD_RECOVERY'){ inRecovery = true; zeige('bNeuPass'); }
@@ -729,7 +743,7 @@ $('liste').addEventListener('click', async e => {
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
-               berichte:'Berichte', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
+               berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
 let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, MUSTER_FEHLER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
 const klientName = x => x.klient_name || x.bezeichnung || x.code;
@@ -765,6 +779,7 @@ function route(){
   if(v==='auswertungen') ladeAuswertungen();
   if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
+  if(v==='bewertung') ladeBewertung();
   window.scrollTo(0,0);
 }
 function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : (MUSTER ? 'muster-1' : null); }
@@ -893,6 +908,24 @@ async function ladeAuswertungen(){
   if(muster.length) h += '<tr class="gruppe"><td colspan="7">' + esc(MUSTER.praxis || 'Musterpraxis') + ' (erfunden)</td></tr>' + muster.map((p, i) => zeile(p, erg[leute.length + i])).join('');
   $('awTab').innerHTML = h + '</tbody>';
 }
+
+/* So bewertet Root Index: vertrauliche Fassung (FL-3) aus der Datenbank, nur für Fachleute mit Vereinbarung.
+   Eigenes Dokument im iframe (srcdoc), damit Schrift und Stil von FL-3 unverändert bleiben. */
+let BEW_DA = false;
+async function ladeBewertung(){
+  if(BEW_DA) return;
+  const f = $('bewFrame');
+  const {data, error} = await client.rpc('cb_fp_inhalt', {p_schluessel: 'bewertung_fachleute'});
+  const d = json(data);
+  if(error || !d.ok){ f.srcdoc = '<p style="font:16px system-ui;padding:24px;color:#5d6b61">' + esc(error ? error.message : d.grund) + '</p>'; return; }
+  BEW_DA = true;
+  f.onload = () => { try{ const h = f.contentDocument.documentElement.scrollHeight; f.style.height = (h + 20) + 'px'; }catch(e){} };
+  // hell wie der Rest der Oberfläche; Links öffnen in neuem Tab
+  f.srcdoc = String(d.html).replace(/<html/i, '<html data-theme="light"').replace(/<head>/i, '<head><base target="_blank">');
+  $('bewStand').textContent = d.stand ? 'Fassung: ' + d.stand + '.' : '';
+}
+$('bewDruck').onclick = () => { try{ $('bewFrame').contentWindow.print(); }catch(e){ window.print(); } };
+window.addEventListener('resize', () => { const f = $('bewFrame'); if(BEW_DA && f.contentDocument) f.style.height = (f.contentDocument.documentElement.scrollHeight + 20) + 'px'; });
 
 /* Pläne, Rezepte, Berichte: Einhänge-Stelle für FL-5 (eigene Datei, z. B. fachleute-fl5.js)
    window.FLShell.bereich('plaene'|'rezepte'|'berichte', { render: async (el, ctx) => { … } }) */
