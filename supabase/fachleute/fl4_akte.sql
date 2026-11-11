@@ -15,6 +15,9 @@
 -- * Jede Änderung landet in fl_akte_protokoll (wer, wann, Feld, alt, neu).
 -- * Snack-Zeiten (Absprache FL-5): Slot bleibt 'Snack', neue Spalte snack_zeit
 --   ('vormittags','nachmittags','abends','spaet') – alte Apps zeigen weiter „Snack“.
+-- * Nachtplan 11./12.11.: private Notiz und Diagnose-Stichworte je Person (nur für die Fachkraft,
+--   brauchen keine Bearbeiten-Einwilligung, aber laufenden Key mit Einwilligung), Praxisdaten
+--   (fl_praxis), öffentliche Vorführung ohne Passwort (fachleute_einstellung.muster_oeffentlich).
 -- Keine bestehende Funktion ändert Name oder Signatur; _fl4_dashboard bleibt unverändert.
 -- =====================================================================
 
@@ -42,6 +45,8 @@ create table if not exists public.fl_akte (
   ziel_text       text check (length(ziel_text) <= 2000),
   sport_text      text check (length(sport_text) <= 2000),
   notiz_text      text check (length(notiz_text) <= 4000),
+  privat_notiz    text check (length(privat_notiz) <= 8000),
+  stichworte      text[] not null default '{}' check (coalesce(array_length(stichworte, 1), 0) <= 20),
   geaendert_am    timestamptz not null default now(),
   primary key (fachperson_auth, benutzer_id)
 );
@@ -64,6 +69,8 @@ revoke all on public.fl_akte, public.fl_akte_protokoll from anon, authenticated;
 alter table public.fl_muster_klient add column if not exists ziel_text text;
 alter table public.fl_muster_klient add column if not exists sport_text text;
 alter table public.fl_muster_klient add column if not exists notiz_text text;
+alter table public.fl_muster_klient add column if not exists privat_notiz text;
+alter table public.fl_muster_klient add column if not exists stichworte text[] not null default '{}';
 update public.fl_muster_klient set
   ziel_text = case nr when 1 then 'Bis Sommer 5 kg leichter, ohne Heißhunger am Abend.'
                       when 2 then 'Blutzucker stabil halten (HbA1c unter 7 %), mehr Gemüse statt Brot am Abend.'
@@ -78,6 +85,16 @@ update public.fl_muster_klient set
                        when 3 then 'Eiweiß je Mahlzeit verteilen, Hülsenfrüchte ausprobieren.'
                        when 4 then 'Vorbereitete Mahlzeiten für Nachtschichten planen.' end
  where ziel_text is null;
+update public.fl_muster_klient set
+  stichworte = case nr when 1 then array['Übergewicht (BMI 29)','Heißhunger abends']
+                       when 2 then array['Diabetes Typ 2','Bluthochdruck','Fettstoffwechselstörung']
+                       when 3 then array['Vegetarisch','Leistungssport','Eisenmangel']
+                       when 4 then array['Laktoseintoleranz','Schichtdienst','Reizdarm'] end,
+  privat_notiz = case nr when 1 then 'Motiviert, isst abends aus Stress. Nächstes Mal: Abendroutine besprechen.'
+                         when 2 then 'Metformin laut Hausarzt. Mag kein Gemüse roh – gegart anbieten.'
+                         when 3 then 'Ferritin niedrig (Hausarzt). Hülsenfrüchte + Vitamin C kombinieren.'
+                         when 4 then 'Bauchschmerzen bei Stress; FODMAP-arme Phase erwägen.' end
+ where privat_notiz is null;
 
 -- 3) Snack-Zeiten ----------------------------------------------------------
 alter table public.fl_muster_wochenplan add column if not exists snack_zeit text;
@@ -112,6 +129,7 @@ returns jsonb language sql stable security definer set search_path = public as $
                  'unvertraeglichkeiten', to_jsonb(coalesce(b."Unvertraeglichkeiten", array[]::text[])))
                from public."Benutzer" b where b."Benutzer_ID" = p_benutzer) end,
     'ziel_text', a.ziel_text, 'sport_text', a.sport_text, 'notiz_text', a.notiz_text, 'geaendert_am', a.geaendert_am,
+    'privat_notiz', a.privat_notiz, 'stichworte', to_jsonb(coalesce(a.stichworte, '{}'::text[])),
     'protokoll', (select jsonb_agg(jsonb_build_object('feld', x.feld, 'alt', x.alt, 'neu', x.neu, 'am', x.am) order by x.am desc)
                     from (select * from public.fl_akte_protokoll pr
                            where pr.benutzer_id = p_benutzer and pr.fachperson_auth = p_fachperson
@@ -276,18 +294,102 @@ begin
                  'ernaehrungsform', m."Ernaehrungsform", 'diabetes_typ', m."Diabetes_Typ",
                  'unvertraeglichkeiten', to_jsonb(coalesce(m."Unvertraeglichkeiten", array[]::text[]))),
               'ziel_text', m.ziel_text, 'sport_text', m.sport_text, 'notiz_text', m.notiz_text,
+              'privat_notiz', m.privat_notiz, 'stichworte', to_jsonb(coalesce(m.stichworte, '{}'::text[])),
               'protokoll', jsonb_build_array(
                  jsonb_build_object('feld', 'gewicht_kg', 'alt', m."Gewicht_kg" + 1.2, 'neu', m."Gewicht_kg", 'am', v_heute - 7),
                  jsonb_build_object('feld', 'ziel_text', 'alt', null, 'neu', m.ziel_text, 'am', v_heute - 21))));
 end $f$;
 
+-- 6b) Private Notiz und Diagnose-Stichworte (nur Fachkraft) -----------------------
+create or replace function public.cb_fp_akte_privat_setzen(p_code text, p_notiz text, p_stichworte text[])
+returns jsonb language plpgsql security definer set search_path = public as $f$
+declare k record; v_uid uuid := auth.uid(); v_sw text[];
+begin
+  select * into k from public._fp_klient(p_code);                         -- laufender Key + Einwilligung, sonst 42501
+  select coalesce(array_agg(distinct left(trim(x), 60)) filter (where trim(x) <> ''), '{}') into v_sw from unnest(coalesce(p_stichworte, '{}')) x;
+  if coalesce(array_length(v_sw, 1), 0) > 20 then return jsonb_build_object('ok', false, 'grund', 'Höchstens 20 Stichworte.'); end if;
+  if length(p_notiz) > 8000 then return jsonb_build_object('ok', false, 'grund', 'Die Notiz ist zu lang (höchstens 8000 Zeichen).'); end if;
+  insert into public.fl_akte(fachperson_auth, benutzer_id, privat_notiz, stichworte)
+  values (v_uid, k.benutzer_id, nullif(trim(p_notiz), ''), v_sw)
+  on conflict (fachperson_auth, benutzer_id) do update set privat_notiz = excluded.privat_notiz, stichworte = excluded.stichworte, geaendert_am = now();
+  return jsonb_build_object('ok', true, 'stichworte', to_jsonb(v_sw));
+end $f$;
+
+-- Für FL-5 (Plan-Vorschlag, Rezepte teilen): Stichworte der Fachkraft zu einer Person. Nur intern.
+create or replace function public._fl_akte_stichworte(p_benutzer text, p_fachperson uuid)
+returns text[] language sql stable security definer set search_path = public as $f$
+  select coalesce((select m.stichworte from public.fl_muster_klient m where m.benutzer_id = p_benutzer),
+                  (select a.stichworte from public.fl_akte a where a.benutzer_id = p_benutzer and a.fachperson_auth = p_fachperson),
+                  '{}'::text[])
+$f$;
+
+-- 6c) Praxisdaten (Einstellungen) -----------------------------------------------------
+create table if not exists public.fl_praxis (
+  auth_id      uuid primary key,
+  beruf        text check (length(beruf) <= 120),
+  anschrift    text check (length(anschrift) <= 300),
+  telefon      text check (length(telefon) <= 60),
+  webseite     text check (length(webseite) <= 200),
+  geaendert_am timestamptz not null default now()
+);
+alter table public.fl_praxis enable row level security;
+revoke all on public.fl_praxis from anon, authenticated;
+
+create or replace function public.cb_fp_praxis()
+returns jsonb language plpgsql stable security definer set search_path = public as $f$
+declare v public.fachperson_konto; p public.fl_praxis;
+begin
+  select * into v from public.fachperson_konto where auth_id = auth.uid();
+  if v.auth_id is null then raise exception 'Nur für Fachleute.' using errcode = '42501'; end if;
+  select * into p from public.fl_praxis where auth_id = v.auth_id;
+  return jsonb_build_object('name', v.name, 'praxis', v.praxis, 'kuerzel', v.kuerzel, 'beruf', p.beruf, 'anschrift', p.anschrift,
+                            'telefon', p.telefon, 'webseite', p.webseite, 'geaendert_am', p.geaendert_am);
+end $f$;
+
+create or replace function public.cb_fp_praxis_setzen(p_name text, p_praxis text, p_beruf text, p_anschrift text, p_telefon text, p_webseite text)
+returns jsonb language plpgsql security definer set search_path = public as $f$
+declare v_uid uuid := auth.uid();
+begin
+  if not exists (select 1 from public.fachperson_konto where auth_id = v_uid) then raise exception 'Nur für Fachleute.' using errcode = '42501'; end if;
+  if length(trim(coalesce(p_name, ''))) < 2 then return jsonb_build_object('ok', false, 'grund', 'Bitte einen Namen eintragen.'); end if;
+  if length(p_name) > 120 or length(p_praxis) > 160 then return jsonb_build_object('ok', false, 'grund', 'Name oder Praxis ist zu lang.'); end if;
+  if length(p_beruf) > 120 or length(p_anschrift) > 300 or length(p_telefon) > 60 or length(p_webseite) > 200 then
+    return jsonb_build_object('ok', false, 'grund', 'Eine Angabe ist zu lang.'); end if;
+  update public.fachperson_konto set name = trim(p_name), praxis = nullif(trim(p_praxis), '') where auth_id = v_uid;
+  insert into public.fl_praxis(auth_id, beruf, anschrift, telefon, webseite)
+  values (v_uid, nullif(trim(p_beruf), ''), nullif(trim(p_anschrift), ''), nullif(trim(p_telefon), ''), nullif(trim(p_webseite), ''))
+  on conflict (auth_id) do update set beruf = excluded.beruf, anschrift = excluded.anschrift, telefon = excluded.telefon,
+                                      webseite = excluded.webseite, geaendert_am = now();
+  return jsonb_build_object('ok', true) || public.cb_fp_praxis();
+end $f$;
+
+-- 6d) Öffentliche Vorführung ohne Passwort (Ralph 11.11.: „Zugang über den Link ohne Konto“).
+-- Abschaltbar: update fachleute_einstellung set wert = 'nein' where schluessel = 'muster_oeffentlich'.
+-- Die Musterfunktionen liefern nur erfundene Daten und schreiben nichts.
+insert into public.fachleute_einstellung(schluessel, wert, notiz)
+values ('muster_oeffentlich', 'ja', 'Vorführung therapeut-demo.html ohne Passwort (Token „oeffentlich“); nein = nur mit muster_token')
+on conflict (schluessel) do nothing;
+create or replace function public._fl_muster_token_ok(p_token text)
+returns boolean language sql stable security definer set search_path = public as $f$
+  select (coalesce(length(p_token), 0) >= 16
+          and exists (select 1 from public.fachleute_einstellung where schluessel = 'muster_token' and wert = p_token))
+      or (p_token = 'oeffentlich'
+          and exists (select 1 from public.fachleute_einstellung where schluessel = 'muster_oeffentlich' and wert = 'ja'))
+      or public._fl_wunsch_darf();   -- freigeschaltete Fachperson (aktiv, Lizenz, Vertrag) oder Admin
+$f$;
+
 -- 7) Rechte ------------------------------------------------------------------
 do $$ declare f text; begin
-  foreach f in array array['public._fl_akte_darf(text)', 'public._fl_akte_json(text, uuid, boolean)'] loop
+  foreach f in array array['public._fl_akte_darf(text)', 'public._fl_akte_json(text, uuid, boolean)', 'public._fl_akte_stichworte(text, uuid)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
   end loop;
   execute 'revoke all on function public.cb_fp_akte_setzen(text, jsonb) from public, anon';
   execute 'grant execute on function public.cb_fp_akte_setzen(text, jsonb) to authenticated';
+  foreach f in array array['public.cb_fp_akte_privat_setzen(text, text, text[])', 'public.cb_fp_praxis()',
+                           'public.cb_fp_praxis_setzen(text, text, text, text, text, text)'] loop
+    execute format('revoke all on function %s from public, anon', f);
+    execute format('grant execute on function %s to authenticated', f);
+  end loop;
   execute 'revoke all on function public.cb_fp_klient_dashboard(text, date, date) from public, anon';
   execute 'grant execute on function public.cb_fp_klient_dashboard(text, date, date) to authenticated';
   execute 'revoke all on function public.cb_fl_muster_dashboard(text, integer, date, date) from public';

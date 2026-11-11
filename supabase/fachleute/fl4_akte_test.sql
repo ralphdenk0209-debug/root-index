@@ -28,9 +28,22 @@ begin
   insert into _erg(ok,txt) values ((j->'akte'->>'nur_ansehen')::boolean and j->'akte'->>'ziel_text' is not null, 'Muster-Akte mit Ziel, nur ansehen');
   begin perform public.cb_fp_akte_setzen('MUSTER-C5P4', '{"gewicht_kg":80}'); insert into _erg(ok,txt) values (false,'anon schreibt Akte!');
   exception when others then insert into _erg(ok,txt) values (true,'anon: Akte schreiben gesperrt'); end;
+  insert into _erg(ok,txt) values (jsonb_array_length(j->'akte'->'stichworte') >= 2 and j->'akte'->>'privat_notiz' is not null, 'Muster-Akte mit Stichworten und privater Notiz');
+  j := public.cb_fl_muster('oeffentlich');
+  insert into _erg(ok,txt) values (jsonb_array_length(j->'klienten') = 4, 'Öffentliche Vorführung ohne Passwort: 4 Musterklienten');
+  begin perform public.cb_fl_muster('oeffentlich-falsch'); insert into _erg(ok,txt) values (false,'Falscher Token geht!');
+  exception when others then insert into _erg(ok,txt) values (true,'Anderer Token weiter abgelehnt'); end;
+  begin perform public.cb_fp_praxis_setzen('X Y', 'Praxis', null, null, null, null); insert into _erg(ok,txt) values (false,'anon setzt Praxis!');
+  exception when others then insert into _erg(ok,txt) values (true,'anon: Praxisdaten gesperrt'); end;
   begin perform count(*) from public.fl_akte; insert into _erg(ok,txt) values (false,'anon liest fl_akte!');
   exception when others then insert into _erg(ok,txt) values (true,'anon: fl_akte gesperrt'); end;
   execute 'reset role';
+  update public.fachleute_einstellung set wert = 'nein' where schluessel = 'muster_oeffentlich';
+  execute 'set local role anon';
+  begin perform public.cb_fl_muster('oeffentlich'); insert into _erg(ok,txt) values (false,'Abgeschaltet und trotzdem offen!');
+  exception when others then insert into _erg(ok,txt) values (true,'muster_oeffentlich = nein sperrt die Vorführung'); end;
+  execute 'reset role';
+  update public.fachleute_einstellung set wert = 'ja' where schluessel = 'muster_oeffentlich';
 
   -- 2) Testpersonen ------------------------------------------------------------------
   insert into auth.users(id, aud, role, email, created_at) values
@@ -100,10 +113,26 @@ begin
   begin perform public.cb_fp_akte_setzen(v_code, '{"gewicht_kg":5}'); insert into _erg(ok,txt) values (false,'Gewicht 5 kg geht!');
   exception when others then insert into _erg(ok,txt) values (true,'Unplausibles Gewicht abgelehnt'); end;
 
+  -- 4b) Private Notiz und Stichworte, Praxisdaten
+  j := public.cb_fp_akte_privat_setzen(v_code, 'Nur für mich', array['Diabetes Typ 2', ' Bluthochdruck ', '', 'Diabetes Typ 2']);
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean and jsonb_array_length(j->'stichworte') = 2, 'Private Notiz und Stichworte gespeichert (bereinigt: 2)');
+  j := public.cb_fp_klient_dashboard(v_code, heute - 7, heute);
+  insert into _erg(ok,txt) values (j->'akte'->>'privat_notiz' = 'Nur für mich' and j->'akte'->>'ziel_text' = '5 kg leichter bis Juni', 'Dashboard zeigt private Notiz, gemeinsame Texte bleiben');
+  execute 'reset role';
+  insert into _erg(ok,txt) values (public._fl_akte_stichworte('U-fl4akte-k1', t1) @> array['Bluthochdruck','Diabetes Typ 2'], 'Stichworte für FL-5 abrufbar');
+  insert into _erg(ok,txt) values (cardinality(public._fl_akte_stichworte('U-fl4akte-k1', t2)) = 0, 'Andere Fachkraft bekommt keine Stichworte');
+  execute 'set local role authenticated';
+  j := public.cb_fp_praxis_setzen('Akte Eins', 'Praxis am Markt', 'Diätassistentin', 'Markt 1, 12345 Musterstadt', '0123 456', 'praxis.example');
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->>'anschrift' = 'Markt 1, 12345 Musterstadt' and j->>'praxis' = 'Praxis am Markt', 'Praxisdaten gespeichert');
+  j := public.cb_fp_praxis_setzen('', 'x', null, null, null, null);
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Leerer Name abgelehnt');
+
   -- 5) Fremde Fachkraft, direkter Tabellenzugriff ------------------------------------------
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   begin perform public.cb_fp_akte_setzen(v_code, '{"gewicht_kg":90}'); insert into _erg(ok,txt) values (false,'T2 schreibt fremde Akte!');
   exception when others then insert into _erg(ok,txt) values (true,'T2 schreibt keine fremde Akte'); end;
+  begin perform public.cb_fp_akte_privat_setzen(v_code, 'fremd', null); insert into _erg(ok,txt) values (false,'T2 schreibt fremde Notiz!');
+  exception when others then insert into _erg(ok,txt) values (true,'T2 schreibt keine fremde Notiz'); end;
   begin perform count(*) from public.fl_akte_protokoll; insert into _erg(ok,txt) values (false,'Protokoll direkt lesbar!');
   exception when others then insert into _erg(ok,txt) values (true,'Protokoll nicht direkt lesbar'); end;
   begin perform public._fl_akte_json('U-fl4akte-k1', t1, true); insert into _erg(ok,txt) values (false,'Hilfsfunktion von außen aufrufbar!');
@@ -115,6 +144,9 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
   begin perform public.cb_fp_akte_setzen(v_code, '{"gewicht_kg":67}'); insert into _erg(ok,txt) values (false,'Nach Widerruf schreibbar!');
   exception when others then insert into _erg(ok,txt) values (true,'Nach Widerruf kein Schreiben'); end;
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
+  begin perform public.cb_fp_praxis_setzen('Klientin', 'x', null, null, null, null); insert into _erg(ok,txt) values (false,'Klientin setzt Praxisdaten!');
+  exception when others then insert into _erg(ok,txt) values (true,'Nicht-Fachleute: Praxisdaten gesperrt'); end;
   execute 'reset role';
 
   select count(*) filter (where ok), count(*) filter (where not ok), string_agg(case when not ok then '✗ ' else '' end || txt, ' | ' order by nr)

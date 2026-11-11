@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=11"></script>
+<script src="fachleute-dashboard.js?v=12"></script>
 <script src="fachleute-statistik.js?v=8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -491,6 +491,22 @@
   .baum-fuss{font-size:12.5px;color:var(--muted);padding:10px 14px;margin:6px 0 0;border-top:1px solid var(--line);line-height:1.4}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
+
+  /* FL-4 Nachtplan: Klientenfilter, Vorführungsleiste, Übergabe, Praxisdaten */
+  .k-filter{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 10px}
+  .k-filter button{border:1px solid var(--line,#e5e5e5);background:var(--panel,#fff);border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;color:var(--muted,#737373);cursor:pointer}
+  .k-filter button.an{background:var(--blau,#0b2ff2);border-color:var(--blau,#0b2ff2);color:#fff}
+  .k-filter button i{font-style:normal;font-weight:700;margin-left:2px}
+  .baum-knoepfe{padding:10px 12px 0}
+  .demo-leiste{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto}
+  .demo-leiste span{font-size:13px;color:var(--muted,#737373)}
+  .demo-leiste .tb{padding:4px 10px;font-size:13px}
+  .statuszeile{flex-wrap:wrap}
+  .ueber-schritte{padding-left:20px;line-height:1.5} .ueber-schritte li{margin:6px 0}
+  .dd-menu .rot{color:var(--bad,#b42318)}
+  .praxis-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;max-width:760px}
+  .praxis-form .breit{grid-column:1/-1}
+  .demo-wunsch{max-width:720px;margin:16px}
 </style>
 </head>
 <body>
@@ -545,7 +561,7 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
-      <p style="margin:12px 0 0;font-size:14px"><a href="#demo" id="zurDemo">Musterpraxis ansehen (Vorführung mit Passwort)</a></p>
+      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ausprobieren (Vorführung ohne Anmeldung)</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
     </div>
   </section>
@@ -638,7 +654,10 @@
     <div class="split">
       <aside class="seite">
         <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klienten</div>
-        <div class="suche"><input type="search" id="kSuche" placeholder="Suchen" aria-label="Klienten suchen"></div>
+        <div class="suche"><input type="search" id="kSuche" placeholder="Name oder Key suchen" aria-label="Klienten suchen"></div>
+        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klienten filtern">
+          <button type="button" data-kf="aktiv" class="an">Aktiv</button><button type="button" data-kf="bald">Läuft ab</button>
+          <button type="button" data-kf="warten">Wartet</button><button type="button" data-kf="archiv">Archiv</button></div>
         <select id="kAuswahl" class="nur-handy" aria-label="Person wählen"></select>
         <div class="baum" id="kBaum"></div>
       </aside>
@@ -734,6 +753,18 @@
     <div class="ueb">
       <h2 class="abschnitt">Konto</h2>
       <table class="tab schmal" id="kontoTab"></table>
+      <h2 class="abschnitt">Praxisdaten</h2>
+      <p class="fuss" style="margin-top:0">Erscheinen auf Berichten, QR-Karten und in Mails an Klientinnen und Klienten.</p>
+      <div class="praxis-form" id="praxisForm">
+        <div><label for="pxName">Name</label><input id="pxName" maxlength="120" autocomplete="name"></div>
+        <div><label for="pxPraxis">Praxis</label><input id="pxPraxis" maxlength="160" autocomplete="organization"></div>
+        <div><label for="pxBeruf">Berufsbezeichnung</label><input id="pxBeruf" maxlength="120" placeholder="z. B. Diätassistentin, Ernährungsberaterin (VDOE)"></div>
+        <div><label for="pxTel">Telefon</label><input id="pxTel" maxlength="60" inputmode="tel" autocomplete="tel"></div>
+        <div class="breit"><label for="pxAnschrift">Anschrift</label><input id="pxAnschrift" maxlength="300" autocomplete="street-address"></div>
+        <div class="breit"><label for="pxWeb">Webseite</label><input id="pxWeb" maxlength="200" inputmode="url" placeholder="praxis-beispiel.de"></div>
+      </div>
+      <div class="aktionen"><button class="tb haupt" type="button" id="pxLos">Praxisdaten speichern</button></div>
+      <div class="meld" id="meldPx"></div>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss" id="zRegel2" style="margin-top:0"></p>
       <div class="nicht-demo">
@@ -748,6 +779,19 @@
   </section>
 </main>
 <div class="klein" id="fussKlein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+
+<!-- Übergabe an eine andere Fachkraft -->
+<dialog id="dlgUeber"><div class="dlg">
+  <h2>An andere Fachkraft übergeben</h2>
+  <p id="ueberText"></p>
+  <ol class="ueber-schritte">
+    <li>Die neue Fachkraft legt in ihrem Bereich einen Key für die Person an und schickt ihn ihr.</li>
+    <li>Die Person löst den neuen Key ein und willigt dort ein. Damit entscheidet sie selbst über den Wechsel.</li>
+    <li>Der Key hier endet in dem Moment automatisch. Die Daten sind dann hier nicht mehr sichtbar, die Person steht im Archiv.</li>
+  </ol>
+  <p class="fuss">Eine direkte Weitergabe von Daten zwischen Fachleuten gibt es nicht. Eigene Notizen und Stichworte bleiben bei der bisherigen Fachkraft.</p>
+  <button class="knopf" type="button" onclick="this.closest('dialog').close()">Verstanden</button>
+</div></dialog>
 
 <!-- Einlöse-Link per E-Mail (Edge-Funktion fp-key-mail) -->
 <dialog id="dlgMail"><div class="dlg">
@@ -879,10 +923,10 @@ async function demoStart(pw){
   DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
   MUSTER = json(data);
   ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'gruenderin_gratis', vertrag_ok: true, demo: true};
-  KEYS = (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
-                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+  KEYS = demoKeys(musterKeys());
   KEYS_DA = true;
   document.body.classList.add('demo');
+  demoLeiste();
   $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
   $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
   zeichneKonto();
@@ -901,7 +945,7 @@ $('demoLos').onclick = async function(){
 };
 $('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
 $('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
-$('zurDemo').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); };
+$('zurDemo').onclick = async e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); if(!(await demoStart('oeffentlich'))){ zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); } };
 function nurAnsehen(){
   let t = document.querySelector('.demo-toast');
   if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
@@ -909,11 +953,129 @@ function nurAnsehen(){
   clearTimeout(nurAnsehen.t); nurAnsehen.t = setTimeout(() => t.hidden = true, 2200);
 }
 
+/* ---------- FL-4: Vorführung zum Ausprobieren (Ralph 11.11.: „Demo-Seite zum Testen der Funktionen“) ----------
+   Alles, was man in der Vorführung ändert (Key anlegen, verlängern, beenden, Ziele, Akte, Notizen, Praxisdaten),
+   bleibt in diesem Browser-Tab (sessionStorage). Es gibt keinen Schreibweg ohne Anmeldung zur Datenbank; echte
+   Daten sind nicht erreichbar, Mails gehen nicht raus. „Vorführung zurücksetzen“ oder Tab schließen = frisch. */
+const DEMO_DATEN_SCHLUESSEL = 'fl-demo-daten';
+function demoDaten(){ try{ return JSON.parse(sessionStorage.getItem(DEMO_DATEN_SCHLUESSEL)) || {}; }catch(e){ return {}; } }
+function demoSichern(d){ try{ sessionStorage.setItem(DEMO_DATEN_SCHLUESSEL, JSON.stringify(d)); }catch(e){} }
+function demoReset(){ try{ sessionStorage.removeItem(DEMO_DATEN_SCHLUESSEL); }catch(e){} location.reload(); }
+function musterKeys(){
+  return (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
+                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+}
+function demoKeys(muster){
+  const d = demoDaten(), st = d.keyStatus || {};
+  return muster.concat(d.keys || []).map(k => Object.assign({}, k, st[k.code] || {}));
+}
+function demoKeyMerken(code, aend){ const d = demoDaten(); d.keyStatus = d.keyStatus || {}; d.keyStatus[code] = Object.assign(d.keyStatus[code] || {}, aend); demoSichern(d); }
+function demoKeyAnlegen(tage, bez){
+  const z = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = n => Array.from({length: n}, () => z[Math.floor(Math.random()*z.length)]).join('');
+  const code = 'DEMO-' + r(4) + '-' + r(4), heute = new Date().toISOString();
+  const k = {code, status: 'offen', einwilligung: 'keine', tage, bezeichnung: bez || null, erstellt_am: heute, demo_neu: true};
+  const d = demoDaten(); d.keys = (d.keys || []).concat([k]); demoSichern(d);
+  KEYS.push(k);
+  return {ok: true, code, tage, link: 'https://root-index.de/klientin.html?code=' + code};
+}
+function demoKeyAktion(rpc, a){
+  const k = KEYS.find(x => x.code===a.p_code); if(!k) return {ok: false, grund: 'Key nicht gefunden.'};
+  if(rpc==='cb_fp_key_bezeichnung'){ demoKeyMerken(k.code, {bezeichnung: a.p_bezeichnung}); }
+  else if(rpc==='cb_fp_key_beenden'){ demoKeyMerken(k.code, {status: 'beendet', beendet_am: new Date().toISOString(), beendet_grund: 'fachperson'}); }
+  else if(rpc==='cb_fp_key_laufzeit'){
+    const n = a.p_menge, tage = a.p_einheit==='tage' ? n : a.p_einheit==='wochen' ? n*7 : Math.round(n*30.4);
+    if(k.status==='offen') demoKeyMerken(k.code, {tage: Math.max(1, (k.tage||0) + tage)});
+    else { const b = new Date(k.laeuft_bis || Date.now()); b.setDate(b.getDate() + tage);
+      const aend = {laeuft_bis: b.toISOString().slice(0,10)};
+      if(b < new Date()) Object.assign(aend, {status: 'abgelaufen'}); else if(k.status==='abgelaufen') aend.status = 'laeuft';
+      demoKeyMerken(k.code, aend); }
+  }
+  KEYS = demoKeys(musterKeys());
+  return {ok: true};
+}
+/* Änderungen an Zielen, Akte und Notizen je Person im Sandkasten */
+function demoSetzen(code, art, x){
+  const d = demoDaten(); d.p = d.p || {}; const p = d.p[code] = d.p[code] || {vorgaben: {}, akte: {}, protokoll: []};
+  const heute = new Date().toISOString();
+  if(art==='vorgabe'){ if(x.wert==null) delete p.vorgaben[x.kennzahl]; else p.vorgaben[x.kennzahl] = {wert: Number(x.wert), art: x.art || 'etwa', notiz: x.notiz || null}; }
+  if(art==='privat'){ p.privat_notiz = x.privat_notiz; p.stichworte = (x.stichworte || []).slice(0, 20); }
+  let n = 0;
+  if(art==='akte') Object.keys(x).forEach(f => { const alt = f in p.akte ? p.akte[f] : (DEMO_LETZT[code] && DEMO_LETZT[code][f]); const neu = x[f]==='' ? null : x[f];
+    if(JSON.stringify(alt) !== JSON.stringify(neu)){ p.protokoll.unshift({feld: f, alt: alt==null ? null : alt, neu, am: heute}); n++; } p.akte[f] = neu; });
+  demoSichern(d);
+  return {ok: true, geaendert: n};
+}
+const DEMO_LETZT = {};
+function demoMischen(code, r){
+  const p = (demoDaten().p || {})[code]; const a = r.akte || {};
+  a.nur_ansehen = false;
+  DEMO_LETZT[code] = Object.assign({}, a.felder || {}, {ziel_text: a.ziel_text, sport_text: a.sport_text, notiz_text: a.notiz_text});
+  if(!p){ r.akte = a; return r; }
+  ['ziel_text','sport_text','notiz_text'].forEach(f => { if(f in p.akte) a[f] = p.akte[f]; });
+  a.felder = Object.assign({}, a.felder || {});
+  Object.keys(p.akte).forEach(f => { if(!/_text$/.test(f)) a.felder[f] = /_cm|_kg/.test(f) && p.akte[f]!=null ? Number(String(p.akte[f]).replace(',', '.')) : p.akte[f]; });
+  if(p.akte.gewicht_kg != null) r.profil = Object.assign({}, r.profil, {gewicht_kg: a.felder.gewicht_kg});
+  ['groesse_cm','ernaehrungsform','diabetes_typ','unvertraeglichkeiten','geschlecht'].forEach(f => { if(f in p.akte) r.profil = Object.assign({}, r.profil, {[f]: a.felder[f]}); });
+  if('privat_notiz' in p) a.privat_notiz = p.privat_notiz;
+  if(p.stichworte) a.stichworte = p.stichworte;
+  a.protokoll = (p.protokoll || []).concat(a.protokoll || []);
+  Object.entries(p.vorgaben).forEach(([k, v]) => {
+    (r.ist_soll || []).filter(x => x.kennzahl===k && x.einheit!=='en%').forEach(x => {
+      x.soll = v.wert; x.art = v.art; x.soll_herkunft = 'Vorgabe Therapeutin'; x.hinweis = v.notiz;
+      const ist = Number(x.ist); x.ist_prozent_vom_soll = v.wert ? Math.round(ist / v.wert * 100) : null;
+      x.erfuellt = x.ist==null ? null : v.art==='mindestens' ? ist >= v.wert : v.art==='hoechstens' ? ist <= v.wert : Math.abs(ist - v.wert) <= v.wert * 0.1;
+    });
+  });
+  r.akte = a; return r;
+}
+function demoLeiste(){
+  if($('demoLeiste')) return;
+  const l = document.createElement('span'); l.id = 'demoLeiste'; l.className = 'demo-leiste';
+  l.innerHTML = '<span>Vorführung: Änderungen bleiben nur in diesem Browser-Tab.</span>' +
+    '<button type="button" class="tb" id="demoVorschlag">Verbesserung vorschlagen</button><button type="button" class="tb" id="demoReset">Vorführung zurücksetzen</button>';
+  $('statusZeile').appendChild(l);
+  $('demoVorschlag').onclick = () => geh('wunschliste');
+  $('demoReset').onclick = () => { if(confirm('Alle Änderungen in der Vorführung verwerfen?')) demoReset(); };
+}
+function demoWunsch(){
+  const sec = document.querySelector('.ansicht[data-v="wunschliste"]');
+  if(sec.querySelector('.demo-wunsch')) return;
+  const box = document.createElement('div'); box.className = 'karte2 demo-wunsch';
+  box.innerHTML = '<div class="k2-kopf"><h3>Verbesserung vorschlagen</h3></div>' +
+    '<p>Ideen und Wünsche sammeln wir in der gemeinsamen Wunschliste der Fachleute. Dort lassen sich Wünsche eintragen, mit „Ich auch“ unterstützen und Skizzen anhängen. Eintragen geht nach der Anmeldung als Fachperson.</p>' +
+    '<p><a class="tb haupt" href="therapeut.html#wunschliste" target="_blank" rel="noopener">Zur Wunschliste (Anmeldung)</a></p>' +
+    '<p class="fuss">Noch kein Zugang? Kurz schreiben an <a href="mailto:kontakt@root-index.de?subject=Vorschlag%20f%C3%BCr%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a>.</p>';
+  $('wunschFrame').hidden = true; sec.appendChild(box);
+}
+function demoZahlen(){
+  const aktiv = KEYS.filter(x => x.status==='laeuft').length;
+  $('zAktiv').textContent = aktiv; $('zNeu').textContent = KEYS.filter(x => x.demo_neu).length;
+  $('zBetrag').textContent = (aktiv * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+  $('zRegel').textContent = 'Beispiel: 4,99 € je Key und Monat, jeder angefangene Monat zählt voll. In der Vorführung wird nichts berechnet.';
+  $('zRegel2').textContent = $('zRegel').textContent;
+}
+function demoAbrechnung(){
+  demoZahlen();
+  $('abrRegel').textContent = $('zRegel').textContent;
+  const h = heuteBerlin(), zeilen = [];
+  for(let i = 0; i < 6; i++){
+    const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i);
+    const von = d.toISOString().slice(0,10), e = new Date(d); e.setUTCMonth(e.getUTCMonth() + 1); e.setUTCDate(0); const bis = e.toISOString().slice(0,10);
+    const ak = KEYS.filter(k => k.start_am && String(k.start_am).slice(0,10) <= bis && (!k.laeuft_bis || String(k.laeuft_bis).slice(0,10) >= von));
+    const neu = ak.filter(k => String(k.start_am).slice(0,10) >= von).length;
+    const euro = (ak.length * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+    zeilen.push('<tr><td><b>' + MONATE[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + '</b>' + (i===0 ? ' <small style="color:var(--muted)">bis heute</small>' : '') + '</td><td class="z">' + ak.length +
+      '</td><td class="z">' + neu + '</td><td class="z">' + euro + '</td><td class="z">–</td><td class="z"><b>' + euro + '</b></td></tr>');
+  }
+  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' + zeilen.join('') + '</tbody>';
+}
+
 async function start(){
   if(inRecovery){ zeige('bNeuPass'); return; }
   if(demoGewuenscht()){
-    const z = new URLSearchParams(location.search).get('z') || demoGemerkt();
-    if(z && await demoStart(z)) return;
+    const z = new URLSearchParams(location.search).get('z') || demoGemerkt() || 'oeffentlich';
+    if(await demoStart(z)) return;
+    if(z !== 'oeffentlich' && await demoStart('oeffentlich')) return;
     try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
     zeige('bDemo'); return;
   }
@@ -949,7 +1111,7 @@ async function ladeAlles(){
   if(DEMO){   // Vorführung: Keys sind die Musterklienten, keine Abrechnung
     zeichne(); zeichneShell();
     ['zAktiv','zBetrag','zNeu'].forEach(id => $(id).textContent = '–');
-    $('zRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('zRegel2').textContent = $('zRegel').textContent;
+    demoZahlen();
     if(AKTIV==='uebersicht') ladeUebersichtStat();
     if(AKTIV==='klienten' && !$('kDash')) zeigeKlient(WAHL || standardWahl());
     return;
@@ -996,7 +1158,7 @@ $('anlegen').onclick = async function(){
   if(tage > 730) return meld('meldNeu','Höchstens 2 Jahre.','fehler');
   if(!$('vereinbarungZeile').hidden && !$('vereinbarung').checked) return meld('meldNeu','Bitte zuerst die Vereinbarung zur Verschwiegenheit bestätigen.','fehler');
   this.disabled = true; meld('meldNeu','⏳ …');
-  const {data, error} = await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
+  const {data, error} = DEMO ? {data: demoKeyAnlegen(tage, $('neuBez').value.trim())} : await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
   this.disabled = false;
   const d = json(data);
   if(error || !d.ok){ meld('meldNeu', error ? error.message : d.grund, 'fehler'); if(d.vereinbarung_noetig) $('vereinbarungZeile').hidden = false; return; }
@@ -1092,7 +1254,7 @@ $('liste').addEventListener('click', async e => {
     rpc = 'cb_fp_key_beenden'; args = { p_code: code };
   }
   box.querySelectorAll('button').forEach(x => x.disabled = true); setM('⏳ …');
-  const {data, error} = await client.rpc(rpc, args);
+  const {data, error} = DEMO ? {data: demoKeyAktion(rpc, args)} : await client.rpc(rpc, args);
   const d = json(data);
   if(error || !d.ok){ box.querySelectorAll('button').forEach(x => x.disabled = false); return setM(error ? error.message : d.grund, 'fehler'); }
   ladeAlles();
@@ -1115,7 +1277,7 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dd.auf').forEach(d => { if(!t || d !== t.closest('.dd')) d.classList.remove('auf'); });
   if(t){ t.closest('.dd').classList.toggle('auf'); return; }
   const g = e.target.closest('[data-geh]'); if(g){ geh(g.dataset.geh); return; }
-  const n = e.target.closest('[data-neu]'); if(n){ if(DEMO) nurAnsehen(); else neuerKey(n.dataset.neu); return; }
+  const n = e.target.closest('[data-neu]'); if(n){ neuerKey(n.dataset.neu); return; }
   if(e.target.closest('[data-druck]')){ drucken(); return; }
   const aw = e.target.closest('[data-aw]'); if(aw){ AW_TAGE = Number(aw.dataset.aw); $('awZeitText').textContent = aw.textContent; ladeAuswertungen(); return; }
   const tr = e.target.closest('tr[data-ziel]'); if(tr){ geh(tr.dataset.ziel); return; }
@@ -1130,7 +1292,7 @@ function route(){
   const h = decodeURIComponent(location.hash.slice(1)) || 'uebersicht';
   const teil = h.split('/');
   let v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
-  if(DEMO && (v==='wunschliste' || v==='bewertung')) v = 'uebersicht';   // in der Vorführung nicht dabei
+  if(DEMO && v==='bewertung') v = 'uebersicht';   // vertraulich, in der Vorführung nicht dabei
   AKTIV = v;
   document.querySelectorAll('.ansicht').forEach(s => s.classList.toggle('an', s.dataset.v===v));
   document.querySelectorAll('#menueListe [data-v]').forEach(b => { b.classList.toggle('an', b.dataset.v===v); b.setAttribute('aria-current', b.dataset.v===v ? 'page' : 'false'); });
@@ -1138,10 +1300,12 @@ function route(){
   if(v==='klienten') zeigeKlient(teil[1] || WAHL || standardWahl());
   if(v==='auswertungen') ladeAuswertungen();
   if(v==='uebersicht') ladeUebersichtStat();
-  if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
+  if(v==='wunschliste' && DEMO) demoWunsch();
+  else if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
   if(v==='bewertung') ladeBewertung();
   if(v==='abrechnung') ladeAbrechnung();
+  if(v==='einstellungen') ladePraxis();
   window.scrollTo(0,0);
 }
 function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : null; }
@@ -1177,24 +1341,96 @@ function zeichneShell(){
     : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.</td></tr></tbody>';
   zeichneBaum();
 }
+let K_FILTER = 'aktiv';
+const BALD_TAGE = 14;
+function kGruppen(){
+  const v = verbunden();
+  return {
+    aktiv: v,
+    bald: v.filter(x => restTage(x.laeuft_bis) <= BALD_TAGE),
+    warten: KEYS.filter(x => x.status==='offen' || (x.status==='laeuft' && x.einwilligung!=='erteilt')),
+    archiv: KEYS.filter(x => x.status==='beendet' || x.status==='abgelaufen' || (x.status==='laeuft' && x.einwilligung==='widerrufen'))
+  };
+}
 function zeichneBaum(){
   const q = ($('kSuche').value || '').trim().toLowerCase();
-  const passt = s => !q || String(s||'').toLowerCase().includes(q);
-  const v = verbunden().filter(x => passt(klientName(x)) || passt(x.code));
-  const warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').filter(x => passt(klientName(x)) || passt(x.code));
-  let h = '<div class="kopfzeile"><span>Meine Klienten</span><span>' + v.length + '</span></div>';
-  h += v.length ? v.map(x => '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel g"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · bis ' + datum(x.laeuft_bis) + '</small></span></button>').join('')
-                : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : 'Noch niemand verbunden.') + '</div>';
-  if(warten.length) h += warten.map(x => '<button type="button" data-geh="keys"><span class="ampel o"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>wartet auf Einwilligung</small></span></button>').join('');
-  h += '<p class="baum-fuss">Wechsel zu einer anderen Fachkraft: Die Person löst deren Key ein. Der bisherige Key endet dann automatisch, die Daten sind hier nicht mehr sichtbar.</p>';
+  const passt = x => !q || [klientName(x), x.code, x.bezeichnung].some(s0 => String(s0||'').toLowerCase().includes(q));
+  const g = kGruppen();
+  document.querySelectorAll('#kFilter [data-kf]').forEach(b => {
+    const n = g[b.dataset.kf].length; b.classList.toggle('an', b.dataset.kf===K_FILTER);
+    b.innerHTML = b.dataset.kf==='aktiv' ? 'Aktiv' : b.dataset.kf==='bald' ? 'Läuft ab' : b.dataset.kf==='warten' ? 'Wartet' : 'Archiv';
+    if(n) b.innerHTML += ' <i>' + n + '</i>';
+  });
+  const liste = g[K_FILTER].filter(passt);
+  const titel = {aktiv: 'Meine Klienten', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Archiv: beendet oder abgelaufen'}[K_FILTER];
+  let h = '<div class="kopfzeile"><span>' + titel + '</span><span>' + liste.length + '</span></div>';
+  h += liste.length ? liste.map(x => {
+      const ok = x.status==='laeuft' && x.einwilligung==='erteilt', rt = x.laeuft_bis ? restTage(x.laeuft_bis) : null;
+      const ampel = ok ? (rt <= BALD_TAGE ? 'o' : 'g') : x.status==='offen' ? 'x' : x.einwilligung==='widerrufen' ? 'r' : x.status==='laeuft' ? 'o' : 'x';
+      const unter = ok ? (rt <= BALD_TAGE ? 'läuft in ' + zahlTxt(rt, 'Tag', 'Tagen') + ' ab' : 'bis ' + datum(x.laeuft_bis))
+                  : x.status==='offen' ? 'Key noch nicht eingelöst' : x.status==='laeuft' ? (x.einwilligung==='widerrufen' ? 'Einwilligung widerrufen' : 'wartet auf Einwilligung')
+                  : x.status==='beendet' ? 'beendet am ' + datum(x.beendet_am) : 'abgelaufen am ' + datum(x.laeuft_bis);
+      return '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel ' + ampel + '"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · ' + esc(unter) + '</small></span></button>';
+    }).join('')
+    : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : K_FILTER==='archiv' ? 'Noch keine beendeten Keys.' : K_FILTER==='aktiv' ? 'Noch niemand verbunden.' : 'Niemand.') + '</div>';
+  h += '<div class="baum-knoepfe"><button class="tb haupt" type="button" data-neu="mail">Klient hinzufügen</button></div>';
+  h += '<p class="baum-fuss">Hinzufügen heißt: einen Key anlegen und der Person schicken. Mit dem Einlösen und ihrer Einwilligung steht sie hier.</p>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
+  const v = g.aktiv;
   $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
+    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
+    (g.archiv.length ? '<optgroup label="Archiv">' + g.archiv.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
+document.querySelectorAll('#kFilter [data-kf]').forEach(b => b.onclick = () => { K_FILTER = b.dataset.kf; zeichneBaum(); });
 $('kSuche').addEventListener('input', zeichneBaum);
 $('kAuswahl').onchange = () => { if($('kAuswahl').value) geh('klienten/' + $('kAuswahl').value); };
+
+/* Key einer Person: Verlängern, Beenden, Übertragen (Klientenkopf und Archiv-Karte) */
+function keyMenue(k){
+  return '<span class="dd"><button class="tb" type="button" data-dd>Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
+    '<span class="dd-menu rechts"><button type="button" data-km="plus:1">Um 1 Monat verlängern</button><button type="button" data-km="plus:3">Um 3 Monate verlängern</button>' +
+    '<button type="button" data-km="plus:6">Um 6 Monate verlängern</button><button type="button" data-km="ueber">An andere Fachkraft übergeben …</button>' +
+    '<button type="button" data-km="keys">In der Key-Liste öffnen</button><button type="button" data-km="ende" class="rot">Key beenden …</button></span></span>';
+}
+async function keyAusfuehren(k, was){
+  let rpc, args;
+  if(was.startsWith('plus:')){ const m = Number(was.split(':')[1]); rpc = 'cb_fp_key_laufzeit'; args = {p_code: k.code, p_menge: m, p_einheit: 'monate'}; }
+  else if(was==='ende'){ if(!confirm('Key ' + k.code + ' endgültig beenden? Premium und der Zugriff enden sofort. Die Person wandert ins Archiv.')) return; rpc = 'cb_fp_key_beenden'; args = {p_code: k.code}; }
+  else return;
+  const {data, error} = DEMO ? {data: demoKeyAktion(rpc, args)} : await client.rpc(rpc, args);
+  const d = json(data);
+  if(error || !d.ok){ alert(error ? error.message : d.grund); return; }
+  if(DEMO){ zeichne(); zeichneShell(); zeigeKlient(k.code); if(AKTIV==='abrechnung') ladeAbrechnung(); } else ladeAlles();
+}
+function bindeKeyMenue(el, k){
+  el.querySelectorAll('[data-km]').forEach(b => b.onclick = () => {
+    const was = b.dataset.km; b.closest('.dd').classList.remove('auf');
+    if(was==='keys'){ FILTER = 'alle'; document.querySelectorAll('#filter button').forEach(x => x.classList.toggle('an', x.dataset.f===FILTER)); zeichne(); geh('keys'); return; }
+    if(was==='ueber'){ uebergabeDialog(k); return; }
+    keyAusfuehren(k, was);
+  });
+}
+function uebergabeDialog(k){
+  const d = $('dlgUeber');
+  $('ueberText').innerHTML = 'So geht <b>' + esc(klientName(k)) + '</b> zu einer anderen Fachkraft, ohne dass Daten ohne Zustimmung weitergehen:';
+  d.showModal();
+}
+function keyKarte(k){
+  const info = k.status==='offen' ? 'Key angelegt am ' + datum(k.erstellt_am) + ', noch nicht eingelöst (' + dauerText(k.tage) + ' ab Einlösen).'
+    : k.status==='beendet' ? 'Beendet am ' + datum(k.beendet_am) + (k.beendet_grund==='wechsel' ? ', die Person ist zu einer anderen Fachkraft gewechselt.' : '.')
+    : k.status==='abgelaufen' ? 'Abgelaufen am ' + datum(k.laeuft_bis) + '.'
+    : k.einwilligung==='widerrufen' ? 'Die Person hat die Einwilligung widerrufen. Der Key läuft bis ' + datum(k.laeuft_bis) + '.'
+    : 'Key eingelöst, die Einwilligung fehlt noch. Ohne sie ist nichts sichtbar.';
+  const archiv = k.status==='beendet' || k.status==='abgelaufen';
+  return '<div class="detail-kopf"><span><span class="n">' + esc(klientName(k)) + '</span><small>' + esc(k.code) + ' · ' + esc(STATUS[k.status]) + '</small></span></div>' +
+    '<div class="karte2" style="margin:16px"><div class="k2-kopf"><h3>' + (archiv ? 'Im Archiv' : 'Noch nicht verbunden') + '</h3></div><p>' + esc(info) + '</p>' +
+    (archiv ? '<p class="fuss">Daten sind nach dem Ende nicht mehr sichtbar. Soll die Person wieder begleitet werden: neuen Key anlegen und schicken.</p>' : '') +
+    '<div class="aktionen">' + (k.status==='abgelaufen' ? '<button class="tb haupt" type="button" data-km="plus:3">Um 3 Monate verlängern</button>' : '') +
+      (archiv ? '<button class="tb haupt" type="button" data-neu="mail">Neuen Key anlegen</button>' : '<button class="tb" type="button" data-km="keys">In der Key-Liste öffnen</button>') + '</div></div>';
+}
+function bindeKeyKarte(el, k){ bindeKeyMenue(el, k); }
 
 /* Rechts: Auswertung der gewählten Person */
 async function zeigeKlient(wahl){
@@ -1208,19 +1444,23 @@ async function zeigeKlient(wahl){
   }
   if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
   const k = KEYS.find(x => x.code===WAHL);
-  if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
+  if(!k){ el.innerHTML = '<div class="leer-gross"><b>Nicht gefunden</b>Diesen Key gibt es in dieser Praxis nicht.</div>'; return; }
+  if(!(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = keyKarte(k); bindeKeyKarte(el, k); return; }
   const code = WAHL;
   const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
     '<small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
-  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: !!DEMO, verlaufKey: code,
+  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: false, verlaufKey: code,
     verlauf: (von, bis) => dashRpc(code, von, bis),
-    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return json(r.data); },
-    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); },
-    akteSetzen: async (daten) => { const r = await client.rpc('cb_fp_akte_setzen', {p_code: code, p_daten: daten}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
+    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return DEMO ? demoMischen(code, json(r.data)) : json(r.data); },
+    privatSetzen: async (notiz, sw) => { if(DEMO) return demoSetzen(code, 'privat', {privat_notiz: notiz, stichworte: sw});
+      const r = await client.rpc('cb_fp_akte_privat_setzen', {p_code: code, p_notiz: notiz, p_stichworte: sw}); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { if(DEMO) return demoSetzen(code, 'vorgabe', {kennzahl, wert, art, notiz}); const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    akteSetzen: async (daten) => { if(DEMO) return demoSetzen(code, 'akte', daten); const r = await client.rpc('cb_fp_akte_setzen', {p_code: code, p_daten: daten}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   el.innerHTML = '<div class="detail-kopf">' + kopf + '<span style="display:flex;gap:6px">' +
     '<span class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
     '<span class="dd-menu rechts"><button type="button" data-druck>Drucken</button><button type="button" data-druck>Als PDF speichern</button></span></span>' +
-    (DEMO ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
+    keyMenue(k) + '</span></div><div id="kDash"></div>';
+  bindeKeyMenue(el, k);
   FLDash.mount($('kDash'), opt);
 }
 function drucken(){
@@ -1285,7 +1525,7 @@ async function ladeAuswertungen(){
 /* Abrechnung: laufender Monat und die 5 Monate davor (cb_fp_abrechnung je Monat, FL-1) */
 const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 async function ladeAbrechnung(){
-  if(DEMO){ $('abrRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('abrTab').innerHTML = '<tbody><tr><td class="leer">Keine Abrechnung in der Musterpraxis.</td></tr></tbody>'; return; }
+  if(DEMO) return demoAbrechnung();
   const euro = c => c==null ? '–' : (Number(c)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
   const h = heuteBerlin(), mon = [];
   for(let i = 0; i < 6; i++){ const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i); mon.push(d.toISOString().slice(0,10)); }
@@ -1370,6 +1610,25 @@ $('pwLos').onclick = async function(){
   $('pwNeu').value = ''; meld('meldPw', '✓ Gespeichert.', 'ok');
 };
 $('abmelden2').onclick = () => $('abmelden').click();
+/* Praxisdaten (cb_fp_praxis / cb_fp_praxis_setzen); in der Vorführung nur im Tab */
+async function ladePraxis(){
+  let d;
+  if(DEMO) d = Object.assign({name: ICH.name, praxis: '', beruf: 'Ernährungsberatung (Beispiel)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '', webseite: ''}, demoDaten().praxis || {});
+  else { const r = await client.rpc('cb_fp_praxis'); if(r.error){ meld('meldPx', 'Praxisdaten gerade nicht verfügbar: ' + r.error.message, 'fehler'); return; } d = json(r.data); }
+  $('pxName').value = d.name || ''; $('pxPraxis').value = d.praxis || ''; $('pxBeruf').value = d.beruf || '';
+  $('pxTel').value = d.telefon || ''; $('pxAnschrift').value = d.anschrift || ''; $('pxWeb').value = d.webseite || '';
+}
+$('pxLos').onclick = async function(){
+  const v = {name: $('pxName').value.trim(), praxis: $('pxPraxis').value.trim(), beruf: $('pxBeruf').value.trim(), anschrift: $('pxAnschrift').value.trim(), telefon: $('pxTel').value.trim(), webseite: $('pxWeb').value.trim()};
+  if(v.name.length < 2) return meld('meldPx', 'Bitte einen Namen eintragen.', 'fehler');
+  if(DEMO){ const d = demoDaten(); d.praxis = v; demoSichern(d); return meld('meldPx', '✓ Gespeichert (nur in der Vorführung).', 'ok'); }
+  this.disabled = true; meld('meldPx', '⏳ …');
+  const {data, error} = await client.rpc('cb_fp_praxis_setzen', {p_name: v.name, p_praxis: v.praxis, p_beruf: v.beruf, p_anschrift: v.anschrift, p_telefon: v.telefon, p_webseite: v.webseite});
+  this.disabled = false; const d = json(data);
+  if(error || !d.ok) return meld('meldPx', error ? error.message : d.grund, 'fehler');
+  meld('meldPx', '✓ Gespeichert.', 'ok');
+  ICH.name = d.name; ICH.praxis = d.praxis; zeichneKonto();
+};
 /* ---------- Link per E-Mail ---------- */
 let MAILCODE = null;
 function mailDialog(code, tage){
@@ -1382,6 +1641,7 @@ $('mailAbbrechen').onclick = () => $('dlgMail').close();
 $('mailSenden').onclick = async function(){
   const email = $('mailAn').value.trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldMail','Bitte eine gültige E-Mail eintragen.','fehler');
+  if(DEMO){ meld('meldMail','Vorführung: Es wird keine Mail verschickt. Im echten Bereich ginge der Link jetzt an ' + email + '.','ok'); return; }
   this.disabled = true; meld('meldMail','⏳ Wird gesendet …');
   const {data, error} = await client.functions.invoke('fp-key-mail', { body: { code: MAILCODE, email } });
   let d = json(data);

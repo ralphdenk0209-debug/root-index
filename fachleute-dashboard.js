@@ -115,6 +115,8 @@ const CSS = `
 .fd .fd-akte-unv label{flex-direction:row;align-items:center;gap:6px;font-weight:400;font-size:14px;color:var(--fd-dunkel);width:auto!important;flex:0 0 auto;white-space:nowrap}
 .fd .fd-akte-unv input{width:16px!important;height:16px;margin:0;flex:0 0 auto}
 .fd .fd-akte-knoepfe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.fd .fd-privat{margin-top:14px;border:1px dashed var(--fd-linie);border-radius:12px;padding:10px 12px}
+.fd .fd-chip.sw{background:var(--blau-zart,#eaf1ff);color:var(--blau-tief,#04157e)}
 .fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
 @media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
@@ -324,6 +326,20 @@ function mount(el, opt){
         '<button class="fd-k" type="button" data-akte-zu>Abbrechen</button><span class="fd-klein" data-akte-m>' + (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : '') + '</span></div>' +
       '</form>';
     }
+    // Nur für die Fachkraft: Diagnose-Stichworte und private Notiz (die Person sieht das nicht)
+    const sw = a.stichworte || [];
+    h += '<div class="fd-privat"><div class="fd-kopfzeile"><b>Nur für mich</b>' + (opt.privatSetzen ? '<button class="fd-k" type="button" data-pv-auf>Bearbeiten</button>' : '') + '</div>' +
+      '<div class="fd-klein" style="margin:2px 0 6px">Stichworte zur Diagnose und eigene Notiz. Die Person sieht beides nicht; Pläne und Rezeptvorschläge berücksichtigen die Stichworte.</div>' +
+      '<div class="fd-profil">' + (sw.length ? sw.map(x => '<span class="fd-chip sw">' + esc(x) + '</span>').join('') : '<span class="fd-klein">Noch keine Stichworte.</span>') + '</div>' +
+      (a.privat_notiz ? '<div class="fd-akte-txt" style="margin-top:8px">' + esc(a.privat_notiz).replace(/\n/g, '<br>') + '</div>' : '') +
+      (opt.privatSetzen ? '<form class="fd-akte-form" data-pv-form hidden>' +
+        '<label>Stichworte (mit Komma trennen, höchstens 20)<input data-pv-sw list="fd-sw-liste" value="' + esc(sw.join(', ')) + '" placeholder="z. B. Diabetes Typ 2, Bluthochdruck"></label>' +
+        '<datalist id="fd-sw-liste">' + ['Übergewicht','Adipositas','Diabetes Typ 1','Diabetes Typ 2','Prädiabetes','Bluthochdruck','Fettstoffwechselstörung','Gicht',
+          'Reizdarm','Laktoseintoleranz','Fruktoseintoleranz','Zöliakie','Histaminintoleranz','Nierenerkrankung','Eisenmangel','Schwangerschaft','Stillzeit',
+          'Essstörung','Leistungssport','Vegetarisch','Vegan','Schichtdienst'].map(x => '<option value="' + x + '">').join('') + '</datalist>' +
+        '<label class="fd-akte-lang">Private Notiz<textarea data-pv-notiz rows="4" maxlength="8000">' + esc(a.privat_notiz || '') + '</textarea></label>' +
+        '<div class="fd-akte-knoepfe"><button class="fd-k gruen" type="submit">Speichern</button><button class="fd-k" type="button" data-pv-zu>Abbrechen</button><span class="fd-klein" data-pv-m></span></div>' +
+      '</form>' : '') + '</div>';
     const pr = a.protokoll || [];
     if(pr.length) h += '<details class="fd-akte-prot"><summary>Änderungen (' + pr.length + ')</summary><table class="fd-ziele"><tbody>' +
       pr.map(x => '<tr><td>' + esc(D(String(x.am).slice(0,10)).toLocaleDateString('de-DE')) + '</td><td>' + esc(AKTE_FELD[x.feld] || x.feld) + '</td><td>' +
@@ -331,6 +347,20 @@ function mount(el, opt){
     return h + '</div>';
   }
   function akteBinde(){
+    const pf = $in.querySelector('[data-pv-form]'), pa = $in.querySelector('[data-pv-auf]');
+    if(pf && pa){
+      pa.onclick = () => { pf.hidden = !pf.hidden; pa.textContent = pf.hidden ? 'Bearbeiten' : 'Schließen'; };
+      pf.querySelector('[data-pv-zu]').onclick = () => { pf.hidden = true; pa.textContent = 'Bearbeiten'; };
+      pf.onsubmit = async ev => {
+        ev.preventDefault();
+        const m = t => { pf.querySelector('[data-pv-m]').textContent = t; };
+        const sw = pf.querySelector('[data-pv-sw]').value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+        if(sw.length > 20) return m('Höchstens 20 Stichworte.');
+        m('⏳ Speichert …');
+        try{ const r = await opt.privatSetzen(pf.querySelector('[data-pv-notiz]').value, sw); if(r && r.ok === false) return m(r.grund || 'Ging nicht.'); m('✓ Gespeichert.'); setTimeout(laden, 500); }
+        catch(e){ m(e.message || String(e)); }
+      };
+    }
     const form = $in.querySelector('[data-akte-form]'); if(!form) return;
     const a = st.daten.akte || {}, f = a.felder || {};
     const auf = $in.querySelector('[data-akte-auf]');
