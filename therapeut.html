@@ -168,6 +168,14 @@
     <h1 id="hName">–</h1>
     <p class="unter" id="hPraxis"></p>
 
+    <!-- FL-4: Einstieg in die Auswertungen -->
+    <div class="karte" style="border:2px solid var(--gruen)">
+      <h2>Meine Klienten</h2>
+      <p>Tippe eine Person an: Tag, Woche und Monat, Gemüse und Obst, Kalorien gegen deine Vorgaben, Teller, gegessene Produkte mit Score, Rezepte und Wochenplan.</p>
+      <div id="klientenSchnell"><div class="leer">Lädt …</div></div>
+      <button class="knopf zwei" id="musterLos" type="button">Musterpraxis ansehen (4 erfundene Klienten)</button>
+    </div>
+
     <div class="karte">
       <h2>Neuer Klienten-Key</h2>
       <p>Jeder Key ist für genau eine Person. Die Laufzeit beginnt, wenn sie den Key einlöst. Danach kannst du sie jederzeit verlängern, kürzen oder beenden.</p>
@@ -437,6 +445,20 @@ async function ladeKeys(){
   if(error){ $('liste').innerHTML = '<div class="leer">Konnte die Liste nicht laden: ' + esc(error.message) + '</div>'; return; }
   KEYS = Array.isArray(data) ? data : json(data);
   zeichne();
+  zeichneKlienten();
+}
+/* FL-4: verbundene Klienten (Key läuft + Einwilligung) als große Knöpfe oben */
+function zeichneKlienten(){
+  const k = KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
+  const warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').length;
+  $('klientenSchnell').innerHTML = (k.length ? k.map(x =>
+      '<button class="key" type="button" data-dash="' + esc(x.code) + '" style="display:block;width:100%;text-align:left;cursor:pointer;background:#fff;font:inherit">' +
+      '<div class="key-kopf"><div><b style="font-size:18px;color:var(--dunkel)">' + esc(x.klient_name || x.bezeichnung || x.code) + '</b>' +
+      '<div class="key-bez">' + esc(x.code) + (x.bezeichnung && x.klient_name ? ' · ' + esc(x.bezeichnung) : '') + '</div></div>' +
+      '<span class="chip laeuft">Auswertung öffnen ›</span></div></button>').join('')
+    : '<div class="leer">Noch keine verbundenen Klienten. Leg unten einen Key an; sobald die Person einlöst und einwilligt, steht sie hier.</div>') +
+    (warten ? '<p style="margin:8px 0 0;font-size:14px">' + warten + ' Key' + (warten==1 ? '' : 's') + ' eingelöst, Einwilligung fehlt noch.</p>' : '');
+  $('klientenSchnell').querySelectorAll('[data-dash]').forEach(b => b.onclick = () => oeffneKlient(b.dataset.dash));
 }
 const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abgelaufen', beendet:'Beendet'};
 const EINW = {erteilt:'Einwilligung erteilt', keine:'Keine Einwilligung', widerrufen:'Einwilligung widerrufen'};
@@ -508,7 +530,7 @@ $('liste').addEventListener('click', async e => {
 /* ---------- FL-4: Dashboard je Klient ---------- */
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function oeffneKlient(code){
-  zeige('bKlient'); window.scrollTo(0,0); document.querySelector('.wrap').style.maxWidth = '900px';
+  zeige('bKlient'); window.scrollTo(0,0); document.querySelector('.wrap').style.maxWidth = '900px'; $('klientDash').className = '';
   FLDash.mount($('klientDash'), {
     heute: heuteBerlin(), nurLesen: false,
     laden: async (von, bis) => {
@@ -523,6 +545,27 @@ function oeffneKlient(code){
     }
   });
 }
+/* FL-4: Musterpraxis direkt hier (nur lesen, erfundene Personen) */
+async function oeffneMuster(){
+  zeige('bKlient'); window.scrollTo(0,0); document.querySelector('.wrap').style.maxWidth = '900px';
+  const box = $('klientDash'); box.className = ''; box.innerHTML = '<div class="leer">Lädt …</div>';
+  const {data, error} = await client.rpc('cb_fl_muster', {p_token: null});
+  if(error){ box.innerHTML = '<div class="karte">Die Musterpraxis lässt sich gerade nicht öffnen: ' + esc(error.message) + '</div>'; return; }
+  const P = json(data);
+  box.innerHTML = '<div class="hinweis" style="margin-top:12px"><b>Musterpraxis:</b> Alle Personen und Einträge sind erfunden. Produkte, Nährwerte und Scores sind echt aus dem Root Index. Nur zum Ansehen.</div>' +
+    '<div class="karte"><h2>' + esc(P.praxis || 'Praxis Muster') + '</h2>' + (P.klienten||[]).map(k =>
+      '<button class="key" type="button" data-nr="' + k.nr + '" style="display:block;width:100%;text-align:left;cursor:pointer;background:#fff;font:inherit">' +
+      '<div class="key-kopf"><div><b style="font-size:18px;color:var(--dunkel)">' + esc(k.name) + '</b><div class="key-bez">' + esc(k.code) + ' · ' + esc(k.steckbrief) + '</div></div>' +
+      '<span class="chip laeuft">Auswertung öffnen ›</span></div></button>').join('') + '</div>';
+  box.querySelectorAll('[data-nr]').forEach(b => b.onclick = () => {
+    const nr = Number(b.dataset.nr); window.scrollTo(0,0);
+    box.innerHTML = '<div class="hinweis" style="margin-top:12px"><b>Musterpraxis:</b> erfundene Person, nur zum Ansehen. <button class="link" type="button" id="musterListe" style="margin:0">Zur Musterpraxis</button></div><div id="musterDash"></div>';
+    $('musterListe').onclick = oeffneMuster;
+    FLDash.mount($('musterDash'), { heute: P.heute, nurLesen: true,
+      laden: async (von, bis) => { const r = await client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); } });
+  });
+}
+$('musterLos').onclick = oeffneMuster;
 $('klientZurueck').onclick = () => { document.querySelector('.wrap').style.maxWidth = ''; zeige('bHaupt'); ladeAlles(); };
 /* ---------- Link per E-Mail ---------- */
 let MAILCODE = null;
