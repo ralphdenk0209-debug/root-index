@@ -138,8 +138,9 @@ Deno.serve(async (req) => {
     const zutaten: string[] = Array.isArray(body.zutaten)
       ? body.zutaten.map((z: unknown) => String(z ?? "").trim()).filter((z: string) => z.length > 0).slice(0, 40)
       : [];
-    if (zutaten.length < 2) {
-      return new Response(JSON.stringify({ error: "Bitte mindestens 2 Zutaten angeben." }),
+    // 11.11.2026: eine Zutat reicht (Sandra: nur „Tofu“ → iPhone zeigte nur „Ging nicht“, Server 400).
+    if (zutaten.length < 1) {
+      return new Response(JSON.stringify({ error: "Bitte mindestens eine Zutat angeben." }),
         { status: 400, headers: { ...CORS, "Content-Type": "application/json" } });
     }
     const kcalTag = Number(body.kcal_tag);
