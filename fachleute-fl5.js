@@ -18,59 +18,60 @@
 (function(){
 'use strict';
 const CSS = `
-.f5{--f5-gruen:#2e7d46;--f5-dunkel:#133521;--f5-creme:#F3EEDC;--f5-muted:#5d6b61;--f5-linie:#dfe6df;--f5-rot:#b42318;--f5-orange:#e8920c}
-.f5 .f5-karte{background:#fff;border:2px solid var(--f5-gruen);border-radius:16px;padding:14px 16px;margin:14px 0}
+/* Farben nur aus den gemeinsamen Variablen von therapeut.html (FL-4, Optik Content Studio); Werte hinter dem Komma nur als Ersatz */
+.f5{--f5-gruen:var(--blau,#2e7d46);--f5-gruen-h:var(--blau-h,#25683a);--f5-dunkel:var(--ink,#133521);--f5-creme:var(--blau-zart,#F3EEDC);--f5-muted:var(--muted,#5d6b61);--f5-linie:var(--line,#dfe6df);--f5-rot:var(--bad,#b42318);--f5-orange:var(--warn,#e8920c);--f5-panel:var(--panel,#fff);--f5-ok-zart:var(--ok-zart,#dff3e5);--f5-warn-zart:var(--warn-zart,#fff1dc);--f5-bad-zart:var(--bad-zart,#fde7e5);color:var(--ink,inherit)}
+.f5 .f5-karte{background:var(--f5-panel);border:2px solid var(--f5-gruen);border-radius:16px;padding:14px 16px;margin:14px 0}
 .f5 h2{font-size:18px;margin:0 0 4px;color:var(--f5-dunkel)} .f5 h3{font-size:15px;margin:14px 0 6px;color:var(--f5-dunkel)}
 .f5 .f5-k{font-size:13px;color:var(--f5-muted)}
 .f5 .f5-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
-.f5 .f5-tabs button{flex:1;min-width:150px;border:1px solid var(--f5-linie);background:#fff;border-radius:11px;padding:10px 8px;font:inherit;font-size:15px;font-weight:800;color:var(--f5-dunkel);cursor:pointer}
-.f5 .f5-tabs button.an{background:var(--f5-dunkel);color:#fff;border-color:var(--f5-dunkel)}
+.f5 .f5-tabs button{flex:1;min-width:150px;border:1px solid var(--f5-linie);background:var(--f5-panel);border-radius:11px;padding:10px 8px;font:inherit;font-size:15px;font-weight:800;color:var(--f5-dunkel);cursor:pointer}
+.f5 .f5-tabs button.an{background:var(--f5-gruen);color:#fff;border-color:var(--f5-gruen)}
 .f5 .f5-panel{margin-top:12px}
 .f5 .f5-reihe{display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin:8px 0}
 .f5 .f5-reihe > label{font-size:13px;font-weight:800;display:flex;flex-direction:column;gap:3px}
-.f5 input,.f5 select,.f5 textarea{padding:8px 9px;border:1px solid var(--f5-linie);border-radius:9px;font:inherit;font-size:15px;background:#fff;color:inherit}
+.f5 input,.f5 select,.f5 textarea{padding:8px 9px;border:1px solid var(--f5-linie);border-radius:9px;font:inherit;font-size:15px;background:var(--f5-panel);color:inherit}
 .f5 textarea{width:100%;min-height:80px;resize:vertical}
-.f5 .f5-b{border:1px solid var(--f5-linie);background:#fff;border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;color:var(--f5-dunkel)}
+.f5 .f5-b{border:1px solid var(--f5-linie);background:var(--f5-panel);border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;color:var(--f5-dunkel)}
 .f5 .f5-b.gruen{background:var(--f5-gruen);border-color:var(--f5-gruen);color:#fff}
 .f5 .f5-b.rot{color:var(--f5-rot);border-color:#f0c6c2}
-.f5 .f5-b.an{background:var(--f5-dunkel);border-color:var(--f5-dunkel);color:#fff}
+.f5 .f5-b.gruen:hover{background:var(--f5-gruen-h)} .f5 .f5-b.an{background:var(--f5-gruen);border-color:var(--f5-gruen);color:#fff}
 .f5 .f5-b:disabled{opacity:.5;cursor:default}
 .f5 .f5-chip{display:inline-block;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:800;background:var(--f5-creme);color:var(--f5-dunkel);margin:2px 4px 2px 0}
-.f5 .f5-chip.gruen{background:#dff3e5;color:var(--f5-gruen)} .f5 .f5-chip.grau{background:#f1f1f1;color:#666} .f5 .f5-chip.blau{background:#eef1f7;color:#3a4a6b}
+.f5 .f5-chip.gruen{background:var(--f5-ok-zart);color:var(--ok,#2e7d46)} .f5 .f5-chip.grau{background:var(--f5-linie);color:var(--f5-muted)} .f5 .f5-chip.blau{background:var(--f5-creme);color:var(--f5-gruen)}
 .f5 .f5-plan{border:1px solid var(--f5-linie);border-radius:14px;padding:12px;margin-top:10px}
 .f5 .f5-tab-wrap{overflow-x:auto;margin-top:8px}
 .f5 table.f5-raster{border-collapse:collapse;width:100%;min-width:620px;font-size:13px}
-.f5 .f5-raster th,.f5 .f5-raster td{border-bottom:1px solid #eef0ee;padding:5px;vertical-align:top;text-align:left}
+.f5 .f5-raster th,.f5 .f5-raster td{border-bottom:1px solid var(--f5-linie);padding:5px;vertical-align:top;text-align:left}
 .f5 .f5-raster th{font-size:12px;color:var(--f5-muted)}
 .f5 .f5-raster td.z{text-align:right;white-space:nowrap}
 .f5 .f5-e{border-radius:7px;padding:3px 6px;margin:2px 0;background:var(--f5-creme);line-height:1.25}
 .f5 .f5-e small{display:block;color:var(--f5-muted)}
-.f5 .f5-e.wie_geplant{background:#dff3e5} .f5 .f5-e.anders{background:#fff1dc} .f5 .f5-e.nichts_eingetragen{background:#fde7e5} .f5 .f5-e.eingetragen{background:#eef1f7}
+.f5 .f5-e.wie_geplant{background:var(--f5-ok-zart)} .f5 .f5-e.anders{background:var(--f5-warn-zart)} .f5 .f5-e.nichts_eingetragen{background:var(--f5-bad-zart)} .f5 .f5-e.eingetragen{background:var(--f5-creme)}
 .f5 .f5-e button{border:0;background:none;color:var(--f5-rot);cursor:pointer;font-size:13px;padding:0 0 0 4px}
-.f5 .f5-plus{border:1px dashed var(--f5-linie);background:#fff;border-radius:7px;width:100%;padding:3px;font-size:13px;color:var(--f5-gruen);cursor:pointer;margin-top:2px}
-.f5 .f5-wahl{border:1px solid var(--f5-gruen);border-radius:12px;padding:10px;margin:8px 0;background:#f7fbf8}
-.f5 .f5-treffer{max-height:220px;overflow:auto;border:1px solid var(--f5-linie);border-radius:9px;margin-top:6px;background:#fff}
-.f5 .f5-treffer div{padding:7px 9px;border-bottom:1px solid #f0f2f0;cursor:pointer;font-size:14px}
-.f5 .f5-treffer div:hover,.f5 .f5-treffer div.an{background:#dff3e5}
+.f5 .f5-plus{border:1px dashed var(--f5-linie);background:var(--f5-panel);border-radius:7px;width:100%;padding:3px;font-size:13px;color:var(--f5-gruen);cursor:pointer;margin-top:2px}
+.f5 .f5-wahl{border:1px solid var(--f5-gruen);border-radius:12px;padding:10px;margin:8px 0;background:var(--f5-panel)}
+.f5 .f5-treffer{max-height:220px;overflow:auto;border:1px solid var(--f5-linie);border-radius:9px;margin-top:6px;background:var(--f5-panel)}
+.f5 .f5-treffer div{padding:7px 9px;border-bottom:1px solid var(--f5-linie);cursor:pointer;font-size:14px}
+.f5 .f5-treffer div:hover,.f5 .f5-treffer div.an{background:var(--f5-creme)}
 .f5 .f5-legende{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--f5-muted);margin-top:6px}
 .f5 .f5-legende i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:4px;vertical-align:-1px}
-.f5 .f5-rez{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef0ee}
+.f5 .f5-rez{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--f5-linie)}
 .f5 .f5-rez img,.f5 .f5-rez .ph{width:44px;height:44px;border-radius:10px;object-fit:cover;background:var(--f5-creme);flex:0 0 44px}
-.f5 .f5-hinweis{background:#fff8e6;border:1px solid #f3d27a;border-radius:12px;padding:10px 12px;font-size:13px;color:#5b4500;margin-top:10px}
-.f5 .f5-meld{font-size:14px;margin-top:6px} .f5 .f5-meld.f{color:var(--f5-rot)} .f5 .f5-meld.ok{color:var(--f5-gruen)}
+.f5 .f5-hinweis{background:var(--f5-warn-zart);border:1px solid var(--f5-linie);border-radius:12px;padding:10px 12px;font-size:13px;color:var(--f5-dunkel);margin-top:10px}
+.f5 .f5-meld{font-size:14px;margin-top:6px} .f5 .f5-meld.f{color:var(--f5-rot)} .f5 .f5-meld.ok{color:var(--ok,#2e7d46)}
 /* Bericht */
-#fl5Bericht{position:fixed;inset:0;z-index:1000;background:#e9ece9;overflow:auto;padding:16px}
+#fl5Bericht{--f5b-akzent:var(--blau,#1f4fd1);position:fixed;inset:0;z-index:1000;background:var(--paper,#e9ece9);overflow:auto;padding:16px}
 #fl5Bericht .f5-leiste{max-width:820px;margin:0 auto 10px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
 #fl5Bericht .f5-blatt{max-width:820px;margin:0 auto;background:#fff;padding:28px 32px;border-radius:6px;box-shadow:0 4px 20px rgba(0,0,0,.12);color:#1f2a22;font:14px/1.45 Inter,-apple-system,Helvetica,Arial,sans-serif}
-#fl5Bericht .bk{display:flex;justify-content:space-between;gap:16px;border-bottom:3px solid #133521;padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap}
-#fl5Bericht .bk .p{font-size:18px;font-weight:800;color:#133521} #fl5Bericht .bk .r{text-align:right}
-#fl5Bericht h1{font-size:22px;margin:0;color:#133521} #fl5Bericht h2{font-size:16px;margin:18px 0 6px;color:#133521;border-bottom:1px solid #dfe6df;padding-bottom:3px}
-#fl5Bericht table{width:100%;border-collapse:collapse;font-size:13px} #fl5Bericht th,#fl5Bericht td{padding:4px 6px;border-bottom:1px solid #eef0ee;text-align:left;vertical-align:top}
-#fl5Bericht th{font-size:11.5px;color:#5d6b61} #fl5Bericht td.z,#fl5Bericht th.z{text-align:right;white-space:nowrap}
-#fl5Bericht .kl{font-size:11.5px;color:#5d6b61} #fl5Bericht .ok{color:#2e7d46;font-weight:800} #fl5Bericht .nein{color:#b42318;font-weight:800}
+#fl5Bericht .bk{display:flex;justify-content:space-between;gap:16px;border-bottom:3px solid var(--f5b-akzent);padding-bottom:10px;margin-bottom:12px;flex-wrap:wrap}
+#fl5Bericht .bk .p{font-size:18px;font-weight:800;color:#111} #fl5Bericht .bk .r{text-align:right}
+#fl5Bericht h1{font-size:22px;margin:0;color:#111;letter-spacing:-.015em} #fl5Bericht h2{font-size:16px;margin:18px 0 6px;color:var(--f5b-akzent);border-bottom:1px solid #d9d9d9;padding-bottom:3px;letter-spacing:-.015em}
+#fl5Bericht table{width:100%;border-collapse:collapse;font-size:13px} #fl5Bericht th,#fl5Bericht td{padding:4px 6px;border-bottom:1px solid #e6e6e6;text-align:left;vertical-align:top}
+#fl5Bericht th{font-size:11.5px;color:#666} #fl5Bericht td.z,#fl5Bericht th.z{text-align:right;white-space:nowrap}
+#fl5Bericht .kl{font-size:11.5px;color:#666} #fl5Bericht .ok{color:#111;font-weight:800} #fl5Bericht .nein{color:#111;font-weight:800;text-decoration:underline}
 #fl5Bericht .sc{display:inline-block;min-width:28px;text-align:center;border-radius:6px;padding:1px 5px;font-weight:800;color:#fff;font-size:12px}
-#fl5Bericht .notiz{border:1px solid #cfd8cf;border-radius:8px;padding:10px;min-height:110px;white-space:pre-wrap}
-#fl5Bericht .linien{background:repeating-linear-gradient(#fff,#fff 27px,#dfe6df 28px);min-height:170px}
+#fl5Bericht .notiz{border:1px solid #cfcfcf;border-radius:8px;padding:10px;min-height:110px;white-space:pre-wrap}
+#fl5Bericht .linien{background:repeating-linear-gradient(#fff,#fff 27px,#d9d9d9 28px);min-height:170px}
 #fl5Bericht .zw{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:640px){#fl5Bericht .zw{grid-template-columns:1fr} #fl5Bericht .f5-blatt{padding:18px 12px;font-size:13px} #fl5Bericht table{display:block;overflow-x:auto} #fl5Bericht .bk .r{text-align:left}}
 @media print{
   @page{size:A4;margin:14mm}
@@ -187,9 +188,9 @@ function mount(el, opt){
     let svg = '<svg viewBox="0 0 ' + W + ' ' + (H + 16) + '" width="' + W + '" height="' + (H + 16) + '" style="max-width:100%;height:auto" role="img" aria-label="Gemüse und Obst je Tag">';
     tage.forEach((t, i) => { const x = 2 + i * (bw + 2); const g = (Number(t.gemuese_g)||0) * H / maxG, o2 = (Number(t.obst_g)||0) * H / maxG;
       if(t.leer) svg += '<rect x="' + x + '" y="' + (H - 3) + '" width="' + bw + '" height="3" fill="#ddd"/>';
-      else svg += '<rect x="' + x + '" y="' + (H - g) + '" width="' + bw + '" height="' + g + '" fill="#2e7d46"/><rect x="' + x + '" y="' + (H - g - o2) + '" width="' + bw + '" height="' + o2 + '" fill="#e8920c"/>';
+      else svg += '<rect x="' + x + '" y="' + (H - g) + '" width="' + bw + '" height="' + g + '" fill="var(--f5b-akzent)"/><rect x="' + x + '" y="' + (H - g - o2) + '" width="' + bw + '" height="' + o2 + '" fill="#9a9a9a"/>';
       if(tage.length <= 31 && (tage.length <= 14 || i % 3 === 0)) svg += '<text x="' + (x + bw/2) + '" y="' + (H + 12) + '" font-size="9" text-anchor="middle" fill="#5d6b61">' + D(t.datum).getUTCDate() + '.</text>'; });
-    if(linie) svg += '<line x1="0" x2="' + W + '" y1="' + (H - linie * H / maxG) + '" y2="' + (H - linie * H / maxG) + '" stroke="#133521" stroke-dasharray="4 3" stroke-width="1.5"/>';
+    if(linie) svg += '<line x1="0" x2="' + W + '" y1="' + (H - linie * H / maxG) + '" y2="' + (H - linie * H / maxG) + '" stroke="#111" stroke-dasharray="4 3" stroke-width="1.5"/>';
     svg += '</svg>';
     const gj = g => { const r = (d.gruppen||[]).find(x => x.gruppe===g); return r ? r.gramm_je_tag : null; };
     const tagTab = tage.length <= 31 ? '<table style="margin-top:6px"><thead><tr><th>Tag</th><th class="z">Gemüse</th><th class="z">Obst</th><th class="z">zusammen</th><th class="z">kcal</th><th class="z">Eiweiß</th><th class="z">KH</th><th class="z">Fett</th></tr></thead><tbody>' +
@@ -226,7 +227,7 @@ function mount(el, opt){
       h += '<h2>Kennzahlen gegen Vorgaben und Richtwerte</h2><div class="kl">Ist = Durchschnitt je erfasstem Tag. Soll in dieser Reihenfolge: Vorgabe der Praxis, Ziel im Profil, Richtwert.</div>' + tabIs(isM);
       h += '<h2>Lebensmittelgruppen, Gemüse und Obst</h2><div class="kl">Ist je Tag; bei Wochenwerten (z. B. Fisch, Fleisch) Ø je Woche.</div><div class="zw"><div>' + tabIs(isG) + '</div><div><table><tbody><tr><td>Gemüse Ø je erfasstem Tag</td><td class="z">' + z(gj('gemuese')) + ' g</td></tr>' +
            '<tr><td>Obst Ø je erfasstem Tag</td><td class="z">' + z(gj('obst')) + ' g</td></tr></tbody></table></div></div>' +
-           '<div style="margin-top:8px">' + svg + '</div><div class="kl"><span style="color:#2e7d46">■</span> Gemüse und Pilze <span style="color:#e8920c">■</span> Obst' + (linie ? ' · - - Obst und Gemüse zusammen, Soll ' + z(linie) + ' g' : '') + ' · grau = nichts eingetragen</div>' + tagTab;
+           '<div style="margin-top:8px">' + svg + '</div><div class="kl"><span style="color:var(--f5b-akzent)">■</span> Gemüse und Pilze <span style="color:#9a9a9a">■</span> Obst' + (linie ? ' · - - Obst und Gemüse zusammen, Soll ' + z(linie) + ' g' : '') + ' · grau = nichts eingetragen</div>' + tagTab;
       h += '<h2>Makronährstoffe</h2><div class="zw"><div>' + makTab + '</div><div class="kl">Durchschnitt je erfasstem Tag aus den Tagebuch-Summen des Zeitraums. Tage ohne Eintrag zählen nicht mit.</div></div>';
       h += '<h2>Auffällige Produkte</h2><div class="kl">Produkte mit Root-Index-Bewertung „Mittel“ oder „Schwach“, nach Menge im Zeitraum.</div>' +
            (auff.length ? prodTab(auff) : '<p class="kl">Keine Produkte mit Bewertung Mittel oder Schwach.</p>') +
@@ -266,7 +267,7 @@ function mount(el, opt){
       (opt.muster ? 'In der Musterpraxis nur zum Ansehen.' : 'Erst geteilt sieht die Person ihn in ihrer App und kann ihn in ihren Wochenplan und auf die Einkaufsliste übernehmen.') + '</div>';
     if(!opt.muster) h += '<div class="f5-reihe"><button class="f5-b gruen" data-pneu type="button">＋ Neuer Plan</button></div>';
     h += st.plaene.length ? st.plaene.map(planKarte).join('') : '<p class="f5-k">Noch keine Pläne.</p>';
-    h += '<div class="f5-legende"><span><i style="background:#dff3e5"></i>wie geplant</span><span><i style="background:#fff1dc"></i>etwas anderes gegessen</span><span><i style="background:#fde7e5"></i>nichts eingetragen</span><span><i style="background:#F3EEDC"></i>noch offen</span></div>';
+    h += '<div class="f5-legende"><span><i style="background:var(--f5-ok-zart)"></i>wie geplant</span><span><i style="background:var(--f5-warn-zart)"></i>etwas anderes gegessen</span><span><i style="background:var(--f5-bad-zart)"></i>nichts eingetragen</span><span><i style="background:var(--f5-creme)"></i>noch offen</span></div>';
     $p.innerHTML = h;
     const neu = $p.querySelector('[data-pneu]'); if(neu) neu.onclick = () => { const v = plus(montag(heute), 7); st.edit = {titel:'', notiz:'', von:v, bis:plus(v, 6), eintraege:[]}; editor(); };
     $p.querySelectorAll('[data-pakt]').forEach(b => b.onclick = () => planAktion(b.dataset.pakt, Number(b.dataset.id), b));
@@ -284,7 +285,7 @@ function mount(el, opt){
       (x.notiz ? '<div style="font-size:14px;margin-top:4px">' + esc(x.notiz) + '</div>' : '') + ist +
       '<div class="f5-tab-wrap"><table class="f5-raster"><thead><tr><th>Tag</th>' + SLOTS.map(s => '<th>' + s + '</th>').join('') + '<th class="z">kcal Plan</th>' + (x.tage ? '<th class="z">kcal Ist</th>' : '') + '</tr></thead><tbody>' +
       tage.map(t => { const et = e.filter(y => y.datum===t); const kp = et.reduce((a, y) => a + (Number(y.kcal_plan)||0), 0);
-        return '<tr' + (t===heute ? ' style="outline:2px solid #2e7d46"' : '') + '><td><b>' + tk(t) + '</b></td>' + SLOTS.map(sl => '<td>' + et.filter(y => y.slot===sl).map(y =>
+        return '<tr' + (t===heute ? ' style="outline:2px solid var(--f5-gruen)"' : '') + '><td><b>' + tk(t) + '</b></td>' + SLOTS.map(sl => '<td>' + et.filter(y => y.slot===sl).map(y =>
           '<div class="f5-e ' + esc(y.status) + '" title="' + esc(STATUS[y.status] || '') + (y.gegessen ? ': ' + esc(y.gegessen.join(', ')) : '') + '">' + esc(y.titel || '') +
           '<small>' + [y.portionen && Number(y.portionen)!==1 ? z(y.portionen, 1) + ' Portionen' : '', y.menge_g ? z(y.menge_g) + ' g' : '', y.kcal_plan ? z(y.kcal_plan) + ' kcal' : ''].filter(Boolean).join(' · ') + '</small>' +
           (y.status==='anders' && y.gegessen ? '<small>gegessen: ' + esc(y.gegessen.join(', ')) + '</small>' : '') + (y.hinweis ? '<small>' + esc(y.hinweis) + '</small>' : '') + '</div>').join('') + '</td>').join('') +
