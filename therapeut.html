@@ -18,7 +18,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <script src="fachleute-dashboard.js?v=3"></script>
-<script src="fachleute-statistik.js?v=3"></script>
+<script src="fachleute-statistik.js?v=6"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -299,6 +299,75 @@
     .ch-h{height:240px}
   }
   @media print{ body.druck-dash .seite-inhalt{display:block} body.druck-dash .karte2{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px} }
+  /* ---------- FL-4: Stil „frisch“ (Ralph 11.11.: helle Seitenleiste, Begrüßung, Karten mit farbigen Symbolen) ---------- */
+  :root{--frisch-grund:#EEF2E8;--lime:#8CC152;--lime-hell:#EAF4DC;--gelb:#F4B740;--gelb-hell:#FDF1D4;--orange:#EE8A3C;--orange-hell:#FCE6D4}
+  body.app-an{background:var(--frisch-grund)}
+  body.app-an .kopf{background:transparent;color:var(--dunkel);padding:20px 28px 6px}
+  body.app-an .kopf .marke{display:none}
+  .gruss b{display:block;font-size:24px;color:var(--dunkel);letter-spacing:-.01em;line-height:1.2}
+  .gruss span{font-size:14px;color:var(--muted)}
+  body.app-an .kopf-nutzer{background:#fff;color:var(--dunkel);border:0;border-radius:14px;padding:9px 14px;box-shadow:0 1px 2px rgba(19,53,33,.06),0 6px 18px rgba(19,53,33,.06)}
+  body.app-an .statuszeile{background:transparent;border:0;padding:4px 28px 0}
+  .menue-marke{display:none}
+  body.app-an .band{padding-top:14px}
+  body.app-an .band h1{font-size:22px}
+  .kpi-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .kpi-symbol{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 38px}
+  .kpi-symbol svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .kpi-symbol.lime{background:var(--lime-hell);color:#4f8a1e} .kpi-symbol.gelb{background:var(--gelb-hell);color:#a86c00}
+  .kpi-symbol.orange{background:var(--orange-hell);color:#b8540f} .kpi-symbol.tanne{background:#E3ECE5;color:var(--dunkel)}
+  .kpi,.karte2{border-radius:22px}
+  .messer{position:relative;height:190px}
+  .messer-mitte{position:absolute;left:0;right:0;bottom:22px;text-align:center}
+  .messer-mitte b{display:block;font-size:30px;color:var(--dunkel);line-height:1.1}
+  .messer-mitte span{font-size:13px;color:var(--muted)}
+  .messer-skala{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding:0 12%}
+  @media (min-width:1001px){
+    body.app-an{padding-left:244px}
+    body.app-an .menue{position:fixed;left:0;top:0;bottom:0;width:244px;border:0;background:#fff;padding:22px 14px;display:flex;flex-direction:column;gap:14px;box-shadow:1px 0 0 #e4e9e0;z-index:40}
+    body.app-an .menue-marke{display:flex;align-items:center;gap:10px;padding:2px 10px 10px;font-weight:800;color:var(--dunkel);font-size:17px}
+    .menue-marke img{border-radius:8px}
+    .menue-marke small{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+    body.app-an .menue-liste{flex-direction:column;gap:4px;padding:0;overflow:visible}
+    body.app-an .menue button{width:100%;padding:11px 14px;border-radius:13px;font-size:15px;color:#4a574e}
+    body.app-an .menue button:hover{background:#F2F6EE}
+    body.app-an .menue button.an{background:var(--lime);color:#fff;font-weight:800;box-shadow:0 6px 14px rgba(140,193,82,.35)}
+    body.app-an .split{height:calc(100vh - 120px)}
+  }
+  @media (max-width:1000px){
+    body.app-an .kopf{padding:14px 14px 4px} .gruss b{font-size:19px}
+    body.app-an .menue{background:#fff}
+  }
+  .blick{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .blick-k{display:block;text-align:left;border:1px solid #E7ECE3;background:#FBFCFA;border-radius:18px;padding:14px;font:inherit;color:inherit;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .blick-k:hover{border-color:var(--lime);box-shadow:0 6px 18px rgba(19,53,33,.08)}
+  .blick-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .blick-kopf b{font-size:16px;color:var(--dunkel)}
+  .blick-kopf small{display:block;font-size:12.5px;color:var(--muted)}
+  .blick-score{min-width:38px;text-align:center;border-radius:11px;color:#fff;font-weight:800;padding:5px 7px;font-size:14px}
+  .blick-mitte{display:flex;align-items:center;gap:12px;margin:10px 0}
+  .ring{width:64px;height:64px;flex:0 0 64px}
+  .blick-werte{display:grid;gap:6px;font-size:14px}
+  .blick-werte small{display:block;font-size:12px;color:var(--muted)}
+  .blick-werte b{color:var(--dunkel)}
+  .blick-werte em{font-style:normal;font-weight:400;color:var(--muted);font-size:13px}
+  .blick-tage{display:flex;align-items:center;gap:4px}
+  .blick-tage i{width:16px;height:7px;border-radius:99px;display:inline-block}
+  .blick-tage i.ja{background:var(--lime)} .blick-tage i.leer{background:#E3E7E0}
+  .blick-tage span{font-size:12px;color:var(--muted);margin-left:6px}
+  .blick-karte{margin-bottom:16px}
+  .hinw{display:grid;gap:6px}
+  .hinw-z{display:flex;gap:10px;align-items:flex-start;text-align:left;border:0;background:#F7F9F5;border-radius:12px;padding:9px 11px;font:inherit;font-size:14px;color:var(--text);cursor:pointer}
+  .hinw-z:hover{background:#EEF4E8}
+  .hinw-z i{width:10px;height:10px;border-radius:50%;flex:0 0 10px;margin-top:5px}
+  .hinw-z i.orange{background:var(--orange)} .hinw-z i.gelb{background:var(--gelb)} .hinw-z i.rot{background:#c2412d} .hinw-z i.grau{background:#b8c0b9}
+  .hinw-z b{display:block;color:var(--dunkel);font-size:13.5px}
+  .hinw-t{display:block;font-size:13px;color:#46524a;line-height:1.35;margin-top:2px}
+  .raster2{align-items:start}
+  .raster2.oben{grid-template-columns:minmax(0,2fr) minmax(0,1fr);margin-bottom:16px}
+  .raster2{grid-template-columns:minmax(0,2fr) minmax(0,1fr)} .raster2.gleich{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  @media (max-width:1200px){ .raster2.oben,.raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
+  body.app-an{overflow-x:hidden}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -306,6 +375,7 @@
 <body>
 <header class="kopf">
   <a class="marke" href="https://root-index.de"><img src="logo-mark.png" alt="" width="22" height="22">Root Index <span>für Fachleute</span></a>
+  <div class="gruss" id="gruss" hidden><b id="grussText">Guten Tag</b><span id="grussUnter"></span></div>
   <div class="dd" id="nutzerDd" hidden>
     <button class="kopf-nutzer" type="button" data-dd aria-haspopup="true"><span id="nutzerName">–</span><svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <div class="dd-menu rechts" role="menu">
@@ -318,6 +388,7 @@
 
 <!-- FL-4: Menüleiste und Statuszeile (nur angemeldet als Fachperson) -->
 <nav class="menue" id="menue" hidden aria-label="Bereiche">
+  <div class="menue-marke"><img src="logo-mark.png" alt="" width="30" height="30"><span>Root Index<small>für Fachleute</small></span></div>
   <button class="menue-auf" id="menueAuf" type="button" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="menueAktiv">Übersicht</span></button>
   <div class="menue-liste" id="menueListe">
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
@@ -569,7 +640,7 @@ const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag'];
 function zeige(id){
   const app = id==='app';
   BEREICHE.forEach(b => $(b).hidden = (b!==id));
-  ['app','menue','statusZeile'].forEach(b => $(b).hidden = !app);
+  ['app','menue','statusZeile','gruss'].forEach(b => $(b).hidden = !app);
   document.body.classList.toggle('app-an', app);
   $('nutzerDd').hidden = !['bWartet','bVertrag','app'].includes(id);
 }
@@ -669,8 +740,8 @@ async function start(){
     $('vertragOk').checked = false; meld('meldVertrag','');
     zeige('bVertrag'); return;
   }
-  $('hName').textContent = d.name;
-  $('hPraxis').textContent = [d.praxis, d.email].filter(Boolean).join(', ');
+  $('hName').textContent = 'Übersicht';
+  $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
   $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
   zeichneKonto();
   zeige('app');
@@ -979,7 +1050,12 @@ async function ladeUebersichtStat(){
   const {info, personen} = await statPersonen();
   if(!personen.length){ $('uebStat').innerHTML = '<div class="karte2"><p class="fuss">Noch keine Daten. Sobald Klienten verbunden sind, erscheinen hier Kennzahlen und Diagramme.</p></div>'; return; }
   const d = await FLStat.laden(personen, heuteBerlin(), 7);
-  if(AKTIV==='uebersicht') FLStat.uebersicht($('uebStat'), d, info);
+  // Hinweise aus der Key-Liste: läuft bald ab, Einwilligung fehlt, nicht eingelöst
+  const keys = [];
+  KEYS.filter(x => x.status==='laeuft' && restTage(x.laeuft_bis) <= 14).forEach(x => keys.push({farbe: 'orange', name: klientName(x), ziel: 'keys', text: 'Key läuft in ' + zahlTxt(restTage(x.laeuft_bis), 'Tag', 'Tagen') + ' ab'}));
+  KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').forEach(x => keys.push({farbe: 'gelb', name: klientName(x), ziel: 'keys', text: 'Einwilligung fehlt noch'}));
+  KEYS.filter(x => x.status==='offen').forEach(x => keys.push({farbe: 'grau', name: klientName(x), ziel: 'keys', text: 'Key noch nicht eingelöst'}));
+  if(AKTIV==='uebersicht') FLStat.uebersicht($('uebStat'), d, {text: info, keys});
 }
 async function ladeAuswertungen(){
   if(!window.FLStat) return;
@@ -1068,6 +1144,9 @@ function zeichneKonto(){
     z('Verschwiegenheit Root Index', ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') +
     z('Verschwiegenheit Klienten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
+  const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));
+  $('grussText').textContent = (h < 11 ? 'Guten Morgen, ' : h < 18 ? 'Guten Tag, ' : 'Guten Abend, ') + String(ICH.name || '').replace(/\s*\(.*\)\s*$/, '');
+  $('grussUnter').textContent = [ICH.praxis, new Date().toLocaleDateString('de-DE', {weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin'})].filter(Boolean).join(' · ');
   $('nutzerInfo').innerHTML = '<b>' + esc(ICH.name) + '</b>' + esc([ICH.praxis, ICH.email].filter(Boolean).join(', '));
 }
 $('pwLos').onclick = async function(){

@@ -6,7 +6,7 @@
    Diagramme: Chart.js (window.Chart), Vergleichsbalken als HTML. */
 (function(){
 'use strict';
-const F = {gem:'#3f8f4f', obst:'#e8a33a', eiw:'#c0583a', kh:'#d4a12c', aus:'#cdd3cc', tanne:'#133521', gruen:'#2e7d46', grau:'#8a968d', linie:'#e7eae5', rot:'#c2412d', orange:'#d98a0b'};
+const F = {gelb:'#F4B740', gem:'#5FA83A', obst:'#F4B740', eiw:'#c0583a', kh:'#d4a12c', aus:'#cdd3cc', tanne:'#133521', gruen:'#2e7d46', grau:'#8a968d', linie:'#e7eae5', rot:'#c2412d', orange:'#d98a0b'};
 const TELLER = [
   {k:'g', n:'Gemüse & Obst', col:'#4f9a3a', gruppen:['gemuese','obst']},
   {k:'e', n:'Eiweiß', col:'#c0583a', gruppen:['fleisch','fisch','eier','huelsenfruechte','milch']},
@@ -71,10 +71,16 @@ async function laden(personen, heute, nTage){
 function leeren(){ CACHE.clear(); VERLAUF.clear(); }
 
 /* ---------- Bausteine ---------- */
-function kpi(id, titel, wert, einheit, delta, deltaGut, fuss){
+const SYM = {
+  blatt: '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19l7-7"/>',
+  apfel: '<path d="M12 7c-2-2-7-1.5-7 4 0 4.5 3 9 5.5 9 1 0 1.5-.6 1.5-.6s.5.6 1.5.6C16 20 19 15.5 19 11c0-5.5-5-6-7-4z"/><path d="M12 7c0-2 1-3.5 3-4"/>',
+  stern: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8-4.2-4.1 5.8-.8z"/>',
+  kalender: '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M9 3v4M15 3v4M9 15l2 2 4-4"/>'
+};
+function kpi(id, titel, wert, einheit, delta, deltaGut, fuss, symbol, farbe){
   const pfeil = delta==null || Math.abs(delta) < 0.5 ? '' :
     '<span class="kpi-delta ' + ((delta > 0) === deltaGut ? 'gut' : 'schlecht') + '">' + (delta > 0 ? '▲' : '▼') + ' ' + z(Math.abs(delta)) + '</span>';
-  return '<div class="kpi"><div class="kpi-titel">' + esc(titel) + '</div><div class="kpi-wert">' + wert + '<small>' + esc(einheit) + '</small>' + pfeil + '</div>' +
+  return '<div class="kpi"><div class="kpi-kopf"><div class="kpi-titel">' + esc(titel) + '</div>' + (symbol ? '<span class="kpi-symbol ' + farbe + '"><svg viewBox="0 0 24 24">' + SYM[symbol] + '</svg></span>' : '') + '</div><div class="kpi-wert">' + wert + '<small>' + esc(einheit) + '</small>' + pfeil + '</div>' +
     '<canvas class="kpi-spark" id="' + id + '" height="38"></canvas><div class="kpi-fuss">' + fuss + '</div></div>';
 }
 function spark(id, werte, farbe){
@@ -100,6 +106,7 @@ function tellerAus(gruppen){
 
 /* ---------- Übersicht: Praxis auf einen Blick ---------- */
 function uebersicht(el, daten, info){
+  const infoText = info && typeof info === 'object' ? info.text : info;
   const ok = daten.filter(d => !d.lang.fehler);
   if(!ok.length){ el.innerHTML = '<div class="karte2"><p class="fuss">Noch keine Daten.</p></div>'; return; }
   const n = daten[0].nTage;
@@ -109,12 +116,16 @@ function uebersicht(el, daten, info){
     score: mittel(ok.map(d => d.wochen[i] && d.wochen[i].score)), erf: mittel(ok.map(d => d.wochen[i] && d.wochen[i].tageGesamt ? 100 * d.wochen[i].erfasst / d.wochen[i].tageGesamt : null))}));
   while(wo.length > 1 && wo[0].gem==null && wo[0].obst==null) wo.shift();   // Wochen vor dem ersten Eintrag weglassen
   const gem = m('gem'), obst = m('obst'), sc = m('score');
-  el.innerHTML = (info ? '<div class="hinweis-band">' + info + '</div>' : '') +
+  el.innerHTML = (infoText ? '<div class="hinweis-band">' + infoText + '</div>' : '') +
     '<div class="kpis">' +
-      kpi('spGem', 'Gemüse Ø je Tag', z(gem), ' g', gem!=null && mv('gem')!=null ? gem - mv('gem') : null, true, 'DGE-Orientierung ' + DGE_GEMUESE + ' g · ' + (gem!=null ? Math.round(100*gem/DGE_GEMUESE) + ' %' : '–')) +
-      kpi('spObst', 'Obst Ø je Tag', z(obst), ' g', obst!=null && mv('obst')!=null ? obst - mv('obst') : null, true, 'Obst + Gemüse ' + z((gem||0) + (obst||0)) + ' von ' + DGE_OG + ' g') +
-      kpi('spScore', 'Root-Index-Score Ø', z(sc), '', sc!=null && mv('score')!=null ? sc - mv('score') : null, true, 'nach Menge gewichtet, je Tag') +
-      kpi('spErf', 'Tage erfasst', z(erf), ' %', erf!=null && erfV!=null ? erf - erfV : null, true, 'Anteil der Tage mit Einträgen') +
+      kpi('spGem', 'Gemüse Ø je Tag', z(gem), ' g', gem!=null && mv('gem')!=null ? gem - mv('gem') : null, true, 'DGE-Orientierung ' + DGE_GEMUESE + ' g · ' + (gem!=null ? Math.round(100*gem/DGE_GEMUESE) + ' %' : '–'), 'blatt', 'lime') +
+      kpi('spObst', 'Obst Ø je Tag', z(obst), ' g', obst!=null && mv('obst')!=null ? obst - mv('obst') : null, true, 'Obst + Gemüse ' + z((gem||0) + (obst||0)) + ' von ' + DGE_OG + ' g', 'apfel', 'orange') +
+      kpi('spScore', 'Root-Index-Score Ø', z(sc), '', sc!=null && mv('score')!=null ? sc - mv('score') : null, true, 'nach Menge gewichtet, je Tag', 'stern', 'gelb') +
+      kpi('spErf', 'Tage erfasst', z(erf), ' %', erf!=null && erfV!=null ? erf - erfV : null, true, 'Anteil der Tage mit Einträgen', 'kalender', 'tanne') +
+    '</div>' +
+    '<div class="raster2 oben">' +
+      '<div class="karte2"><div class="k2-kopf"><h3>Alle Klienten auf einen Blick</h3><span>letzte ' + n + ' Tage · antippen öffnet die Person</span></div><div class="blick">' + daten.map(blickKarte).join('') + '</div></div>' +
+      '<div class="karte2"><div class="k2-kopf"><h3>Braucht Aufmerksamkeit</h3><span>automatisch aus Einträgen und Keys</span></div>' + aufmerksamkeit(daten, info && info.keys) + '</div>' +
     '</div>' +
     '<div class="raster2">' +
       '<div class="karte2 breit"><div class="k2-kopf"><h3>Gemüse und Obst je Woche</h3><span>Ø je erfasstem Tag, alle Personen</span></div><div class="ch-h"><canvas id="chWochen"></canvas></div></div>' +
@@ -151,6 +162,54 @@ function zielMatrix(daten){
     '</tbody></table></div><div class="legende2"><span><i class="ja"></i>im Ziel</span><span><i class="nein"></i>darunter oder daneben</span><span><i class="ueber"></i>über der Höchstgrenze</span><span><i class="leer"></i>kein Soll</span></div>';
 }
 function bindeZiel(el){ el.querySelectorAll('tr[data-ziel]').forEach(tr => tr.style.cursor = 'pointer'); }
+
+/* Kachel je Person: Ring Obst+Gemüse gegen DGE, kcal gegen Soll, Score, die letzten 7 Tage als Punkte */
+function ring(p, farbe){
+  const r = 26, u = 2 * Math.PI * r, f = Math.max(0, Math.min(1, p||0));
+  return '<svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="' + r + '" stroke="#EEF1EC" stroke-width="7" fill="none"/>' +
+    '<circle cx="32" cy="32" r="' + r + '" stroke="' + farbe + '" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="' + (u*f).toFixed(1) + ' ' + u.toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
+    '<text x="32" y="36" text-anchor="middle" font-size="13" font-weight="800" fill="#133521">' + Math.round(100*(p||0)) + '%</text></svg>';
+}
+function letzteTage(d, n){
+  const t = (d.lang && d.lang.tage) || []; return t.slice(-n);
+}
+function blickKarte(d){
+  const p = d.p;
+  if(d.lang.fehler) return '<div class="blick-k"><b>' + esc(p.name) + '</b><span class="fuss">' + esc(d.lang.fehler) + '</span></div>';
+  const og = ((d.jetzt.gem||0) + (d.jetzt.obst||0)) / DGE_OG;
+  const k = (d.kurz.ist_soll||[]).find(x => x.kennzahl==='kcal' && x.einheit!=='en%');
+  const tage = letzteTage(d, 7), letzter = [...((d.lang && d.lang.tage) || [])].reverse().find(t => !t.leer);
+  const sc = d.jetzt.score, scF = sc==null ? '#9aa79e' : sc>=75 ? '#2e7d46' : sc>=60 ? '#b45309' : '#b91c1c';
+  return '<button class="blick-k" type="button" data-geh="' + esc(p.ziel) + '">' +
+    '<div class="blick-kopf"><span><b>' + esc(p.name) + '</b>' + (p.muster ? ' <span class="mini-muster">erfunden</span>' : '') + '<small>' + (letzter ? 'zuletzt ' + tm(letzter.datum) : 'noch keine Einträge') + '</small></span>' +
+      '<span class="blick-score" style="background:' + scF + '">' + (sc==null ? '–' : Math.round(sc)) + '</span></div>' +
+    '<div class="blick-mitte">' + ring(og, og >= 1 ? '#2e7d46' : og >= .6 ? F.gelb || '#F4B740' : '#EE8A3C') +
+      '<div class="blick-werte"><div><small>Obst + Gemüse Ø</small><b>' + z((d.jetzt.gem||0) + (d.jetzt.obst||0)) + ' g</b></div>' +
+      '<div><small>kcal Ø' + (k && k.soll ? ' / Soll' : '') + '</small><b>' + z(d.jetzt.kcal) + (k && k.soll ? ' <em>/ ' + z(k.soll) + '</em>' : '') + '</b></div></div></div>' +
+    '<div class="blick-tage">' + tage.map(t => '<i class="' + (t.leer ? 'leer' : 'ja') + '" title="' + esc(tm(t.datum) + (t.leer ? ': nichts eingetragen' : ': ' + z(t.kcal) + ' kcal')) + '"></i>').join('') +
+      '<span>' + tage.filter(t => !t.leer).length + ' von ' + tage.length + ' Tagen</span></div></button>';
+}
+/* Hinweise: wenig eingetragen, Kalorien deutlich daneben, wenig Gemüse, Key läuft bald ab, Einwilligung fehlt */
+function aufmerksamkeit(daten, keys){
+  const h = [];
+  daten.forEach(d => {
+    if(d.lang.fehler) return;
+    const p = d.p, t = letzteTage(d, 3);
+    if(t.length && t.every(x => x.leer)) h.push(['orange', p, 'seit 3 Tagen nichts eingetragen']);
+    const k = (d.kurz.ist_soll||[]).find(x => x.kennzahl==='kcal' && x.einheit!=='en%');
+    if(k && k.soll && k.ist!=null && (k.ist < .8 * k.soll || k.ist > 1.2 * k.soll)) h.push(['gelb', p, 'Kalorien Ø ' + z(k.ist) + ' statt ' + z(k.soll) + ' kcal (' + z(k.ist_prozent_vom_soll) + ' %)']);
+    if(d.jetzt.gem!=null && d.jetzt.gem < DGE_GEMUESE / 2) h.push(['gelb', p, 'nur ' + z(d.jetzt.gem) + ' g Gemüse am Tag']);
+    (d.kurz.ist_soll||[]).filter(x => x.art==='hoechstens' && x.erfuellt===false && !x.kennzahl.startsWith('mikro:')).forEach(x =>
+      h.push(['rot', p, String(x.name || x.kennzahl).replace(' (Anteil an der Energie)', '-Anteil') + ' über der Höchstgrenze (' + z(x.ist_prozent_vom_soll) + ' %)']));
+  });
+  (keys||[]).forEach(x => h.push([x.farbe || 'grau', {name: x.name, ziel: x.ziel}, x.text]));
+  if(!h.length) return '<p class="fuss">Gerade nichts Auffälliges.</p>';
+  const rang = {rot: 0, orange: 1, gelb: 2, grau: 3};
+  const g = new Map();
+  h.forEach(x => { const k = x[1].name; if(!g.has(k)) g.set(k, {p: x[1], f: x[0], t: []}); const e = g.get(k); e.t.push([x[0], x[2]]); if(rang[x[0]] < rang[e.f]) e.f = x[0]; });
+  return '<div class="hinw">' + [...g.values()].sort((a, b) => rang[a.f] - rang[b.f]).map(e => '<button type="button" class="hinw-z" data-geh="' + esc(e.p.ziel || 'keys') + '"><i class="' + e.f + '"></i><span><b>' + esc(e.p.name) + '</b>' +
+    e.t.map(t => '<span class="hinw-t">' + esc(t[1]) + '</span>').join('') + '</span></button>').join('') + '</div>';
+}
 
 /* ---------- Auswertungen: Personen im Vergleich ---------- */
 function vergleich(el, daten){
