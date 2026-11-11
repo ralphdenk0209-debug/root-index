@@ -2,7 +2,7 @@
 //
 // Ablauf: Claude legt ein Bild per SQL in public.produktbild_eingang ab — entweder
 // als Base64 oder als quelle_url auf die Rohdatei im Repo
-// (raw.githubusercontent.com/ralphdenk0209-debug/root-index/main/produktbilder-eingang/...).
+// (https://root-index.de/produktbilder-eingang/... ; frueher raw.githubusercontent).
 // Ein Trigger stoesst diese Funktion an. Sie laedt jedes offene Bild in den
 // oeffentlichen Bucket "produktbilder" (Pfad p/<zeit>_<Produkt-ID>.<endung>, wie
 // Produkt erfassen) und setzt "Produkte"."Bild_URL".
@@ -20,7 +20,10 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const URL_ = Deno.env.get("SUPABASE_URL")!;
 const KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const BUCKET = "produktbilder";
-const ERLAUBT = "https://raw.githubusercontent.com/ralphdenk0209-debug/root-index/";
+// 11.11.2026: Repo wird privat -> raw.githubusercontent liefert nichts mehr.
+// Die Fotos liegen auch auf dem Webspace (produktbilder-eingang/ wird mit ausgeliefert).
+const ERLAUBT = ["https://root-index.de/produktbilder-eingang/",
+                 "https://raw.githubusercontent.com/ralphdenk0209-debug/root-index/"];
 const ENDUNG: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
 
 function b64zuBytes(b64: string): Uint8Array {
@@ -45,7 +48,7 @@ Deno.serve(async () => {
       let bytes: Uint8Array;
       if (z.daten_base64) {
         bytes = b64zuBytes(z.daten_base64);
-      } else if (z.quelle_url && z.quelle_url.startsWith(ERLAUBT) && !z.quelle_url.includes("..")) {
+      } else if (z.quelle_url && ERLAUBT.some((e) => z.quelle_url.startsWith(e)) && !z.quelle_url.includes("..")) {
         const r = await fetch(z.quelle_url, { redirect: "error" });
         if (!r.ok) throw new Error(`Abruf ${r.status}: ${z.quelle_url}`);
         bytes = new Uint8Array(await r.arrayBuffer());
