@@ -252,7 +252,9 @@
   .raster2 > .karte2.breit{min-width:0}
   .ch-h{position:relative;height:280px}
   .ch-h.klein{height:230px}
-  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}
+  .seite-inhalt > *, #uebStat, #awStat{min-width:0}
+  #app{min-width:0;max-width:none}
   #uebStat .raster2,#awStat .raster2{margin-bottom:16px}
   .kpi{background:#fff;border-radius:18px;padding:16px 18px 12px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 8px 24px rgba(19,53,33,.06);min-width:0}
   .kpi-titel{font-size:13.5px;color:var(--muted)}
@@ -289,7 +291,8 @@
   body.app-an .detail{background:#F2F4F0}
   body.app-an .detail .fd .fd-zeit{background:#F2F4F0}
   body.app-an .tabwrap{border-radius:12px}
-  @media (max-width:1000px){ .kpis{grid-template-columns:1fr 1fr} .raster2,.raster2.gleich{grid-template-columns:1fr} }
+  @media (max-width:1250px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:1000px){ .raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
   @media (max-width:760px){
     body.app-an .band{padding:18px 14px 2px} body.app-an .band h1{font-size:21px}
     body.app-an .werkzeug{padding:8px 14px 4px} .seite-inhalt{padding:6px 12px 24px;gap:12px}
@@ -362,12 +365,18 @@
   .hinw-z i{width:10px;height:10px;border-radius:50%;flex:0 0 10px;margin-top:5px}
   .hinw-z i.orange{background:var(--orange)} .hinw-z i.gelb{background:var(--gelb)} .hinw-z i.rot{background:#c2412d} .hinw-z i.grau{background:#b8c0b9}
   .hinw-z b{display:block;color:var(--dunkel);font-size:13.5px}
+  .karte2.start h3{margin:0 0 10px;font-size:18px;color:var(--dunkel)}
+  .schritte{margin:0 0 16px;padding-left:22px;display:grid;gap:10px}
+  .schritte b{display:block;color:var(--dunkel)} .schritte span{font-size:14px;color:var(--muted)}
   .hinw-t{display:block;font-size:13px;color:#46524a;line-height:1.35;margin-top:2px}
   .raster2{align-items:start}
   .raster2.oben{grid-template-columns:minmax(0,2fr) minmax(0,1fr);margin-bottom:16px}
   .raster2{grid-template-columns:minmax(0,2fr) minmax(0,1fr)} .raster2.gleich{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   @media (max-width:1200px){ .raster2.oben,.raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
   body.app-an{overflow-x:hidden}
+  body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="bewertung"], body.demo [data-v="wunschliste"]{display:none!important}
+  body.demo .statuszeile .punkt{background:var(--gelb)}
+  .demo-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dunkel);color:#fff;border-radius:12px;padding:10px 16px;font-size:14.5px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -423,7 +432,22 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
+      <p style="margin:12px 0 0;font-size:14px"><a href="#demo" id="zurDemo">Musterpraxis ansehen (Vorführung mit Passwort)</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+    </div>
+  </section>
+
+  <!-- FL-4: Musterpraxis (Vorführung) mit Passwort -->
+  <section id="bDemo" hidden>
+    <h1>Musterpraxis ansehen</h1>
+    <p class="unter">Vorführung der Fachleute-Oberfläche mit erfundenen Klientinnen und Klienten. Produkte, Nährwerte und Scores sind echt aus dem Root Index.</p>
+    <div class="karte">
+      <label for="demoPw">Passwort der Vorführung</label>
+      <input id="demoPw" type="password" autocomplete="off">
+      <button class="knopf" id="demoLos" type="button">Musterpraxis öffnen</button>
+      <div class="meld" id="meldDemo"></div>
+      <p style="margin:12px 0 0;font-size:14px">Kein Passwort? Vorführung anfragen: <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a></p>
+      <button class="link" type="button" id="demoZurAnmeldung">Zur Anmeldung für Fachleute</button>
     </div>
   </section>
 
@@ -479,7 +503,6 @@
       <div class="dd"><button class="tb haupt" type="button" data-dd>Neuer Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-neu="mail">Anlegen und per E-Mail senden</button><button type="button" data-neu="qr">Anlegen als QR-Karte</button><button type="button" data-neu="nur">Nur anlegen</button></div></div>
       <button class="tb" type="button" data-geh="klienten">Klienten öffnen</button>
-      <button class="tb" type="button" data-muster>Musterpraxis ansehen</button>
     </div>
     <div class="seite-inhalt">
       <div id="uebStat"><div class="karte2 lade">Statistik wird geladen …</div></div>
@@ -591,11 +614,13 @@
       <table class="tab schmal" id="kontoTab"></table>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss" id="zRegel2" style="margin-top:0"></p>
+      <div class="nicht-demo">
       <h2 class="abschnitt">Passwort ändern</h2>
       <div class="reihe" style="max-width:520px"><div><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input id="pwNeu" type="password" autocomplete="new-password"></div>
         <div style="flex:0 0 auto"><label>&nbsp;</label><button class="tb haupt" id="pwLos" type="button" style="height:46px">Speichern</button></div></div>
       <div class="meld" id="meldPw"></div>
-      <h2 class="abschnitt">Abmelden</h2>
+      </div>
+      <h2 class="abschnitt" id="abmeldenTitel">Abmelden</h2>
       <button class="tb" type="button" id="abmelden2">Abmelden</button>
     </div>
   </section>
@@ -636,7 +661,7 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
 const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
 const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
-const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag'];
+const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bDemo'];
 function zeige(id){
   const app = id==='app';
   BEREICHE.forEach(b => $(b).hidden = (b!==id));
@@ -711,15 +736,65 @@ $('neuPassLos').onclick = async function(){
   setTimeout(start, 600);
 };
 
-$('abmelden').onclick = async () => { await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; MUSTER_FEHLER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
+$('abmelden').onclick = async () => {
+  if(DEMO){ try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace(location.pathname); return; }
+  await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
 
 client.auth.onAuthStateChange((ev) => {
   if(ev === 'PASSWORD_RECOVERY'){ inRecovery = true; zeige('bNeuPass'); }
 });
 
 /* ---------- Start ---------- */
+/* ---------- FL-4: Musterpraxis als Vorführung (Passwort = Vorführungs-Code, Prüfung auf dem Server) ---------- */
+let DEMO = null;
+const DEMO_SPEICHER = 'fl-demo';
+const demoGemerkt = () => { try{ return sessionStorage.getItem(DEMO_SPEICHER); }catch(e){ return null; } };
+function demoGewuenscht(){ return /^#demo/.test(location.hash) || new URLSearchParams(location.search).has('demo') || !!demoGemerkt(); }
+async function demoStart(pw){
+  if(!pw) return false;
+  const {data, error} = await client.rpc('cb_fl_muster', {p_token: pw});
+  if(error) return false;
+  DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
+  MUSTER = json(data);
+  ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'gruenderin_gratis', vertrag_ok: true, demo: true};
+  KEYS = (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
+                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+  KEYS_DA = true;
+  document.body.classList.add('demo');
+  $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
+  $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
+  zeichneKonto();
+  $('grussText').textContent = 'Willkommen in der ' + (MUSTER.praxis || 'Musterpraxis');
+  zeige('app');
+  if(/^#demo/.test(location.hash) || !location.hash) history.replaceState(null, '', location.pathname + '#uebersicht');
+  ladeAlles(); route();
+  return true;
+}
+$('demoLos').onclick = async function(){
+  const pw = $('demoPw').value.trim(); if(!pw) return meld('meldDemo', 'Bitte das Passwort eintragen.', 'fehler');
+  this.disabled = true; meld('meldDemo', '⏳ …');
+  const ok = await demoStart(pw); this.disabled = false;
+  if(!ok) return meld('meldDemo', 'Das Passwort stimmt nicht.', 'fehler');
+  $('demoPw').value = ''; meld('meldDemo', '');
+};
+$('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
+$('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
+$('zurDemo').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); };
+function nurAnsehen(){
+  let t = document.querySelector('.demo-toast');
+  if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
+  t.textContent = 'In der Musterpraxis nur zum Ansehen.'; t.hidden = false;
+  clearTimeout(nurAnsehen.t); nurAnsehen.t = setTimeout(() => t.hidden = true, 2200);
+}
+
 async function start(){
   if(inRecovery){ zeige('bNeuPass'); return; }
+  if(demoGewuenscht()){
+    const z = new URLSearchParams(location.search).get('z') || demoGemerkt();
+    if(z && await demoStart(z)) return;
+    try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
+    zeige('bDemo'); return;
+  }
   const {data:{session}} = await client.auth.getSession();
   if(!session){ zeige('bLogin'); return; }
   try{ await client.rpc('cb_link_me'); }catch(e){}
@@ -746,10 +821,19 @@ async function start(){
   zeichneKonto();
   zeige('app');
   route();
-  ladeMuster().then(zeichneBaum);
   ladeAlles();
 }
-async function ladeAlles(){ await Promise.all([ladeKeys(), ladeZahlen()]); }
+async function ladeAlles(){
+  if(DEMO){   // Vorführung: Keys sind die Musterklienten, keine Abrechnung
+    zeichne(); zeichneShell();
+    ['zAktiv','zBetrag','zNeu'].forEach(id => $(id).textContent = '–');
+    $('zRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('zRegel2').textContent = $('zRegel').textContent;
+    if(AKTIV==='uebersicht') ladeUebersichtStat();
+    if(AKTIV==='klienten' && !$('kDash')) zeigeKlient(WAHL || standardWahl());
+    return;
+  }
+  await Promise.all([ladeKeys(), ladeZahlen()]);
+}
 
 async function ladeZahlen(){
   const {data, error} = await client.rpc('cb_fp_abrechnung', {p_monat: null});
@@ -897,7 +981,7 @@ function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
                berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
-let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, MUSTER_FEHLER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
+let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
 const klientName = x => x.klient_name || x.bezeichnung || x.code;
 const zahlTxt = (n, eins, viele) => n + ' ' + (n===1 ? eins : viele);
@@ -909,8 +993,7 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dd.auf').forEach(d => { if(!t || d !== t.closest('.dd')) d.classList.remove('auf'); });
   if(t){ t.closest('.dd').classList.toggle('auf'); return; }
   const g = e.target.closest('[data-geh]'); if(g){ geh(g.dataset.geh); return; }
-  if(e.target.closest('[data-muster]')){ geh('klienten/muster-1'); return; }
-  const n = e.target.closest('[data-neu]'); if(n){ neuerKey(n.dataset.neu); return; }
+  const n = e.target.closest('[data-neu]'); if(n){ if(DEMO) nurAnsehen(); else neuerKey(n.dataset.neu); return; }
   if(e.target.closest('[data-druck]')){ drucken(); return; }
   const aw = e.target.closest('[data-aw]'); if(aw){ AW_TAGE = Number(aw.dataset.aw); $('awZeitText').textContent = aw.textContent; ladeAuswertungen(); return; }
   const tr = e.target.closest('tr[data-ziel]'); if(tr){ geh(tr.dataset.ziel); return; }
@@ -923,7 +1006,9 @@ window.addEventListener('hashchange', () => { if(!$('app').hidden) route(); });
 
 function route(){
   const h = decodeURIComponent(location.hash.slice(1)) || 'uebersicht';
-  const teil = h.split('/'), v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
+  const teil = h.split('/');
+  let v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
+  if(DEMO && (v==='wunschliste' || v==='bewertung')) v = 'uebersicht';   // in der Vorführung nicht dabei
   AKTIV = v;
   document.querySelectorAll('.ansicht').forEach(s => s.classList.toggle('an', s.dataset.v===v));
   document.querySelectorAll('#menueListe [data-v]').forEach(b => { b.classList.toggle('an', b.dataset.v===v); b.setAttribute('aria-current', b.dataset.v===v ? 'page' : 'false'); });
@@ -936,18 +1021,18 @@ function route(){
   if(v==='bewertung') ladeBewertung();
   window.scrollTo(0,0);
 }
-function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : (MUSTER ? 'muster-1' : null); }
+function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : null; }
+/* Auswertung einer Person: echte Klienten über den Key, in der Vorführung die Musterklienten */
+function dashRpc(code, von, bis){
+  if(DEMO){ const k = KEYS.find(x => x.code===code); return client.rpc('cb_fl_muster_dashboard', {p_token: DEMO, p_nr: k ? k.nr : 0, p_von: von, p_bis: bis}); }
+  return client.rpc('cb_fp_klient_dashboard', {p_code: code, p_von: von, p_bis: bis});
+}
 
 /* Statuszeile, Übersicht, Klientenliste – aus der Key-Liste (cb_fp_keys) */
-async function ladeMuster(){
-  if(MUSTER || MUSTER_FEHLER) return;
-  const {data, error} = await client.rpc('cb_fl_muster', {p_token: null});
-  if(error) MUSTER_FEHLER = error.message; else MUSTER = json(data);
-}
 function zeichneShell(){
   const v = verbunden(), warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt'),
         offen = KEYS.filter(x => x.status==='offen'), bald = KEYS.filter(x => x.status==='laeuft' && restTage(x.laeuft_bis) <= 14);
-  const t = [zahlTxt(v.length, 'Klient verbunden', 'Klienten verbunden')];
+  const t = [(DEMO ? 'Musterpraxis, alle Personen erfunden · ' : '') + zahlTxt(v.length, 'Klient verbunden', 'Klienten verbunden')];
   if(warten.length) t.push(zahlTxt(warten.length, 'wartet auf Einwilligung', 'warten auf Einwilligung'));
   if(offen.length) t.push(zahlTxt(offen.length, 'Key noch nicht eingelöst', 'Keys noch nicht eingelöst'));
   bald.forEach(x => t.push(klientName(x) + ': Key läuft in ' + zahlTxt(restTage(x.laeuft_bis), 'Tag', 'Tagen') + ' ab'));
@@ -966,7 +1051,7 @@ function zeichneShell(){
           '<td>' + (x.status==='offen' ? '–' : '<span class="ampel ' + (x.einwilligung==='erteilt' ? 'g' : x.einwilligung==='widerrufen' ? 'r' : 'o') + '"></span>' + EINW[x.einwilligung]) + '</td>' +
           '<td class="z">' + (x.laeuft_bis ? datum(x.laeuft_bis) : x.tage + ' Tage ab Einlösen') + '</td></tr>';
       }).join('') + '</tbody>'
-    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen oder die Musterpraxis ansehen.</td></tr></tbody>';
+    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.</td></tr></tbody>';
   zeichneBaum();
 }
 function zeichneBaum(){
@@ -974,19 +1059,14 @@ function zeichneBaum(){
   const passt = s => !q || String(s||'').toLowerCase().includes(q);
   const v = verbunden().filter(x => passt(klientName(x)) || passt(x.code));
   const warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').filter(x => passt(klientName(x)) || passt(x.code));
-  const m = MUSTER ? (MUSTER.klienten||[]).filter(k => passt(k.name) || passt(k.code)) : [];
   let h = '<div class="kopfzeile"><span>Meine Klienten</span><span>' + v.length + '</span></div>';
   h += v.length ? v.map(x => '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel g"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · bis ' + datum(x.laeuft_bis) + '</small></span></button>').join('')
                 : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : 'Noch niemand verbunden.') + '</div>';
   if(warten.length) h += warten.map(x => '<button type="button" data-geh="keys"><span class="ampel o"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>wartet auf Einwilligung</small></span></button>').join('');
-  h += '<div class="kopfzeile"><span>' + esc(MUSTER && MUSTER.praxis || 'Musterpraxis') + ' (erfunden)</span><span>' + m.length + '</span></div>';
-  h += MUSTER ? m.map(k => '<button type="button" data-wahl="muster-' + k.nr + '"><span class="ampel x"></span><span><span class="n">' + esc(k.name) + '</span><small>' + esc(k.steckbrief) + '</small></span></button>').join('')
-              : '<div class="leer-klein">' + (MUSTER_FEHLER ? 'Gerade nicht verfügbar.' : 'Lädt …') + '</div>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
   $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
-    (MUSTER ? '<optgroup label="Musterpraxis (erfunden)">' + (MUSTER.klienten||[]).map(k => '<option value="muster-' + k.nr + '">' + esc(k.name) + '</option>').join('') + '</optgroup>' : '');
+    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
 $('kSuche').addEventListener('input', zeichneBaum);
@@ -995,37 +1075,27 @@ $('kAuswahl').onchange = () => { if($('kAuswahl').value) geh('klienten/' + $('kA
 /* Rechts: Auswertung der gewählten Person */
 async function zeigeKlient(wahl){
   WAHL = wahl || null;
-  if(!MUSTER && !MUSTER_FEHLER){ await ladeMuster(); zeichneBaum(); }
   zeichneBaum();
   const el = $('kDetail');
   if(!WAHL){
     el.innerHTML = '<div class="leer-gross"><b>Noch keine verbundenen Klienten</b>Sobald jemand einen Key einlöst und einwilligt, steht die Person links.<br><br>' +
-      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button> <button class="tb" type="button" data-muster>Musterpraxis ansehen</button></div>';
+      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
     return;
   }
-  const istMuster = WAHL.startsWith('muster-');
-  let kopf, opt;
-  if(istMuster){
-    const nr = Number(WAHL.slice(7)), k = MUSTER && (MUSTER.klienten||[]).find(x => x.nr===nr);
-    if(!k){ el.innerHTML = '<div class="leer-gross"><b>Musterpraxis gerade nicht verfügbar</b>' + esc(MUSTER_FEHLER || '') + '</div>'; return; }
-    kopf = '<span><span class="n">' + esc(k.name) + '</span><span class="muster-mark">Musterpraxis, erfunden</span><small>' + esc(k.code) + '</small></span>';
-    opt = { heute: MUSTER.heute, nurLesen: true, verlaufKey: WAHL,
-      verlauf: (von, bis) => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}),
-      laden: async (von, bis) => { const r = await client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
-  } else {
-    if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
-    const k = KEYS.find(x => x.code===WAHL);
-    if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
-    kopf = '<span><span class="n">' + esc(klientName(k)) + '</span><small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
-    opt = { heute: heuteBerlin(), nurLesen: false, verlaufKey: WAHL,
-      verlauf: (von, bis) => client.rpc('cb_fp_klient_dashboard', {p_code: WAHL, p_von: von, p_bis: bis}),
-      laden: async (von, bis) => { const r = await client.rpc('cb_fp_klient_dashboard', {p_code: WAHL, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); },
-      vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: WAHL, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
-  }
+  if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
+  const k = KEYS.find(x => x.code===WAHL);
+  if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
+  const code = WAHL;
+  const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
+    '<small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
+  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: !!DEMO, verlaufKey: code,
+    verlauf: (von, bis) => dashRpc(code, von, bis),
+    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   el.innerHTML = '<div class="detail-kopf">' + kopf + '<span style="display:flex;gap:6px">' +
     '<span class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
     '<span class="dd-menu rechts"><button type="button" data-druck>Drucken</button><button type="button" data-druck>Als PDF speichern</button></span></span>' +
-    (istMuster ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
+    (DEMO ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
   FLDash.mount($('kDash'), opt);
 }
 function drucken(){
@@ -1035,20 +1105,22 @@ function drucken(){
   setTimeout(() => window.print(), 50);
 }
 
-/* Statistik: eigene verbundene Klienten; solange es keine gibt, die Musterpraxis (deutlich gekennzeichnet) */
+/* Statistik: die verbundenen Klienten (in der Vorführung die Musterklienten) */
 async function statPersonen(){
-  await ladeMuster();
-  const v = verbunden();
-  if(v.length) return {info: '', personen: v.map(x => ({key: x.code, name: klientName(x), code: x.code, ziel: 'klienten/' + x.code,
-    rpc: (von, bis) => client.rpc('cb_fp_klient_dashboard', {p_code: x.code, p_von: von, p_bis: bis})}))};
-  return {info: '<b>Beispieldaten aus der Musterpraxis</b> (erfundene Personen). Sobald eigene Klienten verbunden sind, stehen hier deren Zahlen.',
-    personen: (MUSTER && MUSTER.klienten || []).map(k => ({key: 'muster-' + k.nr, name: k.name, code: k.code, muster: true, ziel: 'klienten/muster-' + k.nr,
-      rpc: (von, bis) => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: k.nr, p_von: von, p_bis: bis})}))};
+  return {info: '', personen: verbunden().map(x => ({key: (DEMO ? 'demo-' : '') + x.code, name: klientName(x), code: x.code, muster: !!DEMO, ziel: 'klienten/' + x.code,
+    rpc: (von, bis) => dashRpc(x.code, von, bis)}))};
 }
 async function ladeUebersichtStat(){
   if(!window.FLStat) return;
   const {info, personen} = await statPersonen();
-  if(!personen.length){ $('uebStat').innerHTML = '<div class="karte2"><p class="fuss">Noch keine Daten. Sobald Klienten verbunden sind, erscheinen hier Kennzahlen und Diagramme.</p></div>'; return; }
+  if(!personen.length){
+    $('uebStat').innerHTML = '<div class="karte2 start"><h3>Noch keine Klienten verbunden</h3>' +
+      '<ol class="schritte"><li><b>Key anlegen</b><span>oben mit „Neuer Key“, per E-Mail oder als QR-Karte</span></li>' +
+      '<li><b>Klientin löst ein und willigt ein</b><span>auf root-index.de/klientin.html, in wenigen Minuten</span></li>' +
+      '<li><b>Hier erscheinen Kennzahlen und Diagramme</b><span>Gemüse und Obst je Tag, Kalorien gegen Soll, Score, Verlauf</span></li></ol>' +
+      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
+    return;
+  }
   const d = await FLStat.laden(personen, heuteBerlin(), 7);
   // Hinweise aus der Key-Liste: läuft bald ab, Einwilligung fehlt, nicht eingelöst
   const keys = [];
@@ -1113,8 +1185,8 @@ const FL5_TEXT = {
 window.FLShell = {
   _b: {},
   bereich(id, def){ this._b[id] = def; if(AKTIV===id) zeigeFl5(id); },
-  ctx(){ const w = WAHL || ''; return { client, ich: ICH, keys: KEYS, klient: w && !w.startsWith('muster-') ? w : null,
-                                        muster: w.startsWith('muster-'), musterNr: w.startsWith('muster-') ? Number(w.slice(7)) : null,
+  ctx(){ const w = WAHL || '', k = KEYS.find(x => x.code===w); return { client, ich: ICH, keys: KEYS, klient: !DEMO && w ? w : null,
+                                        muster: !!DEMO && !!w, musterNr: DEMO && k ? k.nr : null, demo: !!DEMO, musterToken: DEMO,
                                         heute: heuteBerlin(), neu: ladeAlles, geh }; }
 };
 function zeigeFl5(id){
