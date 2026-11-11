@@ -84,7 +84,7 @@ ARB="$(mktemp -d "$BASIS/lauf.XXXXXX")"
 git -C "$WT" diff --name-status --no-renames "$ALT" "$NEU" > "$ARB/alle.txt"
 awk -F'\t' '$1!="D"{print $2}' "$ARB/alle.txt" | grep -Ev "$AUSSCHLUSS" > "$ARB/hoch.txt" || true
 awk -F'\t' '$1=="D"{print $2}' "$ARB/alle.txt" | grep -Ev "$AUSSCHLUSS" > "$ARB/weg.txt" || true
-grep -E '^supabase/functions/[^_/][^/]*/' "$ARB/alle.txt" | cut -f2 | awk -F/ '{print $3}' | sort -u > "$ARB/funktionen.txt" || true
+cut -f2 "$ARB/alle.txt" | grep -E '^supabase/functions/[^_/][^/]*/' | awk -F/ '{print $3}' | sort -u > "$ARB/funktionen.txt" || true
 # Geteilter Code (_shared) geaendert -> alle Funktionen, die ihn benutzen
 if grep -q '^supabase/functions/_' <(cut -f2 "$ARB/alle.txt"); then
   grep -rl '\.\./_' "$WT/supabase/functions"/*/index.ts 2>/dev/null | awk -F/ '{print $(NF-1)}' >> "$ARB/funktionen.txt"
@@ -137,7 +137,7 @@ fi
 # --- Stand festhalten (nur wenn alles geklappt hat) ---------------------------
 if [ "$FEHLER" = 0 ]; then
   echo "$NEU" > "$ARB/.deploy-sha"
-  if lf "put -O $D/ $ARB/.deploy-sha" >>"$LOG" 2>&1; then log "Fertig ${NEU:0:12} in $(( $(date +%s) - START )) s"
+  if lf "put -O \"$D/\" \"$ARB/.deploy-sha\"" >>"$LOG" 2>&1; then log "Fertig ${NEU:0:12} in $(( $(date +%s) - START )) s"
   else melden ".deploy-sha konnte nicht geschrieben werden"; fi
 else
   log "Abgebrochen - .deploy-sha bleibt auf ${ALT:0:12}, naechster Lauf versucht es erneut."
