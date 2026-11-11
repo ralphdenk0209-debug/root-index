@@ -345,7 +345,8 @@ function mount(el, opt){
       '<div class="f5-k">Aus Rezepten (Root Index, öffentliche und eigene) und Produkten, die die Person schon gern isst und die gut bewertet sind. Passend zu Unverträglichkeiten, Ernährungsform, Diabetes und Kalorienziel. Nichts wird gespeichert, bis du speicherst; die Person sieht den Plan erst nach dem Teilen.</div>' +
       (E.beachtet && E.beachtet.length ? '<div style="margin-top:6px">' + E.beachtet.map(b => '<span class="f5-chip blau">' + esc(b) + '</span>').join('') + '</div>' : '') +
       (E.hinweise && E.hinweise.length ? '<div class="f5-k" style="margin-top:4px">' + E.hinweise.map(esc).join(' ') + '</div>' : '') +
-      '<div class="f5-reihe"><button class="f5-b gruen" data-vor="leer" type="button">Leere Plätze vorschlagen</button><button class="f5-b" data-vor="neu" type="button">Alles neu vorschlagen (📌 bleibt)</button></div><div class="f5-meld" data-vm></div></div>' +
+      '<div class="f5-reihe"><button class="f5-b gruen" data-vor="leer" type="button">Leere Plätze vorschlagen</button><button class="f5-b" data-vor="neu" type="button">Alles neu vorschlagen (📌 bleibt)</button>' +
+      (opt.ki && !E.demo ? '<button class="f5-b" data-riki type="button">🤖 Neue Rezeptideen von Riki</button>' : '') + '</div><div class="f5-meld" data-vm></div><div data-rikibox></div></div>' +
       (E.ziel ? '<div class="f5-k">Kalorienziel ' + z(E.ziel) + ' kcal je Tag' + (E.ziel_her ? ' (' + esc(E.ziel_her) + ')' : '') + '</div>' : '') +
       '<div class="f5-tab-wrap"><table class="f5-raster" style="min-width:' + (140 + 130 * pl.length) + 'px"><thead><tr><th>Tag</th>' + pl.map(p => '<th>' + p.l + '</th>').join('') + '<th class="z">kcal</th></tr></thead><tbody>' +
       tage.map((t, ti) => { const et = E.eintraege.filter(y => y.datum===t); const kp = et.reduce((a, y) => a + (Number(y.kcal_plan)||0), 0);
@@ -373,6 +374,7 @@ function mount(el, opt){
     $p.querySelectorAll('[data-fest]').forEach(b => b.onclick = () => { lies(); const y = E.eintraege[Number(b.dataset.fest)]; y.fest = !y.fest; editor(); });
     $p.querySelectorAll('[data-tausch]').forEach(b => b.onclick = () => { lies(); const y = E.eintraege[Number(b.dataset.tausch)]; vorschlagen('tausch', y); });
     $p.querySelectorAll('[data-vor]').forEach(b => b.onclick = () => { lies(); vorschlagen(b.dataset.vor); });
+    const rk = $p.querySelector('[data-riki]'); if(rk) rk.onclick = () => { lies(); rikiForm(); };
     $p.querySelectorAll('[data-vortag]').forEach(b => b.onclick = () => { lies(); const t = b.dataset.vortag, v = plus(t, -1);
       E.eintraege = E.eintraege.filter(y => y.datum!==t).concat(E.eintraege.filter(y => y.datum===v).map(y => Object.assign({}, y, {datum:t, fest:false}))); editor(); });
     $p.querySelectorAll('[data-plus]').forEach(b => b.onclick = () => { lies(); const [t, k] = b.dataset.plus.split('|'); wahl(t, k); });
@@ -416,6 +418,55 @@ function mount(el, opt){
       editor();
       meld('[data-vm]', (art==='tausch' ? 'Getauscht.' : neu.length + ' Vorschläge eingetragen.') + ' Mit 📍 festhalten, mit ↻ tauschen, mit ✕ entfernen.', 'ok');
     }catch(e){ meld('[data-vm]', 'Vorschlag ging nicht: ' + (e.message || e), 'f'); }
+  }
+  /* Riki-Rezeptideen (Edge-Funktion fl5-riki-rezeptideen): nur bestätigte Angaben, keine Namen/Kennungen */
+  function rikiForm(){
+    const E = st.edit, box = $p.querySelector('[data-rikibox]'); if(!box) return;
+    const b = (E.beachtet || []).join(' | ');
+    const ohneVor = ((b.match(/ohne ([^|]+)/) || [])[1] || '').split(',').map(x => x.trim()).filter(Boolean);
+    const ef = /vegan/.test(b) ? 'vegan' : /vegetarisch/.test(b) ? 'vegetarisch' : '';
+    const OHNE = ['milch','laktose','gluten','ei','soja','fisch','krebstiere','weichtiere','schalenfruechte','erdnuss','sellerie','senf','sesam','sulfite','lupinen'];
+    const kcalVor = E.ziel ? Math.round(E.ziel * 0.3 / 10) * 10 : '';
+    box.innerHTML = '<div class="f5-wahl"><b>🤖 Rezeptideen von Riki</b><div class="f5-k">Riki ergänzt den Bestand mit neuen Ideen. An die KI gehen nur die Angaben unten – keine Namen, keine Kennungen, kein Tagebuch. Riki schlägt nur vor; gespeichert wird ein Rezept erst, wenn du es übernimmst (privat, nur für dich und die Personen, mit denen du es teilst).</div>' +
+      '<div class="f5-reihe"><label>Mahlzeit<select data-rm><option>Frühstück</option><option selected>Mittag</option><option>Abendessen</option><option>Snack</option></select></label>' +
+      '<label>kcal je Portion (etwa)<input type="number" data-rk min="50" max="2000" step="10" value="' + kcalVor + '" style="width:110px"></label>' +
+      '<label>Ernährungsform<select data-ref><option value="">keine Vorgabe</option><option value="vegetarisch"' + (ef==='vegetarisch' ? ' selected' : '') + '>vegetarisch</option><option value="vegan"' + (ef==='vegan' ? ' selected' : '') + '>vegan</option></select></label>' +
+      '<label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" data-rd' + (/Diabetes/.test(b) ? ' checked' : '') + '> zuckerarm (Diabetes)</label></div>' +
+      '<div style="font-size:13px;font-weight:800">Ohne</div><div class="f5-reihe" style="gap:4px 10px">' + OHNE.map(o => '<label style="flex-direction:row;align-items:center;gap:4px;font-weight:400;font-size:14px"><input type="checkbox" data-ro value="' + o + '"' + (ohneVor.includes(o) ? ' checked' : '') + '> ' + o + '</label>').join('') + '</div>' +
+      '<label style="font-size:13px;font-weight:800">Wünsche (optional, ohne Namen)</label><input data-rw maxlength="300" style="width:100%" placeholder="z. B. schnell, mit Hülsenfrüchten, mag keinen Koriander">' +
+      '<div class="f5-reihe"><button class="f5-b gruen" data-rlos type="button">Ideen holen</button><button class="f5-b" data-rzu type="button">Schließen</button></div><div class="f5-meld" data-rmeld></div><div data-rerg></div></div>';
+    box.scrollIntoView({behavior:'smooth', block:'nearest'});
+    const m = (t, a) => { const x = box.querySelector('[data-rmeld]'); x.textContent = t; x.className = 'f5-meld' + (a ? ' ' + a : ''); };
+    box.querySelector('[data-rzu]').onclick = () => { box.innerHTML = ''; };
+    box.querySelector('[data-rlos]').onclick = async function(){
+      const body = { mahlzeit: box.querySelector('[data-rm]').value, kcal_portion: Number(box.querySelector('[data-rk]').value) || null,
+        ernaehrungsform: box.querySelector('[data-ref]').value || null, diabetes: box.querySelector('[data-rd]').checked,
+        ohne: Array.from(box.querySelectorAll('[data-ro]:checked')).map(x => x.value), wuensche: box.querySelector('[data-rw]').value.trim(), anzahl: 3 };
+      this.disabled = true; m('⏳ Riki denkt nach (etwa 10–20 Sekunden) …');
+      let r; try{ r = await opt.ki(body); }catch(e){ this.disabled = false; return m(e.message || String(e), 'f'); }
+      this.disabled = false;
+      if(!r || !r.ok) return m((r && r.grund) || 'Ging nicht.', 'f');
+      m((r.hinweis || '') + (r.meta && r.meta.limit ? ' Heute ' + r.meta.heute + ' von ' + r.meta.limit + '.' : ''), 'ok');
+      const erg = box.querySelector('[data-rerg]');
+      erg.innerHTML = r.vorschlaege.map((v, i) => '<div class="f5-plan" style="margin-top:8px"><b>' + esc(v.name) + '</b> <span class="f5-k">' +
+        [v.kcal_geschaetzt ? 'ca. ' + z(v.kcal_geschaetzt) + ' kcal je Portion (Schätzung)' : '', v.zeit_min ? v.zeit_min + ' Min' : '', v.ernaehrungsform || ''].filter(Boolean).join(' · ') + '</span>' +
+        (v.kurz ? '<div style="font-size:14px">' + esc(v.kurz) + '</div>' : '') +
+        '<div class="f5-k" style="margin-top:4px">' + (v.zutaten || []).map(zt => esc((zt.menge ? zt.menge + ' ' : '') + zt.name)).join(' · ') + '</div>' +
+        '<details><summary class="f5-k" style="cursor:pointer">Zubereitung</summary><div style="font-size:14px;white-space:pre-wrap">' + esc(v.zubereitung || '') + '</div></details>' +
+        '<div class="f5-reihe"><button class="f5-b gruen" data-ruebern="' + i + '" type="button">Als privates Rezept übernehmen</button><span class="f5-meld" data-rum="' + i + '"></span></div></div>').join('');
+      erg.querySelectorAll('[data-ruebern]').forEach(btn => btn.onclick = async () => {
+        const v = r.vorschlaege[Number(btn.dataset.ruebern)], mm = erg.querySelector('[data-rum="' + btn.dataset.ruebern + '"]');
+        btn.disabled = true; mm.textContent = '⏳ …';
+        try{
+          const id = await opt.rpc('cb_rezept_anlegen', {p_payload: {name: String(v.name || 'Rezeptidee').slice(0, 120), portionen: v.portionen || 2,
+            zeit: v.zeit_min || null, zubereitung: v.zubereitung || '', ernaehrungsform: v.ernaehrungsform || null,
+            ziel: 'Idee von Riki (KI), von der Fachperson geprüft', mahlzeiten: [r.mahlzeit],
+            zutaten: (v.zutaten || []).map(zt => ({name: zt.name, menge: zt.menge || null, menge_g: zt.menge_g || null}))}});
+          st.alleRezepte = null;
+          mm.textContent = '✓ Gespeichert (privat). Root Index ordnet die Zutaten Produkten zu und rechnet Nährwerte und Score; das Rezept erscheint jetzt in Vorschlag und Suche.'; mm.className = 'f5-meld ok';
+        }catch(e){ btn.disabled = false; mm.textContent = e.message || String(e); mm.className = 'f5-meld f'; }
+      });
+    };
   }
   async function alleRezepte(){
     if(st.alleRezepte) return st.alleRezepte;
@@ -584,6 +635,8 @@ function shellRender(id, el, ctx){
     } else {
       const k = verb.find(x => x.code===w) || {code: w};
       mount($z, { nurTab: tab, muster: false, code: w, name: nm(k), heute: ctx.heute, praxis: ich.praxis || ich.name, fachperson: ich.name, rpc,
+                  ki: async body => { const {data, error} = await ctx.client.functions.invoke('fl5-riki-rezeptideen', {body});
+                                      if(error){ let d = null; try{ d = await error.context.json(); }catch(e){} return d || {ok:false, grund: error.message}; } return data; },
                   ladeDashboard: (von, bis) => rpc('cb_fp_klient_dashboard', {p_code: w, p_von: von, p_bis: bis}),
                   klienten: verb.map(x => ({code: x.code, name: nm(x)})) });
     }
