@@ -9,7 +9,8 @@
 --   cb_lebensmittelgruppe()       Gruppe eines Produkts bzw. Freitexts
 --   Richtwert                     belegte Richtwerte (DGE u. a.) mit Quelle, Stand, Abruf
 --   Klient_Vorgabe                individuelle Vorgaben je Klient (füllt später FL-4)
---   cb_auswertung_darf()          Zugriffsschutz (heute: eigener Nutzer oder Admin; FL-1 erweitert)
+--   cb_auswertung_daten_ab()      Zugriff: eigener Nutzer/Admin alles, Fachperson per FL-1-Key ab daten_ab
+--   cb_auswertung_darf()          Zugriff ja/nein
 --   cb_auswertung_eintraege()     Tagebuch-Einträge mit Gruppe und Nährwerten
 --   cb_auswertung_gruppen()       Gramm je Lebensmittelgruppe je Tag/Woche/Monat
 --   cb_auswertung_naehrwerte()    Energie, Makros, Ballaststoffe, Zucker, Salz, Mikros je Tag/Woche/Monat
@@ -350,11 +351,33 @@ drop policy if exists vorgabe_admin on public."Klient_Vorgabe";
 create policy vorgabe_admin on public."Klient_Vorgabe" for all to authenticated using (public.cb_ist_admin()) with check (public.cb_ist_admin());
 
 -- ---------- 3. Zugriff ----------------------------------------------
--- Heute: eigener Nutzer oder Admin. FL-1 ergänzt hier die Bindung Therapeutin -> Klient.
+-- Ab welchem Datum darf der Aufrufer das Tagebuch von p_benutzer sehen? null = gar nicht.
+-- Eigener Nutzer und Admin: alles. Fachperson (FL-1, live seit 11.11.2026): nur mit laufendem Key,
+-- gültigem Vertrag und Lizenz, erteilter und nicht widerrufener Einwilligung, und erst ab daten_ab
+-- (bzw. alles, wenn der Klient ältere Daten freigegeben hat) – dieselben Bedingungen wie _fp_klient().
+create or replace function public.cb_auswertung_daten_ab(p_benutzer text)
+returns date language sql stable security definer set search_path = public as $f$
+  select case
+    when public.cb_ist_admin()
+      or exists (select 1 from public."Benutzer" b where b.auth_id = auth.uid() and b."Benutzer_ID" = p_benutzer)
+    then date '1900-01-01'
+    else (select min(case when e.aeltere_freigegeben then date '1900-01-01' else e.daten_ab end)
+            from public.gratis_code g
+            join public.fachperson_konto f on f.auth_id = g.fachperson_auth and f.aktiv
+            join public.fachperson_einwilligung e on e.code = g.code and e.klient_auth = g.klient_auth
+            join public."Benutzer" b on b.auth_id = g.klient_auth
+           where b."Benutzer_ID" = p_benutzer
+             and g.fachperson_auth = auth.uid()
+             and public._fp_vertrag_ok(auth.uid())
+             and public._fp_lizenz_ok(auth.uid())
+             and public._fp_key_laeuft(g)
+             and e.einwilligung_am is not null and e.widerruf_am is null)
+  end;
+$f$;
+
 create or replace function public.cb_auswertung_darf(p_benutzer text)
 returns boolean language sql stable security definer set search_path = public as $f$
-  select public.cb_ist_admin()
-      or exists (select 1 from public."Benutzer" b where b.auth_id = auth.uid() and b."Benutzer_ID" = p_benutzer);
+  select public.cb_auswertung_daten_ab(p_benutzer) is not null;
 $f$;
 
 -- ---------- 4. Einträge mit Gruppe ----------------------------------
@@ -365,15 +388,17 @@ returns table(eintrag_id bigint, datum date, mahlzeit text, produkt_id text, nam
               ballaststoffe numeric, salz numeric)
 language plpgsql stable security definer set search_path = public, shadow_v1 as $f$
 #variable_conflict use_column
+declare v_ab date;
 begin
-  if not public.cb_auswertung_darf(p_benutzer) then raise exception 'Kein Zugriff auf dieses Tagebuch.'; end if;
+  v_ab := public.cb_auswertung_daten_ab(p_benutzer);
+  if v_ab is null then raise exception 'Kein Zugriff auf dieses Tagebuch.' using errcode = '42501'; end if;
   if p_bis < p_von or p_bis - p_von > 400 then raise exception 'Zeitraum ungültig (höchstens 400 Tage).'; end if;
   return query
   with e as (
     select v.*, t."Rezept_ID" rid, t."Man_ges_fett" man_gf
       from public.v_tagebuch_eintraege v
       join public."Ernaehrungstagebuch" t on t."Eintrag_ID" = v."Eintrag_ID"
-     where v."Benutzer_ID" = p_benutzer and v."Datum" between p_von and p_bis
+     where v."Benutzer_ID" = p_benutzer and v."Datum" between greatest(p_von, v_ab) and p_bis
   ),
   g as (
     select p."Produkt_ID" pid,
@@ -600,7 +625,7 @@ language plpgsql stable security definer set search_path = public as $f$
 #variable_conflict use_column
 declare v_b record; v_alter int; v_geschl text;
 begin
-  if not public.cb_auswertung_darf(p_benutzer) then raise exception 'Kein Zugriff auf dieses Tagebuch.'; end if;
+  if not public.cb_auswertung_darf(p_benutzer) then raise exception 'Kein Zugriff auf dieses Tagebuch.' using errcode = '42501'; end if;
   select * into v_b from public."Benutzer" where "Benutzer_ID" = p_benutzer;
   v_alter  := coalesce(extract(year from age(p_bis, v_b."Geburtsdatum"))::int, v_b."Alter");
   v_geschl := case v_b."Geschlecht" when 'männlich' then 'maennlich' when 'weiblich' then 'weiblich' end;
