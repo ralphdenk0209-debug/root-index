@@ -215,7 +215,7 @@ function mount(el, opt){
     if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
 
     if(st.modus!=='tag'){
-      h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, '#2e7d46']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
+      h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
            '<div class="fd-klein">Auf einen Tag tippen öffnet die Tagesansicht. Schraffiert = nichts eingetragen.</div></div>';
       const linie = go && go.soll ? go.soll : null;
       h += '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
@@ -280,7 +280,7 @@ function mount(el, opt){
       const einh = x.einheit==='en%' ? '%' : x.einheit;
       const bez = x.bezug==='woche' ? ' je Woche' : ' je Tag';
       const p = x.soll ? Math.min(150, Math.max(0, x.ist_prozent_vom_soll||0)) : 0;
-      const farbe = x.erfuellt==null ? '#9aa7a0' : x.erfuellt ? '#2e7d46' : (x.art==='hoechstens' ? '#b42318' : '#e8920c');
+      const farbe = x.erfuellt==null ? 'var(--fd-leer-balken,#9aa7a0)' : x.erfuellt ? 'var(--ok,#2e7d46)' : (x.art==='hoechstens' ? 'var(--bad,#b42318)' : 'var(--warn,#e8920c)');
       const soll = x.soll==null ? '–' : (x.art==='bereich' ? z(x.soll, 1) + '–' + z(x.soll_bis, 1) : (ART[x.art]||'') + ' ' + z(x.soll, x.einheit==='en%'?0:1));
       const her = x.soll_herkunft==='Vorgabe Therapeutin' ? '<b>Vorgabe</b>' + (x.quelle ? ' · ' + esc(x.quelle) : '') + (x.hinweis ? ' · ' + esc(x.hinweis) : '')
                 : x.soll_herkunft==='Ziel im Profil' ? 'Ziel aus dem Profil der Person'

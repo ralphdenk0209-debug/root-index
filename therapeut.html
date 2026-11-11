@@ -17,8 +17,8 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=7"></script>
-<script src="fachleute-statistik.js?v=6"></script>
+<script src="fachleute-dashboard.js?v=8"></script>
+<script src="fachleute-statistik.js?v=8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -377,6 +377,114 @@
   body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="bewertung"], body.demo [data-v="wunschliste"]{display:none!important}
   body.demo .statuszeile .punkt{background:var(--gelb)}
   .demo-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dunkel);color:#fff;border-radius:12px;padding:10px 16px;font-size:14.5px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  /* ========== FL-4: Optik wie Content Studio (Ralph 11.11.2026), hell und dunkel ==========
+     Farben nur über Variablen. Ampel (--ok/--warn/--bad) nur für Ist gegen Soll und Status. Altes Grün nur noch im Logo. */
+  :root{--blau:#0b2ff2;--blau-h:#0922d7;--blau-zart:#eaf1ff;--blau-tief:#04157e;--ink:#0a0a0a;--muted:#737373;--paper:#f3f4f6;--panel:#fff;--line:#e5e5e5;
+    --ok:#16a34a;--ok-zart:#dcfce7;--warn:#d97706;--warn-zart:#fef3c7;--bad:#dc2626;--bad-zart:#fee2e2;--leer:#eef0f3;
+    --gruen:var(--blau);--dunkel:var(--ink);--creme:var(--paper);--linie:var(--line);--text:var(--ink);--karte:var(--panel);--gelb:var(--warn-zart);
+    --lime:var(--blau);--lime-hell:var(--blau-zart);--frisch-grund:var(--paper);--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",Arial,sans-serif;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root{--blau:#6b86ff;--blau-h:#8aa0ff;--blau-zart:#1b2452;--blau-tief:#0b1a6e;--ink:#eef0f4;--muted:#9aa2ae;--paper:#0d1016;--panel:#161a22;--line:#2a303b;
+    --ok:#34d399;--ok-zart:#10392b;--warn:#fbbf24;--warn-zart:#3d2e0c;--bad:#f87171;--bad-zart:#4a1919;--leer:#232834;color-scheme:dark}}
+  body,body.app-an{font-family:var(--sans);background:var(--paper);color:var(--ink)}
+  h1,h2,h3,h4{letter-spacing:-.015em;font-weight:700}
+  input,select,textarea{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--blau);box-shadow:0 0 0 3px var(--blau-zart)}
+  a{color:var(--blau)}
+  .kopf{background:linear-gradient(100deg,var(--blau-tief),#213be3);color:#fff}
+  .kopf a{color:#fff}
+  .karte,.karte2,.kpi,.neu-panel,.keyliste,.fl5{background:var(--panel);border:1px solid var(--line)!important;box-shadow:none!important;border-radius:20px}
+  .knopf,.tb.haupt{background:var(--blau);border-color:var(--blau);color:#fff;border-radius:14px;font-weight:600}
+  .knopf:hover,.tb.haupt:hover{background:var(--blau-h)}
+  .knopf.zwei,.tb,.klein-knopf{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;font-weight:600}
+  .tb:hover,.klein-knopf:hover{background:var(--paper)}
+  .tb.haupt{color:#fff}
+  .tabs button{background:var(--panel);color:var(--muted);border-color:var(--line)} .tabs button.an{background:var(--blau);border-color:var(--blau);color:#fff}
+  .hinweis,.hinweis-band{background:var(--warn-zart);border-color:transparent;color:var(--ink)}
+  .vertrag{background:var(--paper)}
+  .neu-code{background:var(--blau-tief)}
+  dialog{background:var(--panel);color:var(--ink)}
+  .chip.laeuft,.chip.erteilt{background:var(--ok-zart);color:var(--ok)} .chip.offen{background:var(--blau-zart);color:var(--blau)}
+  .chip.keine{background:var(--warn-zart);color:var(--warn)} .chip.widerrufen{background:var(--bad-zart);color:var(--bad)} .chip.abgelaufen,.chip.beendet{background:var(--leer);color:var(--muted)}
+  .key-code{color:var(--ink)}
+  .ampel.g{background:var(--ok)} .ampel.o{background:var(--warn)} .ampel.r{background:var(--bad)} .ampel.x{background:var(--leer)}
+  .statuszeile .punkt{background:var(--ok)} .statuszeile .punkt.gelb,body.demo .statuszeile .punkt{background:var(--warn)}
+  body.app-an .statuszeile{color:var(--muted)}
+  /* Seitenleiste: blauer Verlauf wie Content Studio */
+  @media (min-width:1001px){
+    body.app-an{padding-left:262px}
+    body.app-an .menue{left:8px;top:8px;bottom:8px;width:246px;border-radius:14px;background:linear-gradient(#8097f5,#213be3);box-shadow:none;padding:16px 12px}
+    body.app-an .menue-marke{color:#fff} .menue-marke small{color:#ffffffb3!important}
+    body.app-an .menue button{color:#fff;font-weight:500;border:1px solid transparent}
+    body.app-an .menue button:hover{background:#ffffff1f}
+    body.app-an .menue button.an{background:#ffffff33;border-color:#ffffff55;color:#fff;box-shadow:none;font-weight:600}
+    .menue-marke img{background:#fff;padding:3px}
+  }
+  @media (max-width:1000px){
+    body.app-an .menue{background:var(--panel);border-bottom:1px solid var(--line)}
+    body.app-an .menue button{color:var(--ink)} body.app-an .menue button.an{background:var(--blau-zart);color:var(--blau)}
+    .menue-auf{color:var(--ink)!important}
+  }
+  body.app-an .kopf{background:transparent;color:var(--ink)}
+  .gruss b{color:var(--ink)} .gruss span{color:var(--muted)}
+  body.app-an .kopf-nutzer{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .dd-menu{background:var(--panel);border-color:var(--line)} .dd-menu button{color:var(--ink)} .dd-menu button:hover{background:var(--blau-zart)}
+  .dd-info{border-color:var(--line)} .dd-info b{color:var(--ink)}
+  .segment{border-color:var(--line)} .segment button{background:var(--panel);color:var(--muted)} .segment button.an{background:var(--blau);color:#fff}
+  /* Seitenkopf: große Überschrift, Unterzeile, Linie */
+  body.app-an .band{margin:0 28px;padding:20px 0 12px;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;gap:2px}
+  body.app-an .band h1{color:var(--ink);font-size:30px;font-weight:700}
+  body.app-an .band span{color:#525252} @media (prefers-color-scheme: dark){ body.app-an .band span{color:var(--muted)} }
+  body.app-an .band.klein{margin:0;padding:12px 14px;flex-direction:row;align-items:center;background:var(--panel);color:var(--ink);border-bottom:1px solid var(--line)}
+  body.app-an .werkzeug{padding:14px 28px 6px}
+  .k2-kopf h3{color:var(--ink)} .k2-kopf span{color:var(--muted)}
+  .kpi-titel,.baum .kopfzeile,.abschnitt.eyebrow,.eyebrow{text-transform:uppercase;letter-spacing:.09em;color:var(--blau);font-weight:700;font-size:11.5px}
+  .kpi-wert{color:var(--ink)} .kpi-wert small,.kpi-fuss{color:var(--muted)}
+  .kpi-symbol.lime,.kpi-symbol.gelb,.kpi-symbol.orange,.kpi-symbol.tanne{background:var(--blau-zart);color:var(--blau)}
+  .kpi-delta.gut{background:var(--ok-zart);color:var(--ok)} .kpi-delta.schlecht{background:var(--warn-zart);color:var(--warn)}
+  .tabwrap{background:var(--panel)}
+  .tab th{background:var(--paper);color:var(--muted);border-color:var(--line)} .tab td{border-color:var(--line)}
+  .tab tr.klick:hover td{background:var(--blau-zart)}
+  .tab .gruppe td{background:var(--paper);color:var(--ink)}
+  .kennzahlen{border-color:var(--line)} .kz{background:var(--panel);border-color:var(--line)} .kz b{color:var(--ink)} .kz.warn b{color:var(--warn)}
+  .seite{background:var(--panel);border-color:var(--line)} .suche{border-color:var(--line)}
+  .baum button{color:var(--ink)} .baum button:hover{background:var(--paper)} .baum button.an{background:var(--blau-zart)} .baum button.an .n{color:var(--blau)} .baum button .n{color:var(--ink)}
+  body.app-an .detail,body.app-an .detail .fd .fd-zeit{background:var(--paper)}
+  .detail-kopf{background:var(--panel);border-color:var(--line)} .detail-kopf .n{color:var(--ink)}
+  .blick-k{background:var(--panel);border-color:var(--line)} .blick-k:hover{border-color:var(--blau);box-shadow:0 6px 20px rgba(11,47,242,.12)}
+  .blick-kopf b,.blick-werte b{color:var(--ink)} .blick-tage i.ja{background:var(--blau)} .blick-tage i.leer{background:var(--leer)}
+  .hinw-z{background:var(--paper);color:var(--ink)} .hinw-z:hover{background:var(--blau-zart)} .hinw-z b{color:var(--ink)} .hinw-t{color:var(--muted)}
+  .hinw-z i.orange{background:var(--warn)} .hinw-z i.gelb{background:#eab308} .hinw-z i.rot{background:var(--bad)} .hinw-z i.grau{background:var(--leer)}
+  .legende2 i.ja,.matrix td.ja{background:var(--ok-zart)} .legende2 i.nein,.matrix td.nein{background:var(--warn-zart)}
+  .legende2 i.ueber,.matrix td.ueber{background:var(--bad-zart)} .legende2 i.leer,.matrix td.leer{background:var(--leer)}
+  .matrix td{color:var(--ink)} .matrix tbody th{color:var(--ink)} .legende2 i.strich{border-color:var(--ink)}
+  .bz-name{color:var(--ink)} .bz-spur{background:var(--leer)} .bz-marke{border-color:var(--ink)}
+  .muster-mark,.mini-muster{background:var(--warn-zart);color:var(--warn)}
+  .demo-toast{background:var(--blau-tief);color:#fff}
+  .karte2.start h3,.schritte b{color:var(--ink)}
+  .bew-rahmen{background:var(--paper)}
+  #wunschFrame{background:var(--paper)}
+  .klein{color:var(--muted)}
+  /* Auswertung je Person (fachleute-dashboard.js) */
+  body .fd{--fd-gruen:var(--blau);--fd-akzent:var(--blau);--fd-dunkel:var(--ink);--fd-creme:var(--blau-zart);--fd-muted:var(--muted);--fd-linie:var(--line);--fd-gemuese:#16a34a;--fd-obst:#f59e0b;--fd-leer-balken:var(--muted)}
+  body .fd .fd-karte{background:var(--panel);border:1px solid var(--line)!important;box-shadow:none!important;border-radius:20px}
+  body .fd h2,body .fd h3,body .fd h4,body .fd .fd-label,body .fd .fd-kachel b,body .fd .fd-is .n,body .fd .fd-rez b{color:var(--ink)}
+  body .fd .fd-kachel{background:var(--blau-zart)}
+  body .fd .fd-modus{background:var(--panel);border-color:var(--line)} body .fd .fd-modus button{background:var(--panel);color:var(--muted)} body .fd .fd-modus button.an{background:var(--blau);color:#fff}
+  body .fd .fd-pfeil,body .fd .fd-k,body .fd .fd-tab button{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  body .fd .fd-tab button.an,body .fd .fd-k.gruen{background:var(--blau);border-color:var(--blau);color:#fff}
+  body .fd .fd-chip{background:var(--blau-zart);color:var(--blau)} body .fd .fd-chip.dunkel{background:var(--blau);color:#fff} body .fd .fd-chip.hell{background:var(--leer);color:var(--muted)}
+  body .fd .fd-bar{background:var(--leer)} body .fd .fd-bar .m{border-color:var(--ink)}
+  body .fd td,body .fd th{border-color:var(--line)}
+  body .fd .fd-linie{border-top-color:var(--ink)} body .fd .fd-linie span{background:var(--panel);color:var(--ink)}
+  body .fd .fd-balken .s.leer{background:repeating-linear-gradient(45deg,var(--leer),var(--leer) 4px,transparent 4px,transparent 8px)}
+  body .fd .fd-hinweis{background:var(--warn-zart);border-color:transparent;color:var(--ink)}
+  body .fd .fd-bald{border-color:var(--line);color:var(--muted)}
+  body .fd .fd-plan .tag{background:var(--paper)} body .fd .fd-plan .tag b{color:var(--ink)} body .fd .fd-plan .tag.heute{outline-color:var(--blau)} body .fd .fd-plan .e{background:var(--panel)}
+  body .fd .fd-rez .ph,body .fd .fd-rez img{background:var(--paper)}
+  body .fd .fd-her.vorgabe{background:var(--blau);color:#fff} body .fd .fd-her.profil{background:var(--blau-zart);color:var(--blau)} body .fd .fd-her.dge{background:var(--leer);color:var(--muted)} body .fd .fd-her.leer{background:transparent;color:var(--muted);border:1px dashed var(--line)}
+  body .fd .fd-ist.ja{background:var(--ok-zart)} body .fd .fd-ist.nein{background:var(--warn-zart)} body .fd .fd-ist.ueber{background:var(--bad-zart)}
+  body .fd .fd-ziel-zeile td{background:var(--paper)}
+  body .fd .fd-ziel-edit select,body .fd .fd-ziel-edit input,body .fd .fd-vg-form select,body .fd .fd-vg-form input{background:var(--panel);color:var(--ink);border-color:var(--line)}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>

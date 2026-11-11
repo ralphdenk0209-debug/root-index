@@ -23,12 +23,19 @@ const tm = s => { const d = D(s); return d.getUTCDate() + '.' + (d.getUTCMonth()
 const mittel = a => { const b = a.filter(x => x!=null && !isNaN(x)); return b.length ? b.reduce((s, x) => s + Number(x), 0) / b.length : null; };
 const json = d => typeof d==='string' ? JSON.parse(d) : d;
 
+// Farben aus der Seite (Content-Studio-Optik, hell und dunkel)
+function cssFarbe(n, alt){ try{ const v = getComputedStyle(document.documentElement).getPropertyValue(n).trim(); return v || alt; }catch(e){ return alt; } }
+function farbenLaden(){
+  F.tanne = cssFarbe('--blau', '#0b2ff2'); F.ink = cssFarbe('--ink', '#0a0a0a'); F.grau = cssFarbe('--muted', '#737373');
+  F.linie = cssFarbe('--line', '#e5e5e5'); F.gruen = cssFarbe('--ok', '#16a34a'); F.orange = cssFarbe('--warn', '#d97706'); F.rot = cssFarbe('--bad', '#dc2626');
+}
 function chartStil(){
   if(!window.Chart || chartStil.ok) return; chartStil.ok = true;
-  Chart.defaults.font.family = 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-  Chart.defaults.font.size = 12; Chart.defaults.color = '#5d6b61';
+  farbenLaden();
+  Chart.defaults.font.family = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+  Chart.defaults.font.size = 12; Chart.defaults.color = F.grau;
   Chart.defaults.plugins.legend.labels.usePointStyle = true; Chart.defaults.plugins.legend.labels.boxWidth = 8;
-  Chart.defaults.plugins.tooltip.backgroundColor = '#133521'; Chart.defaults.plugins.tooltip.padding = 10;
+  Chart.defaults.plugins.tooltip.backgroundColor = cssFarbe('--blau-tief', '#04157e'); Chart.defaults.plugins.tooltip.padding = 10;
   Chart.defaults.plugins.tooltip.cornerRadius = 8; Chart.defaults.plugins.tooltip.titleFont = {weight: '800'};
 }
 const CH = new Map();
@@ -85,7 +92,7 @@ function kpi(id, titel, wert, einheit, delta, deltaGut, fuss, symbol, farbe){
 }
 function spark(id, werte, farbe){
   chart(document.getElementById(id), {type: 'line', data: {labels: werte.map((_, i) => i), datasets: [{data: werte, borderColor: farbe, borderWidth: 2,
-      backgroundColor: farbe + '22', fill: true, tension: .35, pointRadius: 0, spanGaps: true}]},
+      backgroundColor: /^#[0-9a-f]{6}$/i.test(farbe) ? farbe + '22' : 'transparent', fill: true, tension: .35, pointRadius: 0, spanGaps: true}]},
     options: {responsive: true, maintainAspectRatio: false, animation: false, plugins: {legend: {display: false}, tooltip: {enabled: false}},
       scales: {x: {display: false}, y: {display: false}}}});
 }
@@ -106,6 +113,7 @@ function tellerAus(gruppen){
 
 /* ---------- Übersicht: Praxis auf einen Blick ---------- */
 function uebersicht(el, daten, info){
+  farbenLaden();
   const infoText = info && typeof info === 'object' ? info.text : info;
   const ok = daten.filter(d => !d.lang.fehler);
   if(!ok.length){ el.innerHTML = '<div class="karte2"><p class="fuss">Noch keine Daten.</p></div>'; return; }
@@ -137,7 +145,7 @@ function uebersicht(el, daten, info){
     data: {labels: wo.map(w => tm(w.von)), datasets: [
       {label: 'Gemüse', data: wo.map(w => w.gem && Math.round(w.gem)), backgroundColor: F.gem, borderRadius: 6, stack: 's', maxBarThickness: 46},
       {label: 'Obst', data: wo.map(w => w.obst && Math.round(w.obst)), backgroundColor: F.obst, borderRadius: 6, stack: 's', maxBarThickness: 46},
-      {label: 'DGE Obst + Gemüse (' + DGE_OG + ' g)', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: F.tanne, borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0}]},
+      {label: 'DGE Obst + Gemüse (' + DGE_OG + ' g)', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: F.ink, borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0}]},
     options: {responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false},
       plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {title: t => 'Woche ab ' + t[0].label, label: c => ' ' + c.dataset.label.split(' (')[0] + ': ' + z(c.parsed.y) + ' g'}}},
       scales: {x: {stacked: true, grid: {display: false}}, y: {stacked: true, beginAtZero: true, grid: {color: F.linie}, ticks: {callback: v => v + ' g'}}}}});
@@ -166,9 +174,9 @@ function bindeZiel(el){ el.querySelectorAll('tr[data-ziel]').forEach(tr => tr.st
 /* Kachel je Person: Ring Obst+Gemüse gegen DGE, kcal gegen Soll, Score, die letzten 7 Tage als Punkte */
 function ring(p, farbe){
   const r = 26, u = 2 * Math.PI * r, f = Math.max(0, Math.min(1, p||0));
-  return '<svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="' + r + '" stroke="#EEF1EC" stroke-width="7" fill="none"/>' +
+  return '<svg class="ring" viewBox="0 0 64 64"><circle cx="32" cy="32" r="' + r + '" style="stroke:var(--leer,#EEF1EC)" stroke-width="7" fill="none"/>' +
     '<circle cx="32" cy="32" r="' + r + '" stroke="' + farbe + '" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="' + (u*f).toFixed(1) + ' ' + u.toFixed(1) + '" transform="rotate(-90 32 32)"/>' +
-    '<text x="32" y="36" text-anchor="middle" font-size="13" font-weight="800" fill="#133521">' + Math.round(100*(p||0)) + '%</text></svg>';
+    '<text x="32" y="36" text-anchor="middle" font-size="13" font-weight="800" style="fill:var(--ink,#133521)">' + Math.round(100*(p||0)) + '%</text></svg>';
 }
 function letzteTage(d, n){
   const t = (d.lang && d.lang.tage) || []; return t.slice(-n);
@@ -183,7 +191,7 @@ function blickKarte(d){
   return '<button class="blick-k" type="button" data-geh="' + esc(p.ziel) + '">' +
     '<div class="blick-kopf"><span><b>' + esc(p.name) + '</b>' + (p.muster ? ' <span class="mini-muster">erfunden</span>' : '') + '<small>' + (letzter ? 'zuletzt ' + tm(letzter.datum) : 'noch keine Einträge') + '</small></span>' +
       '<span class="blick-score" style="background:' + scF + '">' + (sc==null ? '–' : Math.round(sc)) + '</span></div>' +
-    '<div class="blick-mitte">' + ring(og, og >= 1 ? '#2e7d46' : og >= .6 ? F.gelb || '#F4B740' : '#EE8A3C') +
+    '<div class="blick-mitte">' + ring(og, og >= 1 ? F.gruen : og >= .6 ? '#eab308' : F.orange) +
       '<div class="blick-werte"><div><small>Obst + Gemüse Ø</small><b>' + z((d.jetzt.gem||0) + (d.jetzt.obst||0)) + ' g</b></div>' +
       '<div><small>kcal Ø' + (k && k.soll ? ' / Soll' : '') + '</small><b>' + z(d.jetzt.kcal) + (k && k.soll ? ' <em>/ ' + z(k.soll) + '</em>' : '') + '</b></div></div></div>' +
     '<div class="blick-tage">' + tage.map(t => '<i class="' + (t.leer ? 'leer' : 'ja') + '" title="' + esc(tm(t.datum) + (t.leer ? ': nichts eingetragen' : ': ' + z(t.kcal) + ' kcal')) + '"></i>').join('') +
@@ -213,6 +221,7 @@ function aufmerksamkeit(daten, keys){
 
 /* ---------- Auswertungen: Personen im Vergleich ---------- */
 function vergleich(el, daten){
+  farbenLaden();
   const ok = daten.filter(d => !d.lang.fehler);
   const n = daten[0] ? daten[0].nTage : 7;
   const maxG = Math.max(DGE_OG, ...ok.map(d => (d.jetzt.gem||0) + (d.jetzt.obst||0))) * 1.08;
@@ -231,7 +240,7 @@ function vergleich(el, daten){
         '<div class="legende2"><span><i style="background:' + F.gruen + '"></i>im Ziel (±10 %)</span><span><i style="background:' + F.orange + '"></i>daneben</span><span><i class="strich"></i>Soll</span></div></div>' +
     '</div>' +
     '<div class="karte2"><div class="k2-kopf"><h3>Root-Index-Score je Woche</h3><span>Ø je erfasstem Tag, nach Menge gewichtet</span></div><div class="ch-h"><canvas id="chScore"></canvas></div></div>';
-  const farben = ['#2e7d46', '#d98a0b', '#3a6ea5', '#a8457a', '#6b7a2e', '#c0583a', '#5b5fb0', '#1f8a8a'];
+  const farben = [F.tanne, '#d98a0b', '#16a34a', '#a8457a', '#0891b2', '#c0583a', '#7c3aed', '#64748b'];
   const w0 = ok[0] ? ok[0].wochen : [];
   let ab = 0; while(ab < w0.length - 1 && ok.every(d => !d.wochen[ab] || d.wochen[ab].score==null)) ab++;
   const lab = w0.slice(ab).map(w => tm(w.von));
@@ -245,6 +254,7 @@ function vergleich(el, daten){
 /* ---------- Verlauf einer Person (für die Auswertung je Klient) ---------- */
 const VERLAUF = new Map();
 async function verlauf(el, rpc, heute, key){
+  farbenLaden();
   const bis = plus(heute, -1), von = plus(montag(bis), -49);
   el.innerHTML = '<div class="fd-karte"><h2>Verlauf der letzten 8 Wochen</h2><div class="fd-klein">Ø je erfasstem Tag und Woche</div><div style="position:relative;height:240px;margin-top:8px"><canvas></canvas></div></div>';
   let d; try{ const k = (key||'') + '|' + von; if(!VERLAUF.has(k)) VERLAUF.set(k, rpc(von, bis)); const r = await VERLAUF.get(k); if(r.error) throw new Error(r.error.message); d = json(r.data); }catch(e){ el.innerHTML = ''; return; }
