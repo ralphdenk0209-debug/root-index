@@ -17784,6 +17784,17 @@ function rezeptDetail(r){
         <span id="rzPlanMsg" style="font-size:13px"></span>
       </div>
     </div>` : '';
+  /* FL-6 (11.11.2026, Vorfuehrung Ernaehrungstherapeutinnen): "ein Rezept direkt
+     auf die Einkaufsliste". Vorher ging das nur ueber den Wochenplan. Die Mengen
+     rechnet cb_einkauf_from_rezept (ueber cb_rezept_skaliert) - wie angezeigt. */
+  const einkBox = (ME && hasFeat('einkaufsliste')) ? `
+    <div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:13px">
+        <button id="rzEinkBtn" onclick="addRezeptToEinkauf()" style="padding:9px 14px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer">🛒 Auf die Einkaufsliste</button>
+        <span id="rzEinkInfo" style="color:var(--muted)"></span>
+      </div>
+      <div id="rzEinkMsg" style="font-size:13px;margin-top:6px"></div>
+    </div>` : '';
   const controls = pro
     ? `<div style="background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px 0">
         <div style="font-weight:600;font-size:13px;margin-bottom:8px">Rezept anpassen</div>
@@ -17815,6 +17826,7 @@ function rezeptDetail(r){
     ${modBar}
     ${controls}
     ${tbBox}
+    ${einkBox}
     ${(typeof hasFeat!=='function'||hasFeat('kochmodus'))&&(r.zubereitung||'').trim()?`<button onclick="kochStart()" style="width:100%;margin:14px 0 2px;padding:13px;border:0;border-radius:12px;background:var(--k-16a34a);color:var(--k-ffffff);font-size:15px;font-weight:800;cursor:pointer">👩‍🍳 Jetzt kochen – Schritt für Schritt</button>`:''}
     <div id="rtBox"></div>
     <div style="font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--green);margin:16px 0 4px">Zutaten <span style="color:var(--muted);text-transform:none;letter-spacing:0">(Zahl = Root Index)</span></div>
@@ -18064,6 +18076,7 @@ function renderRezeptScaled(){
   const zc=document.getElementById("rzZutaten"); if(zc) zc.innerHTML=zHtml;
   const kb=document.getElementById("rzKcalBadge"); if(kb) kb.textContent=K0?rd(K0*fK):"–";
   const pi=document.getElementById("rzPortInfo"); if(pi) pi.textContent=_portTxt(rd(pers));
+  const ei=document.getElementById("rzEinkInfo"); if(ei) ei.textContent="für "+_portTxt(rd(pers));   /* FL-6 */
   const mk=document.getElementById("rzMakros");
   if(mk) mk.innerHTML=`Protein <b>${num(r.protein)!=null?rd(num(r.protein)*fK):"–"} g</b> · Kohlenhydrate <b>${num(r.kh)!=null?rd(num(r.kh)*fK):"–"} g</b> · Fett <b>${num(r.fett)!=null?rd(num(r.fett)*fK):"–"} g</b><div class="formula">pro Portion${(rd(pers)!=P0)?` · gesamt ${_portTxt(rd(pers))}`:""}</div>`;
   const bud=document.getElementById("rzBudget");
@@ -18153,6 +18166,30 @@ async function addRezeptToPlan(){
   msg.textContent="Eingeplant: "+new Date(ds+"T00:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"short"})+" · "+slot;
 }
 if(typeof window!=='undefined'){ window.addRezeptToPlan=addRezeptToPlan; }
+/* FL-6: alle Zutaten fuer die gewaehlte Portionenzahl auf die Einkaufsliste.
+   Was schon offen draufsteht, zaehlt der Server zusammen; die Meldung kommt von dort. */
+async function addRezeptToEinkauf(){
+  const msg=document.getElementById("rzEinkMsg"), btn=document.getElementById("rzEinkBtn");
+  const r=_rezept; if(!r||!msg) return;
+  let pers=null, zielK=null;
+  if(ME && hasFeat('rezepte_pro')){
+    pers=parseFloat((document.getElementById("rzPers")||{}).value)||null;
+    const zk=parseFloat((document.getElementById("rzKcal")||{}).value); zielK=isNaN(zk)?null:zk;
+  }
+  if(btn) btn.disabled=true;
+  msg.style.color="var(--muted)"; msg.textContent="Wird übernommen …";
+  try{
+    const {data,error}=await client.rpc("cb_einkauf_from_rezept",{p_rezept:r.id,p_portionen:pers,p_ziel_kcal:zielK});
+    if(error) throw error;
+    const ok=!!(data&&data.ok);
+    msg.style.color=ok?"var(--k-16a34a)":"var(--k-b45309)";
+    msg.innerHTML=esc((data&&data.meldung)||"Erledigt.")
+      +(ok?' <a href="#" onclick="event.preventDefault();closeP();navTo(\'einkauf\')" style="color:var(--greendk);text-decoration:underline;white-space:nowrap">Zur Einkaufsliste</a>':'');
+  }catch(e){
+    msg.style.color="var(--k-dc2626)"; msg.textContent="Fehler: "+((e&&e.message)||String(e));
+  }finally{ if(btn) btn.disabled=false; }
+}
+if(typeof window!=='undefined'){ window.addRezeptToEinkauf=addRezeptToEinkauf; }
 async function addRezeptToTb(){
   const r=_rezept; if(!r) return; const msg=document.getElementById("rzTbMsg");
   const meal=(document.getElementById("rzMeal")||{}).value||"Snack";
@@ -18196,7 +18233,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-07-01";
+const APP_BUILD="2026-11-11-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
