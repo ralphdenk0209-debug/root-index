@@ -307,11 +307,14 @@ begin
       join public."Scores" s on s."Produkt_ID" = e.produkt_id and s."Bewertung" in ('Gut','Sehr gut')
       left join public."Naehrwerte_Makro" nm on nm."Produkt_ID" = e.produkt_id
       left join public."Produkt_Allergene" pa on pa."Produkt_ID" = e.produkt_id
-     where e.mahlzeit in ('Frühstück','Snack') and e.menge_g > 0
+     -- nur einzeln gegessene Produkte (keine Rezeptzutaten), und keine Kleinstmengen wie Gewürz oder Aufstrich
+     where e.mahlzeit in ('Frühstück','Snack') and e.menge_g > 0 and e.rezept_id is null
        and not (coalesce(pa.enthaelt, '{}') && v_unv)
        and not ('laktose' = any(v_unv) and coalesce(pa.laktose, 'unklar') <> 'laktosefrei')
        and not (cardinality(v_unv) > 0 and pa."Produkt_ID" is null)
-     group by e.produkt_id, p."Produktname", e.mahlzeit, s."Clean_Score", nm.kcal_100g_ml),
+     group by e.produkt_id, p."Produktname", e.mahlzeit, s."Clean_Score", nm.kcal_100g_ml
+    having percentile_cont(0.5) within group (order by e.menge_g) >= 50
+        or coalesce(nm.kcal_100g_ml, 0) * percentile_cont(0.5) within group (order by e.menge_g) / 100 >= 50),
   kand as (                                            -- Kandidaten je Platz-Art mit Gewicht
     select z.slot, 'rezept' typ, r.id, r.name, r.kcal, null::numeric g, null::numeric k100,
            coalesce(r.punkte, 50) + 8 * ln(1 + r.mal) - case when nullif(v_diab, '') is not null then coalesce(r.zp, 10) else 0 end gewicht,
@@ -323,7 +326,9 @@ begin
     union all
     select z.slot, 'produkt', p.id, p.name, null, p.g, p.k100,
            coalesce(p.punkte, 50) + 8 * ln(1 + p.mal), 'isst sie/er gern'
-      from (select distinct slot from pl2 where slot in ('Frühstück','Snack')) z join prod p on p.mahlzeit = z.slot),
+      from (select distinct slot from pl2 where slot in ('Frühstück','Snack')) z join prod p on p.mahlzeit = z.slot
+     -- Frühstück aus Produkten nur, wenn kein passendes Frühstücksrezept da ist
+     where z.slot = 'Snack' or not exists (select 1 from rez r where r.mt ilike '%Frühstück%')),
   rang as (select k.*, row_number() over (partition by k.slot order by k.gewicht desc, k.id) rn,
                   count(*) over (partition by k.slot) n from kand k),
   wahl as (
@@ -344,7 +349,7 @@ begin
         'rezept_id', case when w.typ = 'rezept' then w.id end, 'produkt_id', case when w.typ = 'produkt' then w.id end,
         'titel', w.name,
         'portionen', case when w.typ = 'rezept' then case when w.kz is null then 1
-                          else greatest(0.5, least(3, round(w.kz / w.kcal * 2) / 2)) end end,
+                          else round(greatest(0.5, least(3, round(w.kz / w.kcal * 2) / 2)), 1) end end,
         'menge_g', case when w.typ = 'produkt' then w.g end,
         'kcal_plan', case when w.typ = 'rezept' then round(w.kcal * case when w.kz is null then 1 else greatest(0.5, least(3, round(w.kz / w.kcal * 2) / 2)) end)
                           when w.typ = 'produkt' and w.k100 is not null then round(w.k100 * w.g / 100) end,
