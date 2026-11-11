@@ -960,7 +960,9 @@ function nurAnsehen(){
 const DEMO_DATEN_SCHLUESSEL = 'fl-demo-daten';
 function demoDaten(){ try{ return JSON.parse(sessionStorage.getItem(DEMO_DATEN_SCHLUESSEL)) || {}; }catch(e){ return {}; } }
 function demoSichern(d){ try{ sessionStorage.setItem(DEMO_DATEN_SCHLUESSEL, JSON.stringify(d)); }catch(e){} }
-function demoReset(){ try{ sessionStorage.removeItem(DEMO_DATEN_SCHLUESSEL); }catch(e){} location.reload(); }
+function demoReset(){   // alle Vorführungsdaten (auch die von FL-5, Schlüssel „fl-demo-…“), den Zugang behalten
+  try{ Object.keys(sessionStorage).filter(k => k.startsWith('fl-demo-')).forEach(k => sessionStorage.removeItem(k)); }catch(e){}
+  location.reload(); }
 function musterKeys(){
   return (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
                                           bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
