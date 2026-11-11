@@ -317,12 +317,17 @@ begin
         or coalesce(nm.kcal_100g_ml, 0) * percentile_cont(0.5) within group (order by e.menge_g) / 100 >= 50),
   kand as (                                            -- Kandidaten je Platz-Art mit Gewicht
     select z.slot, 'rezept' typ, r.id, r.name, r.kcal, null::numeric g, null::numeric k100,
-           coalesce(r.punkte, 50) + 8 * ln(1 + r.mal) - case when nullif(v_diab, '') is not null then coalesce(r.zp, 10) else 0 end gewicht,
+           coalesce(r.punkte, 50) + 8 * ln(1 + r.mal) - case when nullif(v_diab, '') is not null then coalesce(r.zp, 10) else 0 end
+             - case when z.slot = 'Snack' and r.mt ilike '%Dessert%' then 30 else 0 end gewicht,      -- Dessert nur, wenn sonst wenig da ist
            case when r.mal > 0 then 'isst sie/er gern' end grund
       from (select distinct slot from pl2) z join rez r on
            (z.slot = 'Frühstück' and r.mt ilike '%Frühstück%')
-        or (z.slot in ('Mittag','Abendessen') and (r.mt ilike '%Mittag%' or r.mt ilike '%Abendessen%' or r.mt = ''))
-        or (z.slot = 'Snack' and (r.mt ilike '%Snack%' or r.mt ilike '%Dessert%'))
+        or (z.slot in ('Mittag','Abendessen') and (r.mt ilike '%Mittag%' or r.mt ilike '%Abendessen%'
+              -- Rezepte ohne Mahlzeit-Angabe nur, wenn es weniger als 3 passende gibt
+              or (r.mt = '' and (select count(*) from rez r2 where r2.mt ilike '%Mittag%' or r2.mt ilike '%Abendessen%') < 3)))
+        or (z.slot = 'Snack' and (r.mt ilike '%Snack%' or (r.mt ilike '%Dessert%' and nullif(v_diab, '') is null
+              and (select count(*) from rez r3 where r3.mt ilike '%Snack%') + (select count(*) from prod p3 where p3.mahlzeit = 'Snack') < 3)))
+              -- Dessert als Snack nur ohne Diabetes und nur, wenn es weniger als 3 andere Snacks gibt
     union all
     select z.slot, 'produkt', p.id, p.name, null, p.g, p.k100,
            coalesce(p.punkte, 50) + 8 * ln(1 + p.mal), 'isst sie/er gern'
