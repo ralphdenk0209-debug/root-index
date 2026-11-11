@@ -71,7 +71,7 @@ const CSS = `
 #fl5Bericht .sc{display:inline-block;min-width:28px;text-align:center;border-radius:6px;padding:1px 5px;font-weight:800;color:#fff;font-size:12px}
 #fl5Bericht .notiz{border:1px solid #cfd8cf;border-radius:8px;padding:10px;min-height:110px;white-space:pre-wrap}
 #fl5Bericht .linien{background:repeating-linear-gradient(#fff,#fff 27px,#dfe6df 28px);min-height:170px}
-#fl5Bericht .zw{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:640px){#fl5Bericht .zw{grid-template-columns:1fr} #fl5Bericht .f5-blatt{padding:18px 14px}}
+#fl5Bericht .zw{display:grid;grid-template-columns:1fr 1fr;gap:16px} @media (max-width:640px){#fl5Bericht .zw{grid-template-columns:1fr} #fl5Bericht .f5-blatt{padding:18px 12px;font-size:13px} #fl5Bericht table{display:block;overflow-x:auto} #fl5Bericht .bk .r{text-align:left}}
 @media print{
   @page{size:A4;margin:14mm}
   body.fl5-druck > *:not(#fl5Bericht){display:none!important}
@@ -171,7 +171,7 @@ function mount(el, opt){
       const grund = x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' + (x.quelle ? ' (' + esc(x.quelle) + ')' : '')
                   : x.soll_herkunft==='Ziel im Profil' ? 'Ziel im Profil'
                   : esc(x.soll_herkunft || '') + qNr(x.quelle, x.quelle_url, x.quelle_stand);
-      return '<tr><td>' + esc(name) + '</td><td class="z">' + (x.ist==null ? '–' : z(x.ist, 1) + ' ' + esc(einh)) + '</td><td class="z">' + esc(soll) + '</td>' +
+      return '<tr><td>' + esc(name) + '</td><td class="z">' + (x.ist==null ? '–' : z(x.ist, 1) + ' ' + esc(einh) + (x.bezug==='woche' ? '/Woche' : '')) + '</td><td class="z">' + esc(soll) + '</td>' +
         '<td class="z">' + (x.soll ? z(x.ist_prozent_vom_soll) + ' %' : '') + '</td>' +
         '<td>' + (x.erfuellt==null ? '<span class="kl">–</span>' : x.erfuellt ? '<span class="ok">ja</span>' : '<span class="nein">nein</span>') + '</td><td class="kl">' + grund + (x.hinweis && x.soll_herkunft==='Vorgabe Therapeutin' ? ' · ' + esc(x.hinweis) : '') + '</td></tr>';
     };
@@ -179,7 +179,7 @@ function mount(el, opt){
     const isM = is.filter(x => makro.includes(x.kennzahl)).sort((a, b) => makro.indexOf(a.kennzahl) - makro.indexOf(b.kennzahl) || (a.einheit==='en%') - (b.einheit==='en%'));
     const isG = is.filter(x => String(x.kennzahl).startsWith('gruppe:'));
     const isMi = is.filter(x => String(x.kennzahl).startsWith('mikro:'));
-    const tabIs = rows => rows.length ? '<table><thead><tr><th>Kennzahl</th><th class="z">Ist Ø je Tag</th><th class="z">Soll</th><th class="z">Anteil</th><th>Erfüllt</th><th>Grundlage</th></tr></thead><tbody>' + rows.map(zeileIs).join('') + '</tbody></table>' : '<p class="kl">Keine Werte.</p>';
+    const tabIs = rows => rows.length ? '<table><thead><tr><th>Kennzahl</th><th class="z">Ist Ø</th><th class="z">Soll</th><th class="z">Anteil</th><th>Erfüllt</th><th>Grundlage</th></tr></thead><tbody>' + rows.map(zeileIs).join('') + '</tbody></table>' : '<p class="kl">Keine Werte.</p>';
     // Gemüse und Obst je Tag
     let maxG = 1; tage.forEach(t => { const g = (Number(t.gemuese_g)||0) + (Number(t.obst_g)||0); if(g > maxG) maxG = g; });
     const go = isG.find(x => x.kennzahl==='gruppe:gemuese+obst'); const linie = go && go.soll ? Number(go.soll) : null; if(linie && linie > maxG) maxG = linie;
@@ -224,7 +224,7 @@ function mount(el, opt){
     if(o.profil && prof.length) h += '<div class="kl" style="font-size:13px">' + esc(prof.join(' · ')) + '</div>';
     if(!d.leer){
       h += '<h2>Kennzahlen gegen Vorgaben und Richtwerte</h2><div class="kl">Ist = Durchschnitt je erfasstem Tag. Soll in dieser Reihenfolge: Vorgabe der Praxis, Ziel im Profil, Richtwert.</div>' + tabIs(isM);
-      h += '<h2>Gemüse und Obst</h2><div class="zw"><div>' + tabIs(isG) + '</div><div><table><tbody><tr><td>Gemüse Ø je erfasstem Tag</td><td class="z">' + z(gj('gemuese')) + ' g</td></tr>' +
+      h += '<h2>Lebensmittelgruppen, Gemüse und Obst</h2><div class="kl">Ist je Tag; bei Wochenwerten (z. B. Fisch, Fleisch) Ø je Woche.</div><div class="zw"><div>' + tabIs(isG) + '</div><div><table><tbody><tr><td>Gemüse Ø je erfasstem Tag</td><td class="z">' + z(gj('gemuese')) + ' g</td></tr>' +
            '<tr><td>Obst Ø je erfasstem Tag</td><td class="z">' + z(gj('obst')) + ' g</td></tr></tbody></table></div></div>' +
            '<div style="margin-top:8px">' + svg + '</div><div class="kl"><span style="color:#2e7d46">■</span> Gemüse und Pilze <span style="color:#e8920c">■</span> Obst' + (linie ? ' · - - Obst und Gemüse zusammen, Soll ' + z(linie) + ' g' : '') + ' · grau = nichts eingetragen</div>' + tagTab;
       h += '<h2>Makronährstoffe</h2><div class="zw"><div>' + makTab + '</div><div class="kl">Durchschnitt je erfasstem Tag aus den Tagebuch-Summen des Zeitraums. Tage ohne Eintrag zählen nicht mit.</div></div>';
