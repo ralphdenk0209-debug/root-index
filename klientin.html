@@ -9,7 +9,10 @@
 <!-- klientin.html · 26.10.2026 · Ralph: eigene Anmeldeseite fuer Klientinnen von Fachleuten.
      Weg: Link mit persoenlichem Einzelcode (?code=KUERZEL-XXXX) -> Konto anlegen oder anmelden ->
      cb_gratis_code_einloesen -> App laden und mit DERSELBEN E-Mail anmelden.
-     Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth): wer auf root-index.de angemeldet ist, ist es hier auch. -->
+     Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth): wer auf root-index.de angemeldet ist, ist es hier auch.
+     11.11.2026 FL-1: Keys von Fachleuten (gratis_code.fachperson_auth) -> nach dem Einloesen Einwilligung
+     (cb_meine_fachpersonen, cb_fachperson_einwilligen) und jederzeit Widerruf (cb_fachperson_widerrufen).
+     Ohne Code, aber angemeldet: Seite zeigt nur "Deine Fachleute" zum Verwalten/Widerrufen. -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -42,6 +45,12 @@
   .schritt{display:grid;grid-template-columns:34px 1fr;gap:10px;margin:12px 0;align-items:start}
   .nr{width:34px;height:34px;border-radius:50%;background:var(--dunkel);color:var(--hell);display:grid;place-items:center;font-weight:800}
   .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  .einw-text{background:var(--creme);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.55;color:var(--text);max-height:280px;overflow:auto}
+  .einw-text p{margin:0 0 8px;color:var(--text);font-size:14px}
+  .check{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:15px;margin-top:12px}
+  .check input{width:22px;height:22px;flex:0 0 22px;margin-top:2px;padding:0}
+  .fp{border:1px solid var(--linie);border-radius:14px;padding:14px;margin-top:12px}
+  .fp + .fp{margin-top:10px}
   [hidden]{display:none!important}
 </style>
 </head>
@@ -77,6 +86,7 @@
     <input id="pass" type="password" autocomplete="new-password" placeholder="••••••">
     <button class="knopf" id="los" type="button">Konto erstellen &amp; Geschenk einlösen</button>
     <div class="meld" id="meld"></div>
+    <p style="margin:12px 0 0;font-size:13px">Nur deine Einwilligung für deine Fachperson ansehen oder widerrufen? Code leer lassen und anmelden.</p>
     <div class="hinweis" id="appleHinweis" hidden>
       <b>Du nutzt die iPhone-App schon mit „Mit Apple anmelden“?</b><br>
       Öffne in der App <b>Menü → Konto &amp; Abmelden</b>. Dort steht deine Konto-E-Mail – setze darunter ein Passwort. Danach hier mit dieser E-Mail und dem Passwort anmelden.
@@ -88,6 +98,14 @@
     <h2>Fast geschafft – bitte E-Mail bestätigen</h2>
     <p>Wir haben dir eine Mail an <b id="mailAdresse"></b> geschickt. Tippe dort auf den Link – du landest wieder auf dieser Seite und dein Geschenk wird automatisch eingelöst.</p>
     <p style="margin:0">Keine Mail da? Schau im Spam-Ordner nach.</p>
+  </div>
+
+  <!-- Fachleute: Einwilligung erteilen / widerrufen -->
+  <div class="karte" id="bereichFachleute" hidden>
+    <h2>Deine Fachperson</h2>
+    <p id="fachleuteIntro">Du entscheidest, ob deine Fachperson deine Einträge sehen darf. Premium hast du in jedem Fall.</p>
+    <div id="fachleuteListe"></div>
+    <div class="meld" id="fachleuteMeld"></div>
   </div>
 
   <!-- 3) Fertig -->
@@ -144,7 +162,7 @@ async function codePruefen(){
 }
 let _cp; $('codeFeld').oninput = () => { clearTimeout(_cp); _cp = setTimeout(codePruefen, 400); };
 
-function zeige(id){ ['bereichKonto','bereichMail','bereichFertig','bereichFehler'].forEach(b => $(b).hidden = (b!==id)); }
+function zeige(id){ ['bereichKonto','bereichMail','bereichFertig','bereichFehler','bereichFachleute'].forEach(b => $(b).hidden = (b!==id)); }
 function meld(t, art){ const m=$('meld'); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
 
 function setModus(m){
@@ -157,7 +175,7 @@ function setModus(m){
 $('tabNeu').onclick = () => setModus('neu');
 $('tabAlt').onclick = () => setModus('alt');
 $('appleLos').onclick = async function(){
-  if(!(await codePruefen())){ meld('Bitte zuerst einen gültigen Code eintragen.','fehler'); return; }
+  if($('codeFeld').value.trim() && !(await codePruefen())){ meld('Bitte zuerst einen gültigen Code eintragen.','fehler'); return; }
   this.disabled = true;
   const {error} = await client.auth.signInWithOAuth({ provider:'apple', options:{ redirectTo: location.origin + '/klientin.html' } });
   if(error){ this.disabled = false; meld('Fehler: ' + error.message, 'fehler'); }
@@ -182,13 +200,74 @@ function fertig(session, bis){
   const prov = session && session.user && session.user.app_metadata && session.user.app_metadata.provider;
   if(prov === 'apple') $('fertigWie').innerHTML = 'Mit <b>„Mit Apple anmelden“</b> – genau wie hier.';
   $('fertigText').textContent = bis ? ('Premium läuft bis zum ' + new Date(bis).toLocaleDateString('de-DE') + ' – danach endet es automatisch.') : 'Dein Geschenk ist auf deinem Konto.';
+  ladeFachleute(false);
 }
+
+/* ---- Fachleute: Einwilligung (Art. 9 DSGVO) und Widerruf. Der Server prueft alles. ---- */
+const esc = t => String(t==null?'':t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const tag = d => d ? new Date(d).toLocaleDateString('de-DE') : '';
+let FP = [];
+async function ladeFachleute(nurVerwalten){
+  const {data, error} = await client.rpc('cb_meine_fachpersonen');
+  const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
+  FP = (d && d.liste) || [];
+  if(error || !d.ok){ if(nurVerwalten){ zeige('bereichFehler'); $('fehlerText').textContent = error ? error.message : (d.grund||'Fehler.'); } return; }
+  if(!FP.length){
+    if(!nurVerwalten) return;
+    $('fachleuteListe').innerHTML = '<p style="margin:0">Du bist mit keiner Fachperson verbunden.</p>';
+  } else {
+    $('fachleuteListe').innerHTML = FP.map((f, i) => {
+      const wer = '<b>' + esc(f.fachperson) + '</b>' + (f.praxis ? ' (' + esc(f.praxis) + ')' : '');
+      if(f.einwilligung_aktiv){
+        return '<div class="fp">✅ ' + wer + ' darf deine Einträge ab dem ' + tag(f.daten_ab) + ' sehen' +
+          (f.laeuft ? ' – solange dein Code läuft (bis ' + tag(f.laeuft_bis) + ').' : '. Dein Code ist nicht mehr aktiv, deshalb sieht die Fachperson gerade nichts.') +
+          '<button class="knopf zwei" type="button" data-widerruf="' + i + '">Einwilligung widerrufen</button></div>';
+      }
+      if(!f.laeuft){
+        return '<div class="fp">' + wer + ': Dein Code ist nicht mehr aktiv. Die Fachperson sieht nichts.' + (f.widerruf_am ? ' Du hast am ' + tag(f.widerruf_am) + ' widerrufen.' : '') + '</div>';
+      }
+      const absaetze = String(f.text||'').split(/\n\s*\n/).map(x => '<p>' + esc(x) + '</p>').join('');
+      return '<div class="fp">' + (f.widerruf_am ? '<p style="margin:0 0 8px">Du hast am ' + tag(f.widerruf_am) + ' widerrufen. ' + wer + ' sieht nichts. Du kannst neu einwilligen:</p>' : '<p style="margin:0 0 8px">Dein Code ist von ' + wer + '. Darf diese Fachperson deine Einträge sehen?</p>') +
+        '<div class="einw-text">' + absaetze + '</div>' +
+        '<label class="check"><input type="checkbox" data-besprochen="' + i + '"><span>Ich habe mit ' + esc(f.fachperson) + ' über die Verschwiegenheit gesprochen.</span></label>' +
+        '<label class="check"><input type="checkbox" data-einw="' + i + '"><span>Ich willige wie oben beschrieben ein.</span></label>' +
+        '<button class="knopf" type="button" data-einwilligen="' + i + '">Einwilligen</button>' +
+        '<p style="margin:8px 0 0;font-size:13px">Du kannst das auch später tun – öffne dazu wieder root-index.de/klientin.html.</p></div>';
+    }).join('');
+  }
+  $('bereichFachleute').hidden = false;
+}
+$('fachleuteListe').addEventListener('click', async e => {
+  const bE = e.target.closest('[data-einwilligen]'), bW = e.target.closest('[data-widerruf]');
+  if(!bE && !bW) return;
+  const f = FP[Number((bE||bW).dataset.einwilligen ?? (bE||bW).dataset.widerruf)];
+  const m = $('fachleuteMeld'); m.className = 'meld'; m.textContent = '';
+  let r;
+  if(bE){
+    const i = bE.dataset.einwilligen;
+    const besprochen = document.querySelector('[data-besprochen="' + i + '"]').checked, einw = document.querySelector('[data-einw="' + i + '"]').checked;
+    if(!besprochen || !einw){ m.className = 'meld fehler'; m.textContent = 'Bitte beide Häkchen setzen – oder einfach später entscheiden.'; return; }
+    bE.disabled = true;
+    r = await client.rpc('cb_fachperson_einwilligen', { p_code: f.code, p_verschwiegenheit_besprochen: true, p_version: f.text_version });
+  } else {
+    if(!confirm('Einwilligung für ' + f.fachperson + ' widerrufen? Sie sieht ab sofort nichts mehr. Premium bleibt.')) return;
+    bW.disabled = true;
+    r = await client.rpc('cb_fachperson_widerrufen', { p_code: f.code });
+  }
+  const d = (typeof r.data==='string') ? JSON.parse(r.data) : (r.data||{});
+  if(r.error || !d.ok){ (bE||bW).disabled = false; m.className = 'meld fehler'; m.textContent = r.error ? r.error.message : (d.grund||'Fehler.'); return; }
+  m.className = 'meld ok'; m.textContent = bE ? '✓ Einwilligung gespeichert.' : '✓ Widerrufen. Die Fachperson sieht nichts mehr.';
+  ladeFachleute(true);
+});
+/* Angemeldet ohne Code: nur verwalten */
+function verwalten(){ zeige(null); $('codeAnzeige').hidden = true; $('titel').textContent = 'Deine Fachleute'; $('untertitel').textContent = 'Hier entscheidest du, wer deine Einträge sehen darf.'; ladeFachleute(true); }
 
 $('los').onclick = async function(){
   const email = $('mail').value.trim(), pass = $('pass').value;
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)){ meld('Bitte eine gültige E-Mail eintragen.','fehler'); return; }
   if(pass.length < 6){ meld('Das Passwort braucht mindestens 6 Zeichen.','fehler'); return; }
-  if(!(await codePruefen())){ meld('Bitte zuerst einen gültigen Code eintragen.','fehler'); return; }
+  const ohneCode = modus==='alt' && !$('codeFeld').value.trim();
+  if(!ohneCode && !(await codePruefen())){ meld('Bitte zuerst einen gültigen Code eintragen.','fehler'); return; }
   this.disabled = true; meld('⏳ Einen Moment …');
   try{
     if(modus==='neu'){
@@ -204,6 +283,7 @@ $('los').onclick = async function(){
     } else {
       const {data, error} = await client.auth.signInWithPassword({ email, password: pass });
       if(error){ meld(/invalid/i.test(error.message) ? 'E-Mail oder Passwort stimmt nicht.' : ('Fehler: ' + error.message), 'fehler'); return; }
+      if(ohneCode){ meld(''); verwalten(); return; }
       await einloesen(data.session);
     }
   } finally { this.disabled = false; }
@@ -213,6 +293,7 @@ $('los').onclick = async function(){
 codePruefen().then(ok => client.auth.getSession().then(r => {
   const s = r && r.data && r.data.session;
   if(s && ok){ meld('⏳ Du bist angemeldet – Geschenk wird eingelöst …'); einloesen(s); }
+  else if(s && !code){ verwalten(); }
 }));
 </script>
 </body>
