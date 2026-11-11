@@ -92,6 +92,8 @@ begin
   insert into public."Ernaehrungstagebuch"("Benutzer_ID","Datum","Mahlzeit","Produkt_ID","Menge_g") values
     ('U-fl4test-k1',heute,'Mittag','P274',200), ('U-fl4test-k1',heute,'Mittag','P190',150),
     ('U-fl4test-k1',heute-30,'Mittag','P1630',300);   -- vor der Einwilligung
+  insert into public."Wochenplan"("Benutzer_ID","Datum","Slot","Typ","Rezept_ID") values
+    ('U-fl4test-k1',heute,'Mittag','rezept','RU7c4e8d2e9b604f7dbd410660d9921d0d');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl4-test-t1@example.invalid','Test Therapeutin Eins','FLVIERA','Praxis A',true,'gruenderin_gratis');
   perform public.cb_admin_fachperson_setzen('fl4-test-t2@example.invalid','Test Therapeutin Zwei','FLVIERB','Praxis B',true,'gruenderin_gratis');
@@ -123,7 +125,12 @@ begin
                                    'T1 sieht Klientin, nur ab Einwilligung (1 Tag, ' || (j->'summe'->>'kcal') || ' kcal)');
   insert into _erg(ok,txt) values ((select (x->>'gramm')::numeric from jsonb_array_elements(j->'gruppen') x where x->>'gruppe' = 'gemuese') = 200,
                                    'Gemüse 200 g erkannt');
-  insert into _erg(ok,txt) values (j->'wochenplan' = 'null'::jsonb and j->>'wochenplan_hinweis' is not null, 'Echter Wochenplan bleibt verborgen (nicht eingewilligt)');
+  insert into _erg(ok,txt) values (ev = 'fl4-2026-11-11' and jsonb_array_length(j->'wochenplan') = 1, 'Einwilligung mit Wochenplan: T1 sieht den Wochenplan');
+  execute 'reset role';
+  update public.fachperson_einwilligung set version = 'fl1-2026-11-11' where code = v_code;
+  execute 'set local role authenticated';
+  j2 := public.cb_fp_klient_dashboard(v_code, heute - 7, heute);
+  insert into _erg(ok,txt) values (j2->'wochenplan' = 'null'::jsonb and j2->>'wochenplan_hinweis' is not null, 'Alte Einwilligung ohne Wochenplan: Wochenplan verborgen');
   insert into _erg(ok,txt) values (j->'profil'->>'name' = 'Klientin Test' and not (j->'profil' ? 'zyklus_start'), 'Profil ohne Zyklusdaten');
   j := public.cb_fp_vorgabe_setzen(v_code, 'kcal', 1700);
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'T1 setzt Kalorien-Vorgabe');
