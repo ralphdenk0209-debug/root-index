@@ -69,3 +69,7 @@ verify_jwt = true
 
 [functions.play-kauf]
 verify_jwt = false
+
+# 11.11.2026 FL-1: Fachperson schickt Einlöse-Link per E-Mail - nur angemeldet
+[functions.fp-key-mail]
+verify_jwt = true
