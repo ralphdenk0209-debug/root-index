@@ -8,7 +8,7 @@ declare
   k1 uuid := gen_random_uuid(); k2 uuid := gen_random_uuid();
   ralph uuid := '2a00cb9e-1b48-4181-b90c-f34cd54a04a9';
   heute date := (now() at time zone 'Europe/Berlin')::date;
-  ver text; vv text; a text; b text; c text; d text; j jsonb; n int; ok int := 0; bad int := 0; log text := '';
+  ver text; vv text; ac text; a text; b text; c text; d text; j jsonb; n int; ok int := 0; bad int := 0; log text := '';
 begin
   create temp table _erg(nr serial, ok boolean, txt text) on commit drop;
   grant all on _erg to public; grant usage on sequence _erg_nr_seq to public;
@@ -183,10 +183,10 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
   j := public.cb_klient_status();
   insert into _erg(ok,txt) values ((j->>'ehemaliger_klient')::boolean and not (j->>'klient')::boolean, 'K1 ist jetzt ehemaliger Klient (3,99-Angebot)');
-  j := public.cb_mein_anschluss_angebot(); a := j->>'code';
-  insert into _erg(ok,txt) values ((j->>'angebot')::boolean and a like 'TESTCODE%' and j->>'apple_url' like '%code='||a, 'K1 bekommt Angebotscode 3,99');
+  j := public.cb_mein_anschluss_angebot(); ac := j->>'code';
+  insert into _erg(ok,txt) values ((j->>'angebot')::boolean and ac like 'TESTCODE%' and j->>'apple_url' like '%code='||ac, 'K1 bekommt Angebotscode 3,99');
   j := public.cb_mein_anschluss_angebot();
-  insert into _erg(ok,txt) values (j->>'code' = a and (select count(*) from public.angebot_code where vergeben_an=k1)=1, 'K1 bekommt beim zweiten Aufruf denselben Code');
+  insert into _erg(ok,txt) values (j->>'code' = ac and (select count(*) from public.angebot_code where vergeben_an=k1)=1, 'K1 bekommt beim zweiten Aufruf denselben Code');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k2)::text, true);
   j := public.cb_klient_status();
   insert into _erg(ok,txt) values ((j->>'klient')::boolean and not (j->>'ehemaliger_klient')::boolean and (j->>'eigenes_abo')::boolean, 'K2 aktiver Klient mit eigenem Abo');
@@ -204,6 +204,8 @@ begin
   perform public.cb_fp_vertrag_bestaetigen('test-v2');
 
   -- Bezahlte Lizenz abgelaufen: T2 gesperrt, kein Premium; verlaengert: wieder frei
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
+  perform public.cb_fp_vertrag_bestaetigen('test-v2');   -- Vertrag ok, damit nur die Lizenz sperrt
   update public.fachperson set lizenz_bis = now() - interval '1 day' where auth_id = t2;
   insert into _erg(ok,txt) values (not public.cb_ist_premium(t2), 'T2 Lizenz abgelaufen: kein Premium');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
