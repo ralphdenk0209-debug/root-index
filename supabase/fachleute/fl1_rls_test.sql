@@ -64,6 +64,15 @@ begin
   insert into _erg(ok,txt) values ((select vereinbarung_bestaetigt_am is not null from public.fachperson_konto where auth_id=t1), 'Klienten-Vereinbarung mit Zeitstempel gespeichert');
   j := public.cb_fp_key_anlegen(14,'Herr Zwei bei T1'); c := j->>'code';
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'T1 legt Key C an (spaeter fuer Uebertrag K2)');
+  -- Einlöse-Link per E-Mail: Pruefung, Sperre
+  j := public.cb_fp_key_mail_vorbereiten(a, 'kein-mail');
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Mail: ungueltige Adresse abgelehnt');
+  j := public.cb_fp_key_mail_vorbereiten(a, 'Klientin@Example.invalid');
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->>'an'='klientin@example.invalid' and j->>'link' like '%klientin.html?code='||a, 'Mail: T1 bereitet Versand fuer A vor');
+  perform public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  perform public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  j := public.cb_fp_key_mail_vorbereiten(a, 'klientin@example.invalid');
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Mail: 4. Mail je Key und Tag gesperrt');
 
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   perform public.cb_fp_vertrag_bestaetigen(vv);
@@ -78,11 +87,15 @@ begin
   exception when others then insert into _erg(ok,txt) values (true,'T2 kann A nicht beenden'); end;
   begin perform public.cb_fp_key_bezeichnung(a,'x'); insert into _erg(ok,txt) values (false,'T2 benennt A um!');
   exception when others then insert into _erg(ok,txt) values (true,'T2 kann A nicht umbenennen'); end;
+  begin perform public.cb_fp_key_mail_vorbereiten(a,'x@example.invalid'); insert into _erg(ok,txt) values (false,'T2 verschickt Mail fuer fremden Key A!');
+  exception when others then insert into _erg(ok,txt) values (true,'Mail: T2 kann fuer A nichts verschicken'); end;
 
   -- Einloesen: K1 -> A, K2 -> B
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
   j := public.cb_gratis_code_einloesen(a);
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and (j->>'einwilligung_offen')::boolean and not (j->>'eigenes_abo')::boolean, 'K1 loest A ein');
+  insert into _erg(ok,txt) values (not exists(select 1 from public.fp_key_mail_log where code=a and an_email is not null)
+                               and (select count(*) from public.fp_key_mail_log where code=a)=3, 'Mail: E-Mail nach Einloesen geloescht, Protokoll bleibt');
   insert into _erg(ok,txt) values (public.cb_ist_premium(k1), 'K1 hat Premium ueber Key');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k2)::text, true);
   j := public.cb_gratis_code_einloesen(a);
@@ -224,6 +237,25 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   j := public.cb_admin_fachleute(null);
   insert into _erg(ok,txt) values (jsonb_array_length(j) >= 2, 'Admin sieht Abrechnung aller Fachleute');
+  -- Preis und Modell je Fachperson (T2: 1 Key B diesen Monat, bezahlte Lizenz seit heute)
+  j := public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_plus_keys',300,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1300, 'Modell Lizenz plus Keys: 10,00 + 1 x 3,00 = 13,00');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_pauschal',300,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1000, 'Modell Lizenz pauschal: 10,00, Keys inklusive');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_pauschal',null,1200,'jahr');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1200
+                               and (select betrag_cent from public._fp_abrechnung(t2,(now() + interval '1 month')::date))=0, 'Jahreslizenz: voller Preis nur im Jahrestag-Monat');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','gratis',null,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=0, 'Modell gratis: 0');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','je_key',300,null,null);
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=300, 'Eigener Key-Preis 3,00 statt 4,99');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid',null,null,null,null);
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=499 and (select modell from public._fp_abrechnung(t2,null))='je_key', 'Leer = globaler Standard (je Key, 4,99)');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t1,null))=998, 'Gruenderin T1 unveraendert 9,98');
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
+  begin perform public.cb_admin_fachperson_abrechnung('fl1-test-t1@example.invalid','gratis'); insert into _erg(ok,txt) values (false,'T1 setzt eigenen Preis!');
+  exception when others then insert into _erg(ok,txt) values (true,'Preis/Modell nur durch Admin'); end;
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   insert into _erg(ok,txt) values (public._fp_key_tage('2026-11-11 14:00+01','2026-12-11 14:00+01','2026-11-01')=20
                                and public._fp_key_tage('2026-11-11 14:00+01','2026-12-11 14:00+01','2026-12-01')=10, 'Key-Tage Nov 20 + Dez 10 = 30');
 
@@ -234,6 +266,8 @@ begin
   exception when others then insert into _erg(ok,txt) values (true,'gratis_code direkt gesperrt'); end;
   begin perform 1 from public.fachperson_konto limit 1; insert into _erg(ok,txt) values (false,'authenticated liest fachperson!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson direkt gesperrt'); end;
+  begin perform 1 from public.fp_key_mail_log limit 1; insert into _erg(ok,txt) values (false,'authenticated liest Mail-Protokoll!');
+  exception when others then insert into _erg(ok,txt) values (true,'fp_key_mail_log direkt gesperrt'); end;
   begin perform 1 from public.fachperson_einwilligung limit 1; insert into _erg(ok,txt) values (false,'authenticated liest einwilligung!');
   exception when others then insert into _erg(ok,txt) values (true,'fachperson_einwilligung direkt gesperrt'); end;
   begin perform * from public._fp_klient(c); insert into _erg(ok,txt) values (false,'authenticated ruft _fp_klient!');
