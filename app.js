@@ -12137,7 +12137,115 @@ function tbSatzKandidaten(s, items, kcalZ, kcalBasis){
     satz:(n>0
       ? (n+' Eintr'+(n===1?'ag':'äge')+', '+kc+' kcal.'+(idx!=null?(' Index <b>'+idx+'</b> — nichts Auffälliges.'):''))
       : 'Noch nichts eingetragen. Kein Ziel verfehlt, keine Null — der Tag hat noch nicht angefangen.')});
+
+  /* --- Teller (Ralph 11.11.2026, Variante C): KEIN Rang, sondern eine Ansicht.
+         Steht immer als LETZTER Chip und wird deshalb nie von selbst gezeigt. --- */
+  if(n>0) out.push({k:'teller', chip:'Teller', warum:'Ansicht · FET-Tellermodell als Orientierung', satz:(window._tbSatzKey==='teller')?tbTellerHtml(items):''});   /* erst beim Antippen laden */
   return out;
+}
+/* ===== Teller-Ansicht (Ralph 11.11.2026, Variante C) =========================
+   Torte: wie verteilen sich die gegessenen GRAMM des Tages auf die Segmente des
+   FET-Tellermodells (https://fet-ev.eu/tellermodell/: etwa 1/2 Gemuese und Obst,
+   1/4 Eiweissquellen, 1/4 Kohlenhydrate, dazu wenig Fett).
+   🔴 Der FET-Teller ist je MAHLZEIT und nach TELLERFLAECHE gedacht, nicht nach
+   Gramm. Er steht deshalb nur als Strich ("Orientierung") neben dem Balken - nie
+   als Ziel, nie in Rot.
+   Daten: cb_auswertung_gruppen (FL-2), Raster 'tag'. Die Zuordnung Gruppe ->
+   Segment steht NUR hier (Web) bzw. gleich lautend in der App.
+   Milchprodukte zaehlen zu Eiweiss: die FET nennt im Abschnitt "Proteinquellen"
+   tierische Proteine "in Fleisch, Fisch, Eiern und Milchprodukten".
+   Nuesse/Samen und Oele stehen aussen ("wenig Fett"), alles Uebrige ebenfalls. */
+var TELLER_FET={g:50,e:25,k:25};
+var TELLER_SEG=[
+  {k:'g', n:'Gemüse & Obst',  col:'#4f9a3a', gruppen:['gemuese','obst']},
+  {k:'e', n:'Eiweiß',         col:'#c0583a', gruppen:['fleisch','fisch','eier','huelsenfruechte','milch']},
+  {k:'k', n:'Kohlenhydrate',  col:'#d4a12c', gruppen:['vollkorn','getreide','kartoffeln']}
+];
+function tbTellerSchluessel(items){
+  var d=(document.getElementById('tbDatum')||{}).value||tbToday();
+  var g=0; (items||[]).forEach(function(r){ g+=num(r.Menge_g)||0; });
+  return (TB_USER||'')+'|'+d+'|'+(items||[]).length+'|'+Math.round(g);
+}
+function tbTellerLaden(schl){
+  var c=window._tbTeller;
+  if(c && c.schl===schl && (c.rows||c.laedt)) return;
+  var p=schl.split('|');
+  window._tbTeller={schl:schl, laedt:true};
+  Promise.resolve(client.rpc('cb_auswertung_gruppen',{p_benutzer:p[0], p_von:p[1], p_bis:p[1], p_raster:'tag'}))
+    .then(function(res){
+      if(!window._tbTeller || window._tbTeller.schl!==schl) return;
+      window._tbTeller={schl:schl, rows:(res&&res.data)||null, err:(res&&res.error)?String(res.error.message||res.error):(!(res&&res.data)?'keine Daten':null)};
+    })
+    .catch(function(e){ if(window._tbTeller&&window._tbTeller.schl===schl) window._tbTeller={schl:schl, rows:null, err:String(e&&e.message||e)}; })
+    .then(function(){ try{ if(window._tbSatzKey==='teller'){ var c=window._tbZielCache; if(c) renderZiel(c.s, c.ben); } }catch(e){} });
+}
+function tbTellerRechnen(rows){
+  var zu={}; TELLER_SEG.forEach(function(s){ s.gruppen.forEach(function(g){ zu[g]=s.k; }); });
+  var seg=TELLER_SEG.map(function(s){ return {k:s.k, n:s.n, col:s.col, g:0, teile:[]}; });
+  var aus=[], ausG=0;
+  (rows||[]).forEach(function(r){
+    var g=num(r.gramm)||0; if(!(g>0)) return;
+    var name=r.gruppe_name||r.gruppe;
+    var k=zu[r.gruppe];
+    if(k){ var s=seg.filter(function(x){ return x.k===k; })[0]; s.g+=g; s.teile.push({n:name, g:g}); }
+    else { aus.push({n:name, g:g}); ausG+=g; }
+  });
+  var sum=seg.reduce(function(a,s){ return a+s.g; },0);
+  seg.forEach(function(s){ s.p=sum>0?(s.g/sum*100):0; });
+  return {seg:seg, sum:sum, aus:aus, ausG:ausG};
+}
+function tbTellerTorte(seg){
+  var cx=60, cy=60, r=56, a=0, h='';
+  seg.forEach(function(s){
+    var b=s.p/100; if(!(b>0)) return;
+    if(b>=0.9999){ h+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="'+s.col+'"/>'; a+=b; return; }
+    var p=function(t){ return (cx+r*Math.sin(t*2*Math.PI)).toFixed(2)+','+(cy-r*Math.cos(t*2*Math.PI)).toFixed(2); };
+    h+='<path d="M'+cx+','+cy+' L'+p(a)+' A'+r+','+r+' 0 '+(b>0.5?1:0)+' 1 '+p(a+b)+' Z" fill="'+s.col+'" stroke="var(--tb-card,#fff)" stroke-width="1.5"/>';
+    if(b>0.07){
+      var m=a+b/2, x=cx+r*0.6*Math.sin(m*2*Math.PI), y=cy-r*0.6*Math.cos(m*2*Math.PI);
+      h+='<text x="'+x.toFixed(1)+'" y="'+(y+4).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">'+Math.round(s.p)+'%</text>';
+    }
+    a+=b;
+  });
+  return '<svg viewBox="0 0 120 120" width="112" height="112" role="img" aria-label="Teller nach Gramm" style="flex:0 0 auto">'+h+'</svg>';
+}
+function tbTellerHtml(items){
+  var schl=tbTellerSchluessel(items);
+  var c=window._tbTeller;
+  if(!c || c.schl!==schl){ tbTellerLaden(schl); c=window._tbTeller; }
+  if(c.laedt) return '<span style="color:var(--tb-muted)">Teller wird berechnet …</span>';
+  if(!c.rows) return '<span style="color:var(--tb-muted)">Der Teller lässt sich gerade nicht berechnen.</span>';
+  var t=tbTellerRechnen(c.rows);
+  var gtxt=function(g){ return Math.round(g)+' g'; };
+  var quelle='<div style="font-size:10.5px;font-weight:400;color:var(--tb-muted);line-height:1.45;margin-top:10px">'
+    +'Strich = <a href="https://fet-ev.eu/tellermodell/" target="_blank" rel="noopener" style="color:var(--green)">FET-Tellermodell</a>'
+    +' (etwa ½ Gemüse und Obst, ¼ Eiweiß, ¼ Kohlenhydrate) — Orientierung je Mahlzeit, nach Tellerfläche gedacht, nicht nach Gramm.</div>';
+  if(!(t.sum>0)) return 'Heute ist noch nichts aus Gemüse, Obst, Eiweiß oder Kohlenhydraten erfasst.'+quelle;
+  var s=t.seg;
+  var kopf='<div style="display:flex;gap:14px;align-items:center;font-size:15px">'+tbTellerTorte(s)
+    +'<div style="min-width:0">Heute <b>'+Math.round(s[0].p)+' %</b> Gemüse und Obst, <b>'+Math.round(s[1].p)+' %</b> Eiweiß, <b>'
+    +Math.round(s[2].p)+' %</b> Kohlenhydrate <span style="color:var(--tb-muted);font-weight:400">— nach Gramm, '+gtxt(t.sum)+' auf dem Teller.</span></div></div>';
+  var balken=s.map(function(x){
+    var fet=TELLER_FET[x.k];
+    return '<div style="margin-top:16px">'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;font-size:13px;font-weight:600"><span>'+x.n+'</span>'
+        +'<span style="font-variant-numeric:tabular-nums;white-space:nowrap"><b>'+Math.round(x.p)+' %</b> <span style="font-weight:400;color:var(--tb-muted)">· '+gtxt(x.g)+'</span></span></div>'
+      +'<div style="position:relative;height:10px;border-radius:99px;background:var(--tb-track,#e6e1d6);margin-top:5px">'
+        +'<div style="height:100%;width:'+Math.min(100,x.p).toFixed(1)+'%;background:'+x.col+';border-radius:99px"></div>'
+        +'<div title="FET etwa '+fet+' %" style="position:absolute;left:'+fet+'%;top:-4px;bottom:-4px;width:2px;margin-left:-1px;background:var(--tb-text);border-radius:2px"></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;gap:8px;font-size:10.5px;font-weight:400;color:var(--tb-muted);margin-top:4px;line-height:1.35">'
+        +'<span style="min-width:0">'+(x.teile.length?x.teile.map(function(q){ return esc(q.n)+' '+gtxt(q.g); }).join(', '):'nichts erfasst')+'</span>'
+        +'<span style="white-space:nowrap">FET ~'+fet+' %</span></div>'
+    +'</div>';
+  }).join('');
+  var aus='<div style="margin-top:14px;padding-top:10px;border-top:1px dashed var(--tb-line);font-size:12px;font-weight:400;color:var(--tb-muted);line-height:1.45">'
+    +(t.aus.length
+      ? ('<b style="color:var(--tb-text)">Außerhalb des Tellers: '+gtxt(t.ausG)+'</b> — '
+         +t.aus.map(function(q){ return esc(q.n)+' '+gtxt(q.g); }).join(', ')+'. Nicht in der Torte.')
+      : 'Außerhalb des Tellers: nichts.')
+    +'</div>';
+  return kopf+balken+aus+quelle;
 }
 function tbSatzWahl(k){
   window._tbSatzKey=k;
@@ -18233,7 +18341,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-11-01";
+const APP_BUILD="2026-11-11-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
