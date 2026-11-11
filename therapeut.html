@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=8"></script>
+<script src="fachleute-dashboard.js?v=9"></script>
 <script src="fachleute-statistik.js?v=8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -485,6 +485,10 @@
   body .fd .fd-ist.ja{background:var(--ok-zart)} body .fd .fd-ist.nein{background:var(--warn-zart)} body .fd .fd-ist.ueber{background:var(--bad-zart)}
   body .fd .fd-ziel-zeile td{background:var(--paper)}
   body .fd .fd-ziel-edit select,body .fd .fd-ziel-edit input,body .fd .fd-vg-form select,body .fd .fd-vg-form input{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  .menue button .bald{margin-left:auto;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 7px;background:#ffffff2b;color:#fff;letter-spacing:.02em}
+  @media (max-width:1000px){ .menue button .bald{background:var(--warn-zart);color:var(--warn)} }
+  .bald.gross{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--warn-zart);color:var(--warn);margin-bottom:8px}
+  .baum-fuss{font-size:12.5px;color:var(--muted);padding:10px 14px;margin:6px 0 0;border-top:1px solid var(--line);line-height:1.4}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -511,11 +515,12 @@
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
     <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klienten</button>
     <button type="button" data-v="auswertungen"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M3 20h18"/></svg>Auswertungen</button>
-    <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne</button>
-    <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte</button>
-    <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte</button>
+    <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne<span class="bald">in Arbeit</span></button>
+    <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte<span class="bald">in Arbeit</span></button>
+    <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="bewertung"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 7.5h14M5 7.5l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7.5l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>So bewertet Root Index</button>
     <button type="button" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16.5 6.5l3 3M13.5 9.5l2 2"/></svg>Keys</button>
+    <button type="button" data-v="abrechnung"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M7.5 15h4"/></svg>Abrechnung</button>
     <button type="button" data-v="wunschliste"><svg viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Wunschliste</button>
     <button type="button" data-v="einstellungen"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Einstellungen</button>
   </div>
@@ -709,6 +714,15 @@
     <div class="keyliste" id="liste"><div class="leer">Lädt …</div></div>
     <div class="meld" id="meldListe"></div>
     <p class="fuss">So geht es weiter: Die Klientin bekommt den Link, legt damit ein Konto an, erhält Premium für die Laufzeit und entscheidet selbst, ob ihre Einträge hier sichtbar werden. Ohne ihre Einwilligung ist nichts zu sehen.</p>
+  </section>
+
+  <section class="ansicht" data-v="abrechnung">
+    <div class="band"><h1>Abrechnung</h1><span>was die Praxis an Root Index zahlt</span></div>
+    <div class="seite-inhalt">
+      <div class="karte2"><div class="k2-kopf"><h3>Preis und Modell</h3></div><p class="fuss" id="abrRegel" style="margin:0">Lädt …</p></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Monate</h3><span>aktive Keys je Kalendermonat; der laufende Monat zählt bis heute</span></div>
+        <div class="tabwrap"><table class="tab" id="abrTab"><tbody><tr><td class="leer">Lädt …</td></tr></tbody></table></div></div>
+    </div>
   </section>
 
   <section class="ansicht" data-v="wunschliste">
@@ -1088,7 +1102,7 @@ $('liste').addEventListener('click', async e => {
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
-               berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
+               berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', abrechnung:'Abrechnung', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
 let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
 const klientName = x => x.klient_name || x.bezeichnung || x.code;
@@ -1127,6 +1141,7 @@ function route(){
   if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
   if(v==='bewertung') ladeBewertung();
+  if(v==='abrechnung') ladeAbrechnung();
   window.scrollTo(0,0);
 }
 function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : null; }
@@ -1171,6 +1186,7 @@ function zeichneBaum(){
   h += v.length ? v.map(x => '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel g"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · bis ' + datum(x.laeuft_bis) + '</small></span></button>').join('')
                 : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : 'Noch niemand verbunden.') + '</div>';
   if(warten.length) h += warten.map(x => '<button type="button" data-geh="keys"><span class="ampel o"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>wartet auf Einwilligung</small></span></button>').join('');
+  h += '<p class="baum-fuss">Wechsel zu einer anderen Fachkraft: Die Person löst deren Key ein. Der bisherige Key endet dann automatisch, die Daten sind hier nicht mehr sichtbar.</p>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
   $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
@@ -1265,6 +1281,23 @@ async function ladeAuswertungen(){
     daten.map(zeile).join('') + '</tbody>';
 }
 
+/* Abrechnung: laufender Monat und die 5 Monate davor (cb_fp_abrechnung je Monat, FL-1) */
+const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+async function ladeAbrechnung(){
+  if(DEMO){ $('abrRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('abrTab').innerHTML = '<tbody><tr><td class="leer">Keine Abrechnung in der Musterpraxis.</td></tr></tbody>'; return; }
+  const euro = c => c==null ? '–' : (Number(c)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+  const h = heuteBerlin(), mon = [];
+  for(let i = 0; i < 6; i++){ const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i); mon.push(d.toISOString().slice(0,10)); }
+  const erg = await Promise.all(mon.map(m => client.rpc('cb_fp_abrechnung', {p_monat: m}).then(r => r.error ? {fehler: r.error.message} : json(r.data))));
+  $('abrRegel').textContent = $('zRegel').textContent;
+  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' +
+    erg.map((d, i) => { const m = new Date(mon[i] + 'T12:00:00Z');
+      if(d.fehler) return '<tr><td>' + MONATE[m.getUTCMonth()] + ' ' + m.getUTCFullYear() + '</td><td colspan="5" class="leer">' + esc(d.fehler) + '</td></tr>';
+      return '<tr><td><b>' + MONATE[m.getUTCMonth()] + ' ' + m.getUTCFullYear() + '</b>' + (i===0 ? ' <small style="color:var(--muted)">bis heute</small>' : '') + '</td>' +
+        '<td class="z">' + (d.keys_aktiv ?? '–') + '</td><td class="z">' + (d.keys_neu ?? '–') + '</td>' +
+        '<td class="z">' + euro(d.keys_betrag_cent) + '</td><td class="z">' + euro(d.lizenz_betrag_cent) + '</td><td class="z"><b>' + euro(d.betrag_cent) + '</b></td></tr>'; }).join('') + '</tbody>';
+}
+
 /* So bewertet Root Index: vertrauliche Fassung (FL-3) aus der Datenbank, nur für Fachleute mit Vereinbarung.
    Eigenes Dokument im iframe (srcdoc), damit Schrift und Stil von FL-3 unverändert bleiben. */
 let BEW_DA = false;
@@ -1292,7 +1325,7 @@ const FL5_TEXT = {
 };
 window.FLShell = {
   _b: {},
-  bereich(id, def){ this._b[id] = def; if(AKTIV===id) zeigeFl5(id); },
+  bereich(id, def){ this._b[id] = def; const b = document.querySelector('#menueListe [data-v="' + id + '"] .bald'); if(b) b.remove(); if(AKTIV===id) zeigeFl5(id); },
   ctx(){ const w = WAHL || '', k = KEYS.find(x => x.code===w); return { client, ich: ICH, keys: KEYS, klient: !DEMO && w ? w : null,
                                         muster: !!DEMO && !!w, musterNr: DEMO && k ? k.nr : null, demo: !!DEMO, musterToken: DEMO,
                                         heute: heuteBerlin(), neu: ladeAlles, geh }; }
@@ -1301,7 +1334,7 @@ function zeigeFl5(id){
   const el = document.querySelector('[data-fl5="' + id + '"]'), def = FLShell._b[id];
   if(def && typeof def.render === 'function'){ el.innerHTML = ''; Promise.resolve(def.render(el, FLShell.ctx())).catch(e => { el.textContent = 'Fehler: ' + (e.message || e); }); return; }
   const t = FL5_TEXT[id];
-  el.innerHTML = '<h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klienten</button>';
+  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klienten</button>';
 }
 
 /* Neuer Key ▾: Panel in „Keys“ öffnen; nach dem Anlegen direkt Mail oder QR */
@@ -1321,7 +1354,7 @@ function zeichneKonto(){
   const z = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +
     z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
-    z('Verschwiegenheit Root Index', ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') +
+    z('Verschwiegenheit Root Index', (ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') + (ICH.vertrag_version ? ' · Fassung ' + esc(ICH.vertrag_version) : '')) +
     z('Verschwiegenheit Klienten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
   const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));

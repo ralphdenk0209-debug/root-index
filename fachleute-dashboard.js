@@ -74,6 +74,8 @@ const CSS = `
 .fd .fd-plan .tag.heute{outline:2px solid var(--fd-gruen)}
 .fd .fd-plan .e{background:#fff;border-radius:7px;padding:3px 5px;margin-top:4px;line-height:1.25}
 .fd .fd-plan .e small{display:block;color:var(--fd-muted)}
+.fd .fd-plan .e.leer{background:transparent;border:1px dashed var(--fd-linie);color:var(--fd-muted)}
+.fd .fd-plan-kcal{float:right;font-weight:400;color:var(--fd-muted);font-size:11px}
 .fd .fd-rez{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef0ee}
 .fd .fd-rez img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:var(--fd-creme)}
 .fd .fd-rez .ph{width:48px;height:48px;border-radius:10px;background:var(--fd-creme)}
@@ -436,16 +438,25 @@ function mount(el, opt){
     return h + '</div>';
   }
 
+  /* Wochenplanung: je Tag feste Plätze (Ralph: 3–4 Snacks), leere Plätze dezent. Alter Wert „Snack“ = Snack nachmittags. */
+  const SLOTS = ['Frühstück','Snack vormittags','Mittag','Snack nachmittags','Abendessen','Snack abends','Spätsnack'];
+  const slotVon = s0 => s0==='Snack' ? 'Snack nachmittags' : (SLOTS.includes(s0) ? s0 : 'Snack abends');
   function planKarte(d){
     if(!d.wochenplan) return '<div class="fd-karte"><h2>Wochenplanung</h2><p class="fd-klein">' + esc(d.wochenplan_hinweis || 'Kein Wochenplan.') + '</p></div>';
     const von = d.wochenplan_von || montag(heute);
-    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was die Person für diese und nächste Woche geplant hat.</div>';
+    const spaet = d.wochenplan.some(x => x.slot==='Spätsnack');
+    const plaetze = SLOTS.filter(x => x!=='Spätsnack' || spaet);
+    const kurz = {'Frühstück':'Frühstück','Snack vormittags':'Snack vorm.','Mittag':'Mittag','Snack nachmittags':'Snack nachm.','Abendessen':'Abend','Snack abends':'Snack abends','Spätsnack':'Spätsnack'};
+    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was für diese und nächste Woche geplant ist, je Tag mit allen Mahlzeiten und Snacks.</div>';
     for(let w = 0; w < 2; w++){
       h += '<h3>' + (w ? 'Nächste Woche' : 'Diese Woche') + '</h3><div class="fd-plan">';
       for(let i = 0; i < 7; i++){
         const t = plus(von, w*7 + i), e = d.wochenplan.filter(x => x.datum===t);
-        h += '<div class="tag' + (t===heute ? ' heute' : '') + '"><b>' + WT[D(t).getUTCDay()] + ' ' + tm(t) + '</b>' +
-             e.map(x => '<div class="e">' + esc(x.titel||'') + '<small>' + esc(x.slot) + (x.kcal_portion ? ' · ' + z(x.kcal_portion) + ' kcal' : '') + '</small></div>').join('') + '</div>';
+        const kcal = e.reduce((a, x) => a + (Number(x.kcal_portion)||0), 0);
+        h += '<div class="tag' + (t===heute ? ' heute' : '') + '"><b>' + WT[D(t).getUTCDay()] + ' ' + tm(t) + (kcal ? '<span class="fd-plan-kcal">' + z(kcal) + ' kcal</span>' : '') + '</b>' +
+             plaetze.map(sl => { const x = e.filter(y => slotVon(y.slot)===sl);
+               return x.length ? x.map(y => '<div class="e"><small>' + esc(kurz[sl]) + '</small>' + esc(y.titel||'') + (y.kcal_portion ? '<small>' + z(y.kcal_portion) + ' kcal</small>' : '') + '</div>').join('')
+                               : '<div class="e leer"><small>' + esc(kurz[sl]) + '</small>–</div>'; }).join('') + '</div>';
       }
       h += '</div>';
     }
