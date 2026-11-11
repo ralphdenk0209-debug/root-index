@@ -10772,6 +10772,7 @@ async function loadPlaner(){
   await renderPlaner();
 }
 async function renderPlaner(){
+  try{ fl5PlanBox(); }catch(e){}   /* FL-5: Plan und Rezepte von der Fachperson */
   const bw=document.getElementById("pvWoche"), bt=document.getElementById("pvTag");
   if(bw&&bt){ const on='background:var(--green);color:var(--auf-gruen)', off='background:var(--card);color:var(--ink)';
     bw.style.cssText="padding:7px 11px;border:0;cursor:pointer;font-size:13px;"+(_planView==='woche'?on:off);
@@ -17973,6 +17974,7 @@ function rezeptDetail(r){
     ${rsc!=null?`<div style="font-size:12.5px;margin:-4px 0 2px">Rezept-Index <b style="color:${farbe(rbew)}">${rsc} · ${rbew}</b> <span style="color:var(--k-9aa7a0)">(Ø der Zutaten-Indizes, nach Gewicht)</span></div>`:rezeptScoreHinweis(r)}
     <div style="font-size:11px;color:var(--muted);margin:4px 0 6px">Quellen: <a href="https://pubmed.ncbi.nlm.nih.gov/30744710/" target="_blank" rel="noopener" style="color:var(--green)">NOVA (Monteiro 2019)</a> · <a href="https://www.blsdb.de/" target="_blank" rel="noopener" style="color:var(--green)">BLS 4.0</a> · <a href="https://www.who.int/publications/i/item/9789241549028" target="_blank" rel="noopener" style="color:var(--green)">WHO Zucker</a> · <a href="https://www.who.int/news-room/fact-sheets/detail/salt-reduction" target="_blank" rel="noopener" style="color:var(--green)">WHO Salz</a> · <a href="#" onclick="event.preventDefault();quellenOpen()" style="color:var(--green)">alle Quellen</a></div>
     ${ownerBar}
+    ${fl5RezeptBar(r)}
     ${modBar}
     ${controls}
     ${tbBox}
@@ -18383,7 +18385,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-11-03";
+const APP_BUILD="2026-11-11-04";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
@@ -19132,3 +19134,87 @@ function meinMonatHtml(d){
     else if(n>100) clearInterval(t); },200);
 })();
 if(typeof window!=='undefined'){ window.meinMonatOeffnen=meinMonatOeffnen; }
+
+/* ===== FL-5 (11.11.2026): Plan und Rezepte von der Fachperson =====================
+   Nur bei laufender Bindung (Key läuft + Einwilligung) – das entscheidet der Server
+   (cb_fl5_mein_bereich). Plan übernehmen: cb_fl5_plan_uebernehmen, auf Wunsch direkt
+   auf die Einkaufsliste. Geteilte Rezepte: eigene Kopie (cb_fl5_rezept_kopieren) und
+   gemeinsam bearbeiten (gleicher Editor, Server prüft die Freigabe). */
+var _fl5=null, _fl5Zeit=0;
+async function fl5Laden(neu){
+  if(!ME) return null;
+  if(!neu && _fl5 && Date.now()-_fl5Zeit<60000) return _fl5;
+  try{ const {data,error}=await client.rpc("cb_fl5_mein_bereich"); if(error) return _fl5;
+       _fl5=(typeof data==="string")?JSON.parse(data):data; _fl5Zeit=Date.now(); }catch(e){}
+  return _fl5;
+}
+function _fl5Tag(s){ return new Date(s+"T00:00:00").toLocaleDateString("de-DE",{weekday:"short",day:"numeric",month:"numeric"}); }
+async function fl5PlanBox(){
+  const grid=document.getElementById("planGrid"); if(!grid||!grid.parentNode) return;
+  let box=document.getElementById("fl5Box");
+  const d=await fl5Laden(false);
+  if(!d||!d.fachperson||(!(d.plaene||[]).length&&!(d.rezepte||[]).length)){ if(box) box.remove(); return; }
+  if(!box){ box=document.createElement("div"); box.id="fl5Box"; grid.parentNode.insertBefore(box,grid); }
+  const fp=d.fachperson, von=esc(fp.praxis||fp.name||"deiner Fachperson");
+  let h='<div style="background:var(--card);border:1px solid var(--green);border-radius:14px;padding:13px 14px;margin:10px 0 14px">'
+    +'<div style="font-weight:700;font-size:15px;margin-bottom:2px">🩺 Von '+von+'</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);margin-bottom:8px">Nur für dich, solange du mit '+esc(fp.name||"deiner Fachperson")+' verbunden bist.</div>';
+  (d.plaene||[]).forEach(function(p){
+    const e=p.eintraege||[], tage={};
+    e.forEach(function(x){ (tage[x.datum]=tage[x.datum]||[]).push(x); });
+    h+='<div style="border-top:1px solid var(--line);padding:9px 0 4px">'
+      +'<div style="font-weight:600">🗓️ '+esc(p.titel||"Ernährungsplan")+'</div>'
+      +'<div style="font-size:12.5px;color:var(--muted)">'+_fl5Tag(p.von)+' – '+_fl5Tag(p.bis)+' · '+e.length+' Mahlzeit'+(e.length===1?'':'en')
+      +(p.uebernommen_am?' · übernommen am '+new Date(p.uebernommen_am).toLocaleDateString("de-DE"):'')+'</div>'
+      +(p.notiz?'<div style="font-size:13px;margin-top:4px">'+esc(p.notiz)+'</div>':'')
+      +'<details style="margin-top:6px"><summary style="cursor:pointer;font-size:13px;color:var(--greendk)">Mahlzeiten ansehen</summary>'
+      +Object.keys(tage).sort().map(function(t){ return '<div style="font-size:13px;margin-top:6px"><b>'+_fl5Tag(t)+'</b>'
+          +tage[t].map(function(x){ const k=x.kcal_plan?' · '+x.kcal_plan+' kcal':'';
+            const was=esc(x.titel||"")+(x.portionen&&Number(x.portionen)!==1?' ('+Number(x.portionen).toLocaleString("de-DE")+' Portionen)':'')+(x.menge_g?' · '+Math.round(x.menge_g)+' g':'');
+            return '<div style="margin-left:8px">'+esc(x.slot)+': '+(x.rezept_id?'<a href="#" onclick="rezOeffnenById(\''+esc(x.rezept_id)+'\');return false" style="color:var(--greendk)">'+was+'</a>':was)+'<span style="color:var(--muted)">'+k+'</span>'+(x.hinweis?'<div style="color:var(--muted);font-size:12px">'+esc(x.hinweis)+'</div>':'')+'</div>'; }).join('')+'</div>'; }).join('')
+      +'</details>'
+      +'<label style="display:flex;gap:7px;align-items:center;font-size:13px;margin-top:8px"><input type="checkbox" id="fl5Eink'+p.id+'" checked> Zutaten auch auf die Einkaufsliste</label>'
+      +'<button onclick="fl5Uebernehmen('+Number(p.id)+')" style="margin-top:7px;padding:8px 13px;border:0;border-radius:9px;background:var(--green);color:var(--auf-gruen);cursor:pointer;font-size:13.5px">'+(p.uebernommen_am?'Erneut in meinen Wochenplan':'In meinen Wochenplan übernehmen')+'</button>'
+      +'<div id="fl5Msg'+p.id+'" style="font-size:12.5px;margin-top:5px"></div></div>';
+  });
+  if((d.rezepte||[]).length){
+    h+='<div style="border-top:1px solid var(--line);padding-top:9px"><div style="font-weight:600;margin-bottom:4px">🍲 Rezepte für dich</div>'
+      +d.rezepte.map(function(r){ return '<div style="font-size:13.5px;margin:4px 0"><a href="#" onclick="rezOeffnenById(\''+esc(r.rezept_id)+'\');return false" style="color:var(--greendk)">'+esc(r.name)+'</a>'
+        +(r.kcal_portion?' <span style="color:var(--muted)">· '+Math.round(r.kcal_portion)+' kcal</span>':'')
+        +(r.mitbearbeiten?' <span style="font-size:11.5px;background:var(--greenlt);color:var(--greendk);border-radius:6px;padding:1px 6px">gemeinsam</span>':'')
+        +(r.notiz?'<div style="color:var(--muted);font-size:12px">'+esc(r.notiz)+'</div>':'')+'</div>'; }).join('')+'</div>';
+  }
+  box.innerHTML=h+'</div>';
+}
+async function fl5Uebernehmen(id){
+  const m=document.getElementById("fl5Msg"+id), cb=document.getElementById("fl5Eink"+id);
+  if(m){ m.style.color="var(--muted)"; m.textContent="⏳ …"; }
+  const {data,error}=await client.rpc("cb_fl5_plan_uebernehmen",{p_plan:id,p_einkauf:!!(cb&&cb.checked)});
+  const r=(typeof data==="string")?JSON.parse(data):(data||{});
+  if(m){ m.style.color=error||!r.ok?"var(--k-dc2626)":"var(--k-16a34a)"; m.textContent=error?("Fehler: "+error.message):(r.meldung||""); }
+  if(!error){ await fl5Laden(true); try{ await renderPlaner(); }catch(e){} const m2=document.getElementById("fl5Msg"+id); if(m2&&r.meldung){ m2.style.color=r.ok?"var(--k-16a34a)":"var(--k-dc2626)"; m2.textContent=r.meldung; } }
+}
+/* Leiste in der Rezeptansicht für Rezepte von der Fachperson */
+function fl5RezeptBar(r){
+  if(!ME||r.is_own||!/^Fachperson/.test(r.quelle||"")) return "";
+  setTimeout(async function(){
+    const d=await fl5Laden(false), x=d&&(d.rezepte||[]).find(function(y){return y.rezept_id===r.id;});
+    const slot=document.getElementById("fl5EditSlot"); if(!slot) return;
+    slot.innerHTML=(x&&x.notiz?'<div style="width:100%;color:var(--muted)">'+esc(x.notiz)+'</div>':'')
+      +(x&&x.mitbearbeiten?'<button onclick="editRezept(\''+esc(r.id)+'\')" style="padding:7px 12px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer">✏️ Gemeinsam bearbeiten</button>':'');
+  },0);
+  return '<div style="background:var(--greenlt);border:1px solid var(--green);border-radius:12px;padding:11px 13px;margin:12px 0;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px">'
+    +'<span style="font-weight:600;color:var(--greendk)">🩺 '+esc(r.quelle)+'</span>'
+    +'<span id="fl5EditSlot" style="display:contents"></span>'
+    +'<button onclick="fl5Kopie(\''+esc(r.id)+'\')" style="padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);cursor:pointer">📋 Als eigene Kopie speichern</button>'
+    +'<span id="fl5KopieMsg" style="width:100%;font-size:12.5px"></span></div>';
+}
+async function fl5Kopie(id){
+  const m=document.getElementById("fl5KopieMsg"); if(m){ m.style.color="var(--muted)"; m.textContent="⏳ …"; }
+  const {data,error}=await client.rpc("cb_fl5_rezept_kopieren",{p_rezept:id});
+  const r=(typeof data==="string")?JSON.parse(data):(data||{});
+  if(error||!r.ok){ if(m){ m.style.color="var(--k-dc2626)"; m.textContent=error?("Fehler: "+error.message):(r.grund||"Ging nicht."); } return; }
+  if(m){ m.style.color="var(--k-16a34a)"; m.textContent="✓ Kopie gespeichert. Sie gehört dir und bleibt, auch wenn die Begleitung endet."; }
+  try{ await loadRezepte(); }catch(e){}
+}
+if(typeof window!=='undefined'){ window.fl5PlanBox=fl5PlanBox; window.fl5Uebernehmen=fl5Uebernehmen; window.fl5Kopie=fl5Kopie; window.fl5RezeptBar=fl5RezeptBar; }

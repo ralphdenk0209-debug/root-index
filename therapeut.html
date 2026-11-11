@@ -13,10 +13,13 @@
      cb_fp_key_beenden, cb_fp_key_bezeichnung, cb_fp_abrechnung. Freischalten als Fachperson:
      nur Admin (cb_admin_fachperson_setzen).
      FL-4 (11.11.2026): Dashboard je Klient (cb_fp_klient_dashboard, cb_fp_vorgabe_setzen,
-     Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html). -->
+     Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html).
+     FL-5 (11.11.2026): über dem Dashboard Bericht (Drucken/PDF), Ernährungspläne mit Ist gegen Plan
+     und Rezepte teilen (fachleute-fl5.js; cb_fp_plaene, cb_fp_plan_*, cb_fp_rezept*, cb_fl5_muster_plaene). -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fachleute-dashboard.js?v=2"></script>
+<script src="fachleute-dashboard.js?v=3"></script>
+<script src="fachleute-fl5.js?v=1"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -233,6 +236,7 @@
   <!-- FL-4: Dashboard je Klient -->
   <section id="bKlient" hidden>
     <button class="klein-knopf" id="klientZurueck" type="button">‹ Alle Klienten</button>
+    <div id="klientFl5"></div>
     <div id="klientDash"></div>
   </section>
 
@@ -529,15 +533,19 @@ $('liste').addEventListener('click', async e => {
 
 /* ---------- FL-4: Dashboard je Klient ---------- */
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
+async function rpcDaten(name, args){ const {data, error} = await client.rpc(name, args); if(error) throw new Error(error.message); return json(data); }
 function oeffneKlient(code){
   zeige('bKlient'); window.scrollTo(0,0); document.querySelector('.wrap').style.maxWidth = '900px'; $('klientDash').className = '';
+  const ladeDash = (von, bis) => rpcDaten('cb_fp_klient_dashboard', {p_code: code, p_von: von, p_bis: bis});
+  /* FL-5: Bericht, Ernährungspläne, Rezepte teilen */
+  const k = KEYS.find(x => x.code===code) || {};
+  $('klientFl5').className = ''; $('klientFl5').innerHTML = '';
+  FL5.mount($('klientFl5'), { muster: false, code, name: k.klient_name || k.bezeichnung || code, heute: heuteBerlin(),
+    praxis: ICH && (ICH.praxis || ICH.name), fachperson: ICH && ICH.name, rpc: rpcDaten, ladeDashboard: ladeDash,
+    klienten: KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt').map(x => ({code: x.code, name: x.klient_name || x.bezeichnung || x.code})) });
   FLDash.mount($('klientDash'), {
     heute: heuteBerlin(), nurLesen: false,
-    laden: async (von, bis) => {
-      const {data, error} = await client.rpc('cb_fp_klient_dashboard', {p_code: code, p_von: von, p_bis: bis});
-      if(error) throw new Error(error.message);
-      return json(data);
-    },
+    laden: ladeDash,
     vorgabeSetzen: async (kennzahl, wert, art, notiz) => {
       const {data, error} = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null});
       if(error) throw new Error(error.message);
@@ -559,10 +567,13 @@ async function oeffneMuster(){
       '<span class="chip laeuft">Auswertung öffnen ›</span></div></button>').join('') + '</div>';
   box.querySelectorAll('[data-nr]').forEach(b => b.onclick = () => {
     const nr = Number(b.dataset.nr); window.scrollTo(0,0);
-    box.innerHTML = '<div class="hinweis" style="margin-top:12px"><b>Musterpraxis:</b> erfundene Person, nur zum Ansehen. <button class="link" type="button" id="musterListe" style="margin:0">Zur Musterpraxis</button></div><div id="musterDash"></div>';
+    box.innerHTML = '<div class="hinweis" style="margin-top:12px"><b>Musterpraxis:</b> erfundene Person, nur zum Ansehen. <button class="link" type="button" id="musterListe" style="margin:0">Zur Musterpraxis</button></div><div id="musterFl5"></div><div id="musterDash"></div>';
     $('musterListe').onclick = oeffneMuster;
-    FLDash.mount($('musterDash'), { heute: P.heute, nurLesen: true,
-      laden: async (von, bis) => { const r = await client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); } });
+    const mk = (P.klienten||[]).find(x => x.nr===nr) || {};
+    const ladeDash = (von, bis) => rpcDaten('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis});
+    FL5.mount($('musterFl5'), { muster: true, nr, code: mk.code, name: mk.name, heute: P.heute, praxis: P.praxis || 'Praxis Muster', fachperson: 'Musterpraxis (erfundene Daten)',
+      rpc: rpcDaten, ladeDashboard: ladeDash });
+    FLDash.mount($('musterDash'), { heute: P.heute, nurLesen: true, laden: ladeDash });
   });
 }
 $('musterLos').onclick = oeffneMuster;

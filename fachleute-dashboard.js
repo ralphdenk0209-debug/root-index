@@ -382,7 +382,7 @@ function mount(el, opt){
           '<div style="flex:1"><b>' + esc(x.name) + '</b><div class="fd-klein">' + [x.kcal_portion && z(x.kcal_portion) + ' kcal je Portion', x.protein_portion && z(x.protein_portion,1) + ' g Eiweiß', x.mahlzeit].filter(Boolean).map(esc).join(' · ') + '</div></div>' +
           '<span class="fd-chip ' + (x.herkunft==='empfohlen' ? 'dunkel' : '') + '">' + (x.herkunft==='empfohlen' ? 'von dir empfohlen' : x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes Rezept') + '</span></div>').join('')
        : '<p class="fd-klein">Keine eigenen Rezepte.</p>';
-    h += '<div class="fd-bald"><b>Bald:</b> Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen.</div>';
+    if(!opt.nurLesen) h += '<div class="fd-klein" style="margin-top:8px">Rezepte teilen und gemeinsam bearbeiten: oben unter „Rezepte teilen“.</div>';   // FL-5
     return h + '</div>';
   }
 
