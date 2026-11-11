@@ -115,6 +115,7 @@ const CSS = `
 .fd .fd-akte-unv label{flex-direction:row;align-items:center;gap:6px;font-weight:400;font-size:14px;color:var(--fd-dunkel);width:auto!important;flex:0 0 auto;white-space:nowrap}
 .fd .fd-akte-unv input{width:16px!important;height:16px;margin:0;flex:0 0 auto}
 .fd .fd-akte-knoepfe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.fd .fd-wenig{color:var(--muted,#737373);font-style:italic}
 .fd .fd-privat{margin-top:14px;border:1px dashed var(--fd-linie);border-radius:12px;padding:10px 12px}
 .fd .fd-chip.sw{background:var(--blau-zart,#eaf1ff);color:var(--blau-tief,#04157e)}
 .fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
@@ -238,7 +239,7 @@ function mount(el, opt){
            '<div class="fd-klein">Auf einen Tag tippen öffnet die Tagesansicht. Schraffiert = nichts eingetragen.</div></div>';
       const linie = go && go.soll ? go.soll : null;
       h += '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
-           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE ') + z(linie) + ' g') +
+           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE-Orientierung ') + z(linie) + ' g') +
            '<div class="fd-legende"><span><i style="background:var(--fd-gemuese)"></i>Gemüse &amp; Pilze</span><span><i style="background:var(--fd-obst)"></i>Obst</span>' +
            (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>';
     } else {
@@ -255,7 +256,9 @@ function mount(el, opt){
     if(v && window.FLStat) FLStat.verlauf(v, opt.verlauf, heute, opt.verlaufKey);
   }
   function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
-  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }
+  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }
+  /* Gemüse 245 g und Obst 300 g sind Modellwerte der DGE-Berechnung (Schäfer 2024), keine eigene DGE-Empfehlung (Prüfer 11.11.) */
+  function istModell(x){ return /Modellwert/i.test((x && x.hinweis) || '') || /Schäfer/i.test((x && x.quelle) || ''); }
 
   function profilKarte(d){
     const p = d.profil || {};
@@ -417,18 +420,26 @@ function mount(el, opt){
         '<div class="bw"><div class="fd-bar"><div class="f" style="width:' + (p/1.5).toFixed(1) + '%;background:' + farbe + '"></div>' +
         (x.soll ? '<div class="m" style="left:' + (100/1.5).toFixed(1) + '%"></div>' : '') + '</div></div>' +
         '<div class="w">' + (x.ist==null ? '–' : z(x.ist, x.einheit==='en%'?0:1) + ' ' + esc(einh)) + '<small>' + (x.soll ? z(x.ist_prozent_vom_soll) + ' %' : '') + '</small></div>' +
-        '<div class="her">' + her + '</div>';
+        '<div class="her">' + her + (x.kennzahl.startsWith('mikro:') ? ' · <span class="' + (x.abdeckung!=null && x.abdeckung >= 50 ? '' : 'fd-wenig') + '">' +
+          (x.abdeckung==null ? 'Datenlage unbekannt' : 'Werte für ' + z(x.abdeckung) + ' % der gegessenen Menge' + (x.abdeckung < 50 ? ', zu wenig für eine Aussage' : '')) + '</span>' : '') + '</div>';
     };
     const makro = ['kcal','protein','kh','fett','zucker','ballaststoffe','salz'];
     const m = is.filter(x => makro.includes(x.kennzahl)).sort((a, b) => makro.indexOf(a.kennzahl) - makro.indexOf(b.kennzahl) || (a.einheit==='en%') - (b.einheit==='en%'));
     const g = is.filter(x => x.kennzahl.startsWith('gruppe:'));
-    const mi = is.filter(x => x.kennzahl.startsWith('mikro:'));
+    // Vitamine und Mineralstoffe: nur echte Bedarfswerte (keine Werbeaussage-Werte wie Kreatin, EU-VO 432/2012);
+    // bei wenig Daten grau statt Ampel (Prüfer 11.11.: Jod 10 von 200 µg ist meist fehlende Angabe, nicht Mangel)
+    const ABD = d.mikro_abdeckung || {};
+    const mi = is.filter(x => x.kennzahl.startsWith('mikro:') && !/432\/2012/.test((x.soll_herkunft||'') + (x.quelle||'')))
+                 .map(x => { const a = ABD[x.kennzahl]; const y = Object.assign({}, x, {abdeckung: a==null ? null : Number(a)});
+                   if(y.abdeckung==null || y.abdeckung < 50) y.erfuellt = null; return y; });
     let h = '<div class="fd-karte"><h2>Ist und Soll</h2><div class="fd-klein">Ist = Durchschnitt je erfasstem Tag' + (st.modus==='tag' ? '' : ' (' + (d.tage_erfasst||0) + ' Tage)') +
-      '. Soll in dieser Reihenfolge: Vorgabe der Therapeutin, Ziel im Profil, Richtwert. Strich = 100 %.</div>' +
+      '. Soll in dieser Reihenfolge: Vorgabe der Fachperson, Ziel im Profil, Richtwert. Strich = 100 %.</div>' +
       '<h3>Kalorien und Makros</h3><div class="fd-is">' + m.map(zeile).join('') + '</div>' +
       '<h3>Lebensmittelgruppen</h3><div class="fd-is">' + g.map(zeile).join('') + '</div>' +
       '<div class="fd-hinweis">Die DGE-Werte sind Orientierungswerte für gesunde Erwachsene. Laut DGE eignen sie sich nicht, den Verzehr einzelner Personen zu bewerten. Darum zeigen wir sie zum Vergleich, nicht als Note.</div>';
-    if(mi.length) h += '<details style="margin-top:12px"><summary>Vitamine und Mineralstoffe (' + mi.length + ')</summary><div class="fd-is" style="margin-top:8px">' + mi.map(zeile).join('') + '</div></details>';
+    if(mi.length) h += '<details style="margin-top:12px"><summary>Vitamine und Mineralstoffe (' + mi.length + ')</summary>' +
+      '<div class="fd-klein" style="margin-top:6px">Viele Etiketten nennen keine Vitamine und Mineralstoffe, Jodsalz und Leitungswasser fehlen meist im Tagebuch. Darum steht bei jedem Wert, für wie viel der gegessenen Menge Angaben vorliegen; unter 50 % bleibt der Balken grau.</div>' +
+      '<div class="fd-is" style="margin-top:8px">' + mi.map(zeile).join('') + '</div></details>';
     else if(d.muster) h += '<div class="fd-bald">Vitamine und Mineralstoffe: in echten Konten sichtbar, in der Musterpraxis ausgeblendet.</div>';
     return h + '</div>';
   }
@@ -508,7 +519,7 @@ function mount(el, opt){
                  ['ballaststoffe','Ballaststoffe','g'], ['zucker','Zucker','g'], ['salz','Salz','g'],
                  ['gruppe:gemuese','Gemüse','g'], ['gruppe:obst','Obst','g'], ['gruppe:gemuese+obst','Obst und Gemüse','g']];
   const HERKUNFT = x => !x || x.soll==null ? ['kein Ziel', 'leer'] : x.soll_herkunft==='Vorgabe Therapeutin' ? ['eigene Vorgabe', 'vorgabe']
-                     : x.soll_herkunft==='Ziel im Profil' ? ['Profil / Rechner', 'profil'] : [/DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||'Richtwert'), 'dge'];
+                     : x.soll_herkunft==='Ziel im Profil' ? ['Profil / Rechner', 'profil'] : [istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||'Richtwert'), 'dge'];
   function zieleKarte(d){
     const is = d.ist_soll || [];
     const zeilen = ZIELE.map(z0 => {

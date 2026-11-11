@@ -242,6 +242,9 @@ begin
   else
     r := public._fl4_dashboard(k.benutzer_id, v_von, p_bis)
       || jsonb_build_object('daten_ab', case when k.daten_ab > date '1900-01-01' then k.daten_ab end, 'heute', v_heute, 'code', upper(trim(p_code)));
+    -- Prüfer 11.11.: Datenlage je Vitamin/Mineralstoff (Anteil der gegessenen Gramm mit Angaben, FL-2)
+    r := r || jsonb_build_object('mikro_abdeckung', (select jsonb_object_agg(n.kennzahl, n.abdeckung_prozent)
+             from public.cb_auswertung_naehrwerte(k.benutzer_id, v_von, p_bis, 'gesamt', true) n where n.kennzahl like 'mikro:%'));
   end if;
 
   select coalesce(t.mit_wochenplan, false) into v_plan

@@ -12,7 +12,12 @@ const TELLER = [
   {k:'e', n:'Eiweiß', col:'#c0583a', gruppen:['fleisch','fisch','eier','huelsenfruechte','milch']},
   {k:'k', n:'Kohlenhydrate', col:'#d4a12c', gruppen:['vollkorn','getreide','kartoffeln']}
 ];
-const DGE_GEMUESE = 245, DGE_OG = 550;   // Richtwert-Tabelle (FL-2): Gemüse 245 g, Obst und Gemüse 550 g je Tag
+const DGE_GEMUESE = 245, DGE_OG = 550;   // Ersatz, falls der Server kein Soll liefert: Gemüse 245 g = Modellwert der DGE-Berechnung (Schäfer 2024), Obst + Gemüse 550 g = DGE-Orientierung
+/* Gemüse-Ziel je Person: Vorgabe der Fachperson, sonst der Richtwert vom Server (Prüfer 11.11.: nicht fest verdrahten) */
+function gemZiel(d){
+  const x = ((d.kurz && d.kurz.ist_soll) || []).find(y => y.kennzahl==='gruppe:gemuese' && y.soll!=null);
+  return x ? {soll: Number(x.soll), vorgabe: x.soll_herkunft==='Vorgabe Therapeutin'} : {soll: DGE_GEMUESE, vorgabe: false};
+}
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const z = (x, st) => x==null || isNaN(x) ? '–' : Number(x).toLocaleString('de-DE', {maximumFractionDigits: st||0});
 const D = s => new Date(s + 'T12:00:00Z');
@@ -124,9 +129,10 @@ function uebersicht(el, daten, info){
     score: mittel(ok.map(d => d.wochen[i] && d.wochen[i].score)), erf: mittel(ok.map(d => d.wochen[i] && d.wochen[i].tageGesamt ? 100 * d.wochen[i].erfasst / d.wochen[i].tageGesamt : null))}));
   while(wo.length > 1 && wo[0].gem==null && wo[0].obst==null) wo.shift();   // Wochen vor dem ersten Eintrag weglassen
   const gem = m('gem'), obst = m('obst'), sc = m('score');
+  const gemProz = mittel(ok.map(d => d.jetzt.gem==null ? null : 100 * d.jetzt.gem / gemZiel(d).soll)), nVorgabe = ok.filter(d => gemZiel(d).vorgabe).length;
   el.innerHTML = (infoText ? '<div class="hinweis-band">' + infoText + '</div>' : '') +
     '<div class="kpis">' +
-      kpi('spGem', 'Gemüse Ø je Tag', z(gem), ' g', gem!=null && mv('gem')!=null ? gem - mv('gem') : null, true, 'DGE-Orientierung ' + DGE_GEMUESE + ' g · ' + (gem!=null ? Math.round(100*gem/DGE_GEMUESE) + ' %' : '–'), 'blatt', 'lime') +
+      kpi('spGem', 'Gemüse Ø je Tag', z(gem), ' g', gem!=null && mv('gem')!=null ? gem - mv('gem') : null, true, (gemProz!=null ? 'Ø ' + Math.round(gemProz) + ' % des Gemüse-Ziels' : 'Gemüse-Ziel') + ' · ' + (nVorgabe ? nVorgabe + ' mit eigener Vorgabe, sonst ' : '') + 'Modellwert ' + DGE_GEMUESE + ' g', 'blatt', 'lime') +
       kpi('spObst', 'Obst Ø je Tag', z(obst), ' g', obst!=null && mv('obst')!=null ? obst - mv('obst') : null, true, 'Obst + Gemüse ' + z((gem||0) + (obst||0)) + ' von ' + DGE_OG + ' g', 'apfel', 'orange') +
       kpi('spScore', 'Root-Index-Score Ø', z(sc), '', sc!=null && mv('score')!=null ? sc - mv('score') : null, true, 'nach Menge gewichtet, je Tag', 'stern', 'gelb') +
       kpi('spErf', 'Tage erfasst', z(erf), ' %', erf!=null && erfV!=null ? erf - erfV : null, true, 'Anteil der Tage mit Einträgen', 'kalender', 'tanne') +
@@ -145,7 +151,7 @@ function uebersicht(el, daten, info){
     data: {labels: wo.map(w => tm(w.von)), datasets: [
       {label: 'Gemüse', data: wo.map(w => w.gem && Math.round(w.gem)), backgroundColor: F.gem, borderRadius: 6, stack: 's', maxBarThickness: 46},
       {label: 'Obst', data: wo.map(w => w.obst && Math.round(w.obst)), backgroundColor: F.obst, borderRadius: 6, stack: 's', maxBarThickness: 46},
-      {label: 'DGE Obst + Gemüse (' + DGE_OG + ' g)', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: F.ink, borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0}]},
+      {label: 'DGE-Orientierung Obst + Gemüse (' + DGE_OG + ' g)', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: F.ink, borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0}]},
     options: {responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false},
       plugins: {legend: {position: 'bottom'}, tooltip: {callbacks: {title: t => 'Woche ab ' + t[0].label, label: c => ' ' + c.dataset.label.split(' (')[0] + ': ' + z(c.parsed.y) + ' g'}}},
       scales: {x: {stacked: true, grid: {display: false}}, y: {stacked: true, beginAtZero: true, grid: {color: F.linie}, ticks: {callback: v => v + ' g'}}}}});
@@ -206,7 +212,8 @@ function aufmerksamkeit(daten, keys){
     if(t.length && t.every(x => x.leer)) h.push(['orange', p, 'seit 3 Tagen nichts eingetragen']);
     const k = (d.kurz.ist_soll||[]).find(x => x.kennzahl==='kcal' && x.einheit!=='en%');
     if(k && k.soll && k.ist!=null && (k.ist < .8 * k.soll || k.ist > 1.2 * k.soll)) h.push(['gelb', p, 'Kalorien Ø ' + z(k.ist) + ' statt ' + z(k.soll) + ' kcal (' + z(k.ist_prozent_vom_soll) + ' %)']);
-    if(d.jetzt.gem!=null && d.jetzt.gem < DGE_GEMUESE / 2) h.push(['gelb', p, 'nur ' + z(d.jetzt.gem) + ' g Gemüse am Tag']);
+    const gz = gemZiel(d);
+    if(d.jetzt.gem!=null && d.jetzt.gem < gz.soll / 2) h.push(['gelb', p, 'nur ' + z(d.jetzt.gem) + ' g Gemüse am Tag (' + (gz.vorgabe ? 'Vorgabe ' : 'Modellwert ') + z(gz.soll) + ' g)']);
     (d.kurz.ist_soll||[]).filter(x => x.art==='hoechstens' && x.erfuellt===false && !x.kennzahl.startsWith('mikro:')).forEach(x =>
       h.push(['rot', p, String(x.name || x.kennzahl).replace(' (Anteil an der Energie)', '-Anteil') + ' über der Höchstgrenze (' + z(x.ist_prozent_vom_soll) + ' %)']));
   });
@@ -231,9 +238,9 @@ function vergleich(el, daten){
     '<div class="raster2 gleich">' +
       '<div class="karte2"><div class="k2-kopf"><h3>Gemüse und Obst je Person</h3><span>Ø je erfasstem Tag, letzte ' + n + ' Tage</span></div>' +
         ok.map(d => balkenZeile(d.p.name, d.p.muster ? 'erfunden' : '', [[d.jetzt.gem, F.gem], [d.jetzt.obst, F.obst]], maxG,
-          [[DGE_GEMUESE, 'DGE Gemüse ' + DGE_GEMUESE + ' g'], [DGE_OG, 'DGE Obst + Gemüse ' + DGE_OG + ' g']],
+          [[gemZiel(d).soll, (gemZiel(d).vorgabe ? 'Vorgabe Gemüse ' : 'Modellwert Gemüse ') + z(gemZiel(d).soll) + ' g'], [DGE_OG, 'DGE-Orientierung Obst + Gemüse ' + DGE_OG + ' g']],
           '<b>' + z(d.jetzt.gem) + '</b> + ' + z(d.jetzt.obst) + ' g')).join('') +
-        '<div class="legende2"><span><i style="background:' + F.gem + '"></i>Gemüse</span><span><i style="background:' + F.obst + '"></i>Obst</span><span><i class="strich"></i>DGE ' + DGE_GEMUESE + ' g Gemüse und ' + DGE_OG + ' g Obst + Gemüse</span></div></div>' +
+        '<div class="legende2"><span><i style="background:' + F.gem + '"></i>Gemüse</span><span><i style="background:' + F.obst + '"></i>Obst</span><span><i class="strich"></i>Gemüse-Ziel (Vorgabe der Fachperson, sonst Modellwert ' + DGE_GEMUESE + ' g der DGE-Berechnung) und ' + DGE_OG + ' g Obst + Gemüse (DGE-Orientierung)</span></div></div>' +
       '<div class="karte2"><div class="k2-kopf"><h3>Kalorien gegen Soll</h3><span>Ø je erfasstem Tag, letzte ' + n + ' Tage</span></div>' +
         ok.map(d => { const k = kcalZ(d); const farbe = !k || k.erfuellt==null ? F.grau : k.erfuellt ? F.gruen : F.orange;
           return balkenZeile(d.p.name, k && k.soll ? 'Soll ' + z(k.soll) + ' kcal' : 'ohne Soll', [[d.jetzt.kcal, farbe]], maxK, k && k.soll ? [[k.soll, 'Soll']] : [], '<b>' + z(d.jetzt.kcal) + '</b> kcal'); }).join('') +
@@ -265,7 +272,7 @@ async function verlauf(el, rpc, heute, key){
       {label: 'Gemüse g', data: wo.map(w => w.gem && Math.round(w.gem)), backgroundColor: F.gem, borderRadius: 6, stack: 's', yAxisID: 'y', maxBarThickness: 40},
       {label: 'Obst g', data: wo.map(w => w.obst && Math.round(w.obst)), backgroundColor: F.obst, borderRadius: 6, stack: 's', yAxisID: 'y', maxBarThickness: 40},
       {label: 'Score', data: wo.map(w => w.score && Math.round(w.score)), type: 'line', borderColor: F.tanne, backgroundColor: F.tanne, yAxisID: 'y2', tension: .3, pointRadius: 3, spanGaps: true},
-      {label: 'DGE Obst + Gemüse', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: '#9aa79e', borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0, yAxisID: 'y'}]},
+      {label: 'DGE-Orientierung Obst + Gemüse', data: wo.map(() => DGE_OG), type: 'line', stack: 'dge', borderColor: '#9aa79e', borderDash: [6, 5], borderWidth: 1.5, pointRadius: 0, yAxisID: 'y'}]},
     options: {responsive: true, maintainAspectRatio: false, interaction: {mode: 'index', intersect: false}, plugins: {legend: {position: 'bottom'}},
       scales: {x: {stacked: true, grid: {display: false}}, y: {stacked: true, beginAtZero: true, grid: {color: F.linie}, ticks: {callback: v => v + ' g'}},
                y2: {position: 'right', min: 0, max: 100, grid: {display: false}, title: {display: true, text: 'Score'}}}}});
