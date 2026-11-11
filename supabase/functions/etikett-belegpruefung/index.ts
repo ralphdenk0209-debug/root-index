@@ -164,23 +164,45 @@ Deno.serve(async (req) => {
     .from("v_etikett_belegpruefung").select("produkt_id").in("produkt_id", ids);
   const fertig = new Set((schonGeprueft ?? []).map((r: any) => r.produkt_id));
 
-  const { data: scans } = await db.from("Scan_Warteschlange")
-    .select('"Produkt_ID","Fotos_Base64"').in("Produkt_ID", ids);
-  const fotosJe = new Map<string, string[]>();
-  for (const s of scans ?? []) {
-    const f = Array.isArray((s as any).Fotos_Base64) ? (s as any).Fotos_Base64 : [];
-    if (f.length && !fotosJe.has((s as any).Produkt_ID)) fotosJe.set((s as any).Produkt_ID, f);
+  // 11.11.2026 (HTTP 546): Frueher wurden hier die Fotos ALLER Etikett-Produkte
+  // auf einmal geladen (rund 130 MB), egal ob schon geprueft. Das sprengte den
+  // Speicher des Workers; seit dem 08.10. lief kein Produkt mehr durch. Jetzt:
+  // erst nur die Scan-Zeilen ohne Fotos (klein), dann die Fotos je Produkt
+  // einzeln, und nur fuer die, die wirklich gefragt werden.
+  const { data: scanZeilen, error: fehlerScans } = await db.from("Scan_Warteschlange")
+    .select('"Eintrag_ID","Produkt_ID","Erfasst_am"').in("Produkt_ID", ids)
+    .not("Fotos_Base64", "is", null).order("Erfasst_am", { ascending: false });
+  if (fehlerScans) return antworte({ ok: false, fehler: fehlerScans.message }, 500);
+  const zeilenJe = new Map<string, number[]>();
+  for (const s of scanZeilen ?? []) {
+    const pid = (s as any).Produkt_ID as string;
+    if (!zeilenJe.has(pid)) zeilenJe.set(pid, []);
+    zeilenJe.get(pid)!.push((s as any).Eintrag_ID as number);
   }
 
-  const offen = ids.filter((id: string) => (produktId ? true : !fertig.has(id)) && fotosJe.has(id)).slice(0, grenze);
+  // Neueste Scan-Zeile mit mindestens einem Foto; geladen wird je Zeile einzeln.
+  async function fotosLaden(pid: string): Promise<string[]> {
+    for (const eid of zeilenJe.get(pid) ?? []) {
+      const { data } = await db.from("Scan_Warteschlange").select('"Fotos_Base64"').eq("Eintrag_ID", eid).maybeSingle();
+      const f = Array.isArray((data as any)?.Fotos_Base64) ? (data as any).Fotos_Base64 : [];
+      if (f.length) return f;
+    }
+    return [];
+  }
+
+  const kandidatenOffen = ids.filter((id: string) => (produktId ? true : !fertig.has(id)) && zeilenJe.has(id));
   if (trockenlauf) {
-    return antworte({ ok: true, trockenlauf: true, kandidaten: ids.length, mit_fotos: fotosJe.size, schon_geprueft: fertig.size, wuerde_pruefen: offen });
+    return antworte({ ok: true, trockenlauf: true, kandidaten: ids.length, mit_scanzeile: zeilenJe.size, schon_geprueft: fertig.size, offen: kandidatenOffen.length, wuerde_pruefen: kandidatenOffen.slice(0, grenze) });
   }
 
   const faelle: unknown[] = [];
   let kostenSumme = 0;
-  for (const pid of offen) {
-    const fotos = fotosJe.get(pid) ?? [];
+  let angesehen = 0;
+  for (const pid of kandidatenOffen) {
+    if (faelle.length >= grenze || angesehen >= grenze * 3) break;
+    angesehen++;
+    const fotos = await fotosLaden(pid);
+    if (!fotos.length) continue; // nur leere Fotolisten - wie bisher nicht pruefbar
     const a = await frage(fotos, key, modell);
     const kosten = (a.inTok / 1e6) * preis.in + (a.outTok / 1e6) * preis.out;
     kostenSumme += kosten;
