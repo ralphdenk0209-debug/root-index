@@ -84,6 +84,19 @@ const CSS = `
 .fd .fd-k{background:#fff;color:var(--fd-dunkel);border:1px solid var(--fd-linie);border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
 .fd .fd-k.gruen{background:var(--fd-gruen);border-color:var(--fd-gruen);color:#fff}
 .fd .fd-k:disabled{opacity:.5;cursor:default}
+.fd .fd-ziele{width:100%;border-collapse:collapse;font-size:14px}
+.fd .fd-ziele th{font-size:12px;color:var(--fd-muted);font-weight:800;text-align:left;padding:6px;border-bottom:1px solid var(--fd-linie);white-space:nowrap}
+.fd .fd-ziele td{padding:8px 6px;border-bottom:1px solid #eef0ee;vertical-align:middle}
+.fd .fd-ziele td.z,.fd .fd-ziele th.z{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fd .fd-her{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:800;white-space:nowrap;margin-top:3px}
+.fd .fd-her.vorgabe{background:#133521;color:#fff} .fd .fd-her.profil{background:#e6effa;color:#1d4f91} .fd .fd-her.dge{background:#F3EEDC;color:#5b4a1e} .fd .fd-her.leer{background:#f1f1f1;color:#777}
+.fd .fd-ist{border-radius:8px;padding:2px 7px} .fd .fd-ist.ja{background:#DDEFE2} .fd .fd-ist.nein{background:#FCEBD3} .fd .fd-ist.ueber{background:#F8D7D0}
+.fd .fd-ziel-edit{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.fd .fd-ziel-zeile td{background:#F7F9F5}
+.fd .fd-ziel-edit select,.fd .fd-ziel-edit input{padding:6px 7px;border:1px solid var(--fd-linie);border-radius:8px;font:inherit;font-size:14px;background:#fff}
+.fd .fd-ziel-edit input{width:90px!important}
+.fd .fd-ziel-edit select{width:auto!important}
+.fd .fd-vg-form select{width:auto}
 .fd details summary{cursor:pointer;font-weight:800;color:var(--fd-dunkel);font-size:15px}
 .fd .fd-laden{color:var(--fd-muted);padding:30px 0;text-align:center}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
@@ -184,7 +197,7 @@ function mount(el, opt){
     if(!n){
       h += '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
            (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>';
-      h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
+      h += zieleKarte(d) + rezepteKarte(d) + planKarte(d);
       $in.innerHTML = h; binde(); return;
     }
     // Kacheln
@@ -198,6 +211,7 @@ function mount(el, opt){
       kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
       kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Ø-Werte je erfasstem Tag') +
     '</div></div>';
+    h += zieleKarte(d);
     if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
 
     if(st.modus!=='tag'){
@@ -215,7 +229,7 @@ function mount(el, opt){
     h += istSollKarte(d, is);
     h += produkteKarte(d);
     if(st.modus!=='tag' && n) h += '';
-    h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
+    h += rezepteKarte(d) + planKarte(d);
     $in.innerHTML = h;
     binde();
     const v = $in.querySelector('.fd-verlauf');
@@ -360,6 +374,38 @@ function mount(el, opt){
     return h + '</div>';
   }
 
+  /* Ziele der Person: vorbelegt aus Profil (Rechner der App) bzw. DGE-Orientierung, korrigierbar durch die Fachperson.
+     Grundlage ist das Ist-Soll des Servers (Vorrang: Vorgabe > Profilziel > Richtwert). */
+  const ZIELE = [['kcal','Kalorien','kcal'], ['protein','Eiweiß','g'], ['kh','Kohlenhydrate','g'], ['fett','Fett','g'],
+                 ['ballaststoffe','Ballaststoffe','g'], ['zucker','Zucker','g'], ['salz','Salz','g'],
+                 ['gruppe:gemuese','Gemüse','g'], ['gruppe:obst','Obst','g'], ['gruppe:gemuese+obst','Obst und Gemüse','g']];
+  const HERKUNFT = x => !x || x.soll==null ? ['kein Ziel', 'leer'] : x.soll_herkunft==='Vorgabe Therapeutin' ? ['eigene Vorgabe', 'vorgabe']
+                     : x.soll_herkunft==='Ziel im Profil' ? ['Profil / Rechner', 'profil'] : [/DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||'Richtwert'), 'dge'];
+  function zieleKarte(d){
+    const is = d.ist_soll || [];
+    const zeilen = ZIELE.map(z0 => {
+      const k = z0[0], x = is.find(y => y.kennzahl===k && y.einheit!=='en%'), her = HERKUNFT(x);
+      const soll = x && x.soll!=null ? Number(x.soll) : null, woche = x && x.bezug==='woche';
+      const ist = x && x.ist!=null ? z(x.ist, 0) + ' ' + z0[2] : '–';
+      const cls = !x || x.erfuellt==null ? '' : x.erfuellt ? 'ja' : (x.art==='hoechstens' ? 'ueber' : 'nein');
+      const sollTxt = soll==null ? '–' : (ART[x.art]||'') + ' ' + z(soll, 0) + ' ' + z0[2] + (woche ? ' je Woche' : '');
+      const edit = opt.nurLesen ? '' :
+        '<span class="fd-ziel-edit"><select data-z-art="' + k + '" aria-label="Art"><option value="mindestens"' + (x && x.art==='mindestens' ? ' selected' : '') + '>mind.</option>' +
+        '<option value="etwa"' + (x && x.art==='etwa' ? ' selected' : '') + '>etwa</option><option value="hoechstens"' + (x && x.art==='hoechstens' ? ' selected' : '') + '>höchstens</option></select>' +
+        '<input type="number" min="1" step="1" inputmode="decimal" data-z-wert="' + k + '" value="' + (soll!=null && !woche ? Math.round(soll) : '') + '" aria-label="Ziel ' + esc(z0[1]) + ' in ' + z0[2] + ' je Tag">' +
+        '<button class="fd-k gruen" type="button" data-z-los="' + k + '">Übernehmen</button>' +
+        (her[1]==='vorgabe' ? '<button class="fd-k" type="button" data-z-weg="' + k + '" title="Zurück auf Profil bzw. DGE">Zurücksetzen</button>' : '') + '</span>';
+      return '<tr><td><b>' + esc(z0[1]) + '</b><br><span class="fd-her ' + her[1] + '">' + esc(her[0]) + '</span>' + (x && x.hinweis && her[1]==='vorgabe' ? '<div class="fd-klein">' + esc(x.hinweis) + '</div>' : '') + '</td>' +
+        '<td class="z">' + esc(sollTxt) + '</td><td class="z"><span class="fd-ist ' + cls + '">' + ist + '</span></td>' +
+        (opt.nurLesen ? '' : '<td class="z"><button class="fd-k" type="button" data-z-auf="' + k + '">Ändern</button></td>') + '</tr>' +
+        (opt.nurLesen ? '' : '<tr class="fd-ziel-zeile" data-z-zeile="' + k + '" hidden><td colspan="4">' + edit + '</td></tr>');
+    }).join('');
+    return '<div class="fd-karte"><h2>Ziele</h2><div class="fd-klein">Vorbelegt aus dem Profil der Person (Angaben und Rechner der App) oder aus der DGE-Orientierung. ' +
+      (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : 'Jedes Ziel lässt sich hier korrigieren; die Korrektur gilt ab heute und hat Vorrang.') + '</div>' +
+      '<div style="overflow-x:auto;margin-top:8px"><table class="fd-ziele"><thead><tr><th>Ziel und Herkunft</th><th class="z">Soll je Tag</th><th class="z">Ist Ø</th>' + (opt.nurLesen ? '' : '<th></th>') + '</tr></thead><tbody>' + zeilen + '</tbody></table></div>' +
+      '<div class="fd-klein" data-z-m style="margin-top:6px"></div></div>';
+  }
+
   function vorgabenKarte(d){
     const v = d.vorgaben || [];
     const txt = x => (KZ[x.kennzahl] ? KZ[x.kennzahl][0] : x.kennzahl) + ' ' + (ART[x.art]||'') + ' ' + z(x.wert, 1) + ' ' + (x.einheit==='g/kg' ? 'g je kg Körpergewicht' : x.einheit) + ' je Tag';
@@ -407,6 +453,23 @@ function mount(el, opt){
   }
 
   function binde(){
+    $in.querySelectorAll('[data-z-auf]').forEach(b => b.onclick = () => {
+      const z = $in.querySelector('[data-z-zeile="' + b.dataset.zAuf + '"]'); z.hidden = !z.hidden;
+      if(!z.hidden){ const i = z.querySelector('input'); if(i) i.focus(); }
+    });
+    const zm = t => { const m = $in.querySelector('[data-z-m]'); if(m) m.textContent = t; };
+    $in.querySelectorAll('[data-z-los]').forEach(b => b.onclick = async () => {
+      const k = b.dataset.zLos, w = Number(String($in.querySelector('[data-z-wert="' + k + '"]').value).replace(',', '.')), a = $in.querySelector('[data-z-art="' + k + '"]').value;
+      if(!(w > 0)) return zm('Bitte einen Wert eintragen.');
+      b.disabled = true; zm('⏳ …');
+      try{ const r = await opt.vorgabeSetzen(k, w, a, null); if(r && r.ok === false){ b.disabled = false; return zm(r.grund || 'Ging nicht.'); } laden(); }
+      catch(e){ b.disabled = false; zm(e.message || String(e)); }
+    });
+    $in.querySelectorAll('[data-z-weg]').forEach(b => b.onclick = async () => {
+      if(!confirm('Eigene Vorgabe entfernen? Ab heute gilt wieder Profilziel bzw. DGE-Orientierung.')) return;
+      b.disabled = true;
+      try{ await opt.vorgabeSetzen(b.dataset.zWeg, null, null, null); laden(); } catch(e){ b.disabled = false; zm(e.message || String(e)); }
+    });
     $in.querySelectorAll('.fd-balken .s[data-tag]').forEach(s => s.onclick = () => { st.modus = 'tag'; st.anker = s.dataset.tag; laden(); });
     $in.querySelectorAll('[data-sort] button').forEach(b => b.onclick = () => { st.prodSort = b.dataset.s; zeichne(); });
     const alle = $in.querySelector('[data-alle]'); if(alle) alle.onclick = () => { st.prodAlle = true; zeichne(); };
