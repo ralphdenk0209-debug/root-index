@@ -12161,17 +12161,46 @@ var TELLER_SEG=[
   {k:'e', n:'Eiweiß',         col:'#c0583a', gruppen:['fleisch','fisch','eier','huelsenfruechte','milch']},
   {k:'k', n:'Kohlenhydrate',  col:'#d4a12c', gruppen:['vollkorn','getreide','kartoffeln']}
 ];
-function tbTellerSchluessel(items){
+/* Zeitraum (Ralph 11.11.: "Tag | Woche | Monat"): Woche = Montag bis Sonntag,
+   Monat = Kalendermonat - jeweils um den im Tagebuch eingestellten Tag. Woche und
+   Monat gibt es nur mit vollem Tagebuch (wie Statistik und alle Tage). */
+function tbTellerDarfZeitraum(){ return (typeof hasFeat==='function') && hasFeat('tagebuch'); }
+function tbTellerZeitraum(){
   var d=(document.getElementById('tbDatum')||{}).value||tbToday();
+  var r=window._tbTellerRaster||'tag';
+  if(r!=='tag' && !tbTellerDarfZeitraum()) r='tag';
+  var t=new Date(d+'T00:00:00'), von=d, bis=d;
+  var dm=function(x){ return x.getDate()+'.'+(x.getMonth()+1)+'.'; };
+  var label='Heute';
+  if(d!==tbToday()) label='Am '+dm(t);
+  if(r==='woche'){
+    var a=new Date(t); a.setDate(t.getDate()-((t.getDay()+6)%7));
+    var b=new Date(a); b.setDate(a.getDate()+6);
+    von=tbISO(a); bis=tbISO(b); label='In der Woche '+dm(a)+'–'+dm(b);
+  } else if(r==='monat'){
+    var a2=new Date(t.getFullYear(), t.getMonth(), 1), b2=new Date(t.getFullYear(), t.getMonth()+1, 0);
+    von=tbISO(a2); bis=tbISO(b2);
+    label='Im '+['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'][t.getMonth()];
+  }
+  return {raster:r, von:von, bis:bis, label:label};
+}
+function tbTellerRaster(r){
+  window._tbTellerRaster=r;
+  try{ var c=window._tbZielCache; if(c) renderZiel(c.s, c.ben); }catch(e){}
+}
+if(typeof window!=='undefined'){ window.tbTellerRaster=tbTellerRaster; }
+function tbTellerSchluessel(items){
+  var z=tbTellerZeitraum();
   var g=0; (items||[]).forEach(function(r){ g+=num(r.Menge_g)||0; });
-  return (TB_USER||'')+'|'+d+'|'+(items||[]).length+'|'+Math.round(g);
+  return (TB_USER||'')+'|'+z.von+'|'+z.bis+'|'+z.raster+'|'+(items||[]).length+'|'+Math.round(g);
 }
 function tbTellerLaden(schl){
   var c=window._tbTeller;
   if(c && c.schl===schl && (c.rows||c.laedt)) return;
   var p=schl.split('|');
   window._tbTeller={schl:schl, laedt:true};
-  Promise.resolve(client.rpc('cb_auswertung_gruppen',{p_benutzer:p[0], p_von:p[1], p_bis:p[1], p_raster:'tag'}))
+  /* 'gesamt' fasst den ganzen Zeitraum zu EINER Zeile je Gruppe zusammen. */
+  Promise.resolve(client.rpc('cb_auswertung_gruppen',{p_benutzer:p[0], p_von:p[1], p_bis:p[2], p_raster:(p[3]==='tag'?'tag':'gesamt')}))
     .then(function(res){
       if(!window._tbTeller || window._tbTeller.schl!==schl) return;
       window._tbTeller={schl:schl, rows:(res&&res.data)||null, err:(res&&res.error)?String(res.error.message||res.error):(!(res&&res.data)?'keine Daten':null)};
@@ -12182,8 +12211,9 @@ function tbTellerLaden(schl){
 function tbTellerRechnen(rows){
   var zu={}; TELLER_SEG.forEach(function(s){ s.gruppen.forEach(function(g){ zu[g]=s.k; }); });
   var seg=TELLER_SEG.map(function(s){ return {k:s.k, n:s.n, col:s.col, g:0, teile:[]}; });
-  var aus=[], ausG=0;
+  var aus=[], ausG=0, tage=null, erfasst=null;
   (rows||[]).forEach(function(r){
+    if(tage==null){ tage=num(r.tage); erfasst=num(r.tage_erfasst); }
     var g=num(r.gramm)||0; if(!(g>0)) return;
     var name=r.gruppe_name||r.gruppe;
     var k=zu[r.gruppe];
@@ -12192,7 +12222,7 @@ function tbTellerRechnen(rows){
   });
   var sum=seg.reduce(function(a,s){ return a+s.g; },0);
   seg.forEach(function(s){ s.p=sum>0?(s.g/sum*100):0; });
-  return {seg:seg, sum:sum, aus:aus, ausG:ausG};
+  return {seg:seg, sum:sum, aus:aus, ausG:ausG, tage:tage, erfasst:erfasst};
 }
 function tbTellerTorte(seg){
   var cx=60, cy=60, r=56, a=0, h='';
@@ -12209,22 +12239,34 @@ function tbTellerTorte(seg){
   });
   return '<svg viewBox="0 0 120 120" width="112" height="112" role="img" aria-label="Teller nach Gramm" style="flex:0 0 auto">'+h+'</svg>';
 }
+function tbTellerUmschalter(z){
+  if(!tbTellerDarfZeitraum()) return '';
+  return '<div role="group" aria-label="Zeitraum" style="display:inline-flex;gap:0;border:1px solid var(--tb-line);border-radius:99px;overflow:hidden;margin-bottom:12px;font-size:12px;font-weight:500">'
+    +[['tag','Tag'],['woche','Woche'],['monat','Monat']].map(function(o){
+      var an=(o[0]===z.raster);
+      return '<button onclick="tbTellerRaster(\''+o[0]+'\')" aria-pressed="'+an+'" style="border:0;padding:5px 13px;cursor:pointer;font-family:inherit;font-size:12px;background:'
+        +(an?'var(--k-1d3c24,#1d3c24)':'transparent')+';color:'+(an?'var(--k-ffffff,#fff)':'var(--tb-muted)')+'">'+o[1]+'</button>';
+    }).join('')+'</div>';
+}
 function tbTellerHtml(items){
+  var z=tbTellerZeitraum();
   var schl=tbTellerSchluessel(items);
   var c=window._tbTeller;
   if(!c || c.schl!==schl){ tbTellerLaden(schl); c=window._tbTeller; }
-  if(c.laedt) return '<span style="color:var(--tb-muted)">Teller wird berechnet …</span>';
-  if(!c.rows) return '<span style="color:var(--tb-muted)">Der Teller lässt sich gerade nicht berechnen.</span>';
+  var kopfZ=tbTellerUmschalter(z);
+  if(c.laedt) return kopfZ+'<div style="color:var(--tb-muted)">Teller wird berechnet …</div>';
+  if(!c.rows) return kopfZ+'<div style="color:var(--tb-muted)">Der Teller lässt sich gerade nicht berechnen.</div>';
   var t=tbTellerRechnen(c.rows);
   var gtxt=function(g){ return Math.round(g)+' g'; };
   var quelle='<div style="font-size:10.5px;font-weight:400;color:var(--tb-muted);line-height:1.45;margin-top:10px">'
     +'Strich = <a href="https://fet-ev.eu/tellermodell/" target="_blank" rel="noopener" style="color:var(--green)">FET-Tellermodell</a>'
     +' (etwa ½ Gemüse und Obst, ¼ Eiweiß, ¼ Kohlenhydrate) — Orientierung je Mahlzeit, nach Tellerfläche gedacht, nicht nach Gramm.</div>';
-  if(!(t.sum>0)) return 'Heute ist noch nichts aus Gemüse, Obst, Eiweiß oder Kohlenhydraten erfasst.'+quelle;
+  if(!(t.sum>0)) return kopfZ+z.label+' ist noch nichts aus Gemüse, Obst, Eiweiß oder Kohlenhydraten erfasst.'+quelle;
+  var tageTxt=(z.raster!=='tag' && t.tage!=null)?(', an '+t.erfasst+' von '+t.tage+' Tagen erfasst'):'';
   var s=t.seg;
   var kopf='<div style="display:flex;gap:14px;align-items:center;font-size:15px">'+tbTellerTorte(s)
-    +'<div style="min-width:0">Heute <b>'+Math.round(s[0].p)+' %</b> Gemüse und Obst, <b>'+Math.round(s[1].p)+' %</b> Eiweiß, <b>'
-    +Math.round(s[2].p)+' %</b> Kohlenhydrate <span style="color:var(--tb-muted);font-weight:400">— nach Gramm, '+gtxt(t.sum)+' auf dem Teller.</span></div></div>';
+    +'<div style="min-width:0">'+z.label+' <b>'+Math.round(s[0].p)+' %</b> Gemüse und Obst, <b>'+Math.round(s[1].p)+' %</b> Eiweiß, <b>'
+    +Math.round(s[2].p)+' %</b> Kohlenhydrate <span style="color:var(--tb-muted);font-weight:400">— nach Gramm, '+gtxt(t.sum)+' auf dem Teller'+tageTxt+'.</span></div></div>';
   var balken=s.map(function(x){
     var fet=TELLER_FET[x.k];
     return '<div style="margin-top:16px">'
@@ -12245,7 +12287,7 @@ function tbTellerHtml(items){
          +t.aus.map(function(q){ return esc(q.n)+' '+gtxt(q.g); }).join(', ')+'. Nicht in der Torte.')
       : 'Außerhalb des Tellers: nichts.')
     +'</div>';
-  return kopf+balken+aus+quelle;
+  return kopfZ+kopf+balken+aus+quelle;
 }
 function tbSatzWahl(k){
   window._tbSatzKey=k;
@@ -18341,7 +18383,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-11-02";
+const APP_BUILD="2026-11-11-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
