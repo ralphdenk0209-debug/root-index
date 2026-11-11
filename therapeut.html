@@ -71,6 +71,8 @@
   .filter{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 2px}
   .filter button{border:1px solid var(--linie);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;cursor:pointer;color:var(--muted)}
   .filter button.an{background:var(--dunkel);border-color:var(--dunkel);color:#fff}
+  .vertrag{background:var(--creme);border-radius:12px;padding:12px 14px;font-size:15px;max-height:340px;overflow:auto}
+  .vertrag p{margin:0 0 8px;color:var(--text);font-size:15px}
   .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
@@ -129,6 +131,18 @@
     </div>
   </section>
 
+  <!-- Verschwiegenheitsvereinbarung Root Index <-> Fachperson (Pflicht, je Version) -->
+  <section id="bVertrag" hidden>
+    <div class="karte">
+      <h2 id="vertragTitel">Verschwiegenheitsvereinbarung</h2>
+      <p>Bevor du loslegst, bestätige bitte die Vereinbarung zwischen dir und Root Index.</p>
+      <div class="vertrag" id="vertragText"></div>
+      <label class="check"><input type="checkbox" id="vertragOk"><span>Ich habe die Vereinbarung gelesen und stimme ihr zu.</span></label>
+      <button class="knopf" id="vertragLos" type="button">Bestätigen und weiter</button>
+      <div class="meld" id="meldVertrag"></div>
+    </div>
+  </section>
+
   <!-- Fachperson -->
   <section id="bHaupt" hidden>
     <h1 id="hName">–</h1>
@@ -161,10 +175,10 @@
       <h2>Diesen Monat</h2>
       <div class="zahlen">
         <div class="zahl"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
-        <div class="zahl"><b id="zTage">–</b><span>Key-Tage bisher</span></div>
+        <div class="zahl"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
         <div class="zahl"><b id="zNeu">–</b><span>neu eingelöst</span></div>
       </div>
-      <p style="margin:10px 0 0;font-size:13px">Zählung als Grundlage der monatlichen Abrechnung. Laufende Keys zählen bis heute.</p>
+      <p style="margin:10px 0 0;font-size:13px" id="zRegel">Grundlage der monatlichen Abrechnung.</p>
     </div>
 
     <div class="karte">
@@ -194,8 +208,8 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
 const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
 const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
-const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bHaupt'];
-function zeige(id){ BEREICHE.forEach(b => $(b).hidden = (b!==id)); $('abmelden').hidden = !['bWartet','bHaupt'].includes(id); }
+const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bHaupt'];
+function zeige(id){ BEREICHE.forEach(b => $(b).hidden = (b!==id)); $('abmelden').hidden = !['bWartet','bVertrag','bHaupt'].includes(id); }
 function meld(el, t, art){ const m=$(el); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
 let ICH = null, KEYS = [], FILTER = 'aktiv', modus = 'an';
 
@@ -280,6 +294,12 @@ async function start(){
   if(error){ zeige('bLogin'); meld('meldLogin','Fehler: ' + error.message,'fehler'); return; }
   if(!d.fachperson){ $('wartetMail').textContent = d.email || session.user.email || ''; zeige('bWartet'); return; }
   ICH = d;
+  if(!d.vertrag_ok){
+    $('vertragTitel').textContent = d.vertrag_titel || 'Verschwiegenheitsvereinbarung';
+    $('vertragText').innerHTML = String(d.vertrag_text||'').split(/\n\s*\n/).map(x => '<p>' + esc(x) + '</p>').join('');
+    $('vertragOk').checked = false; meld('meldVertrag','');
+    zeige('bVertrag'); return;
+  }
   $('hName').textContent = d.name;
   $('hPraxis').textContent = [d.praxis, d.email].filter(Boolean).join(' · ');
   $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
@@ -292,8 +312,23 @@ async function ladeZahlen(){
   const {data, error} = await client.rpc('cb_fp_abrechnung', {p_monat: null});
   if(error) return;
   const d = json(data);
-  $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zTage').textContent = d.key_tage ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
+  const euro = c => (Number(c||0)/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
+  $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
+  $('zBetrag').textContent = d.betrag_cent==null ? '–' : euro(d.betrag_cent);
+  $('zRegel').textContent = (d.abrechnung==='tag'
+      ? 'Abrechnung tagesgenau: ' + euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage).'
+      : 'Abrechnung: ' + euro(d.preis_cent) + ' je Key und Monat. Jeder angefangene Monat zählt voll.') + ' Grundlage der monatlichen Rechnung, Stand heute.';
 }
+
+$('vertragLos').onclick = async function(){
+  if(!$('vertragOk').checked) return meld('meldVertrag','Bitte das Häkchen setzen.','fehler');
+  this.disabled = true;
+  const {data, error} = await client.rpc('cb_fp_vertrag_bestaetigen', { p_version: ICH && ICH.vertrag_version });
+  this.disabled = false;
+  const d = json(data);
+  if(error || !d.ok) return meld('meldVertrag', error ? error.message : d.grund, 'fehler');
+  start();
+};
 
 /* ---------- Key anlegen ---------- */
 $('anlegen').onclick = async function(){
@@ -340,11 +375,12 @@ function zeichne(){
     if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.';
     else if(k.status==='laeuft') info = 'Seit ' + datum(k.start_am) + ', läuft bis <b>' + datum(k.laeuft_bis) + '</b> (noch ' + restTage(k.laeuft_bis) + ' Tage).';
     else if(k.status==='abgelaufen') info = 'Lief vom ' + datum(k.start_am) + ' bis ' + datum(k.laeuft_bis) + '.';
-    else info = 'Beendet am ' + datum(k.beendet_am) + (k.start_am ? ' (eingelöst am ' + datum(k.start_am) + ')' : ' (nie eingelöst)') + '.';
+    else info = 'Beendet am ' + datum(k.beendet_am) + (k.start_am ? ' (eingelöst am ' + datum(k.start_am) + ')' : ' (nie eingelöst)') + '.' +
+      (k.beendet_grund==='wechsel' ? ' Die Person ist zu einer anderen Fachperson gewechselt.' : k.beendet_grund==='admin' ? ' Beendet durch Root Index.' : '');
     let klient = '';
     if(k.status!=='offen'){
-      klient = '<div class="key-info">' + (k.klient_name ? 'Klient/in: <b>' + esc(k.klient_name) + '</b>' + (k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
-        (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, siehst du keine Daten.')) + '</div>';
+      klient = '<div class="key-info">' + (k.klient_name ? 'Klient/in: <b>' + esc(k.klient_name) + '</b>' + (k.aeltere_freigegeben ? ' · alle Einträge freigegeben' : k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
+        (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, siehst du keine Daten.' + (k.status==='laeuft' && !k.besprochen ? ' Die Bestätigung „über Verschwiegenheit gesprochen“ fehlt noch.' : ''))) + '</div>';
     }
     const aktiv = k.status==='offen' || k.status==='laeuft' || k.status==='abgelaufen';
     const aktionen = k.status==='beendet' ? '' :

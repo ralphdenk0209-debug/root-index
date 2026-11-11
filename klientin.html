@@ -181,10 +181,15 @@ $('appleLos').onclick = async function(){
   if(error){ this.disabled = false; meld('Fehler: ' + error.message, 'fehler'); }
 };
 
-async function einloesen(session){
+async function einloesen(session, wechsel){
   if(!code){ zeige('bereichFehler'); $('fehlerText').textContent='In deinem Link fehlt der Code.'; return; }
-  const {data, error} = await client.rpc('cb_gratis_code_einloesen', {p_code: code});
+  const {data, error} = await client.rpc('cb_gratis_code_einloesen', {p_code: code, p_wechsel: !!wechsel});
   const d = (typeof data==='string') ? JSON.parse(data) : (data||{});
+  /* Ein Klient hat immer nur EINE Fachperson: Wechsel ausdruecklich bestaetigen */
+  if(!error && d.wechsel_noetig){
+    if(confirm(d.grund + ' ' + d.bisherige_fachperson + ' sieht danach nichts mehr von dir. Wechseln?')) return einloesen(session, true);
+    zeige('bereichFehler'); $('fehlerText').textContent = 'Nicht gewechselt. Du bleibst bei ' + d.bisherige_fachperson + '.'; return;
+  }
   if(error || !d.ok){
     const g = error ? error.message : (d.grund||'Unbekannter Fehler.');
     if(/schon eingelöst/i.test(g)){ fertig(session, null); return; }
@@ -219,7 +224,7 @@ async function ladeFachleute(nurVerwalten){
     $('fachleuteListe').innerHTML = FP.map((f, i) => {
       const wer = '<b>' + esc(f.fachperson) + '</b>' + (f.praxis ? ' (' + esc(f.praxis) + ')' : '');
       if(f.einwilligung_aktiv){
-        return '<div class="fp">✅ ' + wer + ' darf deine Einträge ab dem ' + tag(f.daten_ab) + ' sehen' +
+        return '<div class="fp">✅ ' + wer + ' darf ' + (f.aeltere_freigegeben ? 'alle deine Einträge' : 'deine Einträge ab dem ' + tag(f.daten_ab)) + ' sehen' +
           (f.laeuft ? ' – solange dein Code läuft (bis ' + tag(f.laeuft_bis) + ').' : '. Dein Code ist nicht mehr aktiv, deshalb sieht die Fachperson gerade nichts.') +
           '<button class="knopf zwei" type="button" data-widerruf="' + i + '">Einwilligung widerrufen</button></div>';
       }
@@ -227,13 +232,22 @@ async function ladeFachleute(nurVerwalten){
         return '<div class="fp">' + wer + ': Dein Code ist nicht mehr aktiv. Die Fachperson sieht nichts.' + (f.widerruf_am ? ' Du hast am ' + tag(f.widerruf_am) + ' widerrufen.' : '') + '</div>';
       }
       const absaetze = String(f.text||'').split(/\n\s*\n/).map(x => '<p>' + esc(x) + '</p>').join('');
-      return '<div class="fp">' + (f.widerruf_am ? '<p style="margin:0 0 8px">Du hast am ' + tag(f.widerruf_am) + ' widerrufen. ' + wer + ' sieht nichts. Du kannst neu einwilligen:</p>' : '<p style="margin:0 0 8px">Dein Code ist von ' + wer + '. Darf diese Fachperson deine Einträge sehen?</p>') +
+      const kopf = f.widerruf_am ? '<p style="margin:0 0 8px">Du hast am ' + tag(f.widerruf_am) + ' widerrufen. ' + wer + ' sieht nichts. Du kannst neu einwilligen:</p>'
+                                 : '<p style="margin:0 0 8px">Dein Code ist von ' + wer + '.</p>';
+      const besprochen = f.besprochen_am
+        ? '<p style="margin:0 0 10px;font-size:14px">✓ Bestätigt am ' + tag(f.besprochen_am) + ': ' + esc(f.text_besprochen) + '</p>'
+        : '<label class="check" style="margin:0 0 12px"><input type="checkbox" data-besprochen="' + i + '"><span><b>Pflicht:</b> ' + esc(f.text_besprochen) + '</span></label>';
+      return '<div class="fp">' + kopf + besprochen +
+        '<p style="margin:0 0 6px"><b>Darf diese Fachperson deine Einträge sehen?</b> (freiwillig)</p>' +
         '<div class="einw-text">' + absaetze + '</div>' +
-        '<label class="check"><input type="checkbox" data-besprochen="' + i + '"><span>Ich habe mit ' + esc(f.fachperson) + ' über die Verschwiegenheit gesprochen.</span></label>' +
         '<label class="check"><input type="checkbox" data-einw="' + i + '"><span>Ich willige wie oben beschrieben ein.</span></label>' +
-        '<button class="knopf" type="button" data-einwilligen="' + i + '">Einwilligen</button>' +
-        '<p style="margin:8px 0 0;font-size:13px">Du kannst das auch später tun – öffne dazu wieder root-index.de/klientin.html.</p></div>';
+        '<label class="check"><input type="checkbox" data-aeltere="' + i + '"><span>' + esc(f.text_aeltere) + ' <span style="color:var(--muted)">(freiwillig)</span></span></label>' +
+        '<button class="knopf" type="button" data-einwilligen="' + i + '">Speichern</button>' +
+        '<p style="margin:8px 0 0;font-size:13px">Du kannst die Einwilligung auch später geben oder jederzeit widerrufen – öffne dazu wieder root-index.de/klientin.html.</p></div>';
     }).join('');
+  }
+  if(d.eigenes_abo && FP.some(f => f.laeuft)){
+    $('fachleuteListe').insertAdjacentHTML('beforeend', '<div class="hinweis">Du hast zusätzlich ein eigenes Premium-Abo. Solange dein Code läuft, brauchst du es nicht. Es läuft aber weiter, bis du es selbst kündigst – dort, wo du es abgeschlossen hast (App Store oder Root-Index-Konto).</div>');
   }
   $('bereichFachleute').hidden = false;
 }
@@ -245,10 +259,13 @@ $('fachleuteListe').addEventListener('click', async e => {
   let r;
   if(bE){
     const i = bE.dataset.einwilligen;
-    const besprochen = document.querySelector('[data-besprochen="' + i + '"]').checked, einw = document.querySelector('[data-einw="' + i + '"]').checked;
-    if(!besprochen || !einw){ m.className = 'meld fehler'; m.textContent = 'Bitte beide Häkchen setzen – oder einfach später entscheiden.'; return; }
+    const hb = document.querySelector('[data-besprochen="' + i + '"]');
+    const besprochen = !!f.besprochen_am || (hb && hb.checked);
+    const einw = document.querySelector('[data-einw="' + i + '"]').checked, aeltere = document.querySelector('[data-aeltere="' + i + '"]').checked;
+    if(!besprochen){ m.className = 'meld fehler'; m.textContent = 'Bitte zuerst bestätigen, dass du über die Verschwiegenheit gesprochen hast.'; return; }
+    if(aeltere && !einw){ m.className = 'meld fehler'; m.textContent = 'Ältere Einträge gehen nur zusammen mit der Einwilligung.'; return; }
     bE.disabled = true;
-    r = await client.rpc('cb_fachperson_einwilligen', { p_code: f.code, p_verschwiegenheit_besprochen: true, p_version: f.text_version });
+    r = await client.rpc('cb_fachperson_einwilligen', { p_code: f.code, p_besprochen: true, p_einwilligen: einw, p_aeltere: aeltere, p_version: f.text_version });
   } else {
     if(!confirm('Einwilligung für ' + f.fachperson + ' widerrufen? Sie sieht ab sofort nichts mehr. Premium bleibt.')) return;
     bW.disabled = true;
@@ -256,7 +273,7 @@ $('fachleuteListe').addEventListener('click', async e => {
   }
   const d = (typeof r.data==='string') ? JSON.parse(r.data) : (r.data||{});
   if(r.error || !d.ok){ (bE||bW).disabled = false; m.className = 'meld fehler'; m.textContent = r.error ? r.error.message : (d.grund||'Fehler.'); return; }
-  m.className = 'meld ok'; m.textContent = bE ? '✓ Einwilligung gespeichert.' : '✓ Widerrufen. Die Fachperson sieht nichts mehr.';
+  m.className = 'meld ok'; m.textContent = bE ? (d.eingewilligt ? '✓ Einwilligung gespeichert.' : '✓ Bestätigung gespeichert. Ohne Einwilligung sieht die Fachperson nichts.') : '✓ Widerrufen. Die Fachperson sieht nichts mehr.';
   ladeFachleute(true);
 });
 /* Angemeldet ohne Code: nur verwalten */
