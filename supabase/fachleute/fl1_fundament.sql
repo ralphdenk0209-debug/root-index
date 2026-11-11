@@ -4,7 +4,9 @@
 -- Fachperson, Klienten-Keys mit Laufzeit, Bindung Klient -> Fachperson
 -- (immer nur EINE, Uebertrag moeglich) mit Bestaetigung + Einwilligung
 -- (Art. 9 DSGVO), Zugriffsschicht fuer FL-4, Abrechnungsgrundlage,
--- Kennzeichen "ehemaliger Klient" fuer das 3,99-Angebot.
+-- Kennzeichen "ehemaliger Klient" fuer das 3,99-Angebot (App-Store-
+-- Angebotscodes aus hochgeladener Liste), Lizenzart je Fachperson
+-- (Gruenderinnen gratis, spaeter bezahlte Lizenz; Preise entscheidet Ralph).
 --
 -- Ralph-Entscheide 11.11.: 4,99 EUR je Key und Monat, jeder angefangene
 -- Kalendermonat zaehlt voll (umschaltbar: fachleute_einstellung.abrechnung
@@ -40,6 +42,12 @@ create table if not exists public.fachperson (
   aktiv boolean not null default true,
   seit timestamptz not null default now(),
   vereinbarung_bestaetigt_am timestamptz,   -- "Verschwiegenheit mit Klienten vereinbart und erfuellt", Pflicht beim ersten Key
+  -- Lizenz (Ralph 11.11.): die ersten 4-6 sind Gruenderinnen mit lebenslangem Gratis-Zugang,
+  -- spaetere zahlen eine Lizenz. Preis/Stufen entscheidet Ralph; abgerechnet ueber denselben Weg wie die Keys.
+  lizenz_art text not null default 'lizenz_bezahlt' check (lizenz_art in ('gruenderin_gratis','lizenz_bezahlt')),
+  lizenz_bis timestamptz,                   -- nur lizenz_bezahlt: bezahlt bis (null = noch offen/unbefristet)
+  lizenz_preis_cent integer check (lizenz_preis_cent is null or lizenz_preis_cent >= 0),
+  lizenz_intervall text check (lizenz_intervall is null or lizenz_intervall in ('monat','jahr')),
   notiz text
 );
 alter table public.fachperson enable row level security;
@@ -149,13 +157,21 @@ returns boolean language sql stable security definer set search_path to 'public'
                   where v.auth_id = p_auth and v.version = public._fp_vertrag_aktuell());
 $$;
 
--- Angemeldete Fachperson: aktiv UND aktueller Vertrag bestaetigt, sonst Fehler
+-- Lizenz gueltig? Gruenderin immer; bezahlte Lizenz bis lizenz_bis (null = offen)
+create or replace function public._fp_lizenz_ok(p_auth uuid)
+returns boolean language sql stable security definer set search_path to 'public' as $$
+  select exists (select 1 from public.fachperson f where f.auth_id = p_auth and f.aktiv
+                    and (f.lizenz_art = 'gruenderin_gratis' or f.lizenz_bis is null or f.lizenz_bis > now()));
+$$;
+
+-- Angemeldete Fachperson: aktiv, Lizenz gueltig UND aktueller Vertrag bestaetigt, sonst Fehler
 create or replace function public._fp_ich() returns public.fachperson
 language plpgsql stable security definer set search_path to 'public' as $$
 declare v public.fachperson;
 begin
   select * into v from public.fachperson where auth_id = auth.uid() and aktiv;
   if v.auth_id is null then raise exception 'Nur für freigeschaltete Fachleute.' using errcode = '42501'; end if;
+  if not public._fp_lizenz_ok(v.auth_id) then raise exception 'Deine Lizenz ist abgelaufen. Bitte melde dich bei Root Index.' using errcode = '42501'; end if;
   if not public._fp_vertrag_ok(v.auth_id) then raise exception 'Bitte zuerst die Verschwiegenheitsvereinbarung bestätigen.' using errcode = '42501'; end if;
   return v;
 end $$;
@@ -176,13 +192,14 @@ begin
    where g.code = upper(trim(p_code))
      and g.fachperson_auth = v_uid
      and public._fp_vertrag_ok(v_uid)
+     and public._fp_lizenz_ok(v_uid)
      and public._fp_key_laeuft(g)
      and e.einwilligung_am is not null and e.widerruf_am is null
    limit 1;
   if benutzer_id is null then raise exception 'Kein Zugriff auf diesen Klienten.' using errcode = '42501'; end if;
 end $$;
 
--- Premium: Fachperson lebenslang (solange aktiv), Klient solange sein Key laeuft
+-- Premium: Fachperson solange aktiv mit gueltiger Lizenz (Gruenderin lebenslang), Klient solange sein Key laeuft
 create or replace function public.cb_ist_premium(p_auth uuid)
 returns boolean language sql stable security definer set search_path to 'public' as $$
   select coalesce((
@@ -191,7 +208,8 @@ returns boolean language sql stable security definer set search_path to 'public'
         or coalesce(b.subscription_status = 'active', false)
         or coalesce(b.subscription_status = 'trialing' and b.trial_bis > now(), false)
       from public."Benutzer" b where b.auth_id = p_auth limit 1), false)
-  or exists (select 1 from public.fachperson f where f.auth_id = p_auth and f.aktiv)
+  or exists (select 1 from public.fachperson f where f.auth_id = p_auth and f.aktiv
+               and (f.lizenz_art = 'gruenderin_gratis' or f.lizenz_bis is null or f.lizenz_bis > now()))
   or exists (select 1 from public.gratis_code g
               where g.klient_auth = p_auth and g.fachperson_auth is not null
                 and g.beendet_am is null and g.laeuft_bis > now());
@@ -389,6 +407,7 @@ begin
   select * into t from public.fachperson_vertrag_text where version = public._fp_vertrag_aktuell();
   return jsonb_build_object('fachperson',true,'angemeldet',true,'name',v.name,'praxis',v.praxis,'kuerzel',v.kuerzel,'email',v_mail,
     'vereinbarung_bestaetigt_am',v.vereinbarung_bestaetigt_am,
+    'lizenz_art',v.lizenz_art,'lizenz_bis',v.lizenz_bis,'lizenz_ok',public._fp_lizenz_ok(v.auth_id),
     'vertrag_ok', public._fp_vertrag_ok(v.auth_id),
     'vertrag_version', t.version, 'vertrag_titel', t.titel,
     'vertrag_text', case when not public._fp_vertrag_ok(v.auth_id) then t.text end,
@@ -545,7 +564,8 @@ $$;
 -- Key-Tage (Modell "tag"), neu eingeloeste Keys, Betrag nach Einstellung.
 create or replace function public._fp_abrechnung(p_fp uuid, p_monat date)
 returns table(fachperson_auth uuid, monat date, keys_aktiv integer, key_tage integer, keys_neu integer,
-              abrechnung text, preis_cent integer, betrag_cent integer)
+              abrechnung text, preis_cent integer, betrag_cent integer,
+              lizenz_art text, lizenz_preis_cent integer, lizenz_intervall text, lizenz_bis timestamptz)
 language sql stable security definer set search_path to 'public' as $$
   with m as (select date_trunc('month', coalesce(p_monat, (now() at time zone 'Europe/Berlin')::date))::date monat),
   e as (select coalesce((select wert from public.fachleute_einstellung where schluessel='abrechnung'),'monat') art,
@@ -568,8 +588,9 @@ language sql stable security definer set search_path to 'public' as $$
   select z.auth_id, z.monat, z.aktiv, z.tage, z.neu, e.art, e.preis,
          case when e.art = 'tag'
               then round(z.tage * e.preis::numeric / extract(day from (z.monat + interval '1 month' - interval '1 day')))::int
-              else z.aktiv * e.preis end
-    from z cross join e;
+              else z.aktiv * e.preis end,
+         f.lizenz_art, f.lizenz_preis_cent, f.lizenz_intervall, f.lizenz_bis
+    from z cross join e join public.fachperson f on f.auth_id = z.auth_id;
 $$;
 
 create or replace function public.cb_fp_abrechnung(p_monat date default null)
@@ -578,12 +599,65 @@ declare v public.fachperson := public._fp_ich(); r record;
 begin
   select * into r from public._fp_abrechnung(v.auth_id, p_monat);
   return jsonb_build_object('monat', r.monat, 'keys_aktiv', r.keys_aktiv, 'key_tage', r.key_tage, 'keys_neu', r.keys_neu,
-                            'abrechnung', r.abrechnung, 'preis_cent', r.preis_cent, 'betrag_cent', r.betrag_cent);
+                            'abrechnung', r.abrechnung, 'preis_cent', r.preis_cent, 'betrag_cent', r.betrag_cent,
+                            'lizenz_art', r.lizenz_art);
+end $$;
+
+-- 9b) Anschluss-Angebot fuer ehemalige Klienten ---------------------------
+-- App Store Connect: Angebotscode "Therapie-Anschluss 3,99" (3,99 EUR/Monat
+-- fuer 12 Monate, danach 4,99; nur DE). Ralph laedt Einmalcodes hoch, jeder
+-- ehemalige Klient bekommt hoechstens EINEN (bleibt ihm fest zugeordnet).
+create table if not exists public.angebot_code (
+  code text primary key,
+  art text not null default 'therapie_anschluss_399',
+  hochgeladen_am timestamptz not null default now(),
+  vergeben_an uuid references auth.users(id) on delete set null,
+  vergeben_am timestamptz
+);
+alter table public.angebot_code enable row level security;
+revoke all on public.angebot_code from anon, authenticated;
+create unique index if not exists angebot_code_einmal_je_nutzer on public.angebot_code(art, vergeben_an) where vergeben_an is not null;
+
+create or replace function public.cb_mein_anschluss_angebot()
+returns jsonb language plpgsql security definer set search_path to 'public' as $$
+declare v_uid uuid := auth.uid(); s jsonb; v_code text;
+begin
+  if v_uid is null then return jsonb_build_object('ok',false,'grund','Bitte zuerst anmelden.'); end if;
+  s := public.cb_klient_status();
+  -- schon vergeben? dann immer denselben zeigen
+  select code into v_code from public.angebot_code where art = 'therapie_anschluss_399' and vergeben_an = v_uid;
+  if v_code is null then
+    if not coalesce((s->>'ehemaliger_klient')::boolean,false) then return jsonb_build_object('ok',true,'angebot',false); end if;
+    if coalesce((s->>'eigenes_abo')::boolean,false) then return jsonb_build_object('ok',true,'angebot',false,'grund','eigenes_abo'); end if;
+    perform pg_advisory_xact_lock(hashtext('angebot:' || v_uid::text));
+    select code into v_code from public.angebot_code where art = 'therapie_anschluss_399' and vergeben_an is null
+     order by hochgeladen_am, code limit 1 for update skip locked;
+    if v_code is null then return jsonb_build_object('ok',true,'angebot',true,'code',null,'grund','Zurzeit kein Code verfügbar.'); end if;
+    update public.angebot_code set vergeben_an = v_uid, vergeben_am = now() where code = v_code;
+  end if;
+  return jsonb_build_object('ok',true,'angebot',true,'code',v_code,'preis','3,99 € im Monat für 12 Monate, danach 4,99 €',
+    'apple_url','https://apps.apple.com/redeem?ctx=offercodes&id=6818112011&code=' || v_code);
+end $$;
+
+create or replace function public.cb_admin_angebot_codes_hochladen(p_codes text[], p_art text default 'therapie_anschluss_399')
+returns jsonb language plpgsql security definer set search_path to 'public' as $$
+declare n int;
+begin
+  if not public.cb_ist_admin() then raise exception 'Nur Admins.' using errcode = '42501'; end if;
+  insert into public.angebot_code(code, art)
+  select distinct upper(trim(c)), p_art from unnest(p_codes) c where trim(coalesce(c,'')) <> ''
+  on conflict (code) do nothing;
+  get diagnostics n = row_count;
+  return jsonb_build_object('ok',true,'neu',n,
+    'frei',(select count(*) from public.angebot_code where art = p_art and vergeben_an is null),
+    'vergeben',(select count(*) from public.angebot_code where art = p_art and vergeben_an is not null));
 end $$;
 
 -- 10) Admin -------------------------------------------------------------
 create or replace function public.cb_admin_fachperson_setzen(p_email text, p_name text default null, p_kuerzel text default null,
-                                                             p_praxis text default null, p_aktiv boolean default true)
+                                                             p_praxis text default null, p_aktiv boolean default true,
+                                                             p_lizenz_art text default null, p_lizenz_bis timestamptz default null,
+                                                             p_lizenz_preis_cent integer default null, p_lizenz_intervall text default null)
 returns jsonb language plpgsql security definer set search_path to 'public', 'auth' as $$
 declare v_uid uuid; v_alt public.fachperson; v_kz text := upper(regexp_replace(coalesce(p_kuerzel,''),'[^A-Za-z0-9]','','g'));
 begin
@@ -593,11 +667,16 @@ begin
   select * into v_alt from public.fachperson where auth_id = v_uid;
   if v_alt.auth_id is null then
     if coalesce(p_name,'') = '' or v_kz = '' then return jsonb_build_object('ok',false,'grund','Name und Kürzel nötig.'); end if;
-    insert into public.fachperson(auth_id, name, praxis, kuerzel, aktiv) values (v_uid, trim(p_name), nullif(trim(coalesce(p_praxis,'')),''), v_kz, coalesce(p_aktiv,true));
+    if p_lizenz_art is null then return jsonb_build_object('ok',false,'grund','Lizenzart nötig: gruenderin_gratis oder lizenz_bezahlt.'); end if;
+    insert into public.fachperson(auth_id, name, praxis, kuerzel, aktiv, lizenz_art, lizenz_bis, lizenz_preis_cent, lizenz_intervall)
+    values (v_uid, trim(p_name), nullif(trim(coalesce(p_praxis,'')),''), v_kz, coalesce(p_aktiv,true),
+            p_lizenz_art, p_lizenz_bis, p_lizenz_preis_cent, p_lizenz_intervall);
   else
     update public.fachperson set name = coalesce(nullif(trim(coalesce(p_name,'')),''), name),
            praxis = coalesce(nullif(trim(coalesce(p_praxis,'')),''), praxis),
-           kuerzel = coalesce(nullif(v_kz,''), kuerzel), aktiv = coalesce(p_aktiv, aktiv)
+           kuerzel = coalesce(nullif(v_kz,''), kuerzel), aktiv = coalesce(p_aktiv, aktiv),
+           lizenz_art = coalesce(p_lizenz_art, lizenz_art), lizenz_bis = coalesce(p_lizenz_bis, lizenz_bis),
+           lizenz_preis_cent = coalesce(p_lizenz_preis_cent, lizenz_preis_cent), lizenz_intervall = coalesce(p_lizenz_intervall, lizenz_intervall)
      where auth_id = v_uid;
   end if;
   if p_aktiv = false then
@@ -619,6 +698,7 @@ begin
              'vertrag_ok', public._fp_vertrag_ok(f.auth_id),
              'monat',a.monat,'keys_aktiv',a.keys_aktiv,'key_tage',a.key_tage,'keys_neu',a.keys_neu,
              'abrechnung',a.abrechnung,'betrag_cent',a.betrag_cent,
+             'lizenz_art',a.lizenz_art,'lizenz_preis_cent',a.lizenz_preis_cent,'lizenz_intervall',a.lizenz_intervall,'lizenz_bis',a.lizenz_bis,
              'keys_gesamt',(select count(*) from public.gratis_code g where g.fachperson_auth = f.auth_id)) order by f.name)
       from public.fachperson f
       join public._fp_abrechnung(null, p_monat) a on a.fachperson_auth = f.auth_id), '[]'::jsonb);
@@ -628,7 +708,7 @@ end $$;
 do $$ declare f text; begin
   foreach f in array array[
     'public._fp_key_laeuft(public.gratis_code)', 'public._fp_vertrag_aktuell()', 'public._fp_vertrag_ok(uuid)',
-    'public._fp_ich()', 'public._fp_klient(text)', 'public._fp_eigenes_abo(uuid)',
+    'public._fp_ich()', 'public._fp_klient(text)', 'public._fp_eigenes_abo(uuid)', 'public._fp_lizenz_ok(uuid)',
     'public._fp_key_tage(timestamptz, timestamptz, date)', 'public._fp_abrechnung(uuid, date)'] loop
     execute format('revoke all on function %s from public, anon, authenticated', f);
   end loop;
@@ -646,8 +726,10 @@ do $$ declare f text; begin
     'public.cb_fp_key_bezeichnung(text, text)',
     'public.cb_fp_klient_tagessummen(text, date, date)',
     'public.cb_fp_abrechnung(date)',
-    'public.cb_admin_fachperson_setzen(text, text, text, text, boolean)',
-    'public.cb_admin_fachleute(date)'] loop
+    'public.cb_admin_fachperson_setzen(text, text, text, text, boolean, text, timestamptz, integer, text)',
+    'public.cb_admin_fachleute(date)',
+    'public.cb_mein_anschluss_angebot()',
+    'public.cb_admin_angebot_codes_hochladen(text[], text)'] loop
     execute format('revoke all on function %s from public, anon', f);
     execute format('grant execute on function %s to authenticated', f);
   end loop;
