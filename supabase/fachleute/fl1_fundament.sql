@@ -70,7 +70,7 @@ alter table public.fachperson_vertrag_text enable row level security;
 revoke all on public.fachperson_vertrag_text from anon, authenticated;
 insert into public.fachperson_vertrag_text(version, titel, text) values ('platzhalter-2026-11-11',
 'Verschwiegenheitsvereinbarung zwischen Root Index und Fachperson (Platzhalter)',
-'PLATZHALTER – der endgültige Vertragstext folgt (Aufgabe FL-3). Sobald er da ist, wirst du hier gebeten, ihn erneut zu bestätigen.
+'PLATZHALTER – der endgültige Vertragstext folgt (Aufgabe FL-3). Sobald er vorliegt, ist hier eine erneute Bestätigung nötig.
 
 Sinngemäß: Ich behandle alle Informationen über Root Index, die ich als Fachperson erhalte und die nicht öffentlich sind, vertraulich. Daten meiner Klientinnen und Klienten nutze ich nur für deren Begleitung und nur, solange sie eingewilligt haben.')
 on conflict (version) do nothing;
@@ -178,7 +178,7 @@ declare v public.fachperson_konto;
 begin
   select * into v from public.fachperson_konto where auth_id = auth.uid() and aktiv;
   if v.auth_id is null then raise exception 'Nur für freigeschaltete Fachleute.' using errcode = '42501'; end if;
-  if not public._fp_lizenz_ok(v.auth_id) then raise exception 'Deine Lizenz ist abgelaufen. Bitte melde dich bei Root Index.' using errcode = '42501'; end if;
+  if not public._fp_lizenz_ok(v.auth_id) then raise exception 'Die Lizenz ist abgelaufen. Bitte bei Root Index melden.' using errcode = '42501'; end if;
   if not public._fp_vertrag_ok(v.auth_id) then raise exception 'Bitte zuerst die Verschwiegenheitsvereinbarung bestätigen.' using errcode = '42501'; end if;
   return v;
 end $$;
@@ -276,7 +276,7 @@ begin
      where g.klient_auth = v_uid and public._fp_key_laeuft(g) limit 1;
     if v_alt.code is not null then
       if v_alt.fachperson_auth = v_c.fachperson_auth then
-        return jsonb_build_object('ok',false,'grund','Du hast schon einen laufenden Code von ' || v_alt.name || '. Sie kann ihn verlängern.');
+        return jsonb_build_object('ok',false,'grund','Du hast schon einen laufenden Code von ' || v_alt.name || '. Die Fachperson kann ihn verlängern.');
       end if;
       if not coalesce(p_wechsel,false) then
         return jsonb_build_object('ok',false,'wechsel_noetig',true,'bisherige_fachperson',v_alt.name,'neue_fachperson',v_fp.name,
@@ -469,7 +469,7 @@ begin
   if p_tage is null or p_tage < 1 or p_tage > 730 then return jsonb_build_object('ok',false,'grund','Laufzeit: 1 Tag bis 2 Jahre.'); end if;
   if v.vereinbarung_bestaetigt_am is null then
     if not coalesce(p_vereinbarung_bestaetigt,false) then
-      return jsonb_build_object('ok',false,'grund','Bitte bestätige zuerst die Vereinbarung zur Verschwiegenheit mit deinen Klienten.','vereinbarung_noetig',true); end if;
+      return jsonb_build_object('ok',false,'grund','Bitte zuerst die Vereinbarung zur Verschwiegenheit mit den Klienten bestätigen.','vereinbarung_noetig',true); end if;
     update public.fachperson_konto set vereinbarung_bestaetigt_am = now() where auth_id = v.auth_id;
   end if;
   loop
@@ -488,8 +488,8 @@ returns jsonb language plpgsql security definer set search_path to 'public' as $
 declare v public.fachperson_konto := public._fp_ich(); g public.gratis_code; v_iv interval; v_tage int; v_bis timestamptz;
 begin
   select * into g from public.gratis_code where code = upper(trim(p_code)) and fachperson_auth = v.auth_id for update;
-  if not found then raise exception 'Diesen Key gibt es bei dir nicht.' using errcode = '42501'; end if;
-  if g.beendet_am is not null then return jsonb_build_object('ok',false,'grund','Der Key ist beendet. Lege bitte einen neuen an.'); end if;
+  if not found then raise exception 'Diesen Key gibt es in diesem Konto nicht.' using errcode = '42501'; end if;
+  if g.beendet_am is not null then return jsonb_build_object('ok',false,'grund','Der Key ist beendet. Bitte einen neuen Key anlegen.'); end if;
   if p_menge is null or p_menge = 0 or abs(p_menge) > 730 then return jsonb_build_object('ok',false,'grund','Bitte eine Anzahl angeben.'); end if;
   v_iv := case lower(coalesce(p_einheit,'tage'))
             when 'tage' then make_interval(days => p_menge)
@@ -525,7 +525,7 @@ begin
   update public.gratis_code set beendet_am = now(), beendet_grund = 'fachperson', aktiv = false,
          laeuft_bis = case when laeuft_bis > now() then now() else laeuft_bis end
    where code = upper(trim(p_code)) and fachperson_auth = v.auth_id and beendet_am is null;
-  if not found then raise exception 'Diesen Key gibt es bei dir nicht oder er ist schon beendet.' using errcode = '42501'; end if;
+  if not found then raise exception 'Diesen Key gibt es in diesem Konto nicht, oder er ist schon beendet.' using errcode = '42501'; end if;
   update public.fp_key_mail_log set an_email = null where code = upper(trim(p_code)) and an_email is not null;
   return jsonb_build_object('ok',true);
 end $$;
@@ -536,7 +536,7 @@ declare v public.fachperson_konto := public._fp_ich();
 begin
   update public.gratis_code set bezeichnung = nullif(left(trim(coalesce(p_bezeichnung,'')),80),'')
    where code = upper(trim(p_code)) and fachperson_auth = v.auth_id;
-  if not found then raise exception 'Diesen Key gibt es bei dir nicht.' using errcode = '42501'; end if;
+  if not found then raise exception 'Diesen Key gibt es in diesem Konto nicht.' using errcode = '42501'; end if;
   return jsonb_build_object('ok',true);
 end $$;
 
@@ -570,7 +570,7 @@ declare v public.fachperson_konto := public._fp_ich(); g public.gratis_code; v_m
         v_id bigint; v_max_key int; v_max_fp int; v_fp_mail text;
 begin
   select * into g from public.gratis_code where code = upper(trim(p_code)) and fachperson_auth = v.auth_id;
-  if not found then raise exception 'Diesen Key gibt es bei dir nicht.' using errcode = '42501'; end if;
+  if not found then raise exception 'Diesen Key gibt es in diesem Konto nicht.' using errcode = '42501'; end if;
   if g.klient_auth is not null then return jsonb_build_object('ok',false,'grund','Der Key ist schon eingelöst.'); end if;
   if g.beendet_am is not null or not g.aktiv then return jsonb_build_object('ok',false,'grund','Der Key ist beendet.'); end if;
   if v_mail !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_mail) > 200 then return jsonb_build_object('ok',false,'grund','Bitte eine gültige E-Mail eintragen.'); end if;
