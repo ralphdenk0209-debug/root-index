@@ -101,6 +101,21 @@ const CSS = `
 .fd .fd-vg-form select{width:auto}
 .fd details summary{cursor:pointer;font-weight:800;color:var(--fd-dunkel);font-size:15px}
 .fd .fd-laden{color:var(--fd-muted);padding:30px 0;text-align:center}
+.fd .fd-kopfzeile{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fd .fd-akte-txte{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:6px}
+.fd .fd-akte-txt{background:var(--fd-hell,#f6f7f8);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.fd .fd-akte-txt small{display:block;font-size:12px;font-weight:800;color:var(--fd-muted);margin-bottom:2px}
+.fd .fd-akte-form{margin-top:14px;border-top:1px solid var(--fd-linie);padding-top:12px}
+.fd .fd-akte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+.fd .fd-akte-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:var(--fd-muted);min-width:0}
+.fd .fd-akte-form input:not([type=checkbox]),.fd .fd-akte-form select,.fd .fd-akte-form textarea{font:inherit;font-size:14px;font-weight:400;color:var(--fd-dunkel);border:1px solid var(--fd-linie);border-radius:9px;padding:7px 9px;background:var(--fd-weiss,#fff);width:100%!important;box-sizing:border-box}
+.fd .fd-akte-lang{margin-top:10px}
+.fd .fd-akte-unv{border:1px solid var(--fd-linie);border-radius:10px;margin:12px 0 0;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px}
+.fd .fd-akte-unv legend{font-size:12px;font-weight:800;color:var(--fd-muted);padding:0 4px}
+.fd .fd-akte-unv label{flex-direction:row;align-items:center;gap:6px;font-weight:400;font-size:14px;color:var(--fd-dunkel);width:auto!important;flex:0 0 auto;white-space:nowrap}
+.fd .fd-akte-unv input{width:16px!important;height:16px;margin:0;flex:0 0 auto}
+.fd .fd-akte-knoepfe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
 @media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
 `;
@@ -195,7 +210,7 @@ function mount(el, opt){
     const n = d.tage_erfasst || 0;
     const nTage = tage.length;
     let h = '';
-    h += profilKarte(d);
+    h += profilKarte(d) + akteKarte(d);
     if(!n){
       h += '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
            (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>';
@@ -257,6 +272,87 @@ function mount(el, opt){
       (ziele.length ? '<div class="fd-klein" style="margin-top:8px">Eigene Ziele im Profil: ' + esc(ziele.join(' · ')) + '</div>' : '') +
       (d.daten_ab ? '<div class="fd-klein" style="margin-top:4px">Einträge freigegeben ab ' + esc(D(d.daten_ab).toLocaleDateString('de-DE')) + '.</div>' : '') +
       '</div>';
+  }
+
+  /* Persönliche Daten gemeinsam bearbeiten (Ralph 11.11.: „zusammen mit der Patientin anlegen und bearbeiten“).
+     Schreibt über cb_fp_akte_setzen nur mit Einwilligung „Bearbeiten“; jede Änderung wird protokolliert. */
+  const AKTE_FELD = {geschlecht:'Geschlecht', geburtsdatum:'Geburtsdatum', groesse_cm:'Größe', gewicht_kg:'Gewicht', aktivitaet:'Aktivität',
+    ernaehrungsform:'Ernährungsform', diabetes_typ:'Diabetes', unvertraeglichkeiten:'Unverträglichkeiten', ziel_text:'Ziel', sport_text:'Sport und Bewegung', notiz_text:'Notiz'};
+  const DIAB = {typ1:'Typ 1', typ2:'Typ 2', praediabetes:'Prädiabetes', gestationsdiabetes:'Schwangerschaftsdiabetes', sonstiger:'Sonstiger'};
+  const UNV = {laktose:'Laktose', gluten:'Gluten', krebstiere:'Krebstiere', ei:'Ei', fisch:'Fisch', erdnuss:'Erdnüsse', soja:'Soja', milch:'Milch (Milcheiweiß)',
+    schalenfruechte:'Schalenfrüchte (Nüsse)', sellerie:'Sellerie', senf:'Senf', sesam:'Sesam', sulfite:'Schwefeldioxid/Sulfite', lupinen:'Lupinen', weichtiere:'Weichtiere'};
+  function akteWert(f, v){
+    if(v==null || v==='' || (Array.isArray(v) && !v.length)) return '–';
+    if(f==='diabetes_typ') return DIAB[v] || v;
+    if(f==='unvertraeglichkeiten') return v.map(x => UNV[x] || x).join(', ');
+    if(f==='geburtsdatum') return D(v).toLocaleDateString('de-DE');
+    if(f==='groesse_cm') return z(v) + ' cm';
+    if(f==='gewicht_kg') return z(v,1) + ' kg';
+    return String(v);
+  }
+  function akteKarte(d){
+    const a = d.akte; if(!a) return '';
+    const f = a.felder || {};
+    const txt = (t, k) => '<div class="fd-akte-txt"><small>' + t + '</small>' + (a[k] ? esc(a[k]).replace(/\n/g, '<br>') : '<span class="fd-klein">noch nichts festgehalten</span>') + '</div>';
+    let h = '<div class="fd-karte" id="fd-akte"><div class="fd-kopfzeile"><h2>Akte</h2>' +
+      (a.darf_bearbeiten ? '<button class="fd-k" type="button" data-akte-auf>Gemeinsam bearbeiten</button>' : '') + '</div>' +
+      '<div class="fd-akte-txte">' + txt('Ziel', 'ziel_text') + txt('Sport und Bewegung', 'sport_text') + txt('Notiz', 'notiz_text') + '</div>';
+    if(!a.darf_bearbeiten) h += '<p class="fd-klein" style="margin:8px 0 0">' + esc(a.bearbeiten_hinweis || '') + '</p>';
+    if(a.darf_bearbeiten){
+      const sel = (k, opts, leer) => '<select data-af="' + k + '"><option value="">' + (leer || '–') + '</option>' +
+        opts.map(o => { const [v, t] = Array.isArray(o) ? o : [o, o]; return '<option value="' + esc(v) + '"' + (f[k]===v ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>';
+      const inp = (k, typ, wert, extra) => '<input data-af="' + k + '" type="' + typ + '" value="' + esc(wert==null ? '' : wert) + '"' + (extra || '') + '>';
+      const unv = f.unvertraeglichkeiten || [];
+      h += '<form class="fd-akte-form" data-akte-form hidden>' +
+        '<p class="fd-klein" style="margin:0 0 10px">Gemeinsam mit der Person ausfüllen. Profilangaben gelten danach auch in ihrer App; jede Änderung wird mit Datum gespeichert.</p>' +
+        '<div class="fd-akte-grid">' +
+          '<label>Geschlecht' + sel('geschlecht', ['weiblich','männlich','divers']) + '</label>' +
+          (opt.nurLesen ? '<label>Alter' + inp('alter', 'text', f.alter ? f.alter + ' Jahre' : '', ' disabled') : '<label>Geburtsdatum' + inp('geburtsdatum', 'date', f.geburtsdatum)) + '</label>' +
+          '<label>Größe (cm)' + inp('groesse_cm', 'number', f.groesse_cm, ' min="50" max="250" step="1"') + '</label>' +
+          '<label>Gewicht (kg)' + inp('gewicht_kg', 'number', f.gewicht_kg, ' min="20" max="400" step="0.1"') + '</label>' +
+          '<label>Aktivität' + sel('aktivitaet', ['Sitzend','Leicht aktiv','Mäßig aktiv','Sehr aktiv']) + '</label>' +
+          '<label>Ernährungsform' + sel('ernaehrungsform', ['Omnivor','Flexitarisch','Pescetarisch','Vegetarisch','Vegan']) + '</label>' +
+          '<label>Diabetes' + sel('diabetes_typ', Object.entries(DIAB), 'Keine Angabe') + '</label>' +
+        '</div>' +
+        '<fieldset class="fd-akte-unv"><legend>Unverträglichkeiten und Allergien</legend>' +
+          Object.entries(UNV).map(([k, t]) => '<label><input type="checkbox" data-unv value="' + k + '"' + (unv.includes(k) ? ' checked' : '') + '>' + esc(t) + '</label>').join('') +
+        '</fieldset>' +
+        '<label class="fd-akte-lang">Ziel<textarea data-af="ziel_text" rows="2" maxlength="2000" placeholder="z. B. bis Sommer 5 kg leichter">' + esc(a.ziel_text || '') + '</textarea></label>' +
+        '<label class="fd-akte-lang">Sport und Bewegung<textarea data-af="sport_text" rows="2" maxlength="2000" placeholder="z. B. 2× Schwimmen, täglich 30 Minuten zu Fuß">' + esc(a.sport_text || '') + '</textarea></label>' +
+        '<label class="fd-akte-lang">Notiz<textarea data-af="notiz_text" rows="3" maxlength="4000">' + esc(a.notiz_text || '') + '</textarea></label>' +
+        '<div class="fd-akte-knoepfe"><button class="fd-k gruen" type="submit" data-akte-los' + (opt.nurLesen ? ' disabled' : '') + '>Speichern</button>' +
+        '<button class="fd-k" type="button" data-akte-zu>Abbrechen</button><span class="fd-klein" data-akte-m>' + (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : '') + '</span></div>' +
+      '</form>';
+    }
+    const pr = a.protokoll || [];
+    if(pr.length) h += '<details class="fd-akte-prot"><summary>Änderungen (' + pr.length + ')</summary><table class="fd-ziele"><tbody>' +
+      pr.map(x => '<tr><td>' + esc(D(String(x.am).slice(0,10)).toLocaleDateString('de-DE')) + '</td><td>' + esc(AKTE_FELD[x.feld] || x.feld) + '</td><td>' +
+        esc(akteWert(x.feld, x.alt)) + ' → ' + esc(akteWert(x.feld, x.neu)) + '</td></tr>').join('') + '</tbody></table></details>';
+    return h + '</div>';
+  }
+  function akteBinde(){
+    const form = $in.querySelector('[data-akte-form]'); if(!form) return;
+    const a = st.daten.akte || {}, f = a.felder || {};
+    const auf = $in.querySelector('[data-akte-auf]');
+    if(auf) auf.onclick = () => { form.hidden = !form.hidden; auf.textContent = form.hidden ? 'Gemeinsam bearbeiten' : 'Bearbeiten schließen'; };
+    const zu = form.querySelector('[data-akte-zu]'); if(zu) zu.onclick = () => { form.hidden = true; if(auf) auf.textContent = 'Gemeinsam bearbeiten'; };
+    const m = t => { const x = form.querySelector('[data-akte-m]'); if(x) x.textContent = t; };
+    form.onsubmit = async ev => {
+      ev.preventDefault();
+      if(opt.nurLesen) return m('In der Musterpraxis nur zum Ansehen.');
+      const neu = {}, gleich = (x, y) => String(x==null ? '' : x) === String(y==null ? '' : y);
+      form.querySelectorAll('[data-af]').forEach(i => {
+        const k = i.dataset.af, v = i.value.trim();
+        const alt = ['ziel_text','sport_text','notiz_text'].includes(k) ? a[k] : f[k];
+        if(['groesse_cm','gewicht_kg'].includes(k) ? !(v==='' && alt==null) && Number(v) !== Number(alt) : !gleich(v, alt)) neu[k] = v;
+      });
+      const unv = [...form.querySelectorAll('[data-unv]:checked')].map(x => x.value).sort();
+      if(unv.join() !== [...(f.unvertraeglichkeiten || [])].sort().join()) neu.unvertraeglichkeiten = unv;
+      if(!Object.keys(neu).length) return m('Nichts geändert.');
+      const b = form.querySelector('[data-akte-los]'); b.disabled = true; m('⏳ Speichert …');
+      try{ const r = await opt.akteSetzen(neu); m('✓ Gespeichert (' + (r && r.geaendert) + ' Änderungen).'); setTimeout(laden, 700); }
+      catch(e){ b.disabled = false; m(e.message || String(e)); }
+    };
   }
 
   function balken(tage, teile, linie, linieText){
@@ -440,11 +536,13 @@ function mount(el, opt){
 
   /* Wochenplanung: je Tag feste Plätze (Ralph: 3–4 Snacks), leere Plätze dezent. Alter Wert „Snack“ = Snack nachmittags. */
   const SLOTS = ['Frühstück','Snack vormittags','Mittag','Snack nachmittags','Abendessen','Snack abends','Spätsnack'];
-  const slotVon = s0 => s0==='Snack' ? 'Snack nachmittags' : (SLOTS.includes(s0) ? s0 : 'Snack abends');
+  /* Absprache FL-5: Slot bleibt 'Snack' (alte Apps), die Tageszeit steht in snack_zeit. Ohne snack_zeit = Snack nachmittags. */
+  const SNACK_ZEIT = {vormittags:'Snack vormittags', nachmittags:'Snack nachmittags', abends:'Snack abends', spaet:'Spätsnack'};
+  const slotVon = y => y.slot==='Snack' ? (SNACK_ZEIT[y.snack_zeit] || 'Snack nachmittags') : (SLOTS.includes(y.slot) ? y.slot : 'Snack abends');
   function planKarte(d){
     if(!d.wochenplan) return '<div class="fd-karte"><h2>Wochenplanung</h2><p class="fd-klein">' + esc(d.wochenplan_hinweis || 'Kein Wochenplan.') + '</p></div>';
     const von = d.wochenplan_von || montag(heute);
-    const spaet = d.wochenplan.some(x => x.slot==='Spätsnack');
+    const spaet = d.wochenplan.some(x => slotVon(x)==='Spätsnack');
     const plaetze = SLOTS.filter(x => x!=='Spätsnack' || spaet);
     const kurz = {'Frühstück':'Frühstück','Snack vormittags':'Snack vorm.','Mittag':'Mittag','Snack nachmittags':'Snack nachm.','Abendessen':'Abend','Snack abends':'Snack abends','Spätsnack':'Spätsnack'};
     let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was für diese und nächste Woche geplant ist, je Tag mit allen Mahlzeiten und Snacks.</div>';
@@ -454,7 +552,7 @@ function mount(el, opt){
         const t = plus(von, w*7 + i), e = d.wochenplan.filter(x => x.datum===t);
         const kcal = e.reduce((a, x) => a + (Number(x.kcal_portion)||0), 0);
         h += '<div class="tag' + (t===heute ? ' heute' : '') + '"><b>' + WT[D(t).getUTCDay()] + ' ' + tm(t) + (kcal ? '<span class="fd-plan-kcal">' + z(kcal) + ' kcal</span>' : '') + '</b>' +
-             plaetze.map(sl => { const x = e.filter(y => slotVon(y.slot)===sl);
+             plaetze.map(sl => { const x = e.filter(y => slotVon(y)===sl);
                return x.length ? x.map(y => '<div class="e"><small>' + esc(kurz[sl]) + '</small>' + esc(y.titel||'') + (y.kcal_portion ? '<small>' + z(y.kcal_portion) + ' kcal</small>' : '') + '</div>').join('')
                                : '<div class="e leer"><small>' + esc(kurz[sl]) + '</small>–</div>'; }).join('') + '</div>';
       }
@@ -464,6 +562,7 @@ function mount(el, opt){
   }
 
   function binde(){
+    akteBinde();
     $in.querySelectorAll('[data-z-auf]').forEach(b => b.onclick = () => {
       const z = $in.querySelector('[data-z-zeile="' + b.dataset.zAuf + '"]'); z.hidden = !z.hidden;
       if(!z.hidden){ const i = z.querySelector('input'); if(i) i.focus(); }

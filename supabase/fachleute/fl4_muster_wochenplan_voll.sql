@@ -3,6 +3,8 @@
 -- (erfundene Personen), echte Wochenpläne bleiben unberührt. Basiswochen 9.11.–29.11.2026,
 -- angezeigt wochenweise verschoben wie das Mustertagebuch. Hauptmahlzeiten = öffentliche Rezepte,
 -- Snacks = echte Index-Produkte mit Menge (Titel nennt die Menge).
+-- Absprache FL-5: Slot bleibt 'Snack' (alte Apps kennen nur Frühstück/Mittag/Abendessen/Snack),
+-- die Tageszeit steht in snack_zeit (Spalte aus fl4_akte.sql, vorher einspielen).
 delete from public.fl_muster_wochenplan;
 
 do $plan$
@@ -45,11 +47,15 @@ begin
         continue when sl like 'Snack%' and abs(0::bigint + hashtext('plan-leer' || p || sl || d)) % 5 = 0;
         wahl := opt[1 + abs(0::bigint + hashtext('plan' || p || sl || d)) % array_length(opt, 1)];
         if wahl like 'R:%' then
-          insert into public.fl_muster_wochenplan(benutzer_id, datum, slot, rezept_id, reihenfolge)
-          values ('MUSTER-' || p, d, sl, split_part(wahl, ':', 2), i);
+          insert into public.fl_muster_wochenplan(benutzer_id, datum, slot, snack_zeit, rezept_id, reihenfolge)
+          values ('MUSTER-' || p, d, case when sl like 'Snack%' then 'Snack' else sl end,
+                  case sl when 'Snack vormittags' then 'vormittags' when 'Snack nachmittags' then 'nachmittags' when 'Snack abends' then 'abends' end,
+                  split_part(wahl, ':', 2), i);
         else
-          insert into public.fl_muster_wochenplan(benutzer_id, datum, slot, produkt_id, menge_g, titel, reihenfolge)
-          values ('MUSTER-' || p, d, sl, split_part(wahl, ':', 2), split_part(wahl, ':', 3)::numeric,
+          insert into public.fl_muster_wochenplan(benutzer_id, datum, slot, snack_zeit, produkt_id, menge_g, titel, reihenfolge)
+          values ('MUSTER-' || p, d, case when sl like 'Snack%' then 'Snack' else sl end,
+                  case sl when 'Snack vormittags' then 'vormittags' when 'Snack nachmittags' then 'nachmittags' when 'Snack abends' then 'abends' end,
+                  split_part(wahl, ':', 2), split_part(wahl, ':', 3)::numeric,
                   split_part(wahl, ':', 4) || ' · ' || split_part(wahl, ':', 3) || ' g', i);
         end if;
       end loop;

@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=9"></script>
+<script src="fachleute-dashboard.js?v=11"></script>
 <script src="fachleute-statistik.js?v=8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -1215,7 +1215,8 @@ async function zeigeKlient(wahl){
   const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: !!DEMO, verlaufKey: code,
     verlauf: (von, bis) => dashRpc(code, von, bis),
     laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return json(r.data); },
-    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    akteSetzen: async (daten) => { const r = await client.rpc('cb_fp_akte_setzen', {p_code: code, p_daten: daten}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   el.innerHTML = '<div class="detail-kopf">' + kopf + '<span style="display:flex;gap:6px">' +
     '<span class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
     '<span class="dd-menu rechts"><button type="button" data-druck>Drucken</button><button type="button" data-druck>Als PDF speichern</button></span></span>' +
