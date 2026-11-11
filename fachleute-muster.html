@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Musterpraxis – Root Index für Fachleute</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<!-- fachleute-muster.html · 11.11.2026 · FL-4
+     Musterpraxis „Praxis Muster“ zum Durchklicken für Ernährungsfachleute.
+     Ohne Login, nur mit Vorschau-Link (?z=<token>). Alle Personen und Einträge
+     sind erfunden und liegen in eigenen Tabellen (fl_muster_*), getrennt von
+     echten Nutzern. Nur lesen: cb_fl_muster, cb_fl_muster_dashboard. -->
+<link rel="icon" href="favicon-96.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="fachleute-dashboard.js?v=1"></script>
+<style>
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+  :root{--gruen:#2e7d46;--dunkel:#133521;--creme:#F3EEDC;--text:#1f2a22;--muted:#5d6b61;--linie:#dfe6df}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .kopf{background:var(--dunkel);color:var(--creme);padding:14px 18px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .kopf a{color:var(--creme);text-decoration:none}
+  .band{background:#fff3c4;color:#5b4500;font-size:14px;padding:8px 18px;text-align:center;border-bottom:1px solid #f3d27a}
+  .wrap{max-width:860px;margin:0 auto;padding:18px 16px 60px}
+  h1{font-size:26px;line-height:1.2;margin:4px 0 4px;color:var(--dunkel)}
+  .unter{color:var(--muted);margin:0 0 8px;font-size:15px}
+  .karte{background:#fff;border:1px solid var(--linie);border-radius:16px;padding:16px;margin:14px 0}
+  .karte h2{font-size:19px;margin:0 0 4px;color:var(--dunkel)}
+  .klient{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--linie);border-radius:14px;padding:14px;margin-top:10px;cursor:pointer;font:inherit;color:inherit}
+  .klient:hover{border-color:var(--gruen)}
+  .klient .c{font-weight:800;letter-spacing:.06em;color:var(--dunkel);font-size:14px}
+  .klient .n{font-weight:800;font-size:18px;color:var(--dunkel)}
+  .klient .s{color:var(--muted);font-size:15px}
+  .klient .i{font-size:14px;margin-top:6px}
+  .chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800;margin:2px 4px 2px 0;background:#dff3e5;color:var(--gruen)}
+  .zurueck{background:#fff;border:1px solid var(--linie);border-radius:10px;padding:8px 14px;font:inherit;font-size:15px;font-weight:800;color:var(--dunkel);cursor:pointer}
+  .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  .bald{border:1px dashed #b7c4b9;border-radius:12px;padding:12px 14px;font-size:15px;color:var(--muted);margin-top:10px}
+  .bald b{color:var(--dunkel)}
+  a{color:var(--gruen)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="kopf"><a href="https://root-index.de">Root Index™ · Für Fachleute</a><span style="font-size:14px">Musterpraxis</span></div>
+<div class="band"><b>Musterpraxis:</b> Alle Personen und Einträge sind erfunden. Die Produkte, Nährwerte und Scores sind echt aus dem Root Index. Nur zum Ansehen.</div>
+<div class="wrap">
+  <section id="bFehler" hidden><div class="karte"><h2>Dieser Link gilt nicht (mehr)</h2><p class="unter" id="fehlerText">Bitte frag bei Root Index nach einem neuen Vorschau-Link: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></p></div></section>
+
+  <section id="bPraxis" hidden>
+    <h1 id="pName">Praxis Muster</h1>
+    <p class="unter">So sieht deine Fachleute-Seite mit vier Klientinnen und Klienten aus. Tippe eine Person an.</p>
+    <div class="karte">
+      <h2>Klientinnen und Klienten</h2>
+      <p class="unter" style="margin:0">Jede Person hat einen eigenen Key von dir und hat eingewilligt, dass du ihre Einträge siehst.</p>
+      <div id="liste"></div>
+    </div>
+    <div class="karte">
+      <h2>Was du siehst und was noch kommt</h2>
+      <p class="unter">Je Person: Tag, Woche und Monat · Gemüse und Obst in Gramm gegen die DGE-Orientierung · Kalorien und Makros gegen deine eigenen Vorgaben · alle gegessenen Produkte mit Root-Index-Score · Rezepte und Wochenplanung.</p>
+      <div class="bald"><b>In Planung:</b> Rezepte gemeinsam mit der Klientin anlegen und teilen.</div>
+      <div class="bald"><b>Wünsche?</b> In der <a href="fachleute-wuensche.html">Wunschliste der Fachleute</a> sehen alle Therapeutinnen alle Wünsche und können „Ich auch“ sagen (Anmeldung nötig).</div>
+    </div>
+  </section>
+
+  <section id="bKlient" hidden>
+    <button class="zurueck" id="zurueck" type="button">‹ Alle Klienten</button>
+    <div id="dash"></div>
+  </section>
+
+  <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+</div>
+<script>
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+// Eigener Speicher-Schlüssel und keine Sitzung: die Vorschau läuft immer ohne Anmeldung
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:"sb-fl-muster" } });
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const datum = d => d ? new Date(d + 'T12:00:00Z').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
+const TOKEN = new URLSearchParams(location.search).get('z') || '';
+let PRAXIS = null;
+
+async function rpc(name, args){
+  const {data, error} = await client.rpc(name, args);
+  if(error) throw new Error(error.message);
+  return typeof data==='string' ? JSON.parse(data) : data;
+}
+function zeige(id){ ['bFehler','bPraxis','bKlient'].forEach(b => $(b).hidden = b!==id); window.scrollTo(0,0); }
+
+async function start(){
+  if(!TOKEN){ zeige('bFehler'); return; }
+  try{ PRAXIS = await rpc('cb_fl_muster', {p_token: TOKEN}); }
+  catch(e){ zeige('bFehler'); return; }
+  $('pName').textContent = PRAXIS.praxis || 'Praxis Muster';
+  $('liste').innerHTML = (PRAXIS.klienten||[]).map(k =>
+    '<button class="klient" type="button" data-nr="' + k.nr + '">' +
+      '<div class="c">' + esc(k.code) + '</div><div class="n">' + esc(k.name) + '</div><div class="s">' + esc(k.steckbrief) + '</div>' +
+      '<div class="i"><span class="chip">Läuft</span><span class="chip">Einwilligung erteilt</span> Seit ' + datum(k.start_am) + ', läuft bis ' + datum(k.laeuft_bis) +
+      (k.letzter_eintrag ? ' · letzter Eintrag ' + datum(k.letzter_eintrag) : '') + '</div></button>').join('');
+  $('liste').querySelectorAll('.klient').forEach(b => b.onclick = () => { location.hash = 'k=' + b.dataset.nr; });
+  route();
+}
+function route(){
+  const m = /k=(\d+)/.exec(location.hash);
+  if(!m || !PRAXIS){ zeige('bPraxis'); return; }
+  const nr = Number(m[1]);
+  zeige('bKlient');
+  FLDash.mount($('dash'), {
+    heute: PRAXIS.heute, nurLesen: true,
+    laden: (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: TOKEN, p_nr: nr, p_von: von, p_bis: bis})
+  });
+}
+window.addEventListener('hashchange', route);
+$('zurueck').onclick = () => { location.hash = ''; };
+start();
+</script>
+</body>
+</html>

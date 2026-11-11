@@ -11,9 +11,12 @@
      Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth).
      Alles entscheidet der Server: cb_fp_ich, cb_fp_keys, cb_fp_key_anlegen, cb_fp_key_laufzeit,
      cb_fp_key_beenden, cb_fp_key_bezeichnung, cb_fp_abrechnung. Freischalten als Fachperson:
-     nur Admin (cb_admin_fachperson_setzen). Dashboard mit Auswertungen kommt in FL-4. -->
+     nur Admin (cb_admin_fachperson_setzen).
+     FL-4 (11.11.2026): Dashboard je Klient (cb_fp_klient_dashboard, cb_fp_vorgabe_setzen,
+     Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html). -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="fachleute-dashboard.js?v=1"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
   @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
@@ -172,6 +175,12 @@
     </div>
 
     <div class="karte">
+      <h2>Wunschliste der Fachleute</h2>
+      <p>Was fehlt dir? Alle Therapeutinnen sehen alle Wünsche und können „Ich auch“ sagen. Skizzen und Beispiele kannst du anhängen.</p>
+      <a class="knopf zwei" href="fachleute-wuensche.html">Zur Wunschliste</a>
+    </div>
+
+    <div class="karte">
       <h2>Diesen Monat</h2>
       <div class="zahlen">
         <div class="zahl"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
@@ -192,6 +201,12 @@
     </div>
   </section>
 
+  <!-- FL-4: Dashboard je Klient -->
+  <section id="bKlient" hidden>
+    <button class="klein-knopf" id="klientZurueck" type="button">‹ Alle Klienten</button>
+    <div id="klientDash"></div>
+  </section>
+
   <div class="klein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
 </div>
 
@@ -208,8 +223,8 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
 const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
 const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
-const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bHaupt'];
-function zeige(id){ BEREICHE.forEach(b => $(b).hidden = (b!==id)); $('abmelden').hidden = !['bWartet','bVertrag','bHaupt'].includes(id); }
+const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bHaupt','bKlient'];
+function zeige(id){ BEREICHE.forEach(b => $(b).hidden = (b!==id)); $('abmelden').hidden = !['bWartet','bVertrag','bHaupt','bKlient'].includes(id); }
 function meld(el, t, art){ const m=$(el); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
 let ICH = null, KEYS = [], FILTER = 'aktiv', modus = 'an';
 
@@ -396,6 +411,7 @@ function zeichne(){
         '<button class="klein-knopf" data-akt="plus" type="button">Verlängern</button>' +
         (k.status!=='abgelaufen' ? '<button class="klein-knopf" data-akt="minus" type="button">Kürzen</button>' : '') +
         (k.status==='offen' ? '<button class="klein-knopf" data-akt="link" type="button">Link kopieren</button>' : '') +
+        (k.status==='laeuft' && k.einwilligung==='erteilt' ? '<button class="klein-knopf" data-akt="dash" type="button" style="background:var(--gruen);color:#fff;border-color:var(--gruen)">Auswertung öffnen</button>' : '') +
         '<button class="klein-knopf" data-akt="bez" type="button">Notiz ändern</button>' +
         '<button class="klein-knopf rot" data-akt="ende" type="button">Beenden</button>' +
       '</div>';
@@ -411,6 +427,7 @@ $('liste').addEventListener('click', async e => {
   const setM = (t, art) => { m.textContent = t||''; m.className = 'meld' + (art?' '+art:''); };
   const akt = b.dataset.akt;
   if(akt==='link') return kopiere('https://root-index.de/klientin.html?code=' + encodeURIComponent(code), b);
+  if(akt==='dash') return oeffneKlient(code);
   let rpc, args;
   if(akt==='plus' || akt==='minus'){
     const menge = parseInt(box.querySelector('[data-menge]').value, 10), einheit = box.querySelector('[data-einheit]').value;
@@ -432,6 +449,26 @@ $('liste').addEventListener('click', async e => {
   if(error || !d.ok){ box.querySelectorAll('button').forEach(x => x.disabled = false); return setM(error ? error.message : d.grund, 'fehler'); }
   ladeAlles();
 });
+
+/* ---------- FL-4: Dashboard je Klient ---------- */
+function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
+function oeffneKlient(code){
+  zeige('bKlient'); window.scrollTo(0,0); document.querySelector('.wrap').style.maxWidth = '900px';
+  FLDash.mount($('klientDash'), {
+    heute: heuteBerlin(), nurLesen: false,
+    laden: async (von, bis) => {
+      const {data, error} = await client.rpc('cb_fp_klient_dashboard', {p_code: code, p_von: von, p_bis: bis});
+      if(error) throw new Error(error.message);
+      return json(data);
+    },
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => {
+      const {data, error} = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null});
+      if(error) throw new Error(error.message);
+      return json(data);
+    }
+  });
+}
+$('klientZurueck').onclick = () => { document.querySelector('.wrap').style.maxWidth = ''; zeige('bHaupt'); ladeAlles(); };
 
 start();
 </script>

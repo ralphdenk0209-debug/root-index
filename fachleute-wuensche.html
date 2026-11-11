@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wunschliste – Root Index für Fachleute</title>
+<meta name="robots" content="noindex,nofollow">
+<!-- fachleute-wuensche.html · 11.11.2026 · FL-4
+     Gemeinsame Wunschliste der Ernährungsfachleute. Alle freigeschalteten
+     Fachpersonen sehen alle Wünsche, schreiben neue, sagen „Ich auch“ und
+     hängen Skizzen/Beispiele an (Bilder, PDF bis 10 MB, privater Bucket
+     fachleute-wunsch). Root Index (Admin) setzt Status und antwortet.
+     Anmeldung wie therapeut.html (gleicher Speicher-Schlüssel sb-cleanbase-auth). -->
+<link rel="icon" href="favicon-96.png">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
+  @font-face{font-family:Inter;src:url(fonts/inter-latin-800-normal.woff2) format("woff2");font-weight:800;font-display:swap}
+  :root{--gruen:#2e7d46;--dunkel:#133521;--creme:#F3EEDC;--text:#1f2a22;--muted:#5d6b61;--linie:#dfe6df;--rot:#b42318;--gelb:#fff8e6}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--creme);color:var(--text);font:17px/1.55 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .kopf{background:var(--dunkel);color:var(--creme);padding:14px 18px;font-weight:800;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .kopf a{color:var(--creme);text-decoration:none}
+  .kopf button{background:transparent;color:var(--creme);border:1px solid rgba(243,238,220,.4);border-radius:9px;padding:6px 12px;font:inherit;font-size:14px;cursor:pointer}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 60px}
+  h1{font-size:26px;line-height:1.2;margin:4px 0 4px;color:var(--dunkel)}
+  .unter{color:var(--muted);margin:0 0 8px;font-size:15px}
+  .karte{background:#fff;border:1px solid var(--linie);border-radius:16px;padding:18px;margin:16px 0}
+  .karte h2{font-size:19px;margin:0 0 4px;color:var(--dunkel)}
+  label{display:block;font-size:14px;font-weight:800;margin:10px 0 4px}
+  input,select,textarea{width:100%;padding:11px;border:1px solid var(--linie);border-radius:11px;font:inherit;font-size:16px;background:#fff;color:var(--text)}
+  textarea{min-height:96px;resize:vertical}
+  .knopf{display:block;width:100%;text-align:center;background:var(--gruen);color:#fff;border:0;border-radius:12px;padding:13px 16px;font:inherit;font-weight:800;font-size:16px;margin-top:14px;cursor:pointer}
+  .knopf:disabled{opacity:.6}
+  .k{background:#fff;color:var(--dunkel);border:1px solid var(--linie);border-radius:9px;padding:6px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer;white-space:nowrap}
+  .k.an{background:var(--gruen);border-color:var(--gruen);color:#fff}
+  .k:disabled{opacity:.5}
+  .meld{font-size:15px;margin-top:10px}
+  .meld.fehler{color:var(--rot)} .meld.ok{color:var(--gruen)}
+  .aehnlich{background:var(--gelb);border:1px solid #f3d27a;border-radius:12px;padding:10px 12px;font-size:14px;color:#5b4500;margin-top:8px}
+  .aehnlich .z{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;border-top:1px solid #f3e2a9}
+  .aehnlich .z:first-of-type{border-top:0}
+  .filter{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+  .filter button{border:1px solid var(--linie);background:#fff;border-radius:999px;padding:5px 12px;font:inherit;font-size:14px;cursor:pointer;color:var(--muted)}
+  .filter button.an{background:var(--dunkel);border-color:var(--dunkel);color:#fff}
+  .w{border:1px solid var(--linie);border-radius:14px;padding:14px;margin-top:12px;background:#fff}
+  .w-kopf{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .w-titel{font-weight:800;font-size:17px;color:var(--dunkel)}
+  .w-meta{font-size:13px;color:var(--muted)}
+  .w-text{white-space:pre-wrap;font-size:15px;margin:8px 0 0}
+  .chip{display:inline-block;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800;margin:2px 4px 2px 0;background:#eef1f7;color:#3a4a6b}
+  .st-neu{background:#eef1f7;color:#3a4a6b} .st-geplant{background:#e6effa;color:#1d4f91} .st-in_arbeit{background:#fff1d6;color:#7a5a00}
+  .st-erledigt{background:#dff3e5;color:var(--gruen)} .st-abgelehnt{background:#f1f1f1;color:#666}
+  .stimme{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:70px}
+  .stimme b{font-size:20px;color:var(--dunkel);line-height:1}
+  .antwort{background:var(--creme);border-radius:12px;padding:10px 12px;margin-top:10px;font-size:15px;white-space:pre-wrap}
+  .antwort b{display:block;font-size:13px;color:var(--dunkel)}
+  .anh{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  .anh a,.anh span.f{display:flex;flex-direction:column;align-items:center;width:96px;font-size:11px;color:var(--muted);text-decoration:none;text-align:center;word-break:break-all}
+  .anh img{width:96px;height:72px;object-fit:cover;border-radius:8px;border:1px solid var(--linie);background:var(--creme)}
+  .anh .pdf{width:96px;height:72px;border-radius:8px;border:1px solid var(--linie);background:var(--creme);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--rot)}
+  .aktion{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+  .admin{border-top:1px dashed var(--linie);margin-top:12px;padding-top:10px}
+  .admin select,.admin textarea,.admin input{font-size:15px;padding:8px}
+  .leer{color:var(--muted);text-align:center;padding:14px}
+  .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
+  a{color:var(--gruen)}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<div class="kopf"><a href="therapeut.html">Root Index™ · Für Fachleute</a><button id="abmelden" type="button" hidden>Abmelden</button></div>
+<div class="wrap">
+  <h1>Wunschliste der Fachleute</h1>
+  <p class="unter">Was soll Root Index für eure Arbeit können? Alle Therapeutinnen sehen alle Wünsche. Gibt es etwas schon, sag „Ich auch“ statt es doppelt einzutragen.</p>
+
+  <section id="bLogin" hidden>
+    <div class="karte">
+      <h2>Bitte anmelden</h2>
+      <p class="unter">Mit deinem Fachleute-Konto. Noch keins? <a href="therapeut.html">Hier anlegen</a>, wir schalten es frei.</p>
+      <label for="mail">E-Mail</label><input id="mail" type="email" autocomplete="email" inputmode="email">
+      <label for="pass">Passwort</label><input id="pass" type="password" autocomplete="current-password">
+      <button class="knopf" id="los" type="button">Anmelden</button>
+      <div class="meld" id="meldLogin"></div>
+    </div>
+  </section>
+
+  <section id="bKein" hidden>
+    <div class="karte"><h2>Noch kein Zugang</h2><p class="unter" id="keinText">Die Wunschliste ist für freigeschaltete Fachleute.</p>
+      <a href="therapeut.html">Zur Fachleute-Seite</a></div>
+  </section>
+
+  <section id="bHaupt" hidden>
+    <div class="karte" id="neuKarte">
+      <h2>Neuer Wunsch</h2>
+      <label for="nTitel">Kurz in einem Satz</label>
+      <input id="nTitel" maxlength="120" placeholder="z. B. Gemüse je Mahlzeit anzeigen" autocomplete="off">
+      <div class="aehnlich" id="aehnlich" hidden></div>
+      <label for="nText">Beschreibung (was, wofür, Beispiel)</label>
+      <textarea id="nText" maxlength="4000" placeholder="Bitte keine Namen oder Gesundheitsdaten von Klienten."></textarea>
+      <label for="nBereich">Bereich</label>
+      <select id="nBereich"><option value="">Bitte wählen</option><option value="dashboard">Dashboard</option><option value="klienten">Klienten</option>
+        <option value="rezepte">Rezepte</option><option value="auswertungen">Auswertungen</option><option value="sonstiges">Sonstiges</option></select>
+      <label for="nDatei">Skizzen oder Beispiele (Bild oder PDF, je bis 10 MB)</label>
+      <input id="nDatei" type="file" multiple accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,application/pdf">
+      <button class="knopf" id="nLos" type="button">Wunsch eintragen</button>
+      <div class="meld" id="nMeld"></div>
+    </div>
+
+    <div class="karte">
+      <h2>Alle Wünsche</h2>
+      <div class="filter" id="fStatus">
+        <button data-f="" class="an" type="button">Alle</button><button data-f="offen" type="button">Offen</button>
+        <button data-f="erledigt" type="button">Erledigt</button><button data-f="abgelehnt" type="button">Abgelehnt</button>
+      </div>
+      <div class="filter" id="fBereich">
+        <button data-f="" class="an" type="button">Alle Bereiche</button><button data-f="dashboard" type="button">Dashboard</button>
+        <button data-f="klienten" type="button">Klienten</button><button data-f="rezepte" type="button">Rezepte</button>
+        <button data-f="auswertungen" type="button">Auswertungen</button><button data-f="sonstiges" type="button">Sonstiges</button>
+      </div>
+      <div id="liste"><div class="leer">Lädt …</div></div>
+    </div>
+  </section>
+  <div class="klein">Root Index – wir lesen die Rückseite. <a href="therapeut.html">Fachleute-Seite</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+</div>
+<script>
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit", storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
+});
+const BUCKET = 'fachleute-wunsch', MAX = 10*1024*1024;
+const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '';
+const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
+const BEREICH = {dashboard:'Dashboard', klienten:'Klienten', rezepte:'Rezepte', auswertungen:'Auswertungen', sonstiges:'Sonstiges'};
+const STATUS = {neu:'Neu', geplant:'Geplant', in_arbeit:'In Arbeit', erledigt:'Erledigt', abgelehnt:'Abgelehnt'};
+let DATA = {admin:false, liste:[]}, FS = '', FB = '', URLS = {};
+function meld(el, t, art){ const m=$(el); m.textContent=t||''; m.className='meld'+(art?' '+art:''); }
+function zeige(id){ ['bLogin','bKein','bHaupt'].forEach(b => $(b).hidden = b!==id); $('abmelden').hidden = id==='bLogin'; }
+
+$('los').onclick = async function(){
+  const email = $('mail').value.trim(), pass = $('pass').value;
+  if(!email || !pass) return meld('meldLogin','Bitte E-Mail und Passwort eintragen.','fehler');
+  this.disabled = true;
+  const {error} = await client.auth.signInWithPassword({email, password: pass});
+  this.disabled = false;
+  if(error) return meld('meldLogin', /invalid/i.test(error.message) ? 'E-Mail oder Passwort stimmt nicht.' : 'Fehler: ' + error.message, 'fehler');
+  $('pass').value = ''; start();
+};
+$('pass').addEventListener('keydown', e => { if(e.key==='Enter') $('los').click(); });
+$('abmelden').onclick = async () => { await client.auth.signOut(); zeige('bLogin'); };
+
+async function start(){
+  const {data:{session}} = await client.auth.getSession();
+  if(!session){ zeige('bLogin'); return; }
+  const {data, error} = await client.rpc('cb_fl_wuensche');
+  if(error){
+    $('keinText').textContent = /Verschwiegenheit|Vertrag/i.test(error.message) ? 'Bitte bestätige zuerst auf der Fachleute-Seite die Verschwiegenheitsvereinbarung.' : error.message;
+    zeige('bKein'); return;
+  }
+  DATA = json(data); zeige('bHaupt'); zeichne();
+}
+async function neuLaden(){ const {data, error} = await client.rpc('cb_fl_wuensche'); if(!error){ DATA = json(data); zeichne(); } }
+
+/* ---------- ähnliche Wünsche beim Tippen ---------- */
+let tippT = null;
+function aehnlichPruefen(){
+  clearTimeout(tippT);
+  tippT = setTimeout(async () => {
+    const t = ($('nTitel').value + ' ' + $('nText').value).trim();
+    if(t.length < 4){ $('aehnlich').hidden = true; return; }
+    const {data} = await client.rpc('cb_fl_wunsch_aehnlich', {p_text: $('nTitel').value.trim().length >= 4 ? $('nTitel').value.trim() : t});
+    const a = Array.isArray(data) ? data : json(data);
+    if(!a || !a.length){ $('aehnlich').hidden = true; return; }
+    $('aehnlich').innerHTML = '<b>Gibt es das schon?</b>' + a.map(x => {
+      const w = DATA.liste.find(y => y.id===x.id);
+      return '<div class="z"><span><a href="#w' + x.id + '">' + esc(x.titel) + '</a> · ' + esc(STATUS[x.status]||x.status) + ' · ' + x.stimmen + ' Stimme' + (x.stimmen==1?'':'n') + '</span>' +
+        (w && w.ich_auch ? '<span class="chip st-erledigt">deine Stimme zählt</span>' : '<button class="k" type="button" data-auch="' + x.id + '">Ich auch</button>') + '</div>';
+    }).join('');
+    $('aehnlich').hidden = false;
+    $('aehnlich').querySelectorAll('[data-auch]').forEach(b => b.onclick = () => stimme(Number(b.dataset.auch), true, b).then(aehnlichPruefen));
+  }, 350);
+}
+$('nTitel').addEventListener('input', aehnlichPruefen);
+$('nText').addEventListener('input', aehnlichPruefen);
+
+/* ---------- Anlegen + Hochladen ---------- */
+function dateiPruefen(files){
+  for(const f of files){
+    if(f.size > MAX) return f.name + ' ist größer als 10 MB.';
+    if(!/^(image\/(png|jpeg|webp|gif|heic|heif)|application\/pdf)$/.test(f.type) && !/\.(heic|heif)$/i.test(f.name)) return f.name + ': nur Bilder oder PDF.';
+  }
+  return null;
+}
+async function hochladen(id, files){
+  const fehler = [];
+  for(const f of files){
+    const sauber = f.name.normalize('NFKD').replace(/[^\w.\-]+/g, '_').slice(-80) || 'datei';
+    const pfad = id + '/' + Date.now() + '-' + sauber;
+    const typ = f.type || (/\.heic$/i.test(f.name) ? 'image/heic' : /\.heif$/i.test(f.name) ? 'image/heif' : 'application/octet-stream');
+    const up = await client.storage.from(BUCKET).upload(pfad, f, {contentType: typ, upsert: false});
+    if(up.error){ fehler.push(f.name + ': ' + up.error.message); continue; }
+    const {data, error} = await client.rpc('cb_fl_wunsch_anhang_eintragen', {p_id: id, p_pfad: pfad, p_dateiname: f.name});
+    const d = json(data);
+    if(error || !d.ok) fehler.push(f.name + ': ' + (error ? error.message : d.grund));
+  }
+  return fehler;
+}
+$('nLos').onclick = async function(){
+  const titel = $('nTitel').value.trim(), text = $('nText').value.trim(), bereich = $('nBereich').value, files = [...$('nDatei').files];
+  if(titel.length < 3) return meld('nMeld','Bitte einen kurzen Titel eintragen.','fehler');
+  if(!bereich) return meld('nMeld','Bitte einen Bereich wählen.','fehler');
+  const df = dateiPruefen(files); if(df) return meld('nMeld', df, 'fehler');
+  this.disabled = true; meld('nMeld','⏳ Wird eingetragen …');
+  const {data, error} = await client.rpc('cb_fl_wunsch_anlegen', {p_titel: titel, p_beschreibung: text || null, p_bereich: bereich});
+  const d = json(data);
+  if(error || !d.ok){ this.disabled = false; return meld('nMeld', error ? error.message : d.grund, 'fehler'); }
+  const fehler = files.length ? await hochladen(d.id, files) : [];
+  this.disabled = false;
+  $('nTitel').value = ''; $('nText').value = ''; $('nBereich').value = ''; $('nDatei').value = ''; $('aehnlich').hidden = true;
+  meld('nMeld', fehler.length ? 'Eingetragen, aber nicht alle Dateien: ' + fehler.join(' · ') : '✓ Danke! Dein Wunsch steht jetzt in der Liste.', fehler.length ? 'fehler' : 'ok');
+  await neuLaden();
+};
+
+/* ---------- Liste ---------- */
+document.querySelectorAll('#fStatus button').forEach(b => b.onclick = () => { FS = b.dataset.f; document.querySelectorAll('#fStatus button').forEach(x => x.classList.toggle('an', x===b)); zeichne(); });
+document.querySelectorAll('#fBereich button').forEach(b => b.onclick = () => { FB = b.dataset.f; document.querySelectorAll('#fBereich button').forEach(x => x.classList.toggle('an', x===b)); zeichne(); });
+
+async function signiert(pfade){
+  const neu = pfade.filter(p => !URLS[p]);
+  if(!neu.length) return;
+  const {data} = await client.storage.from(BUCKET).createSignedUrls(neu, 3600);
+  (data||[]).forEach(x => { if(x.signedUrl) URLS[x.path] = x.signedUrl; });
+}
+async function zeichne(){
+  const l = DATA.liste.filter(w => (!FB || w.bereich===FB) && (!FS || (FS==='offen' ? ['neu','geplant','in_arbeit'].includes(w.status) : w.status===FS)));
+  if(!l.length){ $('liste').innerHTML = '<div class="leer">' + (DATA.liste.length ? 'Keine Wünsche mit diesem Filter.' : 'Noch keine Wünsche. Trag oben den ersten ein.') + '</div>'; return; }
+  await signiert(l.flatMap(w => w.anhaenge.map(a => a.pfad)));
+  $('liste').innerHTML = l.map(w => {
+    const anh = w.anhaenge.length ? '<div class="anh">' + w.anhaenge.map(a => {
+      const u = URLS[a.pfad];
+      const bild = /^image\/(png|jpeg|webp|gif)$/.test(a.mime);
+      return '<a href="' + esc(u||'#') + '" target="_blank" rel="noopener" title="' + esc(a.dateiname) + '">' + (bild && u ? '<img src="' + esc(u) + '" alt="">' : '<span class="pdf">' + (a.mime==='application/pdf' ? 'PDF' : 'Datei') + '</span>') +
+        esc(a.dateiname) + (a.eigener || DATA.admin ? ' <button class="k" style="padding:1px 6px;font-size:11px" type="button" data-weg="' + a.id + '" data-pfad="' + esc(a.pfad) + '">entfernen</button>' : '') + '</a>';
+    }).join('') + '</div>' : '';
+    const admin = DATA.admin ? '<div class="admin"><b style="font-size:13px">Root Index</b>' +
+      '<div class="aktion"><select data-a-status>' + Object.keys(STATUS).map(s => '<option value="' + s + '"' + (s===w.status?' selected':'') + '>' + STATUS[s] + '</option>').join('') + '</select>' +
+      '<input data-a-grund placeholder="Grund (bei abgelehnt Pflicht)" value="' + esc(w.grund||'') + '"></div>' +
+      '<textarea data-a-antwort placeholder="Antwort an alle Fachleute" style="margin-top:6px;min-height:60px">' + esc(w.antwort||'') + '</textarea>' +
+      '<div class="aktion"><button class="k an" type="button" data-a-los>Speichern</button><span class="meld" data-a-m></span></div></div>' : '';
+    return '<div class="w" id="w' + w.id + '" data-id="' + w.id + '"><div class="w-kopf"><div>' +
+      '<div class="w-titel">' + esc(w.titel) + '</div>' +
+      '<div class="w-meta"><span class="chip st-' + esc(w.status) + '">' + esc(STATUS[w.status]||w.status) + '</span><span class="chip">' + esc(BEREICH[w.bereich]||w.bereich) + '</span> ' +
+        esc(w.von) + ' · ' + datum(w.erstellt_am) + '</div></div>' +
+      '<div class="stimme"><b>' + w.stimmen + '</b><button class="k' + (w.ich_auch ? ' an' : '') + '" type="button" data-stimme="' + (w.ich_auch ? '0' : '1') + '">' + (w.ich_auch ? '✓ Ich auch' : 'Ich auch') + '</button></div></div>' +
+      (w.beschreibung ? '<div class="w-text">' + esc(w.beschreibung) + '</div>' : '') + anh +
+      (w.status==='abgelehnt' && w.grund ? '<div class="antwort"><b>Abgelehnt, weil</b>' + esc(w.grund) + '</div>' : '') +
+      (w.antwort ? '<div class="antwort"><b>Antwort von Root Index · ' + datum(w.antwort_am) + '</b>' + esc(w.antwort) + '</div>' : '') +
+      '<div class="aktion"><label class="k" style="margin:0;font-weight:800">Datei anhängen<input type="file" hidden multiple data-datei accept="image/png,image/jpeg,image/webp,image/gif,image/heic,image/heif,application/pdf"></label>' +
+      (w.eigener && w.status==='neu' || DATA.admin ? '<button class="k" type="button" data-bearb>Ändern</button>' : '') + '<span class="meld" data-m></span></div>' + admin + '</div>';
+  }).join('');
+}
+async function stimme(id, an, knopf){
+  if(knopf) knopf.disabled = true;
+  const {data, error} = await client.rpc('cb_fl_wunsch_stimme', {p_id: id, p_an: an});
+  if(error) alert(error.message);
+  await neuLaden();
+}
+$('liste').addEventListener('click', async e => {
+  const box = e.target.closest('.w'); if(!box) return;
+  const id = Number(box.dataset.id), w = DATA.liste.find(x => x.id===id), m = box.querySelector('[data-m]');
+  const b = e.target.closest('button');
+  if(!b) return;
+  if(b.dataset.stimme){ return stimme(id, b.dataset.stimme==='1', b); }
+  if(b.dataset.weg){
+    e.preventDefault();
+    if(!confirm('Anhang entfernen?')) return;
+    await client.storage.from(BUCKET).remove([b.dataset.pfad]);
+    const {data, error} = await client.rpc('cb_fl_wunsch_anhang_loeschen', {p_anhang_id: Number(b.dataset.weg)});
+    const d = json(data); if(error || !d.ok) alert(error ? error.message : d.grund);
+    return neuLaden();
+  }
+  if(b.hasAttribute('data-bearb')){
+    const t = prompt('Titel:', w.titel); if(t===null) return;
+    const s = prompt('Beschreibung:', w.beschreibung||''); if(s===null) return;
+    const {data, error} = await client.rpc('cb_fl_wunsch_bearbeiten', {p_id: id, p_titel: t, p_beschreibung: s, p_bereich: w.bereich});
+    const d = json(data); if(error || !d.ok) return alert(error ? error.message : d.grund);
+    return neuLaden();
+  }
+  if(b.hasAttribute('data-a-los')){
+    const status = box.querySelector('[data-a-status]').value, grund = box.querySelector('[data-a-grund]').value, antwort = box.querySelector('[data-a-antwort]').value;
+    b.disabled = true;
+    const {data, error} = await client.rpc('cb_admin_fl_wunsch_setzen', {p_id: id, p_status: status, p_antwort: antwort, p_grund: grund || null});
+    const d = json(data); b.disabled = false;
+    if(error || !d.ok) return (box.querySelector('[data-a-m]').textContent = error ? error.message : d.grund);
+    return neuLaden();
+  }
+});
+$('liste').addEventListener('change', async e => {
+  const inp = e.target.closest('[data-datei]'); if(!inp) return;
+  const box = inp.closest('.w'), id = Number(box.dataset.id), m = box.querySelector('[data-m]'), files = [...inp.files];
+  const df = dateiPruefen(files); if(df){ m.textContent = df; m.className = 'meld fehler'; return; }
+  m.textContent = '⏳ Lädt hoch …'; m.className = 'meld';
+  const fehler = await hochladen(id, files);
+  if(fehler.length){ m.textContent = fehler.join(' · '); m.className = 'meld fehler'; }
+  await neuLaden();
+});
+start();
+</script>
+</body>
+</html>
