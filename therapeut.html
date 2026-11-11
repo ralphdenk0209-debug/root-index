@@ -13,13 +13,10 @@
      cb_fp_key_beenden, cb_fp_key_bezeichnung, cb_fp_abrechnung. Freischalten als Fachperson:
      nur Admin (cb_admin_fachperson_setzen).
      FL-4 (11.11.2026): Dashboard je Klient (cb_fp_klient_dashboard, cb_fp_vorgabe_setzen,
-     Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html).
-     FL-5 (11.11.2026): Menüpunkte Pläne, Rezepte, Berichte füllt fachleute-fl5.js über FLShell.bereich
-     (cb_fp_plaene, cb_fp_plan_*, cb_fp_rezept*, cb_fl5_muster_plaene; Bericht aus cb_fp_klient_dashboard). -->
+     Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html). -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fachleute-dashboard.js?v=3"></script>
-<script src="fachleute-fl5.js?v=1"></script>
+<script src="fachleute-dashboard.js?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -1044,5 +1041,6 @@ $('qrDruck').onclick = () => { $('dlgQr').close(); document.body.classList.add('
 
 start();
 </script>
+<script src="fachleute-fl5.js?v=1"></script>
 </body>
 </html>
