@@ -16,6 +16,7 @@
 const CSS = `
 .fd{--fd-gruen:#2e7d46;--fd-dunkel:#133521;--fd-creme:#F3EEDC;--fd-muted:#5d6b61;--fd-linie:#dfe6df;--fd-obst:#e8920c;--fd-gemuese:#2e7d46;--fd-rot:#b42318}
 .fd .fd-karte{background:#fff;border:1px solid var(--fd-linie);border-radius:16px;padding:16px;margin:14px 0}
+.app-an .fd .fd-karte{border:0;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06);padding:18px 20px}
 .fd h2{font-size:18px;margin:0 0 6px;color:var(--fd-dunkel)}
 .fd h3{font-size:15px;margin:14px 0 6px;color:var(--fd-dunkel)}
 .fd .fd-klein{font-size:13px;color:var(--fd-muted)}
@@ -197,6 +198,7 @@ function mount(el, opt){
       kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
       kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Ø-Werte je erfasstem Tag') +
     '</div></div>';
+    if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
 
     if(st.modus!=='tag'){
       h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, '#2e7d46']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
@@ -216,6 +218,8 @@ function mount(el, opt){
     h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
     $in.innerHTML = h;
     binde();
+    const v = $in.querySelector('.fd-verlauf');
+    if(v && window.FLStat) FLStat.verlauf(v, opt.verlauf, heute, opt.verlaufKey);
   }
   function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
   function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }

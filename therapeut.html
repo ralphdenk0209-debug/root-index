@@ -16,7 +16,9 @@
      Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html). -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fachleute-dashboard.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="fachleute-dashboard.js?v=3"></script>
+<script src="fachleute-statistik.js?v=3"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -226,6 +228,77 @@
     body.druck-dash .fd-karte{break-inside:avoid}
     body.druck-dash #wunschFrame{display:none}
   }
+  /* ---------- FL-4: modernes Dashboard (Ralph 11.11.: „modern, mit Diagrammen und Statistik“) ---------- */
+  body.app-an{background:#F2F4F0}
+  body.app-an .band{background:transparent;color:var(--dunkel);padding:26px 28px 4px;align-items:baseline}
+  body.app-an .band h1{color:var(--dunkel);font-size:26px;letter-spacing:-.01em}
+  body.app-an .band span{color:var(--muted);font-size:14.5px}
+  body.app-an .band.klein{background:#fff;color:var(--dunkel);padding:12px 16px;border-bottom:1px solid var(--linie)}
+  body.app-an .werkzeug{background:transparent;border:0;padding:10px 28px 6px}
+  body.app-an .ueb{background:transparent;border:0;padding:6px 28px 22px}
+  body.app-an .fl5{background:#fff;margin:12px 28px;border-radius:16px;border:0;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06)}
+  body.app-an .neu-panel,body.app-an .keyliste{margin:12px 28px;border-radius:16px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06);border:0;overflow:hidden}
+  body.app-an .keyliste{margin-top:0}
+  body.app-an .fuss{margin:10px 28px}
+  body.app-an .karte2 .fuss{margin:10px 0 0}
+  .seite-inhalt{padding:8px 28px 30px;display:grid;gap:16px}
+  .karte2{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 8px 24px rgba(19,53,33,.06);min-width:0}
+  .karte2.lade{color:var(--muted);text-align:center;padding:40px}
+  .k2-kopf{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .k2-kopf h3{margin:0;font-size:16px;color:var(--dunkel)}
+  .k2-kopf span{font-size:13px;color:var(--muted)}
+  .raster2{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .raster2.gleich{grid-template-columns:1fr 1fr}
+  .raster2 > .karte2.breit{min-width:0}
+  .ch-h{position:relative;height:280px}
+  .ch-h.klein{height:230px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:16px}
+  #uebStat .raster2,#awStat .raster2{margin-bottom:16px}
+  .kpi{background:#fff;border-radius:18px;padding:16px 18px 12px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 8px 24px rgba(19,53,33,.06);min-width:0}
+  .kpi-titel{font-size:13.5px;color:var(--muted)}
+  .kpi-wert{font-size:32px;font-weight:800;color:var(--dunkel);line-height:1.15;margin-top:4px;display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+  .kpi-wert small{font-size:15px;color:var(--muted);font-weight:400}
+  .kpi-delta{font-size:12.5px;font-weight:800;border-radius:99px;padding:2px 8px;margin-left:6px}
+  .kpi-delta.gut{background:#E2F0E6;color:var(--gruen)} .kpi-delta.schlecht{background:#FCEBD9;color:#9a4f00}
+  .kpi-spark{display:block;width:100%;height:38px!important;margin:8px 0 4px}
+  .kpi-fuss{font-size:12.5px;color:var(--muted)}
+  .hinweis-band{background:#FFF7DD;border-radius:14px;padding:11px 14px;font-size:14px;color:#5b4500;margin-bottom:16px}
+  .bz{display:grid;grid-template-columns:minmax(90px,140px) 1fr minmax(90px,auto);gap:12px;align-items:center;padding:7px 0}
+  .bz-name{font-weight:800;color:var(--dunkel);font-size:14.5px;line-height:1.2}
+  .bz-name small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .bz-spur{position:relative;height:14px;background:#EEF1EC;border-radius:99px;display:flex;overflow:visible}
+  .bz-spur i{display:block;height:100%}
+  .bz-spur i:first-child{border-radius:99px 0 0 99px}
+  .bz-spur i:last-of-type{border-radius:0 99px 99px 0}
+  .bz-spur i:only-of-type{border-radius:99px}
+  .bz-marke{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--dunkel)}
+  .bz-wert{text-align:right;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .legende2{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .legende2 i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+  .legende2 i.strich{width:0;height:12px;border-left:2px dashed var(--dunkel);border-radius:0}
+  .legende2 i.ja,.matrix td.ja{background:#DDEFE2} .legende2 i.nein,.matrix td.nein{background:#FCEBD3}
+  .legende2 i.ueber,.matrix td.ueber{background:#F8D7D0} .legende2 i.leer,.matrix td.leer{background:#F1F3F0}
+  .matrix-wrap{overflow-x:auto}
+  .matrix{border-collapse:separate;border-spacing:4px;width:100%;font-size:13.5px}
+  .matrix thead th{font-size:12px;color:var(--muted);font-weight:800;text-align:center;padding:2px 4px;white-space:nowrap}
+  .matrix tbody th{text-align:left;font-weight:800;color:var(--dunkel);white-space:nowrap;padding-right:8px}
+  .matrix td{text-align:center;border-radius:8px;padding:8px 4px;font-variant-numeric:tabular-nums;color:#2b3a2f;min-width:62px}
+  .matrix tr[data-ziel]:hover td{filter:brightness(.96)}
+  .mini-muster{font-size:10.5px;font-weight:800;color:#7a5a00;background:#FFF4CC;border-radius:5px;padding:1px 5px}
+  body.app-an .kennzahlen{margin-top:0;border-radius:14px}
+  body.app-an .detail{background:#F2F4F0}
+  body.app-an .detail .fd .fd-zeit{background:#F2F4F0}
+  body.app-an .tabwrap{border-radius:12px}
+  @media (max-width:1000px){ .kpis{grid-template-columns:1fr 1fr} .raster2,.raster2.gleich{grid-template-columns:1fr} }
+  @media (max-width:760px){
+    body.app-an .band{padding:18px 14px 2px} body.app-an .band h1{font-size:21px}
+    body.app-an .werkzeug{padding:8px 14px 4px} .seite-inhalt{padding:6px 12px 24px;gap:12px}
+    body.app-an .neu-panel,body.app-an .keyliste,body.app-an .fl5{margin:10px 12px} body.app-an .fuss{margin:10px 14px}
+    .kpis{gap:10px} .kpi{padding:12px 14px 10px} .kpi-wert{font-size:24px}
+    .bz{grid-template-columns:1fr auto;gap:4px 10px} .bz-spur{grid-column:1/-1;order:3}
+    .ch-h{height:240px}
+  }
+  @media print{ body.druck-dash .seite-inhalt{display:block} body.druck-dash .karte2{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px} }
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -337,17 +410,20 @@
       <button class="tb" type="button" data-geh="klienten">Klienten öffnen</button>
       <button class="tb" type="button" data-muster>Musterpraxis ansehen</button>
     </div>
-    <div class="ueb">
-      <div class="kennzahlen" id="uebZahlen"></div>
-      <h2 class="abschnitt">Klientinnen und Klienten</h2>
-      <div class="tabwrap"><table class="tab" id="uebTab"></table></div>
-      <h2 class="abschnitt">Abrechnung diesen Monat</h2>
-      <div class="kennzahlen">
-        <div class="kz"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
-        <div class="kz"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
-        <div class="kz"><b id="zNeu">–</b><span>neu eingelöst</span></div>
+    <div class="seite-inhalt">
+      <div id="uebStat"><div class="karte2 lade">Statistik wird geladen …</div></div>
+      <div class="raster2 gleich">
+        <div class="karte2"><div class="k2-kopf"><h3>Klientinnen und Klienten</h3><span>Keys und Einwilligungen</span></div>
+          <div class="kennzahlen" id="uebZahlen"></div>
+          <div class="tabwrap"><table class="tab" id="uebTab"></table></div></div>
+        <div class="karte2"><div class="k2-kopf"><h3>Abrechnung diesen Monat</h3><span>Stand heute</span></div>
+          <div class="kennzahlen">
+            <div class="kz"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
+            <div class="kz"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
+            <div class="kz"><b id="zNeu">–</b><span>neu eingelöst</span></div>
+          </div>
+          <p class="fuss" id="zRegel">Grundlage der monatlichen Abrechnung.</p></div>
       </div>
-      <p class="fuss" id="zRegel">Grundlage der monatlichen Abrechnung.</p>
     </div>
   </section>
 
@@ -364,15 +440,19 @@
   </section>
 
   <section class="ansicht" data-v="auswertungen">
-    <div class="band"><h1>Auswertungen</h1><span>alle Klienten im Vergleich</span></div>
+    <div class="band"><h1>Auswertungen</h1><span>alle Personen im Vergleich</span></div>
     <div class="werkzeug">
       <div class="dd"><button class="tb" type="button" data-dd><span id="awZeitText">Letzte 7 Tage</span><svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-aw="7">Letzte 7 Tage</button><button type="button" data-aw="14">Letzte 14 Tage</button><button type="button" data-aw="30">Letzte 30 Tage</button></div></div>
       <div class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-druck="aw">Drucken</button><button type="button" data-druck="aw">Als PDF speichern</button></div></div>
     </div>
-    <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div>
-    <p class="fuss">Werte sind der Durchschnitt je erfasstem Tag. Soll nach eigener Vorgabe, sonst Profilziel oder DGE-Orientierung. Eine Zeile antippen öffnet die Person.</p>
+    <div class="seite-inhalt">
+      <div id="awInfo"></div>
+      <div id="awStat"><div class="karte2 lade">Wird geladen …</div></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Alle Werte</h3><span>Ø je erfasstem Tag · Soll nach Vorgabe, sonst Profilziel oder DGE-Orientierung · eine Zeile antippen öffnet die Person</span></div>
+        <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div></div>
+    </div>
   </section>
 
   <section class="ansicht" data-v="plaene"><div class="band"><h1>Pläne</h1></div><div class="fl5" data-fl5="plaene"></div></section>
@@ -670,6 +750,8 @@ async function ladeKeys(){
   zeichne();
   KEYS_DA = true;
   zeichneShell();
+  if(window.FLStat) FLStat.leeren();
+  if(AKTIV==='uebersicht') ladeUebersichtStat();
   if(AKTIV==='klienten' && (!WAHL || !$('kDash'))) zeigeKlient(WAHL || standardWahl());
 }
 const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abgelaufen', beendet:'Beendet'};
@@ -777,6 +859,7 @@ function route(){
   $('menueAktiv').textContent = NAMEN[v];
   if(v==='klienten') zeigeKlient(teil[1] || WAHL || standardWahl());
   if(v==='auswertungen') ladeAuswertungen();
+  if(v==='uebersicht') ladeUebersichtStat();
   if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
   if(v==='bewertung') ladeBewertung();
@@ -855,14 +938,16 @@ async function zeigeKlient(wahl){
     const nr = Number(WAHL.slice(7)), k = MUSTER && (MUSTER.klienten||[]).find(x => x.nr===nr);
     if(!k){ el.innerHTML = '<div class="leer-gross"><b>Musterpraxis gerade nicht verfügbar</b>' + esc(MUSTER_FEHLER || '') + '</div>'; return; }
     kopf = '<span><span class="n">' + esc(k.name) + '</span><span class="muster-mark">Musterpraxis, erfunden</span><small>' + esc(k.code) + '</small></span>';
-    opt = { heute: MUSTER.heute, nurLesen: true,
+    opt = { heute: MUSTER.heute, nurLesen: true, verlaufKey: WAHL,
+      verlauf: (von, bis) => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}),
       laden: async (von, bis) => { const r = await client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   } else {
     if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
     const k = KEYS.find(x => x.code===WAHL);
     if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
     kopf = '<span><span class="n">' + esc(klientName(k)) + '</span><small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
-    opt = { heute: heuteBerlin(), nurLesen: false,
+    opt = { heute: heuteBerlin(), nurLesen: false, verlaufKey: WAHL,
+      verlauf: (von, bis) => client.rpc('cb_fp_klient_dashboard', {p_code: WAHL, p_von: von, p_bis: bis}),
       laden: async (von, bis) => { const r = await client.rpc('cb_fp_klient_dashboard', {p_code: WAHL, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); },
       vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: WAHL, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   }
@@ -879,34 +964,49 @@ function drucken(){
   setTimeout(() => window.print(), 50);
 }
 
-/* Auswertungen: alle Personen im Vergleich (eine Zeile je Person) */
-async function ladeAuswertungen(){
+/* Statistik: eigene verbundene Klienten; solange es keine gibt, die Musterpraxis (deutlich gekennzeichnet) */
+async function statPersonen(){
   await ladeMuster();
-  const bis = plusTage(heuteBerlin(), -1), von = plusTage(bis, -(AW_TAGE - 1));
-  const leute = verbunden().map(x => ({ziel: 'klienten/' + x.code, name: klientName(x), code: x.code, rpc: () => client.rpc('cb_fp_klient_dashboard', {p_code: x.code, p_von: von, p_bis: bis})}));
-  const muster = (MUSTER && MUSTER.klienten || []).map(k => ({ziel: 'klienten/muster-' + k.nr, name: k.name, code: k.code, muster: true,
-                   rpc: () => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: k.nr, p_von: von, p_bis: bis})}));
-  $('awTab').innerHTML = '<tbody><tr><td class="leer">Lädt …</td></tr></tbody>';
-  const alle = leute.concat(muster);
-  const erg = await Promise.all(alle.map(p => p.rpc().then(r => r.error ? {fehler: r.error.message} : json(r.data)).catch(e => ({fehler: e.message}))));
-  const zeile = (p, d) => {
-    if(d.fehler) return '<tr><td><b>' + esc(p.name) + '</b></td><td colspan="7" class="leer">' + esc(d.fehler) + '</td></tr>';
-    const is = d.ist_soll || [], k = is.find(x => x.kennzahl==='kcal' && x.einheit!=='en%');
-    const gr = g => { const x = (d.gruppen||[]).find(y => y.gruppe===g); return x ? x.gramm_je_tag : (d.tage_erfasst ? 0 : null); };
-    const bew = is.filter(x => !x.kennzahl.startsWith('mikro:') && x.erfuellt!==null && x.erfuellt!==undefined);
-    const amp = x => x==null ? 'x' : x ? 'g' : 'o';
+  const v = verbunden();
+  if(v.length) return {info: '', personen: v.map(x => ({key: x.code, name: klientName(x), code: x.code, ziel: 'klienten/' + x.code,
+    rpc: (von, bis) => client.rpc('cb_fp_klient_dashboard', {p_code: x.code, p_von: von, p_bis: bis})}))};
+  return {info: '<b>Beispieldaten aus der Musterpraxis</b> (erfundene Personen). Sobald eigene Klienten verbunden sind, stehen hier deren Zahlen.',
+    personen: (MUSTER && MUSTER.klienten || []).map(k => ({key: 'muster-' + k.nr, name: k.name, code: k.code, muster: true, ziel: 'klienten/muster-' + k.nr,
+      rpc: (von, bis) => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: k.nr, p_von: von, p_bis: bis})}))};
+}
+async function ladeUebersichtStat(){
+  if(!window.FLStat) return;
+  const {info, personen} = await statPersonen();
+  if(!personen.length){ $('uebStat').innerHTML = '<div class="karte2"><p class="fuss">Noch keine Daten. Sobald Klienten verbunden sind, erscheinen hier Kennzahlen und Diagramme.</p></div>'; return; }
+  const d = await FLStat.laden(personen, heuteBerlin(), 7);
+  if(AKTIV==='uebersicht') FLStat.uebersicht($('uebStat'), d, info);
+}
+async function ladeAuswertungen(){
+  if(!window.FLStat) return;
+  const {info, personen} = await statPersonen();
+  $('awInfo').innerHTML = info ? '<div class="hinweis-band">' + info + '</div>' : '';
+  if(!personen.length){ $('awStat').innerHTML = ''; $('awTab').innerHTML = '<tbody><tr><td class="leer">Noch niemand verbunden.</td></tr></tbody>'; return; }
+  $('awStat').innerHTML = '<div class="karte2 lade">Wird geladen …</div>';
+  const daten = await FLStat.laden(personen, heuteBerlin(), AW_TAGE);
+  if(AKTIV!=='auswertungen') return;
+  FLStat.vergleich($('awStat'), daten);
+  const zeile = x => {
+    const p = x.p, d = x.kurz;
+    if(d.fehler) return '<tr><td><b>' + esc(p.name) + '</b></td><td colspan="6" class="leer">' + esc(d.fehler) + '</td></tr>';
+    const is = d.ist_soll || [], k = is.find(y => y.kennzahl==='kcal' && y.einheit!=='en%');
+    const gr = g => { const y = (d.gruppen||[]).find(q => q.gruppe===g); return y ? y.gramm_je_tag : (d.tage_erfasst ? 0 : null); };
+    const bew = is.filter(y => !y.kennzahl.startsWith('mikro:') && y.erfuellt!==null && y.erfuellt!==undefined);
+    const amp = y => y==null ? 'x' : y ? 'g' : 'o';
     return '<tr class="klick" data-ziel="' + esc(p.ziel) + '"><td><b>' + esc(p.name) + '</b>' + (p.muster ? '<span class="muster-mark">erfunden</span>' : '') + '<br><small style="color:var(--muted)">' + esc(p.code) + '</small></td>' +
       '<td class="z">' + (d.tage_erfasst||0) + ' / ' + AW_TAGE + '</td>' +
       '<td class="z"><span class="ampel ' + amp(k && k.erfuellt) + '"></span>' + zz(k && k.ist) + (k && k.soll ? ' <small style="color:var(--muted)">/ ' + zz(k.soll) + '</small>' : '') + '</td>' +
       '<td class="z">' + (gr('gemuese')==null ? '–' : zz(gr('gemuese')) + ' g') + '</td>' +
       '<td class="z">' + (gr('obst')==null ? '–' : zz(gr('obst')) + ' g') + '</td>' +
       '<td class="z">' + zz(d.summe && d.summe.score) + '</td>' +
-      '<td class="z">' + (bew.length ? bew.filter(x => x.erfuellt).length + ' von ' + bew.length : '–') + '</td></tr>';
+      '<td class="z">' + (bew.length ? bew.filter(y => y.erfuellt).length + ' von ' + bew.length : '–') + '</td></tr>';
   };
-  let h = '<thead><tr><th>Person</th><th class="z">Tage erfasst</th><th class="z">kcal Ø / Soll</th><th class="z">Gemüse Ø</th><th class="z">Obst Ø</th><th class="z">Score Ø</th><th class="z">Im Ziel</th></tr></thead><tbody>';
-  h += '<tr class="gruppe"><td colspan="7">Meine Klienten</td></tr>' + (leute.length ? leute.map((p, i) => zeile(p, erg[i])).join('') : '<tr><td colspan="7" class="leer">Noch niemand verbunden.</td></tr>');
-  if(muster.length) h += '<tr class="gruppe"><td colspan="7">' + esc(MUSTER.praxis || 'Musterpraxis') + ' (erfunden)</td></tr>' + muster.map((p, i) => zeile(p, erg[leute.length + i])).join('');
-  $('awTab').innerHTML = h + '</tbody>';
+  $('awTab').innerHTML = '<thead><tr><th>Person</th><th class="z">Tage erfasst</th><th class="z">kcal Ø / Soll</th><th class="z">Gemüse Ø</th><th class="z">Obst Ø</th><th class="z">Score Ø</th><th class="z">Im Ziel</th></tr></thead><tbody>' +
+    daten.map(zeile).join('') + '</tbody>';
 }
 
 /* So bewertet Root Index: vertrauliche Fassung (FL-3) aus der Datenbank, nur für Fachleute mit Vereinbarung.
