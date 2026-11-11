@@ -65,6 +65,10 @@
   .leer{color:var(--muted);text-align:center;padding:14px}
   .klein{font-size:13px;color:var(--muted);margin-top:22px;text-align:center}
   a{color:var(--gruen)}
+  body.eingebettet{background:#F7F7F3}
+  body.eingebettet .kopf, body.eingebettet .klein{display:none}
+  body.eingebettet .wrap{max-width:860px;padding-top:14px}
+  body.eingebettet h1{font-size:21px}
   [hidden]{display:none!important}
 </style>
 </head>
@@ -126,6 +130,7 @@
 <script>
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
 const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
+if(new URLSearchParams(location.search).get('eingebettet')) document.body.classList.add('eingebettet');
 const client = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
   auth: { persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit", storage: window.localStorage, storageKey:"sb-cleanbase-auth" }
 });
