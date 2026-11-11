@@ -16,7 +16,9 @@
      Anzeige in fachleute-dashboard.js) und Link zur Wunschliste (fachleute-wuensche.html). -->
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="fachleute-dashboard.js?v=2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="fachleute-dashboard.js?v=3"></script>
+<script src="fachleute-statistik.js?v=6"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -226,6 +228,155 @@
     body.druck-dash .fd-karte{break-inside:avoid}
     body.druck-dash #wunschFrame{display:none}
   }
+  /* ---------- FL-4: modernes Dashboard (Ralph 11.11.: „modern, mit Diagrammen und Statistik“) ---------- */
+  body.app-an{background:#F2F4F0}
+  body.app-an .band{background:transparent;color:var(--dunkel);padding:26px 28px 4px;align-items:baseline}
+  body.app-an .band h1{color:var(--dunkel);font-size:26px;letter-spacing:-.01em}
+  body.app-an .band span{color:var(--muted);font-size:14.5px}
+  body.app-an .band.klein{background:#fff;color:var(--dunkel);padding:12px 16px;border-bottom:1px solid var(--linie)}
+  body.app-an .werkzeug{background:transparent;border:0;padding:10px 28px 6px}
+  body.app-an .ueb{background:transparent;border:0;padding:6px 28px 22px}
+  body.app-an .fl5{background:#fff;margin:12px 28px;border-radius:16px;border:0;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06)}
+  body.app-an .neu-panel,body.app-an .keyliste{margin:12px 28px;border-radius:16px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06);border:0;overflow:hidden}
+  body.app-an .keyliste{margin-top:0}
+  body.app-an .fuss{margin:10px 28px}
+  body.app-an .karte2 .fuss{margin:10px 0 0}
+  .seite-inhalt{padding:8px 28px 30px;display:grid;gap:16px}
+  .karte2{background:#fff;border-radius:18px;padding:18px 20px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 8px 24px rgba(19,53,33,.06);min-width:0}
+  .karte2.lade{color:var(--muted);text-align:center;padding:40px}
+  .k2-kopf{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .k2-kopf h3{margin:0;font-size:16px;color:var(--dunkel)}
+  .k2-kopf span{font-size:13px;color:var(--muted)}
+  .raster2{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+  .raster2.gleich{grid-template-columns:1fr 1fr}
+  .raster2 > .karte2.breit{min-width:0}
+  .ch-h{position:relative;height:280px}
+  .ch-h.klein{height:230px}
+  .kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;margin-bottom:16px}
+  .seite-inhalt > *, #uebStat, #awStat{min-width:0}
+  #app{min-width:0;max-width:none}
+  #uebStat .raster2,#awStat .raster2{margin-bottom:16px}
+  .kpi{background:#fff;border-radius:18px;padding:16px 18px 12px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 8px 24px rgba(19,53,33,.06);min-width:0}
+  .kpi-titel{font-size:13.5px;color:var(--muted)}
+  .kpi-wert{font-size:32px;font-weight:800;color:var(--dunkel);line-height:1.15;margin-top:4px;display:flex;align-items:baseline;gap:4px;flex-wrap:wrap}
+  .kpi-wert small{font-size:15px;color:var(--muted);font-weight:400}
+  .kpi-delta{font-size:12.5px;font-weight:800;border-radius:99px;padding:2px 8px;margin-left:6px}
+  .kpi-delta.gut{background:#E2F0E6;color:var(--gruen)} .kpi-delta.schlecht{background:#FCEBD9;color:#9a4f00}
+  .kpi-spark{display:block;width:100%;height:38px!important;margin:8px 0 4px}
+  .kpi-fuss{font-size:12.5px;color:var(--muted)}
+  .hinweis-band{background:#FFF7DD;border-radius:14px;padding:11px 14px;font-size:14px;color:#5b4500;margin-bottom:16px}
+  .bz{display:grid;grid-template-columns:minmax(90px,140px) 1fr minmax(90px,auto);gap:12px;align-items:center;padding:7px 0}
+  .bz-name{font-weight:800;color:var(--dunkel);font-size:14.5px;line-height:1.2}
+  .bz-name small{display:block;font-weight:400;color:var(--muted);font-size:12px}
+  .bz-spur{position:relative;height:14px;background:#EEF1EC;border-radius:99px;display:flex;overflow:visible}
+  .bz-spur i{display:block;height:100%}
+  .bz-spur i:first-child{border-radius:99px 0 0 99px}
+  .bz-spur i:last-of-type{border-radius:0 99px 99px 0}
+  .bz-spur i:only-of-type{border-radius:99px}
+  .bz-marke{position:absolute;top:-4px;bottom:-4px;width:0;border-left:2px dashed var(--dunkel)}
+  .bz-wert{text-align:right;font-size:14px;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .legende2{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:12px}
+  .legende2 i{display:inline-block;width:12px;height:12px;border-radius:4px;margin-right:6px;vertical-align:-2px}
+  .legende2 i.strich{width:0;height:12px;border-left:2px dashed var(--dunkel);border-radius:0}
+  .legende2 i.ja,.matrix td.ja{background:#DDEFE2} .legende2 i.nein,.matrix td.nein{background:#FCEBD3}
+  .legende2 i.ueber,.matrix td.ueber{background:#F8D7D0} .legende2 i.leer,.matrix td.leer{background:#F1F3F0}
+  .matrix-wrap{overflow-x:auto}
+  .matrix{border-collapse:separate;border-spacing:4px;width:100%;font-size:13.5px}
+  .matrix thead th{font-size:12px;color:var(--muted);font-weight:800;text-align:center;padding:2px 4px;white-space:nowrap}
+  .matrix tbody th{text-align:left;font-weight:800;color:var(--dunkel);white-space:nowrap;padding-right:8px}
+  .matrix td{text-align:center;border-radius:8px;padding:8px 4px;font-variant-numeric:tabular-nums;color:#2b3a2f;min-width:62px}
+  .matrix tr[data-ziel]:hover td{filter:brightness(.96)}
+  .mini-muster{font-size:10.5px;font-weight:800;color:#7a5a00;background:#FFF4CC;border-radius:5px;padding:1px 5px}
+  body.app-an .kennzahlen{margin-top:0;border-radius:14px}
+  body.app-an .detail{background:#F2F4F0}
+  body.app-an .detail .fd .fd-zeit{background:#F2F4F0}
+  body.app-an .tabwrap{border-radius:12px}
+  @media (max-width:1250px){ .kpis{grid-template-columns:repeat(2,minmax(0,1fr))} }
+  @media (max-width:1000px){ .raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
+  @media (max-width:760px){
+    body.app-an .band{padding:18px 14px 2px} body.app-an .band h1{font-size:21px}
+    body.app-an .werkzeug{padding:8px 14px 4px} .seite-inhalt{padding:6px 12px 24px;gap:12px}
+    body.app-an .neu-panel,body.app-an .keyliste,body.app-an .fl5{margin:10px 12px} body.app-an .fuss{margin:10px 14px}
+    .kpis{gap:10px} .kpi{padding:12px 14px 10px} .kpi-wert{font-size:24px}
+    .bz{grid-template-columns:1fr auto;gap:4px 10px} .bz-spur{grid-column:1/-1;order:3}
+    .ch-h{height:240px}
+  }
+  @media print{ body.druck-dash .seite-inhalt{display:block} body.druck-dash .karte2{box-shadow:none;border:1px solid #ddd;break-inside:avoid;margin-bottom:10px} }
+  /* ---------- FL-4: Stil „frisch“ (Ralph 11.11.: helle Seitenleiste, Begrüßung, Karten mit farbigen Symbolen) ---------- */
+  :root{--frisch-grund:#EEF2E8;--lime:#8CC152;--lime-hell:#EAF4DC;--gelb:#F4B740;--gelb-hell:#FDF1D4;--orange:#EE8A3C;--orange-hell:#FCE6D4}
+  body.app-an{background:var(--frisch-grund)}
+  body.app-an .kopf{background:transparent;color:var(--dunkel);padding:20px 28px 6px}
+  body.app-an .kopf .marke{display:none}
+  .gruss b{display:block;font-size:24px;color:var(--dunkel);letter-spacing:-.01em;line-height:1.2}
+  .gruss span{font-size:14px;color:var(--muted)}
+  body.app-an .kopf-nutzer{background:#fff;color:var(--dunkel);border:0;border-radius:14px;padding:9px 14px;box-shadow:0 1px 2px rgba(19,53,33,.06),0 6px 18px rgba(19,53,33,.06)}
+  body.app-an .statuszeile{background:transparent;border:0;padding:4px 28px 0}
+  .menue-marke{display:none}
+  body.app-an .band{padding-top:14px}
+  body.app-an .band h1{font-size:22px}
+  .kpi-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .kpi-symbol{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:0 0 38px}
+  .kpi-symbol svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .kpi-symbol.lime{background:var(--lime-hell);color:#4f8a1e} .kpi-symbol.gelb{background:var(--gelb-hell);color:#a86c00}
+  .kpi-symbol.orange{background:var(--orange-hell);color:#b8540f} .kpi-symbol.tanne{background:#E3ECE5;color:var(--dunkel)}
+  .kpi,.karte2{border-radius:22px}
+  .messer{position:relative;height:190px}
+  .messer-mitte{position:absolute;left:0;right:0;bottom:22px;text-align:center}
+  .messer-mitte b{display:block;font-size:30px;color:var(--dunkel);line-height:1.1}
+  .messer-mitte span{font-size:13px;color:var(--muted)}
+  .messer-skala{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);padding:0 12%}
+  @media (min-width:1001px){
+    body.app-an{padding-left:244px}
+    body.app-an .menue{position:fixed;left:0;top:0;bottom:0;width:244px;border:0;background:#fff;padding:22px 14px;display:flex;flex-direction:column;gap:14px;box-shadow:1px 0 0 #e4e9e0;z-index:40}
+    body.app-an .menue-marke{display:flex;align-items:center;gap:10px;padding:2px 10px 10px;font-weight:800;color:var(--dunkel);font-size:17px}
+    .menue-marke img{border-radius:8px}
+    .menue-marke small{display:block;font-weight:400;font-size:12.5px;color:var(--muted)}
+    body.app-an .menue-liste{flex-direction:column;gap:4px;padding:0;overflow:visible}
+    body.app-an .menue button{width:100%;padding:11px 14px;border-radius:13px;font-size:15px;color:#4a574e}
+    body.app-an .menue button:hover{background:#F2F6EE}
+    body.app-an .menue button.an{background:var(--lime);color:#fff;font-weight:800;box-shadow:0 6px 14px rgba(140,193,82,.35)}
+    body.app-an .split{height:calc(100vh - 120px)}
+  }
+  @media (max-width:1000px){
+    body.app-an .kopf{padding:14px 14px 4px} .gruss b{font-size:19px}
+    body.app-an .menue{background:#fff}
+  }
+  .blick{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  .blick-k{display:block;text-align:left;border:1px solid #E7ECE3;background:#FBFCFA;border-radius:18px;padding:14px;font:inherit;color:inherit;cursor:pointer;transition:box-shadow .15s,border-color .15s}
+  .blick-k:hover{border-color:var(--lime);box-shadow:0 6px 18px rgba(19,53,33,.08)}
+  .blick-kopf{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+  .blick-kopf b{font-size:16px;color:var(--dunkel)}
+  .blick-kopf small{display:block;font-size:12.5px;color:var(--muted)}
+  .blick-score{min-width:38px;text-align:center;border-radius:11px;color:#fff;font-weight:800;padding:5px 7px;font-size:14px}
+  .blick-mitte{display:flex;align-items:center;gap:12px;margin:10px 0}
+  .ring{width:64px;height:64px;flex:0 0 64px}
+  .blick-werte{display:grid;gap:6px;font-size:14px}
+  .blick-werte small{display:block;font-size:12px;color:var(--muted)}
+  .blick-werte b{color:var(--dunkel)}
+  .blick-werte em{font-style:normal;font-weight:400;color:var(--muted);font-size:13px}
+  .blick-tage{display:flex;align-items:center;gap:4px}
+  .blick-tage i{width:16px;height:7px;border-radius:99px;display:inline-block}
+  .blick-tage i.ja{background:var(--lime)} .blick-tage i.leer{background:#E3E7E0}
+  .blick-tage span{font-size:12px;color:var(--muted);margin-left:6px}
+  .blick-karte{margin-bottom:16px}
+  .hinw{display:grid;gap:6px}
+  .hinw-z{display:flex;gap:10px;align-items:flex-start;text-align:left;border:0;background:#F7F9F5;border-radius:12px;padding:9px 11px;font:inherit;font-size:14px;color:var(--text);cursor:pointer}
+  .hinw-z:hover{background:#EEF4E8}
+  .hinw-z i{width:10px;height:10px;border-radius:50%;flex:0 0 10px;margin-top:5px}
+  .hinw-z i.orange{background:var(--orange)} .hinw-z i.gelb{background:var(--gelb)} .hinw-z i.rot{background:#c2412d} .hinw-z i.grau{background:#b8c0b9}
+  .hinw-z b{display:block;color:var(--dunkel);font-size:13.5px}
+  .karte2.start h3{margin:0 0 10px;font-size:18px;color:var(--dunkel)}
+  .schritte{margin:0 0 16px;padding-left:22px;display:grid;gap:10px}
+  .schritte b{display:block;color:var(--dunkel)} .schritte span{font-size:14px;color:var(--muted)}
+  .hinw-t{display:block;font-size:13px;color:#46524a;line-height:1.35;margin-top:2px}
+  .raster2{align-items:start}
+  .raster2.oben{grid-template-columns:minmax(0,2fr) minmax(0,1fr);margin-bottom:16px}
+  .raster2{grid-template-columns:minmax(0,2fr) minmax(0,1fr)} .raster2.gleich{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  @media (max-width:1200px){ .raster2.oben,.raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
+  body.app-an{overflow-x:hidden}
+  body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="bewertung"], body.demo [data-v="wunschliste"]{display:none!important}
+  body.demo .statuszeile .punkt{background:var(--gelb)}
+  .demo-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dunkel);color:#fff;border-radius:12px;padding:10px 16px;font-size:14.5px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
 </style>
@@ -233,6 +384,7 @@
 <body>
 <header class="kopf">
   <a class="marke" href="https://root-index.de"><img src="logo-mark.png" alt="" width="22" height="22">Root Index <span>für Fachleute</span></a>
+  <div class="gruss" id="gruss" hidden><b id="grussText">Guten Tag</b><span id="grussUnter"></span></div>
   <div class="dd" id="nutzerDd" hidden>
     <button class="kopf-nutzer" type="button" data-dd aria-haspopup="true"><span id="nutzerName">–</span><svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <div class="dd-menu rechts" role="menu">
@@ -245,6 +397,7 @@
 
 <!-- FL-4: Menüleiste und Statuszeile (nur angemeldet als Fachperson) -->
 <nav class="menue" id="menue" hidden aria-label="Bereiche">
+  <div class="menue-marke"><img src="logo-mark.png" alt="" width="30" height="30"><span>Root Index<small>für Fachleute</small></span></div>
   <button class="menue-auf" id="menueAuf" type="button" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="menueAktiv">Übersicht</span></button>
   <div class="menue-liste" id="menueListe">
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
@@ -279,7 +432,22 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
+      <p style="margin:12px 0 0;font-size:14px"><a href="#demo" id="zurDemo">Musterpraxis ansehen (Vorführung mit Passwort)</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+    </div>
+  </section>
+
+  <!-- FL-4: Musterpraxis (Vorführung) mit Passwort -->
+  <section id="bDemo" hidden>
+    <h1>Musterpraxis ansehen</h1>
+    <p class="unter">Vorführung der Fachleute-Oberfläche mit erfundenen Klientinnen und Klienten. Produkte, Nährwerte und Scores sind echt aus dem Root Index.</p>
+    <div class="karte">
+      <label for="demoPw">Passwort der Vorführung</label>
+      <input id="demoPw" type="password" autocomplete="off">
+      <button class="knopf" id="demoLos" type="button">Musterpraxis öffnen</button>
+      <div class="meld" id="meldDemo"></div>
+      <p style="margin:12px 0 0;font-size:14px">Kein Passwort? Vorführung anfragen: <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a></p>
+      <button class="link" type="button" id="demoZurAnmeldung">Zur Anmeldung für Fachleute</button>
     </div>
   </section>
 
@@ -335,19 +503,21 @@
       <div class="dd"><button class="tb haupt" type="button" data-dd>Neuer Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-neu="mail">Anlegen und per E-Mail senden</button><button type="button" data-neu="qr">Anlegen als QR-Karte</button><button type="button" data-neu="nur">Nur anlegen</button></div></div>
       <button class="tb" type="button" data-geh="klienten">Klienten öffnen</button>
-      <button class="tb" type="button" data-muster>Musterpraxis ansehen</button>
     </div>
-    <div class="ueb">
-      <div class="kennzahlen" id="uebZahlen"></div>
-      <h2 class="abschnitt">Klientinnen und Klienten</h2>
-      <div class="tabwrap"><table class="tab" id="uebTab"></table></div>
-      <h2 class="abschnitt">Abrechnung diesen Monat</h2>
-      <div class="kennzahlen">
-        <div class="kz"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
-        <div class="kz"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
-        <div class="kz"><b id="zNeu">–</b><span>neu eingelöst</span></div>
+    <div class="seite-inhalt">
+      <div id="uebStat"><div class="karte2 lade">Statistik wird geladen …</div></div>
+      <div class="raster2 gleich">
+        <div class="karte2"><div class="k2-kopf"><h3>Klientinnen und Klienten</h3><span>Keys und Einwilligungen</span></div>
+          <div class="kennzahlen" id="uebZahlen"></div>
+          <div class="tabwrap"><table class="tab" id="uebTab"></table></div></div>
+        <div class="karte2"><div class="k2-kopf"><h3>Abrechnung diesen Monat</h3><span>Stand heute</span></div>
+          <div class="kennzahlen">
+            <div class="kz"><b id="zAktiv">–</b><span>Keys aktiv</span></div>
+            <div class="kz"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
+            <div class="kz"><b id="zNeu">–</b><span>neu eingelöst</span></div>
+          </div>
+          <p class="fuss" id="zRegel">Grundlage der monatlichen Abrechnung.</p></div>
       </div>
-      <p class="fuss" id="zRegel">Grundlage der monatlichen Abrechnung.</p>
     </div>
   </section>
 
@@ -364,15 +534,19 @@
   </section>
 
   <section class="ansicht" data-v="auswertungen">
-    <div class="band"><h1>Auswertungen</h1><span>alle Klienten im Vergleich</span></div>
+    <div class="band"><h1>Auswertungen</h1><span>alle Personen im Vergleich</span></div>
     <div class="werkzeug">
       <div class="dd"><button class="tb" type="button" data-dd><span id="awZeitText">Letzte 7 Tage</span><svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-aw="7">Letzte 7 Tage</button><button type="button" data-aw="14">Letzte 14 Tage</button><button type="button" data-aw="30">Letzte 30 Tage</button></div></div>
       <div class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-druck="aw">Drucken</button><button type="button" data-druck="aw">Als PDF speichern</button></div></div>
     </div>
-    <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div>
-    <p class="fuss">Werte sind der Durchschnitt je erfasstem Tag. Soll nach eigener Vorgabe, sonst Profilziel oder DGE-Orientierung. Eine Zeile antippen öffnet die Person.</p>
+    <div class="seite-inhalt">
+      <div id="awInfo"></div>
+      <div id="awStat"><div class="karte2 lade">Wird geladen …</div></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Alle Werte</h3><span>Ø je erfasstem Tag · Soll nach Vorgabe, sonst Profilziel oder DGE-Orientierung · eine Zeile antippen öffnet die Person</span></div>
+        <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div></div>
+    </div>
   </section>
 
   <section class="ansicht" data-v="plaene"><div class="band"><h1>Pläne</h1></div><div class="fl5" data-fl5="plaene"></div></section>
@@ -440,11 +614,13 @@
       <table class="tab schmal" id="kontoTab"></table>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss" id="zRegel2" style="margin-top:0"></p>
+      <div class="nicht-demo">
       <h2 class="abschnitt">Passwort ändern</h2>
       <div class="reihe" style="max-width:520px"><div><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input id="pwNeu" type="password" autocomplete="new-password"></div>
         <div style="flex:0 0 auto"><label>&nbsp;</label><button class="tb haupt" id="pwLos" type="button" style="height:46px">Speichern</button></div></div>
       <div class="meld" id="meldPw"></div>
-      <h2 class="abschnitt">Abmelden</h2>
+      </div>
+      <h2 class="abschnitt" id="abmeldenTitel">Abmelden</h2>
       <button class="tb" type="button" id="abmelden2">Abmelden</button>
     </div>
   </section>
@@ -485,11 +661,11 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
 const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
 const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
-const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag'];
+const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bDemo'];
 function zeige(id){
   const app = id==='app';
   BEREICHE.forEach(b => $(b).hidden = (b!==id));
-  ['app','menue','statusZeile'].forEach(b => $(b).hidden = !app);
+  ['app','menue','statusZeile','gruss'].forEach(b => $(b).hidden = !app);
   document.body.classList.toggle('app-an', app);
   $('nutzerDd').hidden = !['bWartet','bVertrag','app'].includes(id);
 }
@@ -560,15 +736,65 @@ $('neuPassLos').onclick = async function(){
   setTimeout(start, 600);
 };
 
-$('abmelden').onclick = async () => { await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; MUSTER_FEHLER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
+$('abmelden').onclick = async () => {
+  if(DEMO){ try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace(location.pathname); return; }
+  await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
 
 client.auth.onAuthStateChange((ev) => {
   if(ev === 'PASSWORD_RECOVERY'){ inRecovery = true; zeige('bNeuPass'); }
 });
 
 /* ---------- Start ---------- */
+/* ---------- FL-4: Musterpraxis als Vorführung (Passwort = Vorführungs-Code, Prüfung auf dem Server) ---------- */
+let DEMO = null;
+const DEMO_SPEICHER = 'fl-demo';
+const demoGemerkt = () => { try{ return sessionStorage.getItem(DEMO_SPEICHER); }catch(e){ return null; } };
+function demoGewuenscht(){ return /^#demo/.test(location.hash) || new URLSearchParams(location.search).has('demo') || !!demoGemerkt(); }
+async function demoStart(pw){
+  if(!pw) return false;
+  const {data, error} = await client.rpc('cb_fl_muster', {p_token: pw});
+  if(error) return false;
+  DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
+  MUSTER = json(data);
+  ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'gruenderin_gratis', vertrag_ok: true, demo: true};
+  KEYS = (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
+                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+  KEYS_DA = true;
+  document.body.classList.add('demo');
+  $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
+  $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
+  zeichneKonto();
+  $('grussText').textContent = 'Willkommen in der ' + (MUSTER.praxis || 'Musterpraxis');
+  zeige('app');
+  if(/^#demo/.test(location.hash) || !location.hash) history.replaceState(null, '', location.pathname + '#uebersicht');
+  ladeAlles(); route();
+  return true;
+}
+$('demoLos').onclick = async function(){
+  const pw = $('demoPw').value.trim(); if(!pw) return meld('meldDemo', 'Bitte das Passwort eintragen.', 'fehler');
+  this.disabled = true; meld('meldDemo', '⏳ …');
+  const ok = await demoStart(pw); this.disabled = false;
+  if(!ok) return meld('meldDemo', 'Das Passwort stimmt nicht.', 'fehler');
+  $('demoPw').value = ''; meld('meldDemo', '');
+};
+$('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
+$('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
+$('zurDemo').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); };
+function nurAnsehen(){
+  let t = document.querySelector('.demo-toast');
+  if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
+  t.textContent = 'In der Musterpraxis nur zum Ansehen.'; t.hidden = false;
+  clearTimeout(nurAnsehen.t); nurAnsehen.t = setTimeout(() => t.hidden = true, 2200);
+}
+
 async function start(){
   if(inRecovery){ zeige('bNeuPass'); return; }
+  if(demoGewuenscht()){
+    const z = new URLSearchParams(location.search).get('z') || demoGemerkt();
+    if(z && await demoStart(z)) return;
+    try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
+    zeige('bDemo'); return;
+  }
   const {data:{session}} = await client.auth.getSession();
   if(!session){ zeige('bLogin'); return; }
   try{ await client.rpc('cb_link_me'); }catch(e){}
@@ -589,16 +815,25 @@ async function start(){
     $('vertragOk').checked = false; meld('meldVertrag','');
     zeige('bVertrag'); return;
   }
-  $('hName').textContent = d.name;
-  $('hPraxis').textContent = [d.praxis, d.email].filter(Boolean).join(', ');
+  $('hName').textContent = 'Übersicht';
+  $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
   $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
   zeichneKonto();
   zeige('app');
   route();
-  ladeMuster().then(zeichneBaum);
   ladeAlles();
 }
-async function ladeAlles(){ await Promise.all([ladeKeys(), ladeZahlen()]); }
+async function ladeAlles(){
+  if(DEMO){   // Vorführung: Keys sind die Musterklienten, keine Abrechnung
+    zeichne(); zeichneShell();
+    ['zAktiv','zBetrag','zNeu'].forEach(id => $(id).textContent = '–');
+    $('zRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('zRegel2').textContent = $('zRegel').textContent;
+    if(AKTIV==='uebersicht') ladeUebersichtStat();
+    if(AKTIV==='klienten' && !$('kDash')) zeigeKlient(WAHL || standardWahl());
+    return;
+  }
+  await Promise.all([ladeKeys(), ladeZahlen()]);
+}
 
 async function ladeZahlen(){
   const {data, error} = await client.rpc('cb_fp_abrechnung', {p_monat: null});
@@ -670,6 +905,8 @@ async function ladeKeys(){
   zeichne();
   KEYS_DA = true;
   zeichneShell();
+  if(window.FLStat) FLStat.leeren();
+  if(AKTIV==='uebersicht') ladeUebersichtStat();
   if(AKTIV==='klienten' && (!WAHL || !$('kDash'))) zeigeKlient(WAHL || standardWahl());
 }
 const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abgelaufen', beendet:'Beendet'};
@@ -744,7 +981,7 @@ function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
                berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
-let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, MUSTER_FEHLER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
+let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
 const klientName = x => x.klient_name || x.bezeichnung || x.code;
 const zahlTxt = (n, eins, viele) => n + ' ' + (n===1 ? eins : viele);
@@ -756,8 +993,7 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dd.auf').forEach(d => { if(!t || d !== t.closest('.dd')) d.classList.remove('auf'); });
   if(t){ t.closest('.dd').classList.toggle('auf'); return; }
   const g = e.target.closest('[data-geh]'); if(g){ geh(g.dataset.geh); return; }
-  if(e.target.closest('[data-muster]')){ geh('klienten/muster-1'); return; }
-  const n = e.target.closest('[data-neu]'); if(n){ neuerKey(n.dataset.neu); return; }
+  const n = e.target.closest('[data-neu]'); if(n){ if(DEMO) nurAnsehen(); else neuerKey(n.dataset.neu); return; }
   if(e.target.closest('[data-druck]')){ drucken(); return; }
   const aw = e.target.closest('[data-aw]'); if(aw){ AW_TAGE = Number(aw.dataset.aw); $('awZeitText').textContent = aw.textContent; ladeAuswertungen(); return; }
   const tr = e.target.closest('tr[data-ziel]'); if(tr){ geh(tr.dataset.ziel); return; }
@@ -770,30 +1006,33 @@ window.addEventListener('hashchange', () => { if(!$('app').hidden) route(); });
 
 function route(){
   const h = decodeURIComponent(location.hash.slice(1)) || 'uebersicht';
-  const teil = h.split('/'), v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
+  const teil = h.split('/');
+  let v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
+  if(DEMO && (v==='wunschliste' || v==='bewertung')) v = 'uebersicht';   // in der Vorführung nicht dabei
   AKTIV = v;
   document.querySelectorAll('.ansicht').forEach(s => s.classList.toggle('an', s.dataset.v===v));
   document.querySelectorAll('#menueListe [data-v]').forEach(b => { b.classList.toggle('an', b.dataset.v===v); b.setAttribute('aria-current', b.dataset.v===v ? 'page' : 'false'); });
   $('menueAktiv').textContent = NAMEN[v];
   if(v==='klienten') zeigeKlient(teil[1] || WAHL || standardWahl());
   if(v==='auswertungen') ladeAuswertungen();
+  if(v==='uebersicht') ladeUebersichtStat();
   if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
   if(v==='bewertung') ladeBewertung();
   window.scrollTo(0,0);
 }
-function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : (MUSTER ? 'muster-1' : null); }
+function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : null; }
+/* Auswertung einer Person: echte Klienten über den Key, in der Vorführung die Musterklienten */
+function dashRpc(code, von, bis){
+  if(DEMO){ const k = KEYS.find(x => x.code===code); return client.rpc('cb_fl_muster_dashboard', {p_token: DEMO, p_nr: k ? k.nr : 0, p_von: von, p_bis: bis}); }
+  return client.rpc('cb_fp_klient_dashboard', {p_code: code, p_von: von, p_bis: bis});
+}
 
 /* Statuszeile, Übersicht, Klientenliste – aus der Key-Liste (cb_fp_keys) */
-async function ladeMuster(){
-  if(MUSTER || MUSTER_FEHLER) return;
-  const {data, error} = await client.rpc('cb_fl_muster', {p_token: null});
-  if(error) MUSTER_FEHLER = error.message; else MUSTER = json(data);
-}
 function zeichneShell(){
   const v = verbunden(), warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt'),
         offen = KEYS.filter(x => x.status==='offen'), bald = KEYS.filter(x => x.status==='laeuft' && restTage(x.laeuft_bis) <= 14);
-  const t = [zahlTxt(v.length, 'Klient verbunden', 'Klienten verbunden')];
+  const t = [(DEMO ? 'Musterpraxis, alle Personen erfunden · ' : '') + zahlTxt(v.length, 'Klient verbunden', 'Klienten verbunden')];
   if(warten.length) t.push(zahlTxt(warten.length, 'wartet auf Einwilligung', 'warten auf Einwilligung'));
   if(offen.length) t.push(zahlTxt(offen.length, 'Key noch nicht eingelöst', 'Keys noch nicht eingelöst'));
   bald.forEach(x => t.push(klientName(x) + ': Key läuft in ' + zahlTxt(restTage(x.laeuft_bis), 'Tag', 'Tagen') + ' ab'));
@@ -812,7 +1051,7 @@ function zeichneShell(){
           '<td>' + (x.status==='offen' ? '–' : '<span class="ampel ' + (x.einwilligung==='erteilt' ? 'g' : x.einwilligung==='widerrufen' ? 'r' : 'o') + '"></span>' + EINW[x.einwilligung]) + '</td>' +
           '<td class="z">' + (x.laeuft_bis ? datum(x.laeuft_bis) : x.tage + ' Tage ab Einlösen') + '</td></tr>';
       }).join('') + '</tbody>'
-    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen oder die Musterpraxis ansehen.</td></tr></tbody>';
+    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.</td></tr></tbody>';
   zeichneBaum();
 }
 function zeichneBaum(){
@@ -820,19 +1059,14 @@ function zeichneBaum(){
   const passt = s => !q || String(s||'').toLowerCase().includes(q);
   const v = verbunden().filter(x => passt(klientName(x)) || passt(x.code));
   const warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').filter(x => passt(klientName(x)) || passt(x.code));
-  const m = MUSTER ? (MUSTER.klienten||[]).filter(k => passt(k.name) || passt(k.code)) : [];
   let h = '<div class="kopfzeile"><span>Meine Klienten</span><span>' + v.length + '</span></div>';
   h += v.length ? v.map(x => '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel g"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · bis ' + datum(x.laeuft_bis) + '</small></span></button>').join('')
                 : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : 'Noch niemand verbunden.') + '</div>';
   if(warten.length) h += warten.map(x => '<button type="button" data-geh="keys"><span class="ampel o"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>wartet auf Einwilligung</small></span></button>').join('');
-  h += '<div class="kopfzeile"><span>' + esc(MUSTER && MUSTER.praxis || 'Musterpraxis') + ' (erfunden)</span><span>' + m.length + '</span></div>';
-  h += MUSTER ? m.map(k => '<button type="button" data-wahl="muster-' + k.nr + '"><span class="ampel x"></span><span><span class="n">' + esc(k.name) + '</span><small>' + esc(k.steckbrief) + '</small></span></button>').join('')
-              : '<div class="leer-klein">' + (MUSTER_FEHLER ? 'Gerade nicht verfügbar.' : 'Lädt …') + '</div>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
   $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
-    (MUSTER ? '<optgroup label="Musterpraxis (erfunden)">' + (MUSTER.klienten||[]).map(k => '<option value="muster-' + k.nr + '">' + esc(k.name) + '</option>').join('') + '</optgroup>' : '');
+    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
 $('kSuche').addEventListener('input', zeichneBaum);
@@ -841,35 +1075,27 @@ $('kAuswahl').onchange = () => { if($('kAuswahl').value) geh('klienten/' + $('kA
 /* Rechts: Auswertung der gewählten Person */
 async function zeigeKlient(wahl){
   WAHL = wahl || null;
-  if(!MUSTER && !MUSTER_FEHLER){ await ladeMuster(); zeichneBaum(); }
   zeichneBaum();
   const el = $('kDetail');
   if(!WAHL){
     el.innerHTML = '<div class="leer-gross"><b>Noch keine verbundenen Klienten</b>Sobald jemand einen Key einlöst und einwilligt, steht die Person links.<br><br>' +
-      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button> <button class="tb" type="button" data-muster>Musterpraxis ansehen</button></div>';
+      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
     return;
   }
-  const istMuster = WAHL.startsWith('muster-');
-  let kopf, opt;
-  if(istMuster){
-    const nr = Number(WAHL.slice(7)), k = MUSTER && (MUSTER.klienten||[]).find(x => x.nr===nr);
-    if(!k){ el.innerHTML = '<div class="leer-gross"><b>Musterpraxis gerade nicht verfügbar</b>' + esc(MUSTER_FEHLER || '') + '</div>'; return; }
-    kopf = '<span><span class="n">' + esc(k.name) + '</span><span class="muster-mark">Musterpraxis, erfunden</span><small>' + esc(k.code) + '</small></span>';
-    opt = { heute: MUSTER.heute, nurLesen: true,
-      laden: async (von, bis) => { const r = await client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
-  } else {
-    if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
-    const k = KEYS.find(x => x.code===WAHL);
-    if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
-    kopf = '<span><span class="n">' + esc(klientName(k)) + '</span><small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
-    opt = { heute: heuteBerlin(), nurLesen: false,
-      laden: async (von, bis) => { const r = await client.rpc('cb_fp_klient_dashboard', {p_code: WAHL, p_von: von, p_bis: bis}); if(r.error) throw new Error(r.error.message); return json(r.data); },
-      vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: WAHL, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
-  }
+  if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
+  const k = KEYS.find(x => x.code===WAHL);
+  if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
+  const code = WAHL;
+  const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
+    '<small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
+  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: !!DEMO, verlaufKey: code,
+    verlauf: (von, bis) => dashRpc(code, von, bis),
+    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   el.innerHTML = '<div class="detail-kopf">' + kopf + '<span style="display:flex;gap:6px">' +
     '<span class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
     '<span class="dd-menu rechts"><button type="button" data-druck>Drucken</button><button type="button" data-druck>Als PDF speichern</button></span></span>' +
-    (istMuster ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
+    (DEMO ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
   FLDash.mount($('kDash'), opt);
 }
 function drucken(){
@@ -879,34 +1105,56 @@ function drucken(){
   setTimeout(() => window.print(), 50);
 }
 
-/* Auswertungen: alle Personen im Vergleich (eine Zeile je Person) */
+/* Statistik: die verbundenen Klienten (in der Vorführung die Musterklienten) */
+async function statPersonen(){
+  return {info: '', personen: verbunden().map(x => ({key: (DEMO ? 'demo-' : '') + x.code, name: klientName(x), code: x.code, muster: !!DEMO, ziel: 'klienten/' + x.code,
+    rpc: (von, bis) => dashRpc(x.code, von, bis)}))};
+}
+async function ladeUebersichtStat(){
+  if(!window.FLStat) return;
+  const {info, personen} = await statPersonen();
+  if(!personen.length){
+    $('uebStat').innerHTML = '<div class="karte2 start"><h3>Noch keine Klienten verbunden</h3>' +
+      '<ol class="schritte"><li><b>Key anlegen</b><span>oben mit „Neuer Key“, per E-Mail oder als QR-Karte</span></li>' +
+      '<li><b>Klientin löst ein und willigt ein</b><span>auf root-index.de/klientin.html, in wenigen Minuten</span></li>' +
+      '<li><b>Hier erscheinen Kennzahlen und Diagramme</b><span>Gemüse und Obst je Tag, Kalorien gegen Soll, Score, Verlauf</span></li></ol>' +
+      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
+    return;
+  }
+  const d = await FLStat.laden(personen, heuteBerlin(), 7);
+  // Hinweise aus der Key-Liste: läuft bald ab, Einwilligung fehlt, nicht eingelöst
+  const keys = [];
+  KEYS.filter(x => x.status==='laeuft' && restTage(x.laeuft_bis) <= 14).forEach(x => keys.push({farbe: 'orange', name: klientName(x), ziel: 'keys', text: 'Key läuft in ' + zahlTxt(restTage(x.laeuft_bis), 'Tag', 'Tagen') + ' ab'}));
+  KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').forEach(x => keys.push({farbe: 'gelb', name: klientName(x), ziel: 'keys', text: 'Einwilligung fehlt noch'}));
+  KEYS.filter(x => x.status==='offen').forEach(x => keys.push({farbe: 'grau', name: klientName(x), ziel: 'keys', text: 'Key noch nicht eingelöst'}));
+  if(AKTIV==='uebersicht') FLStat.uebersicht($('uebStat'), d, {text: info, keys});
+}
 async function ladeAuswertungen(){
-  await ladeMuster();
-  const bis = plusTage(heuteBerlin(), -1), von = plusTage(bis, -(AW_TAGE - 1));
-  const leute = verbunden().map(x => ({ziel: 'klienten/' + x.code, name: klientName(x), code: x.code, rpc: () => client.rpc('cb_fp_klient_dashboard', {p_code: x.code, p_von: von, p_bis: bis})}));
-  const muster = (MUSTER && MUSTER.klienten || []).map(k => ({ziel: 'klienten/muster-' + k.nr, name: k.name, code: k.code, muster: true,
-                   rpc: () => client.rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: k.nr, p_von: von, p_bis: bis})}));
-  $('awTab').innerHTML = '<tbody><tr><td class="leer">Lädt …</td></tr></tbody>';
-  const alle = leute.concat(muster);
-  const erg = await Promise.all(alle.map(p => p.rpc().then(r => r.error ? {fehler: r.error.message} : json(r.data)).catch(e => ({fehler: e.message}))));
-  const zeile = (p, d) => {
-    if(d.fehler) return '<tr><td><b>' + esc(p.name) + '</b></td><td colspan="7" class="leer">' + esc(d.fehler) + '</td></tr>';
-    const is = d.ist_soll || [], k = is.find(x => x.kennzahl==='kcal' && x.einheit!=='en%');
-    const gr = g => { const x = (d.gruppen||[]).find(y => y.gruppe===g); return x ? x.gramm_je_tag : (d.tage_erfasst ? 0 : null); };
-    const bew = is.filter(x => !x.kennzahl.startsWith('mikro:') && x.erfuellt!==null && x.erfuellt!==undefined);
-    const amp = x => x==null ? 'x' : x ? 'g' : 'o';
+  if(!window.FLStat) return;
+  const {info, personen} = await statPersonen();
+  $('awInfo').innerHTML = info ? '<div class="hinweis-band">' + info + '</div>' : '';
+  if(!personen.length){ $('awStat').innerHTML = ''; $('awTab').innerHTML = '<tbody><tr><td class="leer">Noch niemand verbunden.</td></tr></tbody>'; return; }
+  $('awStat').innerHTML = '<div class="karte2 lade">Wird geladen …</div>';
+  const daten = await FLStat.laden(personen, heuteBerlin(), AW_TAGE);
+  if(AKTIV!=='auswertungen') return;
+  FLStat.vergleich($('awStat'), daten);
+  const zeile = x => {
+    const p = x.p, d = x.kurz;
+    if(d.fehler) return '<tr><td><b>' + esc(p.name) + '</b></td><td colspan="6" class="leer">' + esc(d.fehler) + '</td></tr>';
+    const is = d.ist_soll || [], k = is.find(y => y.kennzahl==='kcal' && y.einheit!=='en%');
+    const gr = g => { const y = (d.gruppen||[]).find(q => q.gruppe===g); return y ? y.gramm_je_tag : (d.tage_erfasst ? 0 : null); };
+    const bew = is.filter(y => !y.kennzahl.startsWith('mikro:') && y.erfuellt!==null && y.erfuellt!==undefined);
+    const amp = y => y==null ? 'x' : y ? 'g' : 'o';
     return '<tr class="klick" data-ziel="' + esc(p.ziel) + '"><td><b>' + esc(p.name) + '</b>' + (p.muster ? '<span class="muster-mark">erfunden</span>' : '') + '<br><small style="color:var(--muted)">' + esc(p.code) + '</small></td>' +
       '<td class="z">' + (d.tage_erfasst||0) + ' / ' + AW_TAGE + '</td>' +
       '<td class="z"><span class="ampel ' + amp(k && k.erfuellt) + '"></span>' + zz(k && k.ist) + (k && k.soll ? ' <small style="color:var(--muted)">/ ' + zz(k.soll) + '</small>' : '') + '</td>' +
       '<td class="z">' + (gr('gemuese')==null ? '–' : zz(gr('gemuese')) + ' g') + '</td>' +
       '<td class="z">' + (gr('obst')==null ? '–' : zz(gr('obst')) + ' g') + '</td>' +
       '<td class="z">' + zz(d.summe && d.summe.score) + '</td>' +
-      '<td class="z">' + (bew.length ? bew.filter(x => x.erfuellt).length + ' von ' + bew.length : '–') + '</td></tr>';
+      '<td class="z">' + (bew.length ? bew.filter(y => y.erfuellt).length + ' von ' + bew.length : '–') + '</td></tr>';
   };
-  let h = '<thead><tr><th>Person</th><th class="z">Tage erfasst</th><th class="z">kcal Ø / Soll</th><th class="z">Gemüse Ø</th><th class="z">Obst Ø</th><th class="z">Score Ø</th><th class="z">Im Ziel</th></tr></thead><tbody>';
-  h += '<tr class="gruppe"><td colspan="7">Meine Klienten</td></tr>' + (leute.length ? leute.map((p, i) => zeile(p, erg[i])).join('') : '<tr><td colspan="7" class="leer">Noch niemand verbunden.</td></tr>');
-  if(muster.length) h += '<tr class="gruppe"><td colspan="7">' + esc(MUSTER.praxis || 'Musterpraxis') + ' (erfunden)</td></tr>' + muster.map((p, i) => zeile(p, erg[leute.length + i])).join('');
-  $('awTab').innerHTML = h + '</tbody>';
+  $('awTab').innerHTML = '<thead><tr><th>Person</th><th class="z">Tage erfasst</th><th class="z">kcal Ø / Soll</th><th class="z">Gemüse Ø</th><th class="z">Obst Ø</th><th class="z">Score Ø</th><th class="z">Im Ziel</th></tr></thead><tbody>' +
+    daten.map(zeile).join('') + '</tbody>';
 }
 
 /* So bewertet Root Index: vertrauliche Fassung (FL-3) aus der Datenbank, nur für Fachleute mit Vereinbarung.
@@ -937,8 +1185,8 @@ const FL5_TEXT = {
 window.FLShell = {
   _b: {},
   bereich(id, def){ this._b[id] = def; if(AKTIV===id) zeigeFl5(id); },
-  ctx(){ const w = WAHL || ''; return { client, ich: ICH, keys: KEYS, klient: w && !w.startsWith('muster-') ? w : null,
-                                        muster: w.startsWith('muster-'), musterNr: w.startsWith('muster-') ? Number(w.slice(7)) : null,
+  ctx(){ const w = WAHL || '', k = KEYS.find(x => x.code===w); return { client, ich: ICH, keys: KEYS, klient: !DEMO && w ? w : null,
+                                        muster: !!DEMO && !!w, musterNr: DEMO && k ? k.nr : null, demo: !!DEMO, musterToken: DEMO,
                                         heute: heuteBerlin(), neu: ladeAlles, geh }; }
 };
 function zeigeFl5(id){
@@ -968,6 +1216,9 @@ function zeichneKonto(){
     z('Verschwiegenheit Root Index', ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') +
     z('Verschwiegenheit Klienten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
+  const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));
+  $('grussText').textContent = (h < 11 ? 'Guten Morgen, ' : h < 18 ? 'Guten Tag, ' : 'Guten Abend, ') + String(ICH.name || '').replace(/\s*\(.*\)\s*$/, '');
+  $('grussUnter').textContent = [ICH.praxis, new Date().toLocaleDateString('de-DE', {weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Europe/Berlin'})].filter(Boolean).join(' · ');
   $('nutzerInfo').innerHTML = '<b>' + esc(ICH.name) + '</b>' + esc([ICH.praxis, ICH.email].filter(Boolean).join(', '));
 }
 $('pwLos').onclick = async function(){
