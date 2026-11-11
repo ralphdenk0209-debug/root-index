@@ -425,7 +425,7 @@ const SEITE_JS = [zaehlerJs(), rueckmeldungJs()]
   .join("\n");
 const AKTIVA_V = createHash("sha1").update(CSS + SEITE_JS).digest("hex").slice(0, 10);
 
-function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung, bild }) {
+function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung, bild, noindex }) {
   return `<!doctype html>
 <html lang="de">
 <head>
@@ -434,7 +434,7 @@ function seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung, b
 <title>${esc(titel)}</title>
 <meta name="description" content="${esc(beschreibung)}">
 <link rel="canonical" href="${kanonisch}">
-<link rel="icon" href="/icon-192.png">
+${noindex ? '<meta name="robots" content="noindex,follow">\n' : ""}<link rel="icon" href="/icon-192.png">
 <meta name="theme-color" content="#263e27">
 <meta property="og:title" content="${esc(titel)}">
 <meta property="og:description" content="${esc(beschreibung)}">
@@ -571,6 +571,12 @@ function vertiefung(p, kat, rang, zutaten, basis, marke) {
   return `<h2 class="vt">Warum ${score} von 100 Punkten?</h2><p class="vt">${teile.join(" ")}</p>${gruppenHtml}${fragenHtml}`;
 }
 
+function istDuenn(p) {
+  const z = Array.isArray(p.zutaten) ? p.zutaten.filter((t) => t && t.name).length : 0;
+  return num(p.clean_score) === null || z === 0 ||
+    (num(p.m_kcal) === null && num(p.m_zucker) === null && num(p.m_salz) === null);
+}
+
 function produktSeite(p, datei, katDatei, kat, alternativen, rang) {
   const name = p.name;
   // Handelsmarken stehen im Stamm oft als Kommaliste ("Best Moments,Guschlbauer,Penny"):
@@ -674,7 +680,8 @@ ${alternativen && alternativen.length ? `<span class="lab">Besser bewertet${kat 
 }</div>` : ""}
 <div class="quelle">Quelle: ${esc(p.quelle || "nicht angegeben")}${p.ean && !String(p.quelle||"").includes(String(p.ean)) ? ` · EAN ${esc(p.ean)}` : ""}${p.verifiziert_am ? ` · geprüft am ${esc(String(p.verifiziert_am).slice(0, 10))}` : ""}${p.warum ? `<br>${esc(p.warum)}` : ""}</div>`;
 
-  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung: true, bild: bild && bild.pfad });
+  // 11.11.2026 (Ralph a): duenne Seiten (ohne Punktzahl, ohne Zutaten oder ohne Naehrwerte) fuer Google ausblenden.
+  return seite({ titel, beschreibung, kanonisch, inhalt, jsonld, rueckmeldung: true, bild: bild && bild.pfad, noindex: istDuenn(p) });
 }
 
 /* Produktnamen tragen im Stamm manchmal den Kassenbon mit - "Tortilla Chips
@@ -792,7 +799,7 @@ async function main() {
      Groesse ueber SITEMAP_TOP (Standard 2000), spaeter schrittweise erhoehen. */
   const kandidaten = [];
   const qualitaet = (p) =>
-    (num(p.clean_score) === null ? -100 : 0) +
+    (istDuenn(p) ? -100 : 0) +
     (p.verifiziert_am ? 4 : 0) + (p.score_vollstaendig ? 3 : 0) +
     (num(p.m_kcal) !== null ? 1 : 0) + (p.ean ? 1 : 0) + (p.zutaten ? 1 : 0);
 
