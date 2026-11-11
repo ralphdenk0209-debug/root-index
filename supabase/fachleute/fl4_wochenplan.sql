@@ -52,7 +52,7 @@ begin
     r := (r - 'wochenplan_hinweis') || jsonb_build_object('wochenplan', coalesce(v_p, '[]'::jsonb), 'wochenplan_von', v_wv);
   else
     r := r || jsonb_build_object('wochenplan', null,
-           'wochenplan_hinweis', 'Den Wochenplan siehst du, sobald die Person der Einwilligung mit Wochenplan zugestimmt hat (auf root-index.de/klientin.html).');
+           'wochenplan_hinweis', 'Der Wochenplan wird sichtbar, sobald die Person der Einwilligung mit Wochenplan zugestimmt hat (auf root-index.de/klientin.html).');
   end if;
   return r;
 end $f$;

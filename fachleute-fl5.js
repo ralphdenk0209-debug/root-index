@@ -127,7 +127,7 @@ function mount(el, opt){
     const lw = plus(montag(heute), -7);
     const lm = (() => { const d = D(heute); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth()-1); return iso(d); })();
     const lmEnde = plus(heute.slice(0,8) + '01', -1);
-    $p.innerHTML = '<div class="f5-k">Der Bericht nimmt die Zahlen aus der Auswertung (gleiche Werte wie im Dashboard darunter) und lässt Platz für deine Notiz. Drucken oder im Druckdialog „Als PDF sichern“.</div>' +
+    $p.innerHTML = '<div class="f5-k">Der Bericht nimmt die Zahlen aus der Auswertung (gleiche Werte wie unter Klienten) und lässt Platz für eine Notiz. Drucken oder im Druckdialog „Als PDF sichern“.</div>' +
       '<div class="f5-reihe" data-zr><button class="f5-b" data-von="' + lw + '" data-bis="' + plus(lw, 6) + '" type="button">Letzte Woche</button>' +
       '<button class="f5-b" data-von="' + montag(heute) + '" data-bis="' + plus(heute, -1) + '" type="button">Diese Woche bis gestern</button>' +
       '<button class="f5-b" data-von="' + lm + '" data-bis="' + lmEnde + '" type="button">Letzter Monat</button>' +
@@ -137,7 +137,7 @@ function mount(el, opt){
       '<label>Person im Kopf<select data-bn><option value="k">Kürzel und Code</option><option value="n">Name und Code</option></select></label>' +
       '<label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" data-bp checked> Profilangaben</label>' +
       (opt.muster ? '' : '<label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" data-bm> Vitamine und Mineralstoffe</label>') + '</div>' +
-      '<label style="font-size:13px;font-weight:800">Deine Notiz für den Bericht (leer lassen = Linien zum Handschreiben)</label>' +
+      '<label style="font-size:13px;font-weight:800">Notiz für den Bericht (leer lassen = Linien zum Handschreiben)</label>' +
       '<textarea data-bt maxlength="3000" placeholder="z. B. Besprochen am …, nächste Schritte …"></textarea>' +
       '<div class="f5-reihe"><button class="f5-b gruen" data-blos type="button">Bericht ansehen und drucken</button></div><div class="f5-meld" data-bmeld></div>' +
       '<div class="f5-k">Die Notiz wird nirgends gespeichert, sie steht nur im ausgedruckten Bericht. Höchstens 3 Monate am Stück.</div>';
@@ -263,7 +263,7 @@ function mount(el, opt){
     $p.innerHTML = '<div class="f5-k">Lädt …</div>';
     try{ await ladePlaene(); }catch(e){ $p.innerHTML = '<div class="f5-meld f">Konnte nicht laden: ' + esc(e.message || e) + '</div>'; return; }
     let h = '<div class="f5-k">Ein Plan umfasst Tage oder Wochen (höchstens 6) mit Mahlzeiten aus Rezepten, Produkten oder kurzem Text. ' +
-      (opt.muster ? 'In der Musterpraxis nur zum Ansehen.' : 'Erst wenn du ihn teilst, sieht die Person ihn in ihrer App und kann ihn in ihren Wochenplan und auf die Einkaufsliste übernehmen.') + '</div>';
+      (opt.muster ? 'In der Musterpraxis nur zum Ansehen.' : 'Erst geteilt sieht die Person ihn in ihrer App und kann ihn in ihren Wochenplan und auf die Einkaufsliste übernehmen.') + '</div>';
     if(!opt.muster) h += '<div class="f5-reihe"><button class="f5-b gruen" data-pneu type="button">＋ Neuer Plan</button></div>';
     h += st.plaene.length ? st.plaene.map(planKarte).join('') : '<p class="f5-k">Noch keine Pläne.</p>';
     h += '<div class="f5-legende"><span><i style="background:#dff3e5"></i>wie geplant</span><span><i style="background:#fff1dc"></i>etwas anderes gegessen</span><span><i style="background:#fde7e5"></i>nichts eingetragen</span><span><i style="background:#F3EEDC"></i>noch offen</span></div>';
@@ -387,7 +387,7 @@ function mount(el, opt){
         $t.innerHTML = '<div class="f5-k">Lädt …</div>';
         let l; try{ l = await alleRezepte(); }catch(e){ $t.innerHTML = '<div>' + esc(e.message) + '</div>'; return; }
         const tr = l.filter(x => !q || String(x.name||'').toLowerCase().includes(q)).sort((a, b) => (b.is_own - a.is_own) || String(a.name).localeCompare(String(b.name), 'de')).slice(0, 40);
-        $t.innerHTML = tr.map(x => '<div data-id="' + esc(x.id) + '">' + esc(x.name) + ' <span class="f5-k">' + [x.kcal && z(x.kcal) + ' kcal/Portion', x.is_own ? (x.sichtbarkeit==='privat' ? 'dein Rezept, privat' : 'dein Rezept') : x.quelle==='CleanBase' ? 'Root Index' : ''].filter(Boolean).join(' · ') + '</span></div>').join('') || '<div class="f5-k">Kein Treffer.</div>';
+        $t.innerHTML = tr.map(x => '<div data-id="' + esc(x.id) + '">' + esc(x.name) + ' <span class="f5-k">' + [x.kcal && z(x.kcal) + ' kcal/Portion', x.is_own ? (x.sichtbarkeit==='privat' ? 'eigenes Rezept, privat' : 'eigenes Rezept') : x.quelle==='CleanBase' ? 'Root Index' : ''].filter(Boolean).join(' · ') + '</span></div>').join('') || '<div class="f5-k">Kein Treffer.</div>';
         $t.querySelectorAll('[data-id]').forEach(d2 => d2.onclick = () => { const x = l.find(y => y.id===d2.dataset.id); gewaehlt = {rezept_id:x.id, titel:x.name, kcal:x.kcal};
           $t.querySelectorAll('div').forEach(y => y.classList.toggle('an', y===d2)); });
       } else {
@@ -423,7 +423,7 @@ function mount(el, opt){
   /* =================== Rezepte teilen =================== */
   async function rezeptePanel(){
     if(opt.muster){
-      $p.innerHTML = '<div class="f5-k">In der Musterpraxis stehen die empfohlenen Rezepte unten im Dashboard unter „Rezepte“. Im eigenen Konto teilst du hier Rezepte gezielt mit einer oder mehreren Personen, z. B. passend zu einer Unverträglichkeit, und kannst sie gemeinsam bearbeiten.</div>';
+      $p.innerHTML = '<div class="f5-k">In der Musterpraxis stehen die empfohlenen Rezepte unten im Dashboard unter „Rezepte“. Im eigenen Konto lassen sich hier Rezepte gezielt mit einer oder mehreren Personen teilen, z. B. passend zu einer Unverträglichkeit, und gemeinsam bearbeiten.</div>';
       return;
     }
     $p.innerHTML = '<div class="f5-k">Lädt …</div>';
@@ -436,13 +436,13 @@ function mount(el, opt){
         '<span class="f5-chip ' + (x.mitbearbeiten ? 'gruen' : '') + '">' + (x.mitbearbeiten ? 'gemeinsam bearbeiten' : 'Empfehlung') + '</span>' +
         '<button class="f5-b rot" data-rende="' + esc(x.rezept_id) + '" type="button">Teilen beenden</button></div>').join('')
         : '<p class="f5-k">Noch nichts geteilt.</p>') +
-      '<h3>Rezept teilen</h3><input data-rs style="width:100%" placeholder="Rezept suchen (deine eigenen zuerst) …"><div class="f5-treffer" data-rt></div>' +
+      '<h3>Rezept teilen</h3><input data-rs style="width:100%" placeholder="Rezept suchen (eigene zuerst) …"><div class="f5-treffer" data-rt></div>' +
       '<div data-rform hidden><div style="margin-top:8px"><b data-rname></b></div>' +
-      '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px"><input type="checkbox" data-rmit> Gemeinsam bearbeiten (nur bei deinen eigenen Rezepten)</label>' +
+      '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px"><input type="checkbox" data-rmit> Gemeinsam bearbeiten (nur bei eigenen Rezepten)</label>' +
       '<label style="font-size:13px;font-weight:800">Notiz für die Person (optional)</label><input data-rnotiz maxlength="300" style="width:100%" placeholder="z. B. passt bei Laktoseintoleranz">' +
       '<div style="font-size:13px;font-weight:800;margin-top:8px">Teilen mit</div><div data-rkl></div>' +
       '<div class="f5-reihe"><button class="f5-b gruen" data-rlos type="button">Teilen</button></div></div><div class="f5-meld" data-rmeld></div>' +
-      '<div class="f5-hinweis">Neue Rezepte legst du in der Root-Index-App unter Rezepte an (gleiches Konto, <a href="https://root-index.de/" target="_blank" rel="noopener">root-index.de</a>). Sie bleiben privat, bis du sie hier teilst oder dort auf „Veröffentlichen“ tippst. ' +
+      '<div class="f5-hinweis">Neue Rezepte entstehen in der Root-Index-App unter Rezepte (gleiches Konto, <a href="https://root-index.de/" target="_blank" rel="noopener">root-index.de</a>). Sie bleiben privat, bis sie hier geteilt oder dort mit „Veröffentlichen“ freigegeben werden. ' +
       'Geteilte Rezepte sieht die Person nur, solange ihr Key läuft und die Einwilligung besteht. Eine eigene Kopie, die sie sich speichert, bleibt bei ihr.</div>';
     $p.innerHTML = h;
     $p.querySelectorAll('[data-rende]').forEach(b => b.onclick = async () => {
@@ -457,7 +457,7 @@ function mount(el, opt){
       const q = $s.value.trim().toLowerCase();
       let l; try{ l = await alleRezepte(); }catch(e){ $t.innerHTML = '<div>' + esc(e.message) + '</div>'; return; }
       const tr = l.filter(x => !q || String(x.name||'').toLowerCase().includes(q)).sort((a, b) => (b.is_own - a.is_own) || String(a.name).localeCompare(String(b.name), 'de')).slice(0, 40);
-      $t.innerHTML = tr.map(x => '<div data-id="' + esc(x.id) + '">' + esc(x.name) + ' <span class="f5-k">' + [x.kcal && z(x.kcal) + ' kcal', x.is_own ? (x.sichtbarkeit==='privat' ? 'dein Rezept, privat' : 'dein Rezept, öffentlich') : x.quelle==='CleanBase' ? 'Root Index' : 'öffentlich'].filter(Boolean).join(' · ') + '</span></div>').join('') || '<div class="f5-k">Kein Treffer.</div>';
+      $t.innerHTML = tr.map(x => '<div data-id="' + esc(x.id) + '">' + esc(x.name) + ' <span class="f5-k">' + [x.kcal && z(x.kcal) + ' kcal', x.is_own ? (x.sichtbarkeit==='privat' ? 'eigenes Rezept, privat' : 'eigenes Rezept, öffentlich') : x.quelle==='CleanBase' ? 'Root Index' : 'öffentlich'].filter(Boolean).join(' · ') + '</span></div>').join('') || '<div class="f5-k">Kein Treffer.</div>';
       $t.querySelectorAll('[data-id]').forEach(d2 => d2.onclick = () => {
         sel = l.find(y => y.id===d2.dataset.id); $t.querySelectorAll('div').forEach(y => y.classList.toggle('an', y===d2));
         const f = $p.querySelector('[data-rform]'); f.hidden = false; $p.querySelector('[data-rname]').textContent = sel.name;
@@ -486,4 +486,49 @@ function mount(el, opt){
   return { tab: t => { st.tab = t; zeigeTab(); } };
 }
 window.FL5 = { mount };
+
+/* Anbindung an die Arbeitsoberfläche von therapeut.html (FL-4: window.FLShell, Menüpunkte
+   „Pläne“, „Rezepte“, „Berichte“). Person = aktuelle Wahl unter Klienten, sonst Auswahlfeld. */
+function shellRender(id, el, ctx){
+  css(); el.classList.add('f5');
+  const tab = {plaene:'plaene', rezepte:'rezepte', berichte:'bericht'}[id];
+  const rpc = async (n, a) => { const {data, error} = await ctx.client.rpc(n, a); if(error) throw new Error(error.message); return typeof data==='string' ? JSON.parse(data) : data; };
+  const verb = (ctx.keys || []).filter(k => k.status==='laeuft' && k.einwilligung==='erteilt');
+  const nm = k => k.klient_name || k.bezeichnung || k.code;
+  const ich = ctx.ich || {};
+  el.innerHTML = '<div class="f5-reihe"><label>Person<select data-f5p><option value="">Lädt …</option></select></label></div><div data-f5z></div>';
+  const $s = el.querySelector('[data-f5p]'), $z = el.querySelector('[data-f5z]');
+  let muster = null;
+  const zeige = w => {
+    $z.innerHTML = ''; $z.className = '';
+    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine verbundenen Klienten. Sobald jemand einen Key einlöst und einwilligt, steht die Person hier; bis dahin zeigt die Musterpraxis alles zum Ausprobieren.</p>'; return; }
+    if(w.startsWith('muster-')){
+      const nr = Number(w.slice(7)), k = muster && (muster.klienten || []).find(x => x.nr===nr) || {};
+      mount($z, { nurTab: tab, muster: true, nr, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
+                  fachperson: 'Musterpraxis (erfundene Daten)', rpc, ladeDashboard: (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: null, p_nr: nr, p_von: von, p_bis: bis}) });
+    } else {
+      const k = verb.find(x => x.code===w) || {code: w};
+      mount($z, { nurTab: tab, muster: false, code: w, name: nm(k), heute: ctx.heute, praxis: ich.praxis || ich.name, fachperson: ich.name, rpc,
+                  ladeDashboard: (von, bis) => rpc('cb_fp_klient_dashboard', {p_code: w, p_von: von, p_bis: bis}),
+                  klienten: verb.map(x => ({code: x.code, name: nm(x)})) });
+    }
+  };
+  return rpc('cb_fl_muster', {p_token: null}).catch(() => null).then(m => {
+    muster = m;
+    const opts = verb.map(k => '<option value="' + esc(k.code) + '">' + esc(nm(k)) + ' · ' + esc(k.code) + '</option>').join('') +
+      (muster ? '<optgroup label="Musterpraxis (erfunden)">' + (muster.klienten || []).map(k => '<option value="muster-' + k.nr + '">' + esc(k.name) + '</option>').join('') + '</optgroup>' : '');
+    $s.innerHTML = opts || '<option value="">keine Person</option>';
+    let w = ctx.klient || (ctx.muster && ctx.musterNr ? 'muster-' + ctx.musterNr : '') || (verb[0] ? verb[0].code : (muster ? 'muster-1' : ''));
+    $s.value = w; if($s.value !== w) w = $s.value;
+    $s.onchange = () => zeige($s.value);
+    zeige(w);
+  });
+}
+function anbinden(){
+  if(!window.FLShell || window.FLShell._fl5) return !!window.FLShell;
+  window.FLShell._fl5 = true;
+  ['plaene','rezepte','berichte'].forEach(id => window.FLShell.bereich(id, { render: (el, ctx) => shellRender(id, el, ctx) }));
+  return true;
+}
+if(!anbinden()) document.addEventListener('DOMContentLoaded', anbinden);
 })();

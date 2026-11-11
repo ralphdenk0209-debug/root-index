@@ -1,0 +1,220 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wie Root Index bewertet</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: ein ruhiges Merkblatt, eine Spalte ~68 Zeichen, Tabellen und Punkteleiste als einzige Bildelemente. */
+:root{
+  --bg:#f3f6f2;            /* Root-Index-Grün, sehr hell */
+  --paper:#ffffff;
+  --ink:#1d3c24;           /* Markengrün dunkel */
+  --muted:#5d6a5f;
+  --line:#dbe3d9;
+  --accent:#047857;        /* Emerald der Marke */
+  --accent-soft:#e3f3ea;
+  --warn:#9a5b0f;
+  --bar-zut:#2f7d55; --bar-nw:#5aa77a; --bar-zs:#a7cdb4; --bar-nova:#cfe3d5; --bar-rest:#e9eee8;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1a13; --paper:#152219; --ink:#e3efe6; --muted:#9fb3a5; --line:#2a3b2f;
+  --accent:#6ee7b7; --accent-soft:#163a2a; --warn:#f0b866;
+  --bar-zut:#3f9a6b; --bar-nw:#6cbf8e; --bar-zs:#3b6a50; --bar-nova:#2c4a38; --bar-rest:#203027;
+  color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1a13; --paper:#152219; --ink:#e3efe6; --muted:#9fb3a5; --line:#2a3b2f;
+  --accent:#6ee7b7; --accent-soft:#163a2a; --warn:#f0b866;
+  --bar-zut:#3f9a6b; --bar-nw:#6cbf8e; --bar-zs:#3b6a50; --bar-nova:#2c4a38; --bar-rest:#203027;
+  color-scheme:dark }
+
+body{ background:var(--bg); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:40px 56px }
+.blatt{ max-width:760px; margin:0 auto; background:var(--paper); border:1px solid var(--line); border-radius:6px;
+  padding-block:44px 48px; padding-inline:clamp(18px, 6vw, 64px) }
+.text{ max-width:68ch }
+h1,h2,h3{ font-family:var(--display); text-wrap:balance; line-height:1.15; margin:0 }
+h1{ font-size:clamp(30px, 5vw, 42px); font-weight:700; letter-spacing:-0.01em }
+h2{ font-size:22px; font-weight:700; margin-top:44px; margin-bottom:10px; padding-top:18px; border-top:1px solid var(--line) }
+h3{ font-size:17px; font-weight:700; margin-top:22px; margin-bottom:4px }
+p{ margin:0 0 12px }
+.kopf{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:6px 16px; font-family:var(--mono); font-size:12.5px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-bottom:22px }
+.lead{ font-size:19px; margin-top:14px }
+.kern{ background:var(--accent-soft); border-radius:6px; padding:16px 18px; margin:22px 0 4px }
+.kern p:last-child{ margin:0 }
+strong{ font-weight:600 }
+a{ color:var(--accent) }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+
+.tab{ overflow-x:auto; margin:14px 0 6px }
+table{ border-collapse:collapse; width:100%; font-size:15px; line-height:1.45 }
+th,td{ text-align:left; vertical-align:top; padding:9px 10px 9px 0; border-bottom:1px solid var(--line) }
+th{ font-family:var(--display); font-weight:700; font-size:13px; letter-spacing:.03em; color:var(--muted) }
+td.zahl, th.zahl{ font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap; text-align:right; padding-right:14px }
+.klein{ font-size:14px; color:var(--muted) }
+
+/* Punkteleiste: 100 Punkte, Breiten exakt nach Achsenanteil */
+.leiste{ display:flex; height:30px; border-radius:4px; overflow:hidden; margin:16px 0 6px; font-family:var(--mono); font-size:12px }
+.leiste span{ display:flex; align-items:center; padding-left:8px; color:var(--ink); white-space:nowrap; overflow:hidden }
+.legende{ display:flex; flex-wrap:wrap; gap:4px 18px; font-size:13.5px; color:var(--muted) }
+.legende i{ display:inline-block; width:11px; height:11px; border-radius:2px; margin-right:6px; vertical-align:-1px }
+
+.stufen{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; margin:12px 0 4px }
+.stufen div{ border:1px solid var(--line); border-radius:4px; padding:8px 10px; font-size:14px }
+.stufen b{ display:block; font-family:var(--mono); font-weight:500; font-size:13px; color:var(--muted) }
+@media (max-width:520px){ .stufen{ grid-template-columns:repeat(2, minmax(0,1fr)) } }
+
+ul.saetze{ list-style:none; padding:0; margin:10px 0 0; display:grid; gap:10px }
+ul.saetze li{ padding-left:18px; position:relative }
+ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7px; height:7px; border-radius:50%; background:var(--accent) }
+
+.beispiel{ border:1px solid var(--line); border-radius:6px; padding:18px 18px 8px; margin-top:12px }
+.beispiel .ergebnis{ display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; margin-bottom:6px }
+.beispiel .score{ font-family:var(--display); font-weight:700; font-size:40px; line-height:1 }
+.beispiel .stufe{ font-family:var(--mono); font-size:13px; padding:3px 9px; border-radius:20px; border:1px solid var(--warn); color:var(--warn) }
+
+.quellen{ font-size:14px; line-height:1.5; padding-left:20px; margin:8px 0 0 }
+.quellen li{ margin-bottom:5px }
+.fuss{ margin-top:36px; font-size:13.5px; color:var(--muted) }
+@media print{ body{ padding:0; background:#fff } .blatt{ border:0; padding:0 } h2{ break-after:avoid } .beispiel, table{ break-inside:avoid } }
+</style>
+</head><body>
+
+<main class="blatt">
+  <div class="kopf"><span>Root Index · Information für Fachleute</span><span>Stand 11.11.2026</span></div>
+  <h1>Wie Root Index bewertet</h1>
+  <div class="text">
+    <p class="lead">Root Index gibt einem einzelnen verpackten Lebensmittel eine Zahl von 0 bis 100. Die Zahl beschreibt, <strong>woraus das Produkt besteht und wie stark es verarbeitet ist</strong>. Grundlage sind nur die Angaben auf dem Etikett.</p>
+    <div class="kern">
+      <p><strong>Was der Index nicht ist:</strong> keine Verzehrempfehlung. Er sagt nicht, wie viel oder wie oft jemand ein Produkt essen soll, und er kennt die Person nicht, die es isst. Das bleibt die Aufgabe der Ernährungsberatung und der Empfehlungen der DGE (siehe unten).</p>
+    </div>
+
+    <h2>Vier Fragen an jedes Produkt</h2>
+    <p>Der Index setzt sich aus vier Teilen zusammen. Jeder Teil beantwortet eine eigene Frage.</p>
+  </div>
+
+  <div class="leiste" role="img" aria-label="Aufteilung der 100 Punkte: Nährwerte 40, Zutaten 30, Zusatzstoffe 15, Verarbeitung des Endprodukts 15">
+    <span style="width:40%;background:var(--bar-nw)">Nährwerte 40</span>
+    <span style="width:30%;background:var(--bar-zut);color:#fff">Zutaten 30</span>
+    <span style="width:15%;background:var(--bar-zs)">Zusätze 15</span>
+    <span style="width:15%;background:var(--bar-nova)">Verarb. 15</span>
+  </div>
+
+  <div class="tab">
+    <table>
+      <thead><tr><th>Teil</th><th class="zahl">Punkte</th><th>Frage</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Nährwerte</strong></td><td class="zahl">40</td><td>Wie ist das Nährstoffprofil je 100 g? Weniger Zucker, gesättigte Fettsäuren und Salz bringen Punkte, mehr Ballaststoffe und Eiweiß ebenfalls. Dazu kommt, wie schnell die Kohlenhydrate ins Blut gehen (Kohlenhydrate je Gramm Ballaststoff).</td></tr>
+        <tr><td><strong>Zutaten</strong></td><td class="zahl">30</td><td>Wie weit ist jede Zutat vom ursprünglichen Lebensmittel entfernt? Jede Zutat bekommt eine Note von 10 (roh) bis 2 (raffiniert oder isoliert). Was weiter vorn in der Zutatenliste steht, zählt mehr.</td></tr>
+        <tr><td><strong>Zusatzstoffe</strong></td><td class="zahl">15</td><td>Was ist über die enthaltenen E-Nummern behördlich bekannt? Belegt unbedenkliche Stoffe kosten nichts, kritisch bewertete kosten Punkte, und mehrere kritische addieren sich.</td></tr>
+        <tr><td><strong>Verarbeitung des Endprodukts</strong></td><td class="zahl">15</td><td>Wie stark ist das Produkt als Ganzes verarbeitet? Angelehnt an die NOVA-Einteilung: Enthält es stark verarbeitete oder isolierte Zutaten, gibt es hier wenig Punkte.</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="klein">Die Nährwerte sind der größte Teil, aber nicht die Mehrheit. Fast die Hälfte des Index (Zutaten und Verarbeitung, 45 Punkte) fragt nach dem Verarbeitungsgrad. Diese Gewichtung ist eine Entscheidung von Root Index.</p>
+
+  <div class="text">
+    <h3>Von der Zahl zur Stufe</h3>
+  </div>
+  <div class="stufen">
+    <div><b>90–100</b>Sehr gut</div>
+    <div><b>75–89</b>Gut</div>
+    <div><b>60–74</b>Mittel</div>
+    <div><b>unter 60</b>Schwach</div>
+  </div>
+  <div class="text">
+    <p class="klein">Einige Fälle haben eine Obergrenze für die Stufe, unabhängig von der Zahl: Produkte mit Alkohol oder mit Azo-Farbstoffen höchstens „Gut“, künstlich gesüßte Getränke und Süßungsmittel höchstens „Mittel“.</p>
+
+    <h2>Die Grundsätze dahinter</h2>
+    <ul class="saetze">
+      <li><strong>Jede Eigenschaft zählt nur einmal.</strong> Die Zuckermenge wirkt bei den Nährwerten, nicht zusätzlich bei den Zutaten. Honig ist deshalb bei den Zutaten ein kaum verarbeitetes Lebensmittel, sein Zucker kostet bei den Nährwerten.</li>
+      <li><strong>Natürlich enthalten ist nicht dasselbe wie zugesetzt.</strong> Phosphat aus Milch, Fleisch oder Nüssen wird nicht abgewertet. Zugesetzte Phosphate (etwa in Cola oder Fertigprodukten) schon, weil der Körper sie fast vollständig aufnimmt und die EFSA hier eine zu hohe Aufnahme beschrieben hat.</li>
+      <li><strong>Fehlende Angaben werden nicht geschätzt.</strong> Fehlt ein Teil der Daten, gibt es keinen Index, statt einer hochgerechneten Zahl. Fehlt nur eine Angabe zur Verarbeitung einer Zutat, gilt die vorsichtigere Stufe. Weniger Information darf nie zu einer besseren Zahl führen.</li>
+      <li><strong>Siegel geben keine Punkte.</strong> Bio sagt etwas über den Anbau, nicht über Verarbeitung oder Nährwerte. Bio-Zucker bleibt Zucker. Auch kein Hersteller kann Punkte kaufen.</li>
+      <li><strong>Jede Regel über einen Stoff braucht eine Quelle.</strong> Wo eine Grenze oder Stufe von uns gesetzt ist und nicht aus einer Quelle stammt, steht das im Regelwerk dabei. Belegt ist dann meist die Reihenfolge (zum Beispiel Vollkornmehl vor Auszugsmehl vor Stärke), gesetzt ist die genaue Zahl.</li>
+    </ul>
+
+    <h2>Rangplatz, Alternativen und Werbung</h2>
+    <ul class="saetze">
+      <li><strong>Rangplatz:</strong> Ein Produkt wird nur mit Produkten derselben Kategorie verglichen (zum Beispiel „Milchprodukte &amp; Eier“), sortiert nach dem Index. Angezeigt wird der Platz erst ab drei Produkten in der Kategorie.</li>
+      <li><strong>Bessere Alternativen:</strong> Vorgeschlagen werden Produkte derselben Art (gleiche Kategorie, gemeinsamer Wortbestandteil im Namen), die mindestens 10 Punkte mehr haben, höchstens drei. Von Hand ausgewählte Tauschtipps stehen mit Begründung zuerst. Hat jemand im Profil Unverträglichkeiten oder Diabetes angegeben, fallen unpassende Vorschläge weg.</li>
+      <li><strong>Werbung:</strong> Manche Produkte haben einen Link zu einem Shop, der als Anzeige gekennzeichnet ist. Er wird erst nach der Bewertung angehängt und hat keinen Einfluss auf Index, Rangplatz oder Alternativen.</li>
+      <li><strong>Fehler melden:</strong> Auf jeder Produktseite gibt es „Fehler melden“. Gemeldete Fehler werden gegen das Etikett geprüft und korrigiert.</li>
+    </ul>
+
+    <h2>Ein Beispiel</h2>
+    <p>Ein proteinreicher Grießpudding aus dem Kühlregal (Dr. Oetker High Protein Pudding Grieß). Die Teilwerte zeigt die App bei jedem Produkt.</p>
+  </div>
+
+  <div class="beispiel">
+    <div class="ergebnis"><span class="score">46</span><span class="stufe">Schwach</span><span class="klein">aus 46,4 von 100 Punkten</span></div>
+    <div class="tab">
+      <table>
+        <thead><tr><th>Teil</th><th class="zahl">erreicht</th><th>warum</th></tr></thead>
+        <tbody>
+          <tr><td>Nährwerte</td><td class="zahl">27,8 / 40</td><td>Wenig Zucker (4,4 g) und Salz, viel Eiweiß. Ballaststoffe sind nicht angegeben und zählen deshalb mit 0.</td></tr>
+          <tr><td>Zutaten</td><td class="zahl">15,6 / 30</td><td>Magermilch und Sahne stehen gut da (Note 8). Danach folgen Stärke, modifizierte Stärke, Aroma und drei Süßstoffe mit Noten von 2 bis 3.</td></tr>
+          <tr><td>Zusatzstoffe</td><td class="zahl">0 / 15</td><td>Drei künstliche Süßstoffe (Acesulfam K, Cyclamat, Saccharin) und ein zugesetztes Phosphat. Vier kritisch bewertete Stoffe zusammen verbrauchen alle 15 Punkte.</td></tr>
+          <tr><td>Verarbeitung</td><td class="zahl">3 / 15</td><td>Das Produkt enthält isolierte Zutaten (Stärke, Süßstoffe).</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="klein">Das Beispiel zeigt, was der Index zusätzlich zu einer reinen Nährwertbetrachtung sieht: Nach Nährwerten allein käme der Pudding auf knapp 70 von 100. Zusammensetzung und Verarbeitung ziehen ihn auf 46.</p>
+  </div>
+
+  <div class="text">
+    <h2>Root Index und die Empfehlungen der DGE</h2>
+    <p>Root Index und die DGE beantworten verschiedene Fragen. Deshalb ergänzen sie sich, ersetzen sich aber nicht.</p>
+  </div>
+  <div class="tab">
+    <table>
+      <thead><tr><th></th><th>Root Index</th><th>DGE „Gut essen und trinken“</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Gegenstand</strong></td><td>ein einzelnes Produkt, je 100 g</td><td>die ganze Ernährung über Tag und Woche</td></tr>
+        <tr><td><strong>Frage</strong></td><td>Welches Produkt ist innerhalb seiner Art besser zusammengesetzt und weniger verarbeitet?</td><td>Was und wie viel aus welcher Lebensmittelgruppe?</td></tr>
+        <tr><td><strong>Grundlage</strong></td><td>Etikett: Zutatenliste, Nährwerttabelle, E-Nummern</td><td>Lebensmittelgruppen und Portionen, Orientierungswerte für gesunde Erwachsene mit etwa 2.000 kcal am Tag</td></tr>
+        <tr><td><strong>Ergebnis</strong></td><td>Zahl 0–100 und Stufe</td><td>Mengen, zum Beispiel 5 Portionen Obst und Gemüse am Tag, höchstens 300 g Fleisch und Wurst pro Woche</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="text">
+    <h3>Wo beides zusammenpasst</h3>
+    <ul class="saetze">
+      <li>Die DGE nennt Vollkorn „die beste Wahl“. Bei Root Index steht Vollkornmehl bei den Zutaten auf 8, helles Auszugsmehl auf 5, reine Stärke auf 2.</li>
+      <li>Die DGE weist darauf hin, dass Zucker, Salz und Fett oft „unsichtbar“ in verarbeiteten Lebensmitteln stecken. Root Index macht das je Produkt sichtbar und vergleichbar.</li>
+      <li>Wer der DGE folgt und etwa einen Joghurt am Tag isst, kann mit Root Index zwischen den Joghurts im Regal wählen.</li>
+    </ul>
+    <h3>Wo Root Index nichts aussagt</h3>
+    <ul class="saetze">
+      <li><strong>Menge und Häufigkeit.</strong> Ein hoher Index heißt nicht „viel davon“. Nüsse oder Pflanzenöl können sehr gut abschneiden, die DGE empfiehlt trotzdem eine kleine Handvoll Nüsse beziehungsweise etwa einen Esslöffel Öl am Tag.</li>
+      <li><strong>Die Mischung über den Tag.</strong> Ob jemand genug Gemüse, Hülsenfrüchte oder Milchprodukte isst, beantwortet ein Produktindex nicht.</li>
+      <li><strong>Die einzelne Person.</strong> Energiebedarf, Erkrankungen, Unverträglichkeiten und Ziele fließen nicht ein. Die Nährstoff-Referenzwerte der DGE (gemeinsam mit der ÖGE) gelten für die tägliche Zufuhr einer Person, nicht für ein Produkt.</li>
+    </ul>
+    <p>Die DGE spricht in ihren Empfehlungen allgemein von verarbeiteten Lebensmitteln, nutzt aber keine eigene Einteilung nach Verarbeitungsgrad. Root Index tut das zusätzlich, angelehnt an NOVA. Weil solche Einteilungen in der Fachwelt unterschiedlich angewendet werden, bewertet Root Index jede Zutat einzeln nach einer festen Skala und leitet die Verarbeitung des Endprodukts daraus ab.</p>
+
+    <h3>Zur FET</h3>
+    <p>Die Fachgesellschaft für Ernährungstherapie und Prävention (FET) e.V. stellt Fachkräften Beratungsmaterialien bereit, darunter Lebensmittellisten, die Lebensmittel unter anderem nach Energiedichte, Verarbeitung und Portionsgröße einordnen. Solche Listen helfen bei der Frage, welche Art von Lebensmittel passt. Root Index kann danach helfen, das konkrete Produkt im Regal zu wählen.</p>
+
+    <h2>Quellen</h2>
+    <p class="klein">Die wichtigsten Grundlagen. Jede einzelne Regel trägt im Regelwerk ihre eigene Quelle.</p>
+    <ul class="quellen">
+      <li>Verordnung (EU) Nr. 1169/2011 (LMIV), Art. 18: Zutaten in absteigender Reihenfolge des Gewichtsanteils – Grundlage der Gewichtung</li>
+      <li>Verordnung (EG) Nr. 1924/2006, Anhang: Schwellen für „zuckerarm“, „arm an gesättigten Fettsäuren“, „kochsalzarm“, „Ballaststoffquelle“, „Proteinquelle“</li>
+      <li>Food Standards Agency (UK), Front-of-pack Guidance: Schwellen „hoch“ für Zucker und Salz</li>
+      <li>WHO: Guideline Sugars intake (2015) · Use of non-sugar sweeteners (2023)</li>
+      <li>Verordnung (EG) Nr. 1333/2008 über Zusatzstoffe und Re-Evaluationen der EFSA; EFSA Journal 2019;17(6):5674 (Phosphate)</li>
+      <li>Verordnung (EG) Nr. 1334/2008 über Aromen</li>
+      <li>Monteiro CA et al.: Ultra-processed foods: what they are and how to identify them. Public Health Nutrition, 2019 (NOVA)</li>
+      <li>Mozaffarian RD et al.: Identifying whole grain foods. Public Health Nutrition, 2013 (Verhältnis Kohlenhydrate zu Ballaststoffen)</li>
+      <li>DGE: Gut essen und trinken – die DGE-Empfehlungen und der DGE-Ernährungskreis, dge.de</li>
+      <li>DGE/ÖGE: Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025)</li>
+      <li>FET e.V.: Beratungsmaterialien, fet-ev.eu</li>
+    </ul>
+
+    <p class="fuss">Root Index · root-index.de · Die Bewertungsregeln werden laufend geprüft. Ändert sich eine Regel, ändert sich der Index aller betroffenen Produkte; die Änderung wird mit Begründung festgehalten.</p>
+  </div>
+</main>
+</body></html>

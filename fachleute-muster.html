@@ -52,16 +52,17 @@
 
   <section id="bPraxis" hidden>
     <h1 id="pName">Praxis Muster</h1>
-    <p class="unter">So sieht deine Fachleute-Seite mit vier Klientinnen und Klienten aus. Tippe eine Person an.</p>
+    <p class="unter">So sieht die Fachleute-Seite mit vier Klientinnen und Klienten aus. Eine Person antippen öffnet ihre Auswertung.</p>
     <div class="karte">
       <h2>Klientinnen und Klienten</h2>
-      <p class="unter" style="margin:0">Jede Person hat einen eigenen Key von dir und hat eingewilligt, dass du ihre Einträge siehst.</p>
+      <p class="unter" style="margin:0">Jede Person hat einen eigenen Key der Praxis und hat eingewilligt, dass die Praxis ihre Einträge sieht.</p>
       <div id="liste"></div>
     </div>
     <div class="karte">
-      <h2>Was du siehst und was noch kommt</h2>
-      <p class="unter">Je Person: Tag, Woche und Monat · Gemüse und Obst in Gramm gegen die DGE-Orientierung · Kalorien und Makros gegen deine eigenen Vorgaben · alle gegessenen Produkte mit Root-Index-Score · Rezepte und Wochenplanung · Bericht zum Drucken oder als PDF · Ernährungspläne mit Ist gegen Plan.</p>
-      <div class="bald"><b>Im eigenen Konto zusätzlich:</b> Ernährungspläne schreiben, die die Person in ihren Wochenplan und auf die Einkaufsliste übernimmt, und Rezepte gezielt teilen und gemeinsam bearbeiten.</div>
+      <h2>Was zu sehen ist und was noch kommt</h2>
+      <p class="unter">Je Person: Tag, Woche und Monat · Gemüse und Obst in Gramm gegen die DGE-Orientierung · Kalorien und Makros gegen eigene Vorgaben · alle gegessenen Produkte mit Root-Index-Score · Rezepte und Wochenplanung.</p>
+      <div class="bald"><b>Je Person zusätzlich:</b> Bericht zum Drucken oder als PDF und Ernährungspläne mit Ist gegen Plan. Im eigenen Konto: Pläne schreiben, die die Person in ihren Wochenplan und auf die Einkaufsliste übernimmt, und Rezepte gezielt teilen und gemeinsam bearbeiten.</div>
+      <div class="bald"><b>Vorführung anfragen:</b> per E-Mail an <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a></div>
       <div class="bald"><b>Wünsche?</b> In der <a href="fachleute-wuensche.html">Wunschliste der Fachleute</a> sehen alle Therapeutinnen alle Wünsche und können „Ich auch“ sagen (Anmeldung nötig).</div>
     </div>
   </section>
@@ -113,7 +114,7 @@ function route(){
   const laden = (von, bis) => rpc('cb_fl_muster_dashboard', {p_token: TOKEN, p_nr: nr, p_von: von, p_bis: bis});
   const k = (PRAXIS.klienten||[]).find(x => x.nr===nr) || {};
   $('fl5').innerHTML = ''; $('fl5').className = '';
-  FL5.mount($('fl5'), { muster: true, nr, token: TOKEN, code: k.code, name: k.name, heute: PRAXIS.heute,
+  FL5.mount($('fl5'), { muster: true, nr, token: TOKEN, code: k.code, name: k.name, heute: PRAXIS.heute,   // FL-5: Bericht und Pläne
     praxis: PRAXIS.praxis || 'Praxis Muster', fachperson: 'Musterpraxis (erfundene Daten)', rpc, ladeDashboard: laden });
   FLDash.mount($('dash'), { heute: PRAXIS.heute, nurLesen: true, laden });
 }

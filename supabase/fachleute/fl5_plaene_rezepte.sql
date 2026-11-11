@@ -324,9 +324,9 @@ begin
   select "Benutzer_ID" into v_bid from public."Benutzer" where auth_id = auth.uid();
   select * into r from public."Rezepte" x where x."Rezept_ID" = p_rezept and x."Status" = 'Aktiv' and not coalesce(x."Gesperrt", false)
      and (x."Benutzer_ID" is null or coalesce(x."Sichtbarkeit", 'oeffentlich') = 'oeffentlich' or x."Benutzer_ID" = v_bid);
-  if r."Rezept_ID" is null then return jsonb_build_object('ok', false, 'grund', 'Dieses Rezept kannst du nicht teilen.'); end if;
+  if r."Rezept_ID" is null then return jsonb_build_object('ok', false, 'grund', 'Dieses Rezept lässt sich nicht teilen (nur eigene oder öffentliche).'); end if;
   if coalesce(p_mitbearbeiten, false) and r."Benutzer_ID" is distinct from v_bid then
-    return jsonb_build_object('ok', false, 'grund', 'Gemeinsam bearbeiten geht nur bei deinen eigenen Rezepten.'); end if;
+    return jsonb_build_object('ok', false, 'grund', 'Gemeinsam bearbeiten geht nur bei eigenen Rezepten.'); end if;
   insert into public.fl5_rezept_freigabe(rezept_id, code, fachperson_auth, mitbearbeiten, notiz)
   values (p_rezept, upper(trim(p_code)), v.auth_id, coalesce(p_mitbearbeiten, false), nullif(left(trim(coalesce(p_notiz, '')), 300), ''))
   on conflict (rezept_id, code) do update set mitbearbeiten = excluded.mitbearbeiten, notiz = excluded.notiz,
@@ -514,7 +514,7 @@ begin
     if v_typ = 'rezept' then
       if not exists (select 1 from public."Rezepte" r where r."Rezept_ID" = v_rid and r."Status" = 'Aktiv' and not coalesce(r."Gesperrt", false)
                        and (r."Benutzer_ID" is null or coalesce(r."Sichtbarkeit", 'oeffentlich') = 'oeffentlich' or r."Benutzer_ID" = v_bid)) then
-        raise exception 'Eintrag %: dieses Rezept kannst du nicht einplanen.', i; end if;
+        raise exception 'Eintrag %: dieses Rezept lässt sich nicht einplanen (nur eigene oder öffentliche).', i; end if;
       v_pid := null; v_g := null;
     elsif v_typ = 'produkt' then
       if not exists (select 1 from public."Produkte" pr where pr."Produkt_ID" = v_pid) then raise exception 'Eintrag %: Produkt nicht gefunden.', i; end if;
