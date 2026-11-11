@@ -424,7 +424,20 @@ function mount(el, opt){
   /* =================== Rezepte teilen =================== */
   async function rezeptePanel(){
     if(opt.muster){
-      $p.innerHTML = '<div class="f5-k">In der Musterpraxis stehen die empfohlenen Rezepte unten im Dashboard unter „Rezepte“. Im eigenen Konto lassen sich hier Rezepte gezielt mit einer oder mehreren Personen teilen, z. B. passend zu einer Unverträglichkeit, und gemeinsam bearbeiten.</div>';
+      // Vorführung: Rezepte der Musterperson aus dem FL-4-Dashboard (fl_muster_rezept), nur ansehen
+      $p.innerHTML = '<div class="f5-k">Lädt …</div>';
+      let d; try{ d = await opt.ladeDashboard(plus(heute, -7), plus(heute, -1)); }catch(e){ $p.innerHTML = '<div class="f5-meld f">Konnte nicht laden: ' + esc(e.message || e) + '</div>'; return; }
+      const alle = d.rezepte || [], empf = alle.filter(x => x.herkunft==='empfohlen'), eig = alle.filter(x => x.herkunft!=='empfohlen'), geg = d.rezepte_gegessen || [];
+      const zeile = (x, chip) => '<div class="f5-rez">' + (x.bild ? '<img src="' + esc(x.bild) + '" alt="" loading="lazy">' : '<div class="ph"></div>') +
+        '<div style="flex:1"><b>' + esc(x.name) + '</b><div class="f5-k">' + [x.kcal_portion && z(x.kcal_portion) + ' kcal je Portion', x.protein_portion && z(x.protein_portion, 1) + ' g Eiweiß', x.mahlzeit].filter(Boolean).map(esc).join(' · ') + '</div></div>' + chip + '</div>';
+      $p.innerHTML = '<div class="f5-hinweis">Musterpraxis: nur zum Ansehen. Im eigenen Konto lassen sich hier Rezepte gezielt mit einer oder mehreren Personen teilen, z. B. passend zu einer Unverträglichkeit, gemeinsam bearbeiten und wieder entziehen. Die Person sieht sie in ihrer App, solange Key und Einwilligung laufen; eine eigene Kopie bleibt bei ihr.</div>' +
+        '<h3>Mit ' + esc(opt.name || 'dieser Person') + ' geteilt (' + empf.length + ')</h3>' +
+        (empf.length ? empf.map(x => zeile(x, '<span class="f5-chip blau">Empfehlung</span>')).join('') : '<p class="f5-k">Nichts geteilt.</p>') +
+        '<h3>Eigene und gespeicherte Rezepte der Person (' + eig.length + ')</h3>' +
+        (eig.length ? eig.map(x => zeile(x, '<span class="f5-chip">' + (x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes') + '</span>')).join('') : '<p class="f5-k">Keine.</p>') +
+        (geg.length ? '<h3>In den letzten 7 Tagen gekocht</h3><p class="f5-k">' + geg.map(x => esc(x.name) + ' (' + x.mal + '×)').join(' · ') + '</p>' : '') +
+        '<h3>Rezept teilen</h3><div class="f5-reihe"><input disabled style="flex:1" placeholder="Rezept suchen (eigene zuerst) …"><button class="f5-b gruen" type="button" disabled>Teilen</button></div>' +
+        '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px;opacity:.6"><input type="checkbox" disabled checked> Gemeinsam bearbeiten (nur bei eigenen Rezepten)</label>';
       return;
     }
     $p.innerHTML = '<div class="f5-k">Lädt …</div>';
