@@ -12,8 +12,9 @@
      praxis, fachperson,                       // Kopf des Berichts
      rpc: async (name, args) => data,          // wirft bei Fehler
      ladeDashboard: async (von, bis) => json,  // wie FLDash
-     klienten: [{code, name}]                  // verbundene Klienten (zum Teilen mit mehreren)
-   }) */
+     klienten: [{code, name}],                 // verbundene Klienten (zum Teilen mit mehreren)
+     nurTab: 'bericht'|'plaene'|'rezepte'      // optional: nur diesen Teil zeigen, ohne eigene Reiter
+   })                                           // (für Menüpunkte „Berichte“, „Pläne“, „Rezepte“) */
 (function(){
 'use strict';
 const CSS = `
@@ -109,6 +110,7 @@ function mount(el, opt){
     '<div class="f5-k">' + (opt.muster ? 'Musterpraxis: alles zum Ansehen, Berichte zum Ausprobieren.' : 'Bericht drucken, Ernährungspläne schreiben und Rezepte teilen. Alles nur, solange der Key läuft und die Einwilligung besteht.') + '</div>' +
     '<div class="f5-tabs"><button data-t="bericht" type="button">📄 Bericht</button><button data-t="plaene" type="button">🗓️ Ernährungspläne</button>' +
     '<button data-t="rezepte" type="button">🍲 Rezepte teilen</button></div><div class="f5-panel" hidden></div></div>';
+  if(opt.nurTab){ el.innerHTML = '<div class="f5-panel"></div>'; }
   const $p = el.querySelector('.f5-panel');
   el.querySelectorAll('.f5-tabs button').forEach(b => b.onclick = () => { st.tab = st.tab===b.dataset.t ? null : b.dataset.t; zeigeTab(); });
   function zeigeTab(){
@@ -181,8 +183,8 @@ function mount(el, opt){
     // Gemüse und Obst je Tag
     let maxG = 1; tage.forEach(t => { const g = (Number(t.gemuese_g)||0) + (Number(t.obst_g)||0); if(g > maxG) maxG = g; });
     const go = isG.find(x => x.kennzahl==='gruppe:gemuese+obst'); const linie = go && go.soll ? Number(go.soll) : null; if(linie && linie > maxG) maxG = linie;
-    const bw = Math.max(4, Math.min(26, Math.floor(700 / Math.max(1, tage.length)) - 2)), H = 120, W = tage.length * (bw + 2) + 4;
-    let svg = '<svg viewBox="0 0 ' + W + ' ' + (H + 16) + '" width="100%" height="' + (H + 16) + '" preserveAspectRatio="none" role="img" aria-label="Gemüse und Obst je Tag">';
+    const bw = Math.max(4, Math.min(60, Math.floor(740 / Math.max(1, tage.length)) - 2)), H = 120, W = tage.length * (bw + 2) + 4;
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + (H + 16) + '" width="' + W + '" height="' + (H + 16) + '" style="max-width:100%;height:auto" role="img" aria-label="Gemüse und Obst je Tag">';
     tage.forEach((t, i) => { const x = 2 + i * (bw + 2); const g = (Number(t.gemuese_g)||0) * H / maxG, o2 = (Number(t.obst_g)||0) * H / maxG;
       if(t.leer) svg += '<rect x="' + x + '" y="' + (H - 3) + '" width="' + bw + '" height="3" fill="#ddd"/>';
       else svg += '<rect x="' + x + '" y="' + (H - g) + '" width="' + bw + '" height="' + g + '" fill="#2e7d46"/><rect x="' + x + '" y="' + (H - g - o2) + '" width="' + bw + '" height="' + o2 + '" fill="#e8920c"/>';
@@ -480,6 +482,7 @@ function mount(el, opt){
       await rezeptePanel(); meld('[data-rmeld]', '✓ Geteilt mit ' + codes.length + (codes.length===1 ? ' Person.' : ' Personen.'), 'ok');
     };
   }
+  if(opt.nurTab){ st.tab = opt.nurTab; zeigeTab(); }
   return { tab: t => { st.tab = t; zeigeTab(); } };
 }
 window.FL5 = { mount };
