@@ -363,9 +363,17 @@ async function ladeZahlen(){
   const euro = c => (Number(c||0)/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
   $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
   $('zBetrag').textContent = d.betrag_cent==null ? '–' : euro(d.betrag_cent);
-  $('zRegel').textContent = (d.abrechnung==='tag'
-      ? 'Abrechnung tagesgenau: ' + euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage).'
-      : 'Abrechnung: ' + euro(d.preis_cent) + ' je Key und Monat. Jeder angefangene Monat zählt voll.') + ' Grundlage der monatlichen Rechnung, Stand heute.';
+  const keys = d.abrechnung==='tag'
+      ? euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage)'
+      : euro(d.preis_cent) + ' je Key und Monat, jeder angefangene Monat zählt voll';
+  const lizenz = 'Lizenz ' + euro(d.lizenz_preis_cent) + (d.lizenz_intervall==='jahr' ? ' im Jahr' : ' im Monat');
+  const regel = {
+    gratis: 'Für dich kostenlos.',
+    je_key: 'Abrechnung: ' + keys + '.',
+    lizenz_pauschal: 'Abrechnung: ' + lizenz + ', Keys inklusive.',
+    lizenz_plus_keys: 'Abrechnung: ' + lizenz + ' plus ' + keys + '.'
+  }[d.modell || 'je_key'] || ('Abrechnung: ' + keys + '.');
+  $('zRegel').textContent = regel + ' Grundlage der monatlichen Rechnung, Stand heute.';
 }
 
 $('vertragLos').onclick = async function(){

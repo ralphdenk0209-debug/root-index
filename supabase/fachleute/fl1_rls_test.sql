@@ -237,6 +237,25 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   j := public.cb_admin_fachleute(null);
   insert into _erg(ok,txt) values (jsonb_array_length(j) >= 2, 'Admin sieht Abrechnung aller Fachleute');
+  -- Preis und Modell je Fachperson (T2: 1 Key B diesen Monat, bezahlte Lizenz seit heute)
+  j := public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_plus_keys',300,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1300, 'Modell Lizenz plus Keys: 10,00 + 1 x 3,00 = 13,00');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_pauschal',300,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1000, 'Modell Lizenz pauschal: 10,00, Keys inklusive');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','lizenz_pauschal',null,1200,'jahr');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=1200
+                               and (select betrag_cent from public._fp_abrechnung(t2,(now() + interval '1 month')::date))=0, 'Jahreslizenz: voller Preis nur im Jahrestag-Monat');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','gratis',null,1000,'monat');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=0, 'Modell gratis: 0');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid','je_key',300,null,null);
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=300, 'Eigener Key-Preis 3,00 statt 4,99');
+  perform public.cb_admin_fachperson_abrechnung('fl1-test-t2@example.invalid',null,null,null,null);
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2,null))=499 and (select modell from public._fp_abrechnung(t2,null))='je_key', 'Leer = globaler Standard (je Key, 4,99)');
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t1,null))=998, 'Gruenderin T1 unveraendert 9,98');
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
+  begin perform public.cb_admin_fachperson_abrechnung('fl1-test-t1@example.invalid','gratis'); insert into _erg(ok,txt) values (false,'T1 setzt eigenen Preis!');
+  exception when others then insert into _erg(ok,txt) values (true,'Preis/Modell nur durch Admin'); end;
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   insert into _erg(ok,txt) values (public._fp_key_tage('2026-11-11 14:00+01','2026-12-11 14:00+01','2026-11-01')=20
                                and public._fp_key_tage('2026-11-11 14:00+01','2026-12-11 14:00+01','2026-12-01')=10, 'Key-Tage Nov 20 + Dez 10 = 30');
 
