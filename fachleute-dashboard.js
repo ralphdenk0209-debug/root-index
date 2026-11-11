@@ -182,7 +182,7 @@ function mount(el, opt){
     h += profilKarte(d);
     if(!n){
       h += '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
-           (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben kannst du zurückblättern.') + '</p></div>';
+           (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>';
       h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
       $in.innerHTML = h; binde(); return;
     }
@@ -359,12 +359,12 @@ function mount(el, opt){
   function vorgabenKarte(d){
     const v = d.vorgaben || [];
     const txt = x => (KZ[x.kennzahl] ? KZ[x.kennzahl][0] : x.kennzahl) + ' ' + (ART[x.art]||'') + ' ' + z(x.wert, 1) + ' ' + (x.einheit==='g/kg' ? 'g je kg Körpergewicht' : x.einheit) + ' je Tag';
-    let h = '<div class="fd-karte"><h2>Deine Vorgaben</h2><div class="fd-klein">Was du hier einstellst, ersetzt im Ist-Soll das Profilziel und den DGE-Richtwert.</div>';
+    let h = '<div class="fd-karte"><h2>Vorgaben</h2><div class="fd-klein">Eine Vorgabe ersetzt im Ist-Soll das Profilziel und den DGE-Richtwert.</div>';
     h += v.length ? '<table style="margin-top:6px"><tbody>' + v.map(x => '<tr><td><b>' + esc(txt(x)) + '</b>' + (x.notiz ? '<div class="fd-klein">' + esc(x.notiz) + '</div>' : '') + '</td>' +
           (opt.nurLesen ? '' : '<td class="z"><button class="fd-k" data-vg-weg="' + esc(x.kennzahl) + '" type="button">Entfernen</button></td>') + '</tr>').join('') + '</tbody></table>'
        : '<p class="fd-klein">Noch keine Vorgaben.</p>';
     if(opt.nurLesen){
-      h += '<div class="fd-bald">In der Musterpraxis nur zum Ansehen. Im eigenen Konto stellst du hier Kalorien, Eiweiß, Kohlenhydrate, Fett, Zucker, Ballaststoffe, Salz, Gemüse und Obst je Klient ein.</div>';
+      h += '<div class="fd-bald">In der Musterpraxis nur zum Ansehen. Im eigenen Konto lassen sich hier Kalorien, Eiweiß, Kohlenhydrate, Fett, Zucker, Ballaststoffe, Salz, Gemüse und Obst je Klient einstellen.</div>';
     } else {
       h += '<div class="fd-vg-form"><select data-vg-k>' + Object.keys(KZ).map(k => '<option value="' + k + '">' + KZ[k][0] + ' (' + KZ[k][1] + ')</option>').join('') + '</select>' +
            '<select data-vg-a><option value="">Art: Standard</option><option value="mindestens">mindestens</option><option value="etwa">etwa (±10 %)</option><option value="hoechstens">höchstens</option></select>' +
@@ -380,7 +380,7 @@ function mount(el, opt){
     if(g.length) h += '<div class="fd-klein" style="margin-bottom:6px">Im Zeitraum gekocht: ' + g.map(x => esc(x.name) + ' (' + x.mal + '×)').join(' · ') + '</div>';
     h += r.length ? r.map(x => '<div class="fd-rez">' + (x.bild ? '<img src="' + esc(x.bild) + '" alt="" loading="lazy">' : '<div class="ph"></div>') +
           '<div style="flex:1"><b>' + esc(x.name) + '</b><div class="fd-klein">' + [x.kcal_portion && z(x.kcal_portion) + ' kcal je Portion', x.protein_portion && z(x.protein_portion,1) + ' g Eiweiß', x.mahlzeit].filter(Boolean).map(esc).join(' · ') + '</div></div>' +
-          '<span class="fd-chip ' + (x.herkunft==='empfohlen' ? 'dunkel' : '') + '">' + (x.herkunft==='empfohlen' ? 'von dir empfohlen' : x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes Rezept') + '</span></div>').join('')
+          '<span class="fd-chip ' + (x.herkunft==='empfohlen' ? 'dunkel' : '') + '">' + (x.herkunft==='empfohlen' ? 'empfohlen' : x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes Rezept') + '</span></div>').join('')
        : '<p class="fd-klein">Keine eigenen Rezepte.</p>';
     h += '<div class="fd-bald"><b>Bald:</b> Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen.</div>';
     return h + '</div>';

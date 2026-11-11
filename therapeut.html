@@ -279,7 +279,7 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
-      <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir dein Konto als Fachperson frei. Bitte gib uns kurz Bescheid: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+      <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
     </div>
   </section>
 
@@ -307,8 +307,8 @@
   <section id="bWartet" hidden>
     <div class="karte">
       <h2>Noch nicht freigeschaltet</h2>
-      <p>Du bist als <b id="wartetMail"></b> angemeldet. Dieses Konto ist noch nicht als Fachperson freigeschaltet.</p>
-      <p style="margin:0">Bitte schreib uns kurz mit deinem Namen und deiner Praxis: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>. Danach diese Seite neu laden.</p>
+      <p>Angemeldet als <b id="wartetMail"></b>. Dieses Konto ist noch nicht als Fachperson freigeschaltet.</p>
+      <p style="margin:0">Freischaltung per E-Mail mit Name und Praxis an <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>. Danach diese Seite neu laden.</p>
     </div>
   </section>
 
@@ -316,7 +316,7 @@
   <section id="bVertrag" hidden>
     <div class="karte">
       <h2 id="vertragTitel">Verschwiegenheitsvereinbarung</h2>
-      <p>Bevor du loslegst, bestätige bitte die Vereinbarung zwischen dir und Root Index.</p>
+      <p>Vor dem Start bitte die Vereinbarung zwischen Fachperson und Root Index bestätigen.</p>
       <div class="vertrag" id="vertragText"></div>
       <label class="check"><input type="checkbox" id="vertragOk"><span>Ich habe die Vereinbarung gelesen und stimme ihr zu.</span></label>
       <button class="knopf" id="vertragLos" type="button">Bestätigen und weiter</button>
@@ -372,7 +372,7 @@
         <div class="dd-menu"><button type="button" data-druck="aw">Drucken</button><button type="button" data-druck="aw">Als PDF speichern</button></div></div>
     </div>
     <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div>
-    <p class="fuss">Werte sind der Durchschnitt je erfasstem Tag. Soll nach deiner Vorgabe, sonst Profilziel oder DGE-Orientierung. Tippe eine Zeile an, um die Person zu öffnen.</p>
+    <p class="fuss">Werte sind der Durchschnitt je erfasstem Tag. Soll nach eigener Vorgabe, sonst Profilziel oder DGE-Orientierung. Eine Zeile antippen öffnet die Person.</p>
   </section>
 
   <section class="ansicht" data-v="plaene"><div class="band"><h1>Pläne</h1></div><div class="fl5" data-fl5="plaene"></div></section>
@@ -401,9 +401,9 @@
     </div>
     <div class="neu-panel" id="neuPanel" hidden>
       <h2 class="abschnitt" id="neuTitel">Neuer Key</h2>
-      <p class="fuss" style="margin-top:0">Die Laufzeit beginnt, wenn die Person den Key einlöst. Danach kannst du sie jederzeit verlängern, kürzen oder beenden.</p>
+      <p class="fuss" style="margin-top:0">Die Laufzeit beginnt, wenn die Person den Key einlöst. Danach lässt sie sich jederzeit verlängern, kürzen oder beenden.</p>
       <div class="reihe">
-        <div style="flex:2;min-width:200px"><label for="neuBez">Deine Notiz zum Key (nur für dich sichtbar)</label>
+        <div style="flex:2;min-width:200px"><label for="neuBez">Eigene Notiz zum Key (nur hier sichtbar)</label>
           <input id="neuBez" maxlength="80" placeholder="z. B. Initialen oder Termin, bitte keine Diagnosen"></div>
         <div><label for="neuMenge">Laufzeit</label><input id="neuMenge" type="number" min="1" max="730" value="3" inputmode="numeric"></div>
         <div><label for="neuEinheit">&nbsp;</label>
@@ -426,7 +426,7 @@
     </div>
     <div class="keyliste" id="liste"><div class="leer">Lädt …</div></div>
     <div class="meld" id="meldListe"></div>
-    <p class="fuss">So geht's weiter: Gib den Link deiner Klientin. Sie legt damit ein Konto an, bekommt Premium für die Laufzeit und entscheidet selbst, ob du ihre Einträge sehen darfst. Ohne ihre Einwilligung siehst du nichts.</p>
+    <p class="fuss">So geht es weiter: Die Klientin bekommt den Link, legt damit ein Konto an, erhält Premium für die Laufzeit und entscheidet selbst, ob ihre Einträge hier sichtbar werden. Ohne ihre Einwilligung ist nichts zu sehen.</p>
   </section>
 
   <section class="ansicht" data-v="wunschliste">
@@ -455,9 +455,9 @@
 <dialog id="dlgMail"><div class="dlg">
   <h2>Link per E-Mail senden</h2>
   <p id="mailFuer"></p>
-  <label for="mailAn">E-Mail deines Klienten</label>
+  <label for="mailAn">E-Mail der Klientin oder des Klienten</label>
   <input id="mailAn" type="email" inputmode="email" autocomplete="off" placeholder="name@beispiel.de">
-  <p style="font-size:13px;margin-top:10px">Datenschutz: Die Adresse wird nur für diesen Versand genutzt und gespeichert, damit du siehst, wohin der Link ging. Sobald der Key eingelöst oder beendet ist, wird sie gelöscht. Bitte nur mit Einverständnis deines Klienten eintragen. Antworten auf die Mail gehen an dich.</p>
+  <p style="font-size:13px;margin-top:10px">Datenschutz: Die Adresse wird nur für diesen Versand genutzt und gespeichert, damit sichtbar bleibt, wohin der Link ging. Sobald der Key eingelöst oder beendet ist, wird sie gelöscht. Bitte nur mit Einverständnis der Klientin oder des Klienten eintragen. Antworten auf die Mail gehen an die Fachperson.</p>
   <div class="reihe-k"><button class="knopf zwei" type="button" id="mailAbbrechen">Abbrechen</button><button class="knopf" type="button" id="mailSenden">Senden</button></div>
   <div class="meld" id="meldMail"></div>
 </div></dialog>
@@ -525,7 +525,7 @@ $('los').onclick = async function(){
       }
       if(data.session) return start();
       $('mailTitel').textContent = 'Bitte E-Mail bestätigen';
-      $('mailText').innerHTML = 'Wir haben dir eine Mail an <b>' + esc(email) + '</b> geschickt. Tippe dort auf den Link – du landest wieder hier. Keine Mail da? Schau im Spam-Ordner nach.';
+      $('mailText').innerHTML = 'Eine Mail an <b>' + esc(email) + '</b> ist unterwegs. Der Link darin führt zurück auf diese Seite. Keine Mail da? Bitte im Spam-Ordner nachsehen.';
       zeige('bMail');
     } else {
       const {error} = await client.auth.signInWithPassword({ email, password: pass });
@@ -538,13 +538,13 @@ $('los').onclick = async function(){
 
 $('vergessen').onclick = async function(){
   const email = $('mail').value.trim();
-  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldLogin','Bitte oben zuerst deine E-Mail eintragen.','fehler');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldLogin','Bitte oben zuerst die E-Mail eintragen.','fehler');
   this.disabled = true;
   const {error} = await client.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
   this.disabled = false;
   if(error) return meld('meldLogin','Fehler: ' + error.message,'fehler');
   $('mailTitel').textContent = 'Mail ist unterwegs';
-  $('mailText').innerHTML = 'Wenn es zu <b>' + esc(email) + '</b> ein Konto gibt, kommt gleich eine Mail mit einem Link. Darüber legst du ein neues Passwort fest.';
+  $('mailText').innerHTML = 'Wenn es zu <b>' + esc(email) + '</b> ein Konto gibt, kommt gleich eine Mail mit einem Link. Darüber lässt sich ein neues Passwort festlegen.';
   zeige('bMail');
 };
 
@@ -580,7 +580,7 @@ async function start(){
   if(d.lizenz_ok === false){
     $('wartetMail').textContent = d.email || '';
     $('bWartet').querySelector('h2').textContent = 'Lizenz abgelaufen';
-    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Du bist als <b>' + esc(d.email||'') + '</b> angemeldet. Deine Lizenz ist abgelaufen, deshalb sind Keys und Klienten gerade gesperrt.';
+    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Angemeldet als <b>' + esc(d.email||'') + '</b>. Die Lizenz ist abgelaufen, deshalb sind Keys und Klienten gerade gesperrt.';
     zeige('bWartet'); return;
   }
   if(!d.vertrag_ok){
@@ -612,7 +612,7 @@ async function ladeZahlen(){
       : euro(d.preis_cent) + ' je Key und Monat, jeder angefangene Monat zählt voll';
   const lizenz = 'Lizenz ' + euro(d.lizenz_preis_cent) + (d.lizenz_intervall==='jahr' ? ' im Jahr' : ' im Monat');
   const regel = {
-    gratis: 'Für dich kostenlos.',
+    gratis: 'Kostenlos.',
     je_key: 'Abrechnung: ' + keys + '.',
     lizenz_pauschal: 'Abrechnung: ' + lizenz + ', Keys inklusive.',
     lizenz_plus_keys: 'Abrechnung: ' + lizenz + ' plus ' + keys + '.'
@@ -676,7 +676,7 @@ const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abge
 const EINW = {erteilt:'Einwilligung erteilt', keine:'Keine Einwilligung', widerrufen:'Einwilligung widerrufen'};
 function zeichne(){
   const liste = KEYS.filter(k => FILTER==='alle' || k.status==='offen' || k.status==='laeuft');
-  if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : 'Noch keine Keys. Leg oben den ersten an.') + '</div>'; return; }
+  if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : 'Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.') + '</div>'; return; }
   $('liste').innerHTML = liste.map(k => {
     let info;
     if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.' +
@@ -688,7 +688,7 @@ function zeichne(){
     let klient = '';
     if(k.status!=='offen'){
       klient = '<div class="key-info">' + (k.klient_name ? 'Klient/in: <b>' + esc(k.klient_name) + '</b>' + (k.aeltere_freigegeben ? ' · alle Einträge freigegeben' : k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
-        (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, siehst du keine Daten.' + (k.status==='laeuft' && !k.besprochen ? ' Die Bestätigung „über Verschwiegenheit gesprochen“ fehlt noch.' : ''))) + '</div>';
+        (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, sind keine Daten sichtbar.' + (k.status==='laeuft' && !k.besprochen ? ' Die Bestätigung „über Verschwiegenheit gesprochen“ fehlt noch.' : ''))) + '</div>';
     }
     const aktiv = k.status==='offen' || k.status==='laeuft' || k.status==='abgelaufen';
     const aktionen = k.status==='beendet' ? '' :
@@ -725,11 +725,11 @@ $('liste').addEventListener('click', async e => {
     if(akt==='minus' && !confirm('Laufzeit von ' + code + ' um ' + menge + ' ' + name + ' kürzen?' + (k.status==='laeuft' ? ' Ist die neue Laufzeit vorbei, endet der Zugang sofort.' : ''))) return;
     rpc = 'cb_fp_key_laufzeit'; args = { p_code: code, p_menge: akt==='plus' ? menge : -menge, p_einheit: einheit };
   } else if(akt==='bez'){
-    const t = prompt('Deine Notiz zu ' + code + ' (nur für dich sichtbar, bitte keine Diagnosen):', k.bezeichnung || '');
+    const t = prompt('Notiz zu ' + code + ' (nur hier sichtbar, bitte keine Diagnosen):', k.bezeichnung || '');
     if(t===null) return;
     rpc = 'cb_fp_key_bezeichnung'; args = { p_code: code, p_bezeichnung: t };
   } else if(akt==='ende'){
-    if(!confirm('Key ' + code + ' endgültig beenden? Premium und dein Zugriff enden sofort. Das lässt sich nicht rückgängig machen.')) return;
+    if(!confirm('Key ' + code + ' endgültig beenden? Premium und der Zugriff enden sofort. Das lässt sich nicht rückgängig machen.')) return;
     rpc = 'cb_fp_key_beenden'; args = { p_code: code };
   }
   box.querySelectorAll('button').forEach(x => x.disabled = true); setM('⏳ …');
@@ -812,7 +812,7 @@ function zeichneShell(){
           '<td>' + (x.status==='offen' ? '–' : '<span class="ampel ' + (x.einwilligung==='erteilt' ? 'g' : x.einwilligung==='widerrufen' ? 'r' : 'o') + '"></span>' + EINW[x.einwilligung]) + '</td>' +
           '<td class="z">' + (x.laeuft_bis ? datum(x.laeuft_bis) : x.tage + ' Tage ab Einlösen') + '</td></tr>';
       }).join('') + '</tbody>'
-    : '<tbody><tr><td class="leer">Noch keine Keys. Leg oben mit „Neuer Key“ den ersten an oder sieh dir die Musterpraxis an.</td></tr></tbody>';
+    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen oder die Musterpraxis ansehen.</td></tr></tbody>';
   zeichneBaum();
 }
 function zeichneBaum(){
@@ -845,7 +845,7 @@ async function zeigeKlient(wahl){
   zeichneBaum();
   const el = $('kDetail');
   if(!WAHL){
-    el.innerHTML = '<div class="leer-gross"><b>Noch keine verbundenen Klienten</b>Sobald jemand deinen Key einlöst und einwilligt, steht die Person links.<br><br>' +
+    el.innerHTML = '<div class="leer-gross"><b>Noch keine verbundenen Klienten</b>Sobald jemand einen Key einlöst und einwilligt, steht die Person links.<br><br>' +
       '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button> <button class="tb" type="button" data-muster>Musterpraxis ansehen</button></div>';
     return;
   }
@@ -930,8 +930,8 @@ window.addEventListener('resize', () => { const f = $('bewFrame'); if(BEW_DA && 
 /* Pläne, Rezepte, Berichte: Einhänge-Stelle für FL-5 (eigene Datei, z. B. fachleute-fl5.js)
    window.FLShell.bereich('plaene'|'rezepte'|'berichte', { render: async (el, ctx) => { … } }) */
 const FL5_TEXT = {
-  plaene:   ['Ernährungspläne', 'Pläne für deine Klientinnen anlegen und ihnen in die App geben: kommt als Nächstes.', 'Den Wochenplan, den eine Person selbst plant, siehst du schon jetzt in ihrer Auswertung unter Klienten.'],
-  rezepte:  ['Rezepte', 'Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen: kommt als Nächstes.', 'Die eigenen und gespeicherten Rezepte einer Person siehst du schon jetzt in ihrer Auswertung unter Klienten.'],
+  plaene:   ['Ernährungspläne', 'Pläne für Klientinnen und Klienten anlegen und in die App geben: kommt als Nächstes.', 'Den Wochenplan, den eine Person selbst plant, zeigt schon jetzt ihre Auswertung unter Klienten.'],
+  rezepte:  ['Rezepte', 'Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen: kommt als Nächstes.', 'Die eigenen und gespeicherten Rezepte einer Person zeigt schon jetzt ihre Auswertung unter Klienten.'],
   berichte: ['Berichte', 'Fertige Berichte je Person als PDF: kommen als Nächstes.', 'Bis dahin: Person unter Klienten öffnen, dann „Exportieren“ und „Drucken“ oder „Als PDF speichern“.']
 };
 window.FLShell = {
@@ -981,7 +981,7 @@ $('abmelden2').onclick = () => $('abmelden').click();
 let MAILCODE = null;
 function mailDialog(code, tage){
   MAILCODE = code;
-  $('mailFuer').textContent = 'Key ' + code + ' · ' + dauerText(tage) + ' Premium. Dein Klient bekommt den Link mit kurzer Erklärung und deinem Namen.';
+  $('mailFuer').textContent = 'Key ' + code + ' · ' + dauerText(tage) + ' Premium. Die Mail enthält den Link, eine kurze Erklärung und den Namen der Fachperson.';
   $('mailAn').value = ''; meld('meldMail',''); $('mailSenden').disabled = false;
   $('dlgMail').showModal(); setTimeout(() => $('mailAn').focus(), 50);
 }

@@ -76,12 +76,12 @@
 <div class="kopf"><a href="therapeut.html">Root Index™ · Für Fachleute</a><button id="abmelden" type="button" hidden>Abmelden</button></div>
 <div class="wrap">
   <h1>Wunschliste der Fachleute</h1>
-  <p class="unter">Was soll Root Index für eure Arbeit können? Alle Therapeutinnen sehen alle Wünsche. Gibt es etwas schon, sag „Ich auch“ statt es doppelt einzutragen.</p>
+  <p class="unter">Was soll Root Index für die Arbeit in der Praxis können? Alle Therapeutinnen sehen alle Wünsche. Gibt es etwas schon: „Ich auch“ statt doppelt eintragen.</p>
 
   <section id="bLogin" hidden>
     <div class="karte">
       <h2>Bitte anmelden</h2>
-      <p class="unter">Mit deinem Fachleute-Konto. Noch keins? <a href="therapeut.html">Hier anlegen</a>, wir schalten es frei.</p>
+      <p class="unter">Mit dem Fachleute-Konto. Noch keins? <a href="therapeut.html">Hier anlegen</a>, wir schalten es frei.</p>
       <label for="mail">E-Mail</label><input id="mail" type="email" autocomplete="email" inputmode="email">
       <label for="pass">Passwort</label><input id="pass" type="password" autocomplete="current-password">
       <button class="knopf" id="los" type="button">Anmelden</button>
@@ -162,7 +162,7 @@ async function start(){
   if(!session){ zeige('bLogin'); return; }
   const {data, error} = await client.rpc('cb_fl_wuensche');
   if(error){
-    $('keinText').textContent = /Verschwiegenheit|Vertrag/i.test(error.message) ? 'Bitte bestätige zuerst auf der Fachleute-Seite die Verschwiegenheitsvereinbarung.' : error.message;
+    $('keinText').textContent = /Verschwiegenheit|Vertrag/i.test(error.message) ? 'Bitte zuerst auf der Fachleute-Seite die Verschwiegenheitsvereinbarung bestätigen.' : error.message;
     zeige('bKein'); return;
   }
   DATA = json(data); zeige('bHaupt'); zeichne();
@@ -182,7 +182,7 @@ function aehnlichPruefen(){
     $('aehnlich').innerHTML = '<b>Gibt es das schon?</b>' + a.map(x => {
       const w = DATA.liste.find(y => y.id===x.id);
       return '<div class="z"><span><a href="#w' + x.id + '">' + esc(x.titel) + '</a> · ' + esc(STATUS[x.status]||x.status) + ' · ' + x.stimmen + ' Stimme' + (x.stimmen==1?'':'n') + '</span>' +
-        (w && w.ich_auch ? '<span class="chip st-erledigt">deine Stimme zählt</span>' : '<button class="k" type="button" data-auch="' + x.id + '">Ich auch</button>') + '</div>';
+        (w && w.ich_auch ? '<span class="chip st-erledigt">Stimme gezählt</span>' : '<button class="k" type="button" data-auch="' + x.id + '">Ich auch</button>') + '</div>';
     }).join('');
     $('aehnlich').hidden = false;
     $('aehnlich').querySelectorAll('[data-auch]').forEach(b => b.onclick = () => stimme(Number(b.dataset.auch), true, b).then(aehnlichPruefen));
@@ -225,7 +225,7 @@ $('nLos').onclick = async function(){
   const fehler = files.length ? await hochladen(d.id, files) : [];
   this.disabled = false;
   $('nTitel').value = ''; $('nText').value = ''; $('nBereich').value = ''; $('nDatei').value = ''; $('aehnlich').hidden = true;
-  meld('nMeld', fehler.length ? 'Eingetragen, aber nicht alle Dateien: ' + fehler.join(' · ') : '✓ Danke! Dein Wunsch steht jetzt in der Liste.', fehler.length ? 'fehler' : 'ok');
+  meld('nMeld', fehler.length ? 'Eingetragen, aber nicht alle Dateien: ' + fehler.join(' · ') : '✓ Danke! Der Wunsch steht jetzt in der Liste.', fehler.length ? 'fehler' : 'ok');
   await neuLaden();
 };
 
@@ -241,7 +241,7 @@ async function signiert(pfade){
 }
 async function zeichne(){
   const l = DATA.liste.filter(w => (!FB || w.bereich===FB) && (!FS || (FS==='offen' ? ['neu','geplant','in_arbeit'].includes(w.status) : w.status===FS)));
-  if(!l.length){ $('liste').innerHTML = '<div class="leer">' + (DATA.liste.length ? 'Keine Wünsche mit diesem Filter.' : 'Noch keine Wünsche. Trag oben den ersten ein.') + '</div>'; return; }
+  if(!l.length){ $('liste').innerHTML = '<div class="leer">' + (DATA.liste.length ? 'Keine Wünsche mit diesem Filter.' : 'Noch keine Wünsche. Oben den ersten eintragen.') + '</div>'; return; }
   await signiert(l.flatMap(w => w.anhaenge.map(a => a.pfad)));
   $('liste').innerHTML = l.map(w => {
     const anh = w.anhaenge.length ? '<div class="anh">' + w.anhaenge.map(a => {
