@@ -30,9 +30,13 @@ begin
   -- Admin (Ralph) schaltet T1, T2 frei
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   j := public.cb_admin_fachperson_setzen('fl1-test-t1@example.invalid','Test Therapeutin Eins','TESTA','Praxis A');
-  insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'Admin schaltet T1 frei');
-  j := public.cb_admin_fachperson_setzen('fl1-test-t2@example.invalid','Test Therapeutin Zwei','TESTB',null);
-  insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'Admin schaltet T2 frei');
+  insert into _erg(ok,txt) values (not (j->>'ok')::boolean, 'Freischalten ohne Lizenzart abgelehnt');
+  j := public.cb_admin_fachperson_setzen('fl1-test-t1@example.invalid','Test Therapeutin Eins','TESTA','Praxis A',true,'gruenderin_gratis');
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->'fachperson'->>'lizenz_art'='gruenderin_gratis', 'Admin schaltet T1 als Gruenderin frei');
+  j := public.cb_admin_fachperson_setzen('fl1-test-t2@example.invalid','Test Therapeutin Zwei','TESTB',null,true,'lizenz_bezahlt',now()+interval '30 days',null,'monat');
+  insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'Admin schaltet T2 mit bezahlter Lizenz frei');
+  j := public.cb_admin_angebot_codes_hochladen(array['TESTCODE1','TESTCODE2',' testcode2 ','']);
+  insert into _erg(ok,txt) values ((j->>'neu')::int=2, 'Admin laedt 2 Angebotscodes hoch (Doppelte/Leere ignoriert)');
 
   -- K1 darf NICHT Admin-Funktion nutzen und ist keine Fachperson
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
@@ -179,9 +183,15 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
   j := public.cb_klient_status();
   insert into _erg(ok,txt) values ((j->>'ehemaliger_klient')::boolean and not (j->>'klient')::boolean, 'K1 ist jetzt ehemaliger Klient (3,99-Angebot)');
+  j := public.cb_mein_anschluss_angebot(); a := j->>'code';
+  insert into _erg(ok,txt) values ((j->>'angebot')::boolean and a like 'TESTCODE%' and j->>'apple_url' like '%code='||a, 'K1 bekommt Angebotscode 3,99');
+  j := public.cb_mein_anschluss_angebot();
+  insert into _erg(ok,txt) values (j->>'code' = a and (select count(*) from public.angebot_code where vergeben_an=k1)=1, 'K1 bekommt beim zweiten Aufruf denselben Code');
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k2)::text, true);
   j := public.cb_klient_status();
   insert into _erg(ok,txt) values ((j->>'klient')::boolean and not (j->>'ehemaliger_klient')::boolean and (j->>'eigenes_abo')::boolean, 'K2 aktiver Klient mit eigenem Abo');
+  j := public.cb_mein_anschluss_angebot();
+  insert into _erg(ok,txt) values (not (j->>'angebot')::boolean and j->>'code' is null, 'K2 (aktiver Klient) bekommt keinen Code');
 
   -- Neue Vertragsversion: T1 muss erneut bestaetigen
   update public.fachperson_vertrag_text set gilt_ab = now() - interval '1 day' where gilt_ab = now();  -- nur im Probelauf (gleiche Transaktion wie die Migration)
@@ -192,6 +202,15 @@ begin
   begin perform public.cb_fp_keys(); insert into _erg(ok,txt) values (false,'T1 arbeitet ohne neue Vertragsversion!');
   exception when others then insert into _erg(ok,txt) values (true,'Ohne neue Bestaetigung gesperrt'); end;
   perform public.cb_fp_vertrag_bestaetigen('test-v2');
+
+  -- Bezahlte Lizenz abgelaufen: T2 gesperrt, kein Premium; verlaengert: wieder frei
+  update public.fachperson set lizenz_bis = now() - interval '1 day' where auth_id = t2;
+  insert into _erg(ok,txt) values (not public.cb_ist_premium(t2), 'T2 Lizenz abgelaufen: kein Premium');
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
+  begin perform public.cb_fp_keys(); insert into _erg(ok,txt) values (false,'T2 arbeitet mit abgelaufener Lizenz!');
+  exception when others then insert into _erg(ok,txt) values (true,'T2 Lizenz abgelaufen: gesperrt'); end;
+  update public.fachperson set lizenz_bis = now() + interval '30 days' where auth_id = t2;
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
 
   -- Abrechnung (Modell monat, 499 Cent): T1 hat A und C diesen Monat = 2 Keys
   j := public.cb_fp_abrechnung(null);
