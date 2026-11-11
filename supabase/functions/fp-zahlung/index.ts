@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
   const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
 
   let key: string;
-  try { key = stripeSchluessel(ich.modus); } catch (e) { return json({ ok: false, grund: "Zahlung ist gerade nicht eingerichtet.", technik: String(e) }, 500); }
+  try { key = stripeSchluessel(ich.modus); } catch (e) { return json({ ok: false, grund: "Stripe ist noch nicht eingerichtet. Die Zahlungsart kann bald hinterlegt werden.", nicht_eingerichtet: true, technik: String(e) }, 503); }
   const zurueck = basis(body.basis) + "/therapeut.html";
 
   try {

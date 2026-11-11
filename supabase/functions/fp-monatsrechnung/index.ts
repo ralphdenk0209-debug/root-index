@@ -52,7 +52,7 @@ Deno.serve(async (req) => {
 
   const modus = zeilen[0].modus as string;
   let key: string;
-  try { key = stripeSchluessel(modus); } catch (e) { return json({ ok: false, fehler: String(e) }, 500); }
+  try { key = stripeSchluessel(modus); } catch (e) { return json({ ok: false, fehler: "Stripe noch nicht eingerichtet: " + String(e).replace(/^Error: /, ""), nicht_eingerichtet: true }, 503); }
 
   const erg: unknown[] = [];
   for (const z of zeilen as any[]) {
