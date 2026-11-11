@@ -108,6 +108,10 @@ const ART = {mindestens:'mind.', hoechstens:'höchstens', etwa:'etwa', bereich:'
 const BEW = {'Sehr gut':'#15803d','Gut':'#4d7c0f','Mittel':'#b45309','Schwach':'#b91c1c'};
 const bewFarbe = (b, s) => BEW[b] || (s==null ? '#78716c' : s>=80 ? '#15803d' : s>=65 ? '#4d7c0f' : s>=50 ? '#b45309' : '#b91c1c');
 const STATUS = {wie_geplant:'wie geplant', anders:'etwas anderes gegessen', nichts_eingetragen:'nichts eingetragen', eingetragen:'Mahlzeit eingetragen', offen:'noch offen'};
+/* Vorführung (Demo): Änderungen bleiben nur in diesem Browser-Tab (sessionStorage), FL-4 leert 'fl-demo*' beim Zurücksetzen */
+const DEMO_KEY = 'fl-demo-fl5';
+const demoLaden = () => { try{ return JSON.parse(sessionStorage.getItem(DEMO_KEY) || '{}') || {}; }catch(e){ return {}; } };
+const demoSchreiben = d => { try{ sessionStorage.setItem(DEMO_KEY, JSON.stringify(d)); }catch(e){} };
 const kuerzel = n => String(n||'').trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + '.').join(' ') || '–';
 
 function mount(el, opt){
@@ -265,7 +269,9 @@ function mount(el, opt){
   /* =================== Pläne =================== */
   async function ladePlaene(){
     const r = opt.muster ? await opt.rpc('cb_fl5_muster_plaene', {p_token: opt.token || null, p_nr: opt.nr}) : await opt.rpc('cb_fp_plaene', {p_code: opt.code});
-    st.plaene = (r && r.plaene) || []; return st.plaene;
+    st.plaene = (r && r.plaene) || [];
+    if(opt.muster){ const d = demoLaden(); st.plaene = ((d.plaene || {})[opt.nr] || []).map(x => Object.assign({}, x, {lokal: true})).concat(st.plaene); }
+    return st.plaene;
   }
   async function plaenePanel(){
     if(st.edit) return editor();
@@ -281,7 +287,7 @@ function mount(el, opt){
     const neu = $p.querySelector('[data-pneu]'); if(neu) neu.onclick = () => { const v = plus(montag(heute), 7);
       st.edit = {titel: opt.muster ? 'Vorschlag für ' + (opt.name || '') : '', notiz:'', von:v, bis:plus(v, 6), eintraege:[], demo: !!opt.muster};
       editor(); if(opt.muster) vorschlagen('leer'); };
-    $p.querySelectorAll('[data-pakt]').forEach(b => b.onclick = () => planAktion(b.dataset.pakt, Number(b.dataset.id), b));
+    $p.querySelectorAll('[data-pakt]').forEach(b => b.onclick = () => planAktion(b.dataset.pakt, b.dataset.id, b));
   }
   function planKarte(x){
     const e = x.eintraege || [], tage = [];
@@ -303,16 +309,22 @@ function mount(el, opt){
           (y.status==='anders' && y.gegessen ? '<small>gegessen: ' + esc(y.gegessen.join(', ')) + '</small>' : '') + (y.hinweis ? '<small>' + esc(y.hinweis) + '</small>' : '') + '</div>').join('') + '</td>').join('') +
           '<td class="z">' + (kp ? z(kp) + (x.ziel_kcal ? '<small style="display:block;color:var(--f5-muted)">' + z(Math.round(100 * kp / x.ziel_kcal)) + ' % vom Ziel</small>' : '') : '–') + '</td>' + (x.tage ? '<td class="z">' + (kT[t] && kT[t].kcal_ist!=null ? z(kT[t].kcal_ist) : (t < heute ? '–' : '')) + '</td>' : '') + '</tr>'; }).join('') +
       '</tbody></table></div>';
-    if(!opt.muster) h += '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +
+    if(!opt.muster || x.lokal) h += (x.lokal ? '<div class="f5-k" style="margin-top:6px">Vorführung: nur in diesem Browser-Tab gespeichert.</div>' : '') + '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +
       '<button class="f5-b' + (x.geteilt ? '' : ' gruen') + '" data-pakt="' + (x.geteilt ? 'zurueck' : 'teilen') + '" data-id="' + x.id + '" type="button">' + (x.geteilt ? 'Nicht mehr teilen' : 'Mit ' + esc(opt.name || 'Klient') + ' teilen') + '</button>' +
       '<button class="f5-b" data-pakt="vorlage" data-id="' + x.id + '" type="button">Als Vorlage für einen neuen Plan</button>' +
       '<button class="f5-b rot" data-pakt="loeschen" data-id="' + x.id + '" type="button">Löschen</button></div><div class="f5-meld" data-pm="' + x.id + '"></div>';
     return h + '</div>';
   }
   async function planAktion(akt, id, b){
-    const x = st.plaene.find(y => y.id===id); if(!x) return;
+    const x = st.plaene.find(y => String(y.id)===String(id)); if(!x) return;
+    if(x.lokal && akt!=='bearbeiten' && akt!=='vorlage'){                       // Vorführung: nur lokal
+      const d = demoLaden(); d.plaene = d.plaene || {}; const l = d.plaene[opt.nr] || [];
+      if(akt==='loeschen'){ if(!confirm('Plan „' + x.titel + '“ aus der Vorführung löschen?')) return; d.plaene[opt.nr] = l.filter(y => y.id!==x.id); }
+      else l.forEach(y => { if(y.id===x.id) y.geteilt = akt==='teilen'; });
+      demoSchreiben(d); return plaenePanel();
+    }
     const m = t => { const el2 = $p.querySelector('[data-pm="' + id + '"]'); if(el2){ el2.textContent = t; el2.className = 'f5-meld f'; } };
-    if(akt==='bearbeiten'){ st.edit = {id:x.id, titel:x.titel, notiz:x.notiz||'', von:x.von, bis:x.bis, eintraege:x.eintraege.map(kopEintrag), ziel:x.ziel_kcal, ziel_her:x.ziel_herkunft}; return editor(); }
+    if(akt==='bearbeiten'){ st.edit = {id:x.id, demo: !!x.lokal, titel:x.titel, notiz:x.notiz||'', von:x.von, bis:x.bis, eintraege:x.eintraege.map(kopEintrag), ziel:x.ziel_kcal, ziel_her:x.ziel_herkunft}; return editor(); }
     if(akt==='vorlage'){ const n = tageZw(x.von, x.bis) + 1, v = plus(x.bis, 1) > heute ? plus(x.bis, 1) : montag(plus(heute, 7)), dv = tageZw(x.von, v);
       st.edit = {titel:x.titel, notiz:x.notiz||'', von:v, bis:plus(v, n-1), eintraege:x.eintraege.map(y => Object.assign(kopEintrag(y), {datum:plus(y.datum, dv)}))}; return editor(); }
     if(akt==='loeschen' && !confirm('Plan „' + x.titel + '“ löschen? Was die Person schon in ihren Wochenplan übernommen hat, bleibt dort.')) return;
@@ -342,7 +354,8 @@ function mount(el, opt){
       '<label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" data-spaet' + (E.spaet || pl.some(p => p.k==='Snack:spaet') ? ' checked' : '') + '> Spätsnack</label></div>' +
       '<label style="font-size:13px;font-weight:800">Hinweis für die Person (optional)</label><textarea data-en maxlength="1000" style="min-height:54px">' + esc(E.notiz) + '</textarea>' +
       '<div class="f5-karte" style="border-width:1px;margin:10px 0;padding:10px 12px"><b>✨ Vorschläge für ' + esc(opt.name || 'diese Person') + '</b>' +
-      '<div class="f5-k">Aus Rezepten (Root Index, öffentliche und eigene) und Produkten, die die Person schon gern isst und die gut bewertet sind. Passend zu Unverträglichkeiten, Ernährungsform, Diabetes und Kalorienziel. Nichts wird gespeichert, bis du speicherst; die Person sieht den Plan erst nach dem Teilen.</div>' +
+      '<div class="f5-k">Aus Rezepten (Root Index, öffentliche und eigene) und Produkten, die die Person schon gern isst und die gut bewertet sind. Berücksichtigt: Allergene und Laktose aus dem Profil (auch Spuren), Ernährungsform, Diabetes und Kalorienziel. <b>Vorschläge – bitte fachlich prüfen.</b> Gespeichert wird erst mit „Speichern“; die Person sieht den Plan erst nach dem Teilen.</div>' +
+      '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px;font-weight:400;margin:4px 0"><input type="checkbox" data-nurrez' + (E.nurRezepte ? ' checked' : '') + '> nur Rezepte vorschlagen (keine Markenprodukte)</label>' +
       (E.beachtet && E.beachtet.length ? '<div style="margin-top:6px">' + E.beachtet.map(b => '<span class="f5-chip blau">' + esc(b) + '</span>').join('') + '</div>' : '') +
       (E.hinweise && E.hinweise.length ? '<div class="f5-k" style="margin-top:4px">' + E.hinweise.map(esc).join(' ') + '</div>' : '') +
       '<div class="f5-reihe"><button class="f5-b gruen" data-vor="leer" type="button">Leere Plätze vorschlagen</button><button class="f5-b" data-vor="neu" type="button">Alles neu vorschlagen (📌 bleibt)</button>' +
@@ -355,7 +368,8 @@ function mount(el, opt){
           '<button class="f5-plus" data-plus="' + t + '|' + pz.k + '" type="button">＋</button></td>').join('') +
         '<td class="z">' + (kp ? z(kp) + (E.ziel ? '<small style="display:block;color:var(--f5-muted)">' + z(Math.round(100 * kp / E.ziel)) + ' %</small>' : '') : '') + '</td></tr>'; }).join('') +
       '</tbody></table></div><div data-wahl></div>' +
-      (E.demo ? '<div class="f5-hinweis">Musterpraxis: Hier wird nichts gespeichert. Im eigenen Konto: „Speichern und teilen“ – dann sieht die Person den Plan in ihrer App und übernimmt ihn in Wochenplan und Einkaufsliste.</div><div class="f5-reihe"><button class="f5-b" data-eab type="button">Schließen</button></div>'
+      (E.demo ? '<div class="f5-hinweis">Vorführung: Gespeichert wird nur in diesem Browser-Tab, nichts in der Datenbank. Im eigenen Konto: „Speichern und teilen“ – dann sieht die Person den Plan in ihrer App und übernimmt ihn in Wochenplan und Einkaufsliste.</div>' +
+         '<div class="f5-reihe"><button class="f5-b gruen" data-demosp="1" type="button">Speichern und teilen (Vorführung)</button><button class="f5-b" data-demosp="0" type="button">Als Entwurf (Vorführung)</button><button class="f5-b" data-eab type="button">Schließen</button></div>'
        : '<div class="f5-reihe"><button class="f5-b gruen" data-es="teilen" type="button">Speichern und teilen</button><button class="f5-b" data-es="entwurf" type="button">Als Entwurf speichern</button>' +
          '<button class="f5-b" data-eab type="button">Abbrechen</button></div>') + '<div class="f5-meld" data-em></div>' +
       '<div class="f5-k">kcal im Plan: Rezept = kcal je Portion × Portionen, Produkt = Nährwerte × Gramm (aus dem Root Index). Portionen im Vorschlag nach Kalorienziel: Frühstück ¼, Mittag 30 %, Abendessen ¼, Snacks zusammen ⅕.</div>';
@@ -375,10 +389,20 @@ function mount(el, opt){
     $p.querySelectorAll('[data-tausch]').forEach(b => b.onclick = () => { lies(); const y = E.eintraege[Number(b.dataset.tausch)]; vorschlagen('tausch', y); });
     $p.querySelectorAll('[data-vor]').forEach(b => b.onclick = () => { lies(); vorschlagen(b.dataset.vor); });
     const rk = $p.querySelector('[data-riki]'); if(rk) rk.onclick = () => { lies(); rikiForm(); };
+    const nr = $p.querySelector('[data-nurrez]'); if(nr) nr.onchange = () => { E.nurRezepte = nr.checked; };
     $p.querySelectorAll('[data-vortag]').forEach(b => b.onclick = () => { lies(); const t = b.dataset.vortag, v = plus(t, -1);
       E.eintraege = E.eintraege.filter(y => y.datum!==t).concat(E.eintraege.filter(y => y.datum===v).map(y => Object.assign({}, y, {datum:t, fest:false}))); editor(); });
     $p.querySelectorAll('[data-plus]').forEach(b => b.onclick = () => { lies(); const [t, k] = b.dataset.plus.split('|'); wahl(t, k); });
     $p.querySelector('[data-eab]').onclick = () => { st.edit = null; plaenePanel(); };
+    $p.querySelectorAll('[data-demosp]').forEach(b => b.onclick = () => {
+      lies(); if(!E.titel.trim()) return meld('[data-em]', 'Bitte einen Titel eingeben.', 'f');
+      const d = demoLaden(); d.plaene = d.plaene || {}; const l = (d.plaene[opt.nr] = d.plaene[opt.nr] || []);
+      const id = (typeof E.id==='string' && E.id.startsWith('d')) ? E.id : 'd' + Date.now();
+      const plan = {id, titel: E.titel, notiz: E.notiz, von: E.von, bis: E.bis, geteilt: b.dataset.demosp==='1', ziel_kcal: E.ziel || null, ziel_herkunft: E.ziel_her || null,
+                    eintraege: E.eintraege.map(y => Object.assign(kopEintrag(y), {status: 'offen'}))};
+      const i = l.findIndex(y => y.id===id); if(i >= 0) l[i] = plan; else l.unshift(plan);
+      demoSchreiben(d); st.edit = null; plaenePanel();
+    });
     $p.querySelectorAll('[data-es]').forEach(b => b.onclick = async () => {
       lies(); if(!E.titel.trim()) return meld('[data-em]', 'Bitte einen Titel eingeben.', 'f');
       $p.querySelectorAll('[data-es]').forEach(x => x.disabled = true); meld('[data-em]', '⏳ …');
@@ -399,14 +423,16 @@ function mount(el, opt){
     const pl = plaetzeFuer(E.eintraege, E.spaet);
     const ort = y => ({datum: y.datum, slot: y.slot, snack_zeit: y.slot==='Snack' ? (y.snack_zeit || 'nachmittags') : null});
     let o;
-    if(art==='tausch') o = {plaetze: pl.map(p => p.k), seed: E.seed, nur: [ort(eintrag)]};
+    if(art==='tausch') o = {plaetze: pl.map(p => p.k), seed: E.seed, nur: [ort(eintrag)], nur_rezepte: !!E.nurRezepte};
     else { if(art==='neu') E.eintraege = E.eintraege.filter(y => y.fest);
-           o = {plaetze: pl.map(p => p.k), seed: E.seed, belegt: E.eintraege.map(ort)}; }
+           o = {plaetze: pl.map(p => p.k), seed: E.seed, belegt: E.eintraege.map(ort), nur_rezepte: !!E.nurRezepte}; }
     meld('[data-vm]', '⏳ Vorschläge werden gesucht …');
     try{
       const r = opt.muster ? await opt.rpc('cb_fl5_muster_plan_vorschlag', {p_token: opt.token || null, p_nr: opt.nr, p_von: E.von, p_bis: E.bis, p_optionen: o})
                            : await opt.rpc('cb_fp_plan_vorschlag', {p_code: opt.code, p_von: E.von, p_bis: E.bis, p_optionen: o});
       E.ziel = r.ziel_kcal || E.ziel; E.ziel_her = r.ziel_herkunft || E.ziel_her; E.beachtet = r.beachtet || []; E.hinweise = r.hinweise || [];
+      const kd = r.kandidaten || {};
+      ['Mittag','Abendessen','Frühstück','Snack'].forEach(sl => { if(kd[sl]!=null && kd[sl] < 4) E.hinweise.push('Für ' + sl + ' passen nur ' + kd[sl] + ' Rezepte/Produkte aus dem Bestand – darum Wiederholungen.' + (opt.ki && !E.demo ? ' Mehr Auswahl über „Neue Rezeptideen von Riki“.' : '')); });
       const neu = (r.eintraege || []).map(y => Object.assign(kopEintrag(y), {grund: y.grund || null}));
       if(art==='tausch'){
         const i = E.eintraege.indexOf(eintrag);
@@ -427,7 +453,7 @@ function mount(el, opt){
     const ef = /vegan/.test(b) ? 'vegan' : /vegetarisch/.test(b) ? 'vegetarisch' : '';
     const OHNE = ['milch','laktose','gluten','ei','soja','fisch','krebstiere','weichtiere','schalenfruechte','erdnuss','sellerie','senf','sesam','sulfite','lupinen'];
     const kcalVor = E.ziel ? Math.round(E.ziel * 0.3 / 10) * 10 : '';
-    box.innerHTML = '<div class="f5-wahl"><b>🤖 Rezeptideen von Riki</b><div class="f5-k">Riki ergänzt den Bestand mit neuen Ideen. An die KI gehen nur die Angaben unten – keine Namen, keine Kennungen, kein Tagebuch. Riki schlägt nur vor; gespeichert wird ein Rezept erst, wenn du es übernimmst (privat, nur für dich und die Personen, mit denen du es teilst).</div>' +
+    box.innerHTML = '<div class="f5-wahl"><b>🤖 Rezeptideen von Riki</b><div class="f5-k">Riki ergänzt den Bestand mit neuen Ideen. An die KI gehen nur die Angaben unten – keine Namen, keine Kennungen, kein Tagebuch. Riki schlägt nur vor; gespeichert wird ein Rezept erst mit „Übernehmen“ – privat, sichtbar nur für die Fachperson und die Personen, mit denen es geteilt wird.</div>' +
       '<div class="f5-reihe"><label>Mahlzeit<select data-rm><option>Frühstück</option><option selected>Mittag</option><option>Abendessen</option><option>Snack</option></select></label>' +
       '<label>kcal je Portion (etwa)<input type="number" data-rk min="50" max="2000" step="10" value="' + kcalVor + '" style="width:110px"></label>' +
       '<label>Ernährungsform<select data-ref><option value="">keine Vorgabe</option><option value="vegetarisch"' + (ef==='vegetarisch' ? ' selected' : '') + '>vegetarisch</option><option value="vegan"' + (ef==='vegan' ? ' selected' : '') + '>vegan</option></select></label>' +
@@ -541,14 +567,29 @@ function mount(el, opt){
       const alle = d.rezepte || [], empf = alle.filter(x => x.herkunft==='empfohlen'), eig = alle.filter(x => x.herkunft!=='empfohlen'), geg = d.rezepte_gegessen || [];
       const zeile = (x, chip) => '<div class="f5-rez">' + (x.bild ? '<img src="' + esc(x.bild) + '" alt="" loading="lazy">' : '<div class="ph"></div>') +
         '<div style="flex:1"><b>' + esc(x.name) + '</b><div class="f5-k">' + [x.kcal_portion && z(x.kcal_portion) + ' kcal je Portion', x.protein_portion && z(x.protein_portion, 1) + ' g Eiweiß', x.mahlzeit].filter(Boolean).map(esc).join(' · ') + '</div></div>' + chip + '</div>';
-      $p.innerHTML = '<div class="f5-hinweis">Musterpraxis: nur zum Ansehen. Im eigenen Konto lassen sich hier Rezepte gezielt mit einer oder mehreren Personen teilen, z. B. passend zu einer Unverträglichkeit, gemeinsam bearbeiten und wieder entziehen. Die Person sieht sie in ihrer App, solange Key und Einwilligung laufen; eine eigene Kopie bleibt bei ihr.</div>' +
-        '<h3>Mit ' + esc(opt.name || 'dieser Person') + ' geteilt (' + empf.length + ')</h3>' +
-        (empf.length ? empf.map(x => zeile(x, '<span class="f5-chip blau">Empfehlung</span>')).join('') : '<p class="f5-k">Nichts geteilt.</p>') +
+      const dl = demoLaden(), lok = ((dl.geteilt || {})[opt.nr] || []);
+      $p.innerHTML = '<div class="f5-hinweis">Vorführung: Teilen wird nur in diesem Browser-Tab gemerkt. Im eigenen Konto lassen sich hier Rezepte gezielt mit einer oder mehreren Personen teilen, z. B. passend zu einer Unverträglichkeit, gemeinsam bearbeiten und wieder entziehen. Die Person sieht sie in ihrer App, solange Key und Einwilligung laufen; eine eigene Kopie bleibt bei ihr.</div>' +
+        '<h3>Mit ' + esc(opt.name || 'dieser Person') + ' geteilt (' + (empf.length + lok.length) + ')</h3>' +
+        lok.map((x, i) => zeile(x, '<span class="f5-chip gruen">Vorführung</span><button class="f5-b rot" data-lokweg="' + i + '" type="button">Teilen beenden</button>')).join('') +
+        (empf.length || lok.length ? empf.map(x => zeile(x, '<span class="f5-chip blau">Empfehlung</span>')).join('') : '<p class="f5-k">Nichts geteilt.</p>') +
         '<h3>Eigene und gespeicherte Rezepte der Person (' + eig.length + ')</h3>' +
         (eig.length ? eig.map(x => zeile(x, '<span class="f5-chip">' + (x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes') + '</span>')).join('') : '<p class="f5-k">Keine.</p>') +
         (geg.length ? '<h3>In den letzten 7 Tagen gekocht</h3><p class="f5-k">' + geg.map(x => esc(x.name) + ' (' + x.mal + '×)').join(' · ') + '</p>' : '') +
-        '<h3>Rezept teilen</h3><div class="f5-reihe"><input disabled style="flex:1" placeholder="Rezept suchen (eigene zuerst) …"><button class="f5-b gruen" type="button" disabled>Teilen</button></div>' +
-        '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px;opacity:.6"><input type="checkbox" disabled checked> Gemeinsam bearbeiten (nur bei eigenen Rezepten)</label>';
+        '<h3>Rezept teilen (Vorführung)</h3><input data-ds style="width:100%" placeholder="Rezept suchen …"><div class="f5-treffer" data-dt></div>' +
+        '<input data-dn maxlength="300" style="width:100%;margin-top:6px" placeholder="Notiz für die Person, z. B. passt bei Laktoseintoleranz">' +
+        '<div class="f5-reihe"><button class="f5-b gruen" data-dlos type="button">Teilen (Vorführung)</button></div><div class="f5-meld" data-dm></div>';
+      $p.querySelectorAll('[data-lokweg]').forEach(b => b.onclick = () => { const d2 = demoLaden(); (d2.geteilt[opt.nr] || []).splice(Number(b.dataset.lokweg), 1); demoSchreiben(d2); rezeptePanel(); });
+      let wahlR = null; const $ds = $p.querySelector('[data-ds]'), $dt = $p.querySelector('[data-dt]');
+      const suche = async () => { const q = $ds.value.trim().toLowerCase(); let l; try{ l = await alleRezepte(); }catch(e){ $dt.innerHTML = '<div>' + esc(e.message) + '</div>'; return; }
+        const tr = l.filter(x => !q || String(x.name||'').toLowerCase().includes(q)).slice(0, 30);
+        $dt.innerHTML = tr.map(x => '<div data-id="' + esc(x.id) + '">' + esc(x.name) + ' <span class="f5-k">' + (x.kcal ? z(x.kcal) + ' kcal' : '') + '</span></div>').join('') || '<div class="f5-k">Kein Treffer.</div>';
+        $dt.querySelectorAll('[data-id]').forEach(d3 => d3.onclick = () => { wahlR = l.find(y => y.id===d3.dataset.id); $dt.querySelectorAll('div').forEach(y => y.classList.toggle('an', y===d3)); }); };
+      $ds.oninput = suche; suche();
+      $p.querySelector('[data-dlos]').onclick = () => {
+        if(!wahlR) return meld('[data-dm]', 'Bitte ein Rezept antippen.', 'f');
+        const d2 = demoLaden(); d2.geteilt = d2.geteilt || {}; (d2.geteilt[opt.nr] = d2.geteilt[opt.nr] || []).unshift({rezept_id: wahlR.id, name: wahlR.name, kcal_portion: wahlR.kcal, bild: wahlR.bild, mahlzeit: wahlR.mahlzeiten, notiz: $p.querySelector('[data-dn]').value.trim() || null});
+        demoSchreiben(d2); rezeptePanel();
+      };
       return;
     }
     $p.innerHTML = '<div class="f5-k">Lädt …</div>';

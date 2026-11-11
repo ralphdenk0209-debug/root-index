@@ -259,7 +259,9 @@ begin
   if cardinality(v_unv) > 0 then v_beachtet := v_beachtet || ('ohne ' || array_to_string(v_unv, ', ')); end if;
   if v_form ilike 'vegan%' then v_beachtet := v_beachtet || 'vegan'::text;
   elsif v_form ilike 'vegetar%' then v_beachtet := v_beachtet || 'vegetarisch'::text; end if;
-  if nullif(v_diab, '') is not null then v_beachtet := v_beachtet || 'Diabetes: zuckerärmere Rezepte zuerst'::text; end if;
+  if nullif(v_diab, '') is not null then v_beachtet := v_beachtet || 'Diabetes: weniger Zucker und Kohlenhydrat-Anteil zuerst, keine Desserts'::text; end if;
+  if cardinality(v_unv) > 0 then v_hinweise := v_hinweise || 'Geprüft werden die 14 Hauptallergene und Laktose (auch Spuren); andere Unverträglichkeiten (z. B. Fruktose, Histamin) nicht.'::text; end if;
+  if coalesce((v_opt->>'nur_rezepte')::boolean, false) then v_beachtet := v_beachtet || 'nur Rezepte, keine Markenprodukte'::text; end if;
   if v_ziel is not null then v_beachtet := v_beachtet || ('Portionen nach Kalorienziel ' || round(v_ziel) || ' kcal (' || coalesce(v_ziel_her, '') || ')'); end if;
 
   select array_agg(x."Rezept_ID") into v_rez_ids from public."Rezepte" x
@@ -276,7 +278,7 @@ begin
   nur as (select (x->>'datum')::date datum, x->>'slot' slot, nullif(x->>'snack_zeit', '') sz from jsonb_array_elements(coalesce(v_opt->'nur', '[]'::jsonb)) x),
   bel as (select (x->>'datum')::date datum, x->>'slot' slot, nullif(x->>'snack_zeit', '') sz from jsonb_array_elements(coalesce(v_opt->'belegt', '[]'::jsonb)) x),
   ziele as (
-    select (d.d - p_von)::int ti, d.d::date datum, pl2.slot, pl2.sz, pl2.nr, pl2.anteil * v_ziel kz
+    select (d.d::date - p_von)::int ti, d.d::date datum, pl2.slot, pl2.sz, pl2.nr, pl2.anteil * v_ziel kz
       from generate_series(p_von, p_bis, interval '1 day') d(d) cross join pl2
      where (not exists (select 1 from nur) or exists (select 1 from nur n where n.datum = d.d::date and n.slot = pl2.slot and n.sz is not distinct from pl2.sz))
        and not exists (select 1 from bel b where b.datum = d.d::date and b.slot = pl2.slot and b.sz is not distinct from pl2.sz)),
@@ -285,6 +287,7 @@ begin
   vt  as materialized (select * from public.cb_rezept_vertraeglichkeit(coalesce(v_rez_ids, '{}'))),
   rez as materialized (
     select x."Rezept_ID" id, x."Rezeptname" name, x."Kcal_Portion" kcal, coalesce(x."Mahlzeit_Typ", '') mt,
+           100.0 * coalesce(x."KH_g_Portion", 0) * 4 / nullif(x."Kcal_Portion", 0) kh_anteil,
            i.punkte, v.zucker_portion zp,
            (select count(distinct (e.datum, e.mahlzeit)) from ein e where e.rezept_id = x."Rezept_ID") mal
       from public."Rezepte" x
@@ -293,6 +296,7 @@ begin
       left join vt v on v.rezept_id = x."Rezept_ID"
      where x."Rezept_ID" = any(coalesce(v_rez_ids, '{}'))
        and not (coalesce(a.enthaelt, '{}') && v_unv)
+       and not (coalesce(a.spuren, '{}') && v_unv)                       -- Prüfer 12.11.: auch Spuren ausschließen
        and not ('laktose' = any(v_unv) and coalesce(a.laktose, 'unklar') <> 'laktosefrei')
        and not (cardinality(v_unv) > 0 and coalesce(a.unvollstaendig, true))
        and (v_form is null or v_form not ilike 'veg%'
@@ -310,21 +314,22 @@ begin
      -- nur einzeln gegessene Produkte (keine Rezeptzutaten), und keine Kleinstmengen wie Gewürz oder Aufstrich
      where e.mahlzeit in ('Frühstück','Snack') and e.menge_g > 0 and e.rezept_id is null
        and not (coalesce(pa.enthaelt, '{}') && v_unv)
+       and not (coalesce(pa.spuren, '{}') && v_unv)
        and not ('laktose' = any(v_unv) and coalesce(pa.laktose, 'unklar') <> 'laktosefrei')
        and not (cardinality(v_unv) > 0 and pa."Produkt_ID" is null)
+       and not coalesce((v_opt->>'nur_rezepte')::boolean, false)        -- Option „nur Rezepte, keine Markenprodukte“
      group by e.produkt_id, p."Produktname", e.mahlzeit, s."Clean_Score", nm.kcal_100g_ml
     having percentile_cont(0.5) within group (order by e.menge_g) >= 50
         or coalesce(nm.kcal_100g_ml, 0) * percentile_cont(0.5) within group (order by e.menge_g) / 100 >= 50),
   kand as (                                            -- Kandidaten je Platz-Art mit Gewicht
     select z.slot, 'rezept' typ, r.id, r.name, r.kcal, null::numeric g, null::numeric k100,
-           coalesce(r.punkte, 50) + 8 * ln(1 + r.mal) - case when nullif(v_diab, '') is not null then coalesce(r.zp, 10) else 0 end
+           coalesce(r.punkte, 50) + 8 * ln(1 + r.mal)
+             - case when nullif(v_diab, '') is not null then coalesce(r.zp, 10) + coalesce(r.kh_anteil, 50) / 2 else 0 end   -- Diabetes: weniger Zucker und KH-Anteil zuerst
              - case when z.slot = 'Snack' and r.mt ilike '%Dessert%' then 30 else 0 end gewicht,      -- Dessert nur, wenn sonst wenig da ist
            case when r.mal > 0 then 'isst sie/er gern' end grund
       from (select distinct slot from pl2) z join rez r on
            (z.slot = 'Frühstück' and r.mt ilike '%Frühstück%')
-        or (z.slot in ('Mittag','Abendessen') and (r.mt ilike '%Mittag%' or r.mt ilike '%Abendessen%'
-              -- Rezepte ohne Mahlzeit-Angabe nur, wenn es weniger als 3 passende gibt
-              or (r.mt = '' and (select count(*) from rez r2 where r2.mt ilike '%Mittag%' or r2.mt ilike '%Abendessen%') < 3)))
+        or (z.slot in ('Mittag','Abendessen') and (r.mt ilike '%Mittag%' or r.mt ilike '%Abendessen%'))   -- ohne Mahlzeit-Angabe nie (Prüfer 12.11.)
         or (z.slot = 'Snack' and (r.mt ilike '%Snack%' or (r.mt ilike '%Dessert%' and nullif(v_diab, '') is null
               and (select count(*) from rez r3 where r3.mt ilike '%Snack%') + (select count(*) from prod p3 where p3.mahlzeit = 'Snack') < 3)))
               -- Dessert als Snack nur ohne Diabetes und nur, wenn es weniger als 3 andere Snacks gibt
