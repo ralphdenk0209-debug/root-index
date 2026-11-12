@@ -33,6 +33,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl5-test-t1@example.invalid','Therapeutin Eins','FLFUNFA','Praxis Eins',true,'gruenderin_gratis');
   perform public.cb_admin_fachperson_setzen('fl5-test-t2@example.invalid','Therapeutin Zwei','FLFUNFB','Praxis Zwei',true,'gruenderin_gratis');
+  perform public.cb_admin_fachperson_freigabe('fl5-test-t1@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
+  perform public.cb_admin_fachperson_freigabe('fl5-test-t2@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
 
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);

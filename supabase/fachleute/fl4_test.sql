@@ -97,6 +97,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl4-test-t1@example.invalid','Test Therapeutin Eins','FLVIERA','Praxis A',true,'gruenderin_gratis');
   perform public.cb_admin_fachperson_setzen('fl4-test-t2@example.invalid','Test Therapeutin Zwei','FLVIERB','Praxis B',true,'gruenderin_gratis');
+  perform public.cb_admin_fachperson_freigabe('fl4-test-t1@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
+  perform public.cb_admin_fachperson_freigabe('fl4-test-t2@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
   j := public.cb_admin_fl_muster_link(false);
   insert into _erg(ok,txt) values (j->>'link' like '%fachleute-muster.html?z=' || tok, 'Admin sieht Vorschau-Link');
 

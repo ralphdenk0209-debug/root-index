@@ -35,6 +35,8 @@ begin
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->'fachperson'->>'lizenz_art'='gruenderin_gratis', 'Admin schaltet T1 als Gruenderin frei');
   j := public.cb_admin_fachperson_setzen('fl1-test-t2@example.invalid','Test Therapeutin Zwei','TESTB',null,true,'lizenz_bezahlt',now()+interval '30 days',null,'monat');
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'Admin schaltet T2 mit bezahlter Lizenz frei');
+  perform public.cb_admin_fachperson_freigabe('fl1-test-t1@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
+  perform public.cb_admin_fachperson_freigabe('fl1-test-t2@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
   j := public.cb_admin_angebot_codes_hochladen(array['TESTCODE1','TESTCODE2',' testcode2 ','']);
   insert into _erg(ok,txt) values ((j->>'neu')::int=2, 'Admin laedt 2 Angebotscodes hoch (Doppelte/Leere ignoriert)');
 

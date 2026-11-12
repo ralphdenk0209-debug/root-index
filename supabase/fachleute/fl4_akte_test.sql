@@ -55,6 +55,8 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl4-akte-t1@example.invalid','Akte Eins','FLAKTEA','Praxis A',true,'gruenderin_gratis');
   perform public.cb_admin_fachperson_setzen('fl4-akte-t2@example.invalid','Akte Zwei','FLAKTEB','Praxis B',true,'gruenderin_gratis');
+  perform public.cb_admin_fachperson_freigabe('fl4-akte-t1@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
+  perform public.cb_admin_fachperson_freigabe('fl4-akte-t2@example.invalid', null, true, 'Test');   -- FL-Lizenz: Keys nur mit Freigabe
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
   vv := public.cb_fp_ich()->>'vertrag_version';
   execute 'set local role authenticated';

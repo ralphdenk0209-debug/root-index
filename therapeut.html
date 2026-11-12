@@ -382,7 +382,19 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
   .raster2{grid-template-columns:minmax(0,2fr) minmax(0,1fr)} .raster2.gleich{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   @media (max-width:1200px){ .raster2.oben,.raster2,.raster2.gleich{grid-template-columns:minmax(0,1fr)} }
   body.app-an{overflow-x:hidden}
-  body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="bewertung"], body.demo [data-v="wunschliste"]{display:none!important}
+  body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="wunschliste"]{display:none!important}
+  /* FL-Lizenz 12.11.: „So bewertet Root Index“ im Muster sichtbar, aber gesperrt (Schloss + Tooltip), Text wird nie geladen */
+  .schloss{display:none} body.demo .menue [data-v="bewertung"] .schloss{display:inline-block;order:-1} body.demo .menue [data-v="bewertung"] svg:not(.schloss){display:none}
+  body.demo .menue [data-v="bewertung"]:not(.an){opacity:.72}
+  body.demo .ansicht[data-v="bewertung"] .werkzeug, body.demo #bewFrame, body.demo .bew-rahmen, body.demo #bewStand{display:none!important}
+  .tip{position:fixed;z-index:90;max-width:260px;background:var(--ink);color:var(--paper);border-radius:9px;padding:7px 11px;font-size:13.5px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:none}
+  .gesperrt-karte{max-width:640px;margin:24px 28px;display:grid;gap:10px;justify-items:start}
+  .gesperrt-karte .schloss-gross{width:36px;height:36px;fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .gesperrt-karte h2{margin:0;font-size:20px} .gesperrt-karte p{margin:0;color:var(--muted);font-size:15px}
+  .gesperrt-karte .aktionen{display:flex;gap:8px;flex-wrap:wrap}
+  @media (max-width:760px){ .gesperrt-karte{margin:16px 14px} }
+  .lizenz-hinweis a{color:inherit;font-weight:700}
+  #keysLizenz{margin:14px 28px 0} @media (max-width:760px){ #keysLizenz{margin:12px 12px 0} }
   body.demo .statuszeile .punkt{background:var(--gelb)}
   .demo-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dunkel);color:#fff;border-radius:12px;padding:10px 16px;font-size:14.5px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
   /* ========== FL-4: Optik wie Content Studio (Ralph 11.11.2026), hell und dunkel ==========
@@ -574,7 +586,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
     <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte<span class="bald">in Arbeit</span></button>
-    <button type="button" data-v="bewertung"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 7.5h14M5 7.5l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7.5l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>So bewertet Root Index</button>
+    <button type="button" data-v="bewertung" data-tip="Nur für registrierte Fachleute in Root Index Pro"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 7.5h14M5 7.5l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7.5l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>So bewertet Root Index<svg class="schloss" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg></button>
     <button type="button" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16.5 6.5l3 3M13.5 9.5l2 2"/></svg>Keys</button>
     <button type="button" data-v="abrechnung"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M7.5 15h4"/></svg>Abrechnung</button>
     <button type="button" data-v="wunschliste"><svg viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Wunschliste</button>
@@ -685,7 +697,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
             <div class="kz"><b id="zBetrag">–</b><span>Betrag bisher</span></div>
             <div class="kz"><b id="zNeu">–</b><span>neu eingelöst</span></div>
           </div>
-          <p class="fuss" id="zRegel">Grundlage der monatlichen Abrechnung.</p></div>
+          <p class="fuss lizenz-hinweis" id="zRegel">Grundlage der monatlichen Abrechnung.</p></div>
       </div>
     </div>
   </section>
@@ -733,6 +745,12 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
     </div>
     <div class="bew-rahmen"><iframe id="bewFrame" title="So bewertet Root Index" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe></div>
     <p class="fuss" id="bewStand"></p>
+    <div class="gesperrt-karte" id="bewGesperrt" hidden>
+      <svg class="schloss-gross" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>
+      <h2>Nur für registrierte Fachleute in Root Index Pro</h2>
+      <p>Die ausführliche Fassung mit Rechenweg, Quellen und Grenzen der Bewertung steht nach der Registrierung in Root Index Pro bereit. Die öffentliche Fassung für Klient:innen ist frei lesbar.</p>
+      <div class="aktionen"><a class="tb haupt" href="therapeut.html#konto-anlegen">Konto anlegen</a><a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung</a></div>
+    </div>
   </section>
 
   <section class="ansicht" data-v="keys">
@@ -745,6 +763,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
         <button data-f="alle" type="button">Alle</button>
       </div>
     </div>
+    <div class="hinweis-band lizenz-hinweis" id="keysLizenz" hidden></div>
     <div class="neu-panel" id="neuPanel" hidden>
       <h2 class="abschnitt" id="neuTitel">Neuer Key</h2>
       <p class="fuss" style="margin-top:0">Die Laufzeit beginnt, wenn die Person den Key einlöst. Danach lässt sie sich jederzeit verlängern, kürzen oder beenden.</p>
@@ -778,7 +797,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
   <section class="ansicht" data-v="abrechnung">
     <div class="band"><h1>Abrechnung</h1><span></span></div>
     <div class="seite-inhalt">
-      <div class="karte2"><div class="k2-kopf"><h3>Preis und Modell</h3></div><p class="fuss" id="abrRegel" style="margin:0">Lädt …</p></div>
+      <div class="karte2"><div class="k2-kopf"><h3 id="abrTitel">Preis und Modell</h3></div><p class="fuss lizenz-hinweis" id="abrRegel" style="margin:0">Lädt …</p></div>
       <div class="karte2"><div class="k2-kopf"><h3>Monate</h3><span>Laufender Monat bis heute.</span></div>
         <div class="tabwrap"><table class="tab" id="abrTab"><tbody><tr><td class="leer">Lädt …</td></tr></tbody></table></div></div>
     </div>
@@ -809,7 +828,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
       <div class="farbe-wahl" role="group" aria-label="Darstellung"><button type="button" data-farbe="hell">Hell</button><button type="button" data-farbe="dunkel">Dunkel</button><button type="button" data-farbe="auto">Automatisch</button></div>
       <p class="fuss" style="margin:8px 0 0">Automatisch folgt der Einstellung des Geräts. Gilt in diesem Browser.</p>
       <h2 class="abschnitt">Abrechnung</h2>
-      <p class="fuss" id="zRegel2" style="margin-top:0"></p>
+      <p class="fuss lizenz-hinweis" id="zRegel2" style="margin-top:0"></p>
       <div class="nicht-demo">
       <h2 class="abschnitt">Passwort ändern</h2>
       <div class="reihe" style="max-width:520px"><div><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input id="pwNeu" type="password" autocomplete="new-password"></div>
@@ -977,10 +996,12 @@ async function demoStart(pw){
   if(error) return false;
   DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
   MUSTER = json(data);
-  ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'gruenderin_gratis', vertrag_ok: true, demo: true};
+  ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'vorfuehrung', vertrag_ok: true, demo: true};
   KEYS = demoKeys(musterKeys());
   KEYS_DA = true;
   document.body.classList.add('demo');
+  const bewKnopf = document.querySelector('#menueListe [data-v="bewertung"]');   // FL-Lizenz: gesperrt, Tooltip für Screenreader mitlesen
+  if(bewKnopf) bewKnopf.setAttribute('aria-label', 'So bewertet Root Index, gesperrt: Nur für registrierte Fachleute in Root Index Pro');
   demoLeiste();
   $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = '';
   $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
@@ -1117,24 +1138,23 @@ function demoWunsch(){
 function demoZahlen(){
   const aktiv = KEYS.filter(x => x.status==='laeuft').length;
   $('zAktiv').textContent = aktiv; $('zNeu').textContent = KEYS.filter(x => x.demo_neu).length;
-  $('zBetrag').textContent = (aktiv * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
-  $('zRegel').textContent = 'Beispiel: 4,99 € je Key und Monat, jeder angefangene Monat zählt voll. In der Vorführung wird nichts berechnet.';
-  $('zRegel2').textContent = $('zRegel').textContent;
+  $('zBetrag').textContent = '–';
+  $('zRegel').innerHTML = 'In der Vorführung wird nichts berechnet. ' + lizenzHinweisHtml();
+  $('zRegel2').innerHTML = $('zRegel').innerHTML;
 }
 function demoAbrechnung(){
   demoZahlen();
-  $('abrRegel').textContent = $('zRegel').textContent;
+  $('abrRegel').innerHTML = $('zRegel').innerHTML; $('abrTitel').textContent = 'Lizenz';
   const h = heuteBerlin(), zeilen = [];
   for(let i = 0; i < 6; i++){
     const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i);
     const von = d.toISOString().slice(0,10), e = new Date(d); e.setUTCMonth(e.getUTCMonth() + 1); e.setUTCDate(0); const bis = e.toISOString().slice(0,10);
     const ak = KEYS.filter(k => k.start_am && String(k.start_am).slice(0,10) <= bis && (!k.laeuft_bis || String(k.laeuft_bis).slice(0,10) >= von));
     const neu = ak.filter(k => String(k.start_am).slice(0,10) >= von).length;
-    const euro = (ak.length * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
     zeilen.push('<tr><td><b>' + MONATE[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + '</b>' + (i===0 ? ' <small style="color:var(--muted)">bis heute</small>' : '') + '</td><td class="z">' + ak.length +
-      '</td><td class="z">' + neu + '</td><td class="z">' + euro + '</td><td class="z">–</td><td class="z"><b>' + euro + '</b></td></tr>');
+      '</td><td class="z">' + neu + '</td></tr>');
   }
-  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' + zeilen.join('') + '</tbody>';
+  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th></tr></thead><tbody>' + zeilen.join('') + '</tbody>';
 }
 
 async function start(){
@@ -1144,7 +1164,7 @@ async function start(){
     zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); return;
   }
   const {data:{session}} = await client.auth.getSession();
-  if(!session){ zeige('bLogin'); return; }
+  if(!session){ zeige('bLogin'); if(/konto-anlegen/.test(location.hash)) setModus('neu'); return; }
   try{ await client.rpc('cb_link_me'); }catch(e){}
   const {data, error} = await client.rpc('cb_fp_ich');
   const d = json(data);
@@ -1189,6 +1209,8 @@ async function ladeZahlen(){
   const d = json(data);
   const euro = c => (Number(c||0)/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
   $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
+  if(ohneLizenz()){   // FL-Lizenz: kein Preis, nur der Hinweis
+    $('zBetrag').textContent = '–'; $('zRegel').innerHTML = lizenzHinweisHtml(); $('zRegel2').innerHTML = $('zRegel').innerHTML; return; }
   $('zBetrag').textContent = d.betrag_cent==null ? '–' : euro(d.betrag_cent);
   const keys = d.abrechnung==='tag'
       ? euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage)'
@@ -1200,7 +1222,7 @@ async function ladeZahlen(){
     lizenz_pauschal: 'Abrechnung: ' + lizenz + ', Keys inklusive.',
     lizenz_plus_keys: 'Abrechnung: ' + lizenz + ' plus ' + keys + '.'
   }[d.modell || 'je_key'] || ('Abrechnung: ' + keys + '.');
-  $('zRegel').textContent = regel + ' Grundlage der monatlichen Rechnung, Stand heute.';
+  $('zRegel').textContent = regel + (d.modell === 'gratis' ? '' : ' Grundlage der monatlichen Rechnung, Stand heute.');
   $('zRegel2').textContent = $('zRegel').textContent;
 }
 
@@ -1225,7 +1247,8 @@ $('anlegen').onclick = async function(){
   const {data, error} = DEMO ? {data: demoKeyAnlegen(tage, $('neuBez').value.trim())} : await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
   this.disabled = false;
   const d = json(data);
-  if(error || !d.ok){ meld('meldNeu', error ? error.message : d.grund, 'fehler'); if(d.vereinbarung_noetig) $('vereinbarungZeile').hidden = false; return; }
+  if(error || !d.ok){ meld('meldNeu', error ? error.message : d.grund, 'fehler'); if(d.vereinbarung_noetig) $('vereinbarungZeile').hidden = false;
+    if(d.lizenz_noetig){ if(ICH) ICH.keys_erlaubt = false; $('neuPanel').hidden = true; zeigeKeysLizenz(); } return; }
   meld('meldNeu','');
   $('neuBez').value = ''; $('vereinbarungZeile').hidden = true;
   $('neuCodeText').textContent = d.code; $('neuCodeLink').textContent = d.link; $('neuCode').hidden = false;
@@ -1261,7 +1284,7 @@ const STATUS = {offen:'Noch nicht eingelöst', laeuft:'Läuft', abgelaufen:'Abge
 const EINW = {erteilt:'Einwilligung erteilt', keine:'Keine Einwilligung', widerrufen:'Einwilligung widerrufen'};
 function zeichne(){
   const liste = KEYS.filter(k => FILTER==='alle' || k.status==='offen' || k.status==='laeuft');
-  if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : 'Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.') + '</div>'; return; }
+  if(!liste.length){ $('liste').innerHTML = '<div class="leer">' + (KEYS.length ? 'Keine aktiven Keys. „Alle“ zeigt auch abgelaufene und beendete.' : (ohneLizenz() ? 'Noch keine Keys.' : 'Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.')) + '</div>'; return; }
   $('liste').innerHTML = liste.map(k => {
     let info;
     if(k.status==='offen') info = 'Laufzeit ' + k.tage + ' Tage, beginnt beim Einlösen. Angelegt am ' + datum(k.erstellt_am) + '.' +
@@ -1356,7 +1379,6 @@ function route(){
   const h = decodeURIComponent(location.hash.slice(1)) || 'uebersicht';
   const teil = h.split('/');
   let v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
-  if(DEMO && v==='bewertung') v = 'uebersicht';   // vertraulich, in der Vorführung nicht dabei
   AKTIV = v;
   document.querySelectorAll('.ansicht').forEach(s => s.classList.toggle('an', s.dataset.v===v));
   document.querySelectorAll('#menueListe [data-v]').forEach(b => { b.classList.toggle('an', b.dataset.v===v); b.setAttribute('aria-current', b.dataset.v===v ? 'page' : 'false'); });
@@ -1367,8 +1389,9 @@ function route(){
   if(v==='wunschliste' && DEMO) demoWunsch();
   else if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
-  if(v==='bewertung') ladeBewertung();
+  if(v==='bewertung') { $('bewGesperrt').hidden = !DEMO; if(!DEMO) ladeBewertung(); }   // Muster: gesperrt, Text wird nicht geladen
   if(v==='abrechnung') ladeAbrechnung();
+  if(v==='keys') zeigeKeysLizenz();
   if(v==='einstellungen') ladePraxis();
   window.scrollTo(0,0);
 }
@@ -1402,7 +1425,7 @@ function zeichneShell(){
           '<td>' + (x.status==='offen' ? '–' : '<span class="ampel ' + (x.einwilligung==='erteilt' ? 'g' : x.einwilligung==='widerrufen' ? 'r' : 'o') + '"></span>' + EINW[x.einwilligung]) + '</td>' +
           '<td class="z">' + (x.laeuft_bis ? datum(x.laeuft_bis) : x.tage + ' Tage ab Einlösen') + '</td></tr>';
       }).join('') + '</tbody>'
-    : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.</td></tr></tbody>';
+    : '<tbody><tr><td class="leer">' + (ohneLizenz() ? 'Noch keine Keys.' : 'Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.') + '</td></tr></tbody>';
   zeichneBaum();
 }
 let K_FILTER = 'aktiv';
@@ -1501,7 +1524,8 @@ async function zeigeKlient(wahl){
   zeichneBaum();
   const el = $('kDetail');
   if(!WAHL){
-    el.innerHTML = '<div class="leer-gross"><b>Noch niemand verbunden.</b>Erst einen Key anlegen.<br><br>' +
+    el.innerHTML = ohneLizenz() ? '<div class="leer-gross lizenz-hinweis"><b>Noch niemand verbunden.</b>' + lizenzHinweisHtml() + '</div>'
+      : '<div class="leer-gross"><b>Noch niemand verbunden.</b>Erst einen Key anlegen.<br><br>' +
       '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
     return;
   }
@@ -1552,7 +1576,8 @@ async function ladeUebersichtStat(){
   if(!window.FLStat) return;
   const {info, personen} = await statPersonen();
   if(!personen.length){
-    $('uebStat').innerHTML = '<div class="karte2 start"><h3>Noch niemand verbunden.</h3>' +
+    $('uebStat').innerHTML = ohneLizenz() ? '<div class="karte2 start"><h3>Noch niemand verbunden.</h3><p class="lizenz-hinweis">' + lizenzHinweisHtml() + '</p></div>'
+      : '<div class="karte2 start"><h3>Noch niemand verbunden.</h3>' +
       '<p>Erst einen Key anlegen und per E-Mail oder QR-Karte schicken. Nach Einlösen und Einwilligung erscheinen hier die Zahlen.</p>' +
       '<button class="tb haupt" type="button" data-neu="mail">Key anlegen</button></div>';
     return;
@@ -1597,11 +1622,15 @@ async function ladeAuswertungen(){
 const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 async function ladeAbrechnung(){
   if(DEMO) return demoAbrechnung();
+  $('abrTitel').textContent = ohneLizenz() ? 'Lizenz' : 'Preis und Modell';
+  if(ohneLizenz()){   // FL-Lizenz: ohne Freigabe keine Keys, also auch keine Rechnung
+    $('abrRegel').innerHTML = lizenzHinweisHtml();
+    $('abrTab').innerHTML = '<tbody><tr><td class="leer">Ohne Lizenz fällt nichts an.</td></tr></tbody>'; return; }
   const euro = c => c==null ? '–' : (Number(c)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
   const h = heuteBerlin(), mon = [];
   for(let i = 0; i < 6; i++){ const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i); mon.push(d.toISOString().slice(0,10)); }
   const erg = await Promise.all(mon.map(m => client.rpc('cb_fp_abrechnung', {p_monat: m}).then(r => r.error ? {fehler: r.error.message} : json(r.data))));
-  $('abrRegel').textContent = $('zRegel').textContent;
+  $('abrRegel').innerHTML = $('zRegel').innerHTML;
   $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' +
     erg.map((d, i) => { const m = new Date(mon[i] + 'T12:00:00Z');
       if(d.fehler) return '<tr><td>' + MONATE[m.getUTCMonth()] + ' ' + m.getUTCFullYear() + '</td><td colspan="5" class="leer">' + esc(d.fehler) + '</td></tr>';
@@ -1614,7 +1643,7 @@ async function ladeAbrechnung(){
    Eigenes Dokument im iframe (srcdoc), damit Schrift und Stil von FL-3 unverändert bleiben. */
 let BEW_DA = false;
 async function ladeBewertung(){
-  if(BEW_DA) return;
+  if(DEMO || BEW_DA) return;   // FL-Lizenz: im Muster nie laden
   const f = $('bewFrame');
   const {data, error} = await client.rpc('cb_fp_inhalt', {p_schluessel: 'bewertung_fachleute'});
   const d = json(data);
@@ -1654,19 +1683,47 @@ function zeigeFl5(id){
 function neuerKey(absicht){
   NEU_ABSICHT = absicht || 'nur';
   geh('keys');
+  if(ohneLizenz()){ $('neuPanel').hidden = true; zeigeKeysLizenz(); $('keysLizenz').scrollIntoView({block: 'nearest'}); return; }
   $('neuPanel').hidden = false; $('neuCode').hidden = true; meld('meldNeu', '');
   $('neuTitel').textContent = {mail: 'Neuer Key, danach per E-Mail senden', qr: 'Neuer Key, danach als QR-Karte', nur: 'Neuer Key'}[NEU_ABSICHT];
   setTimeout(() => $('neuBez').focus(), 60);
 }
 $('neuZu').onclick = () => { $('neuPanel').hidden = true; };
 
+/* FL-Lizenz (Ralph 12.11.): Keys nur mit Freigabe; ohne Freigabe kein Preis, sondern Hinweis auf die Lizenz per Mail.
+   Der Server entscheidet (cb_fp_ich.keys_erlaubt, cb_fp_key_anlegen sperrt). Fehlt das Feld (alter Server), gilt der bisherige Stand. */
+function ohneLizenz(){ return !DEMO && !!ICH && ICH.keys_erlaubt === false; }
+function lizenzHinweisHtml(){
+  const m = (ICH && ICH.lizenz_kontakt) || 'kontakt@root-index.de';
+  const p = ICH && ICH.key_preis_cent != null ? ' Preis: ' + (Number(ICH.key_preis_cent)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ' je Key und Monat.' : '';
+  return 'Klienten-Keys gibt es mit einer Lizenz für Root Index Pro.' + p + ' Eine Lizenz kann erworben werden, dazu bitte per Mail an <a href="mailto:' + esc(m) +
+    '?subject=Lizenz%20f%C3%BCr%20Root%20Index%20Pro">' + esc(m) + '</a> wenden.';
+}
+function zeigeKeysLizenz(){ const b = $('keysLizenz'); b.innerHTML = lizenzHinweisHtml(); b.hidden = !ohneLizenz(); }
+(function(){   // Tooltip für gesperrte Menüpunkte im Muster (eigenes Element, weil die Menüleiste überlaufende Inhalte abschneidet)
+  let tip = null;
+  const weg = () => { if(tip) tip.hidden = true; };
+  function zeig(el){
+    if(!el || !document.body.classList.contains('demo')) return weg();
+    if(!tip){ tip = document.createElement('div'); tip.className = 'tip'; tip.id = 'tipText'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
+    tip.textContent = el.dataset.tip; tip.hidden = false;
+    const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
+    const seitlich = getComputedStyle(el.parentElement).flexDirection === 'column' && r.right + 10 + w < innerWidth - 8;   // Seitenleiste: rechts daneben
+    tip.style.left = (seitlich ? r.right + 10 : Math.max(8, Math.min(r.left + r.width/2 - w/2, innerWidth - w - 8))) + 'px';
+    tip.style.top = (seitlich ? r.top + r.height/2 - h/2 : r.bottom + 8) + 'px';
+  }
+  document.addEventListener('mouseover', e => zeig(e.target.closest && e.target.closest('[data-tip]')));
+  document.addEventListener('focusin', e => zeig(e.target.closest && e.target.closest('[data-tip]')));
+  document.addEventListener('focusout', weg); document.addEventListener('click', weg); window.addEventListener('scroll', weg, true);
+})();
+
 /* Einstellungen */
 function zeichneKonto(){
   if(!ICH) return;
-  const L = {gruenderin_gratis: 'Gründerin, kostenlos', lizenz_bezahlt: 'Lizenz'};
+  const L = {gruenderin_gratis: 'Gründerin, kostenlos', lizenz_bezahlt: 'Lizenz', vorfuehrung: 'Vorführung, nichts wird berechnet'};
   const z = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +
-    z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
+    z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', ohneLizenz() ? 'Noch keine Lizenz für Klienten-Keys' : esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
     z('Verschwiegenheit Root Index', (ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') + (ICH.vertrag_version ? ' · Fassung ' + esc(ICH.vertrag_version) : '')) +
     z('Verschwiegenheit gegenüber Klient:innen', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
