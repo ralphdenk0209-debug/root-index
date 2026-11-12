@@ -112,6 +112,7 @@ const STATUS = {wie_geplant:'wie geplant', anders:'anders gegessen', nichts_eing
 const DEMO_KEY = 'fl-demo-fl5';
 const demoLaden = () => { try{ return JSON.parse(sessionStorage.getItem(DEMO_KEY) || '{}') || {}; }catch(e){ return {}; } };
 const demoSchreiben = d => { try{ sessionStorage.setItem(DEMO_KEY, JSON.stringify(d)); }catch(e){} };
+const herk = h => ({'Vorgabe Therapeutin':'Praxis', 'Ziel im Profil':'App'})[h] || h || '';
 const kuerzel = n => String(n||'').trim().split(/\s+/).filter(Boolean).map(w => w.charAt(0).toUpperCase() + '.').join(' ') || '–';
 
 function mount(el, opt){
@@ -180,8 +181,8 @@ function mount(el, opt){
       const name = (KZ[x.kennzahl] || x.name || x.kennzahl) + (x.einheit==='en%' ? ' (Anteil Energie)' : '');
       const einh = x.einheit==='en%' ? '%' : (x.einheit||'');
       const soll = x.soll==null ? '–' : (x.art==='bereich' ? z(x.soll,1) + '–' + z(x.soll_bis,1) : (ART[x.art]||'') + ' ' + z(x.soll, 1)) + ' ' + einh + (x.bezug==='woche' ? '/Woche' : '');
-      const grund = x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' + (x.quelle ? ' (' + esc(x.quelle) + ')' : '')
-                  : x.soll_herkunft==='Ziel im Profil' ? 'Ziel im Profil'
+      const grund = x.soll_herkunft==='Vorgabe Therapeutin' ? 'Praxis' + (x.quelle ? ' (' + esc(x.quelle) + ')' : '')
+                  : x.soll_herkunft==='Ziel im Profil' ? 'App'
                   : esc(x.soll_herkunft || '') + qNr(x.quelle, x.quelle_url, x.quelle_stand);
       return '<tr><td>' + esc(name) + '</td><td class="z">' + (x.ist==null ? '–' : z(x.ist, 1) + ' ' + esc(einh) + (x.bezug==='woche' ? '/Woche' : '')) + '</td><td class="z">' + esc(soll) + '</td>' +
         '<td class="z">' + (x.soll ? z(x.ist_prozent_vom_soll) + ' %' : '') + '</td>' +
@@ -230,16 +231,16 @@ function mount(el, opt){
 
     let h = '<div class="f5-leiste"><button class="f5-b" data-bzu type="button">Schließen</button><button class="f5-b gruen" data-bdruck type="button">Drucken oder PDF</button></div><div class="f5-blatt">' +
       '<div class="bk"><div><div class="p">' + esc(opt.praxis || '') + '</div><div class="kl">' + esc(opt.fachperson || '') + '</div></div>' +
-      '<div class="r"><h1>Ernährungsbericht</h1><div><b>' + dt(o.von) + ' – ' + dt(o.bis) + '</b></div><div>Klient: <b>' + esc(wer) + '</b>, Code ' + esc(d.code || opt.code || '') + '</div>' +
-      '<div class="kl">Erstellt am ' + dt(heute) + '. Tagebuch an ' + n + ' von ' + tage.length + ' Tagen geführt.' + (d.muster ? ' Erfundene Person aus der Musterpraxis.' : '') + '</div></div></div>';
+      '<div class="r"><h1>Ernährungsbericht</h1><div><b>' + dt(o.von) + ' – ' + dt(o.bis) + '</b></div><div>Person: <b>' + esc(wer) + '</b>, Code ' + esc(d.code || opt.code || '') + '</div>' +
+      '<div class="kl">Erstellt am ' + dt(heute) + '. Einträge an ' + n + ' von ' + tage.length + ' Tagen.' + (d.muster ? ' Erfundene Person aus der Musterpraxis.' : '') + '</div></div></div>';
     if(d.leer) h += '<p>' + esc(d.grund || 'Keine freigegebenen Einträge in diesem Zeitraum.') + '</p>';
     if(o.profil && prof.length) h += '<div class="kl" style="font-size:13px">' + esc(prof.join(', ')) + '</div>';
     if(!d.leer){
-      h += '<h2>Kennzahlen</h2><div class="kl">Ist ist der Durchschnitt der erfassten Tage. Soll kommt aus der Vorgabe der Praxis, sonst aus dem Profil, sonst aus dem Richtwert.</div>' + tabIs(isM);
-      h += '<h2>Lebensmittelgruppen</h2><div class="kl">Fisch und Fleisch zählen je Woche, alles andere je Tag.</div><div class="zw"><div>' + tabIs(isG) + '</div><div><table><tbody><tr><td>Gemüse je Tag im Schnitt</td><td class="z">' + z(gj('gemuese')) + ' g</td></tr>' +
-           '<tr><td>Obst je Tag im Schnitt</td><td class="z">' + z(gj('obst')) + ' g</td></tr></tbody></table></div></div>' +
+      h += '<h2>Kennzahlen</h2><div class="kl">Ist ist der Schnitt der Tage mit Einträgen. Soll kommt von der Praxis, sonst aus der App, sonst von der DGE.</div>' + tabIs(isM);
+      h += '<h2>Lebensmittelgruppen</h2><div class="kl">Fisch und Fleisch zählen je Woche, alles andere je Tag.</div><div class="zw"><div>' + tabIs(isG) + '</div><div><table><tbody><tr><td>Gemüse je Tag mit Einträgen</td><td class="z">' + z(gj('gemuese')) + ' g</td></tr>' +
+           '<tr><td>Obst je Tag mit Einträgen</td><td class="z">' + z(gj('obst')) + ' g</td></tr></tbody></table></div></div>' +
            '<div style="margin-top:8px">' + svg + '</div><div class="kl"><span style="color:var(--f5b-akzent)">■</span> Gemüse und Pilze&nbsp;&nbsp; <span style="color:#9a9a9a">■</span> Obst' + (linie ? '&nbsp;&nbsp; - - Soll für beides: ' + z(linie) + ' g.' : '') + ' Grau heißt kein Eintrag.</div>' + tagTab;
-      h += '<h2>Makronährstoffe</h2><div class="zw"><div>' + makTab + '</div><div class="kl">Durchschnitt der erfassten Tage. Tage ohne Eintrag zählen nicht.</div></div>';
+      h += '<h2>Makronährstoffe</h2><div class="zw"><div>' + makTab + '</div><div class="kl">Schnitt der Tage mit Einträgen.</div></div>';
       h += '<h2>Auffällige Produkte</h2><div class="kl">Bewertung Mittel oder Schwach, nach Menge sortiert.</div>' +
            (auff.length ? prodTab(auff) : '<p class="kl">Keine.</p>') +
            (top.length ? '<h2>Am meisten gegessen</h2>' + prodTab(top) : '');
@@ -250,7 +251,7 @@ function mount(el, opt){
     h += '<h2>Quellen und Hinweise</h2><div class="kl">' +
       quellen.map((q, i) => '[' + (i+1) + '] ' + esc(q.titel || '') + (q.stand ? ', Stand ' + esc(q.stand) : '') + (q.url ? ' – ' + esc(q.url) : '')).join('<br>') + (quellen.length ? '<br>' : '') +
       'DGE-Werte sind Orientierungswerte für gesunde Erwachsene. Laut DGE eignen sie sich nicht, den Verzehr einzelner Personen zu bewerten. Sie stehen hier zum Vergleich, nicht als Note.<br>' +
-      'Grundlage ist das Ernährungstagebuch der Person. Nährwerte und Scores aus dem Root Index, Stand ' + dt(heute) + '. Erstellt mit Root Index (root-index.de).</div></div>';
+      'Grundlage ist das Ernährungstagebuch der Person. Nährwerte und Scores aus dem Root Index, Stand ' + dt(heute) + '. Erstellt mit Root Index Pro (root-index.de).</div></div>';
 
     let box = document.getElementById('fl5Bericht');
     if(!box){ box = document.createElement('div'); box.id = 'fl5Bericht'; document.body.appendChild(box); }
@@ -279,7 +280,7 @@ function mount(el, opt){
     let h = opt.muster ? '' : '<div class="f5-k">Die Person sieht einen Plan erst, wenn er geteilt ist.</div>';
     h += '<div class="f5-reihe"><button class="f5-b gruen" data-pneu type="button">' + (opt.muster ? 'Vorschlag für nächste Woche' : 'Plan anlegen') + '</button>' +
          (opt.muster ? '<span class="f5-k">Vorführung. Änderungen bleiben in diesem Browser-Tab.</span>' : '') + '</div>';
-    h += st.plaene.length ? st.plaene.map(planKarte).join('') : '<p class="f5-k">Ersten Plan anlegen.</p>';
+    h += st.plaene.length ? st.plaene.map(planKarte).join('') : '<p class="f5-k">Noch kein Plan. Plan anlegen.</p>';
     h += '<div class="f5-legende"><span><i style="background:var(--f5-ok-zart)"></i>wie geplant</span><span><i style="background:var(--f5-warn-zart)"></i>anders gegessen</span><span><i style="background:var(--f5-bad-zart)"></i>kein Eintrag</span><span><i style="background:var(--f5-creme)"></i>offen</span></div>';
     $p.innerHTML = h;
     const neu = $p.querySelector('[data-pneu]'); if(neu) neu.onclick = () => { const v = plus(montag(heute), 7);
@@ -298,7 +299,7 @@ function mount(el, opt){
     let h = '<div class="f5-plan"><div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap"><div><b style="font-size:16px">' + esc(x.titel) + '</b>' +
       '<div class="f5-k">' + dt(x.von) + ' bis ' + dt(x.bis) + ', ' + e.length + ' Einträge</div></div><div>' + chips + '</div></div>' +
       (x.notiz ? '<div style="font-size:14px;margin-top:4px">' + esc(x.notiz) + '</div>' : '') + ist +
-      (x.ziel_kcal ? '<div class="f5-k" style="margin-top:4px">Kalorienziel ' + z(x.ziel_kcal) + ' kcal je Tag (' + esc(x.ziel_herkunft || '') + ')</div>' : '') +
+      (x.ziel_kcal ? '<div class="f5-k" style="margin-top:4px">Kalorienziel ' + z(x.ziel_kcal) + ' kcal je Tag (' + esc(herk(x.ziel_herkunft)) + ')</div>' : '') +
       '<div class="f5-tab-wrap"><table class="f5-raster" style="min-width:' + (140 + 120 * plaetzeFuer(e).length) + 'px"><thead><tr><th>Tag</th>' + plaetzeFuer(e).map(p => '<th>' + p.l + '</th>').join('') + '<th class="z">kcal Plan</th>' + (x.tage ? '<th class="z">kcal Ist</th>' : '') + '</tr></thead><tbody>' +
       tage.map(t => { const et = e.filter(y => y.datum===t); const kp = et.reduce((a, y) => a + (Number(y.kcal_plan)||0), 0);
         return '<tr' + (t===heute ? ' style="outline:2px solid var(--f5-gruen)"' : '') + '><td><b>' + tk(t) + '</b></td>' + plaetzeFuer(e).map(pz => '<td>' + et.filter(y => platzVon(y)===pz.k).map(y =>
@@ -358,7 +359,7 @@ function mount(el, opt){
       (E.hinweise && E.hinweise.length ? '<div class="f5-k" style="margin-top:4px">' + E.hinweise.map(esc).join(' ') + '</div>' : '') +
       '<div class="f5-reihe"><button class="f5-b gruen" data-vor="leer" type="button">Leere Plätze füllen</button><button class="f5-b" data-vor="neu" type="button" title="Festgehaltene bleiben">Neu vorschlagen</button>' +
       (opt.ki && !E.demo ? '<button class="f5-b" data-riki type="button">Rezeptideen von Riki</button>' : '') + '</div><div class="f5-meld" data-vm></div><div data-rikibox></div></div>' +
-      (E.ziel ? '<div class="f5-k">Kalorienziel ' + z(E.ziel) + ' kcal je Tag' + (E.ziel_her ? ' (' + esc(E.ziel_her) + ')' : '') + '</div>' : '') +
+      (E.ziel ? '<div class="f5-k">Kalorienziel ' + z(E.ziel) + ' kcal je Tag' + (E.ziel_her ? ' (' + esc(herk(E.ziel_her)) + ')' : '') + '</div>' : '') +
       '<div class="f5-tab-wrap"><table class="f5-raster" style="min-width:' + (140 + 130 * pl.length) + 'px"><thead><tr><th>Tag</th>' + pl.map(p => '<th>' + p.l + '</th>').join('') + '<th class="z">kcal</th></tr></thead><tbody>' +
       tage.map((t, ti) => { const et = E.eintraege.filter(y => y.datum===t); const kp = et.reduce((a, y) => a + (Number(y.kcal_plan)||0), 0);
         return '<tr><td><b>' + tk(t) + '</b>' + (ti ? '<div><button class="f5-plus" data-vortag="' + t + '" type="button" title="Alles vom Vortag übernehmen">wie Vortag</button></div>' : '') + '</td>' +
@@ -484,7 +485,7 @@ function mount(el, opt){
         try{
           const id = await opt.rpc('cb_rezept_anlegen', {p_payload: {name: String(v.name || 'Rezeptidee').slice(0, 120), portionen: v.portionen || 2,
             zeit: v.zeit_min || null, zubereitung: v.zubereitung || '', ernaehrungsform: v.ernaehrungsform || null,
-            ziel: 'Idee von Riki (KI), von der Fachperson geprüft', mahlzeiten: [r.mahlzeit],
+            ziel: 'Idee von Riki (KI), von der Praxis geprüft', mahlzeiten: [r.mahlzeit],
             zutaten: (v.zutaten || []).map(zt => ({name: zt.name, menge: zt.menge || null, menge_g: zt.menge_g || null}))}});
           st.alleRezepte = null;
           mm.textContent = 'Gespeichert. Nährwerte und Score folgen, sobald die Zutaten zugeordnet sind.'; mm.className = 'f5-meld ok';
@@ -569,7 +570,7 @@ function mount(el, opt){
       $p.innerHTML = '<div class="f5-hinweis">Vorführung. Geteilt wird nur in diesem Browser-Tab.</div>' +
         '<h3>Mit ' + esc(opt.name || 'dieser Person') + ' geteilt (' + (empf.length + lok.length) + ')</h3>' +
         lok.map((x, i) => zeile(x, '<span class="f5-chip gruen">Vorführung</span><button class="f5-b rot" data-lokweg="' + i + '" type="button">Teilen beenden</button>')).join('') +
-        (empf.length || lok.length ? empf.map(x => zeile(x, '<span class="f5-chip blau">Empfehlung</span>')).join('') : '<p class="f5-k">Rezept unten suchen und teilen.</p>') +
+        (empf.length || lok.length ? empf.map(x => zeile(x, '<span class="f5-chip blau">Empfehlung</span>')).join('') : '<p class="f5-k">Noch nichts geteilt. Rezept unten suchen und teilen.</p>') +
         '<h3>Rezepte der Person (' + eig.length + ')</h3>' +
         (eig.length ? eig.map(x => zeile(x, '<span class="f5-chip">' + (x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes') + '</span>')).join('') : '<p class="f5-k">Keine.</p>') +
         (geg.length ? '<h3>In den letzten 7 Tagen gekocht</h3><p class="f5-k">' + geg.map(x => esc(x.name) + ' (' + x.mal + '×)').join(', ') + '</p>' : '') +
@@ -599,7 +600,7 @@ function mount(el, opt){
         (x.notiz ? '<div style="font-size:13px">' + esc(x.notiz) + '</div>' : '') + '</div>' +
         '<span class="f5-chip ' + (x.mitbearbeiten ? 'gruen' : '') + '">' + (x.mitbearbeiten ? 'gemeinsam bearbeiten' : 'Empfehlung') + '</span>' +
         '<button class="f5-b rot" data-rende="' + esc(x.rezept_id) + '" type="button">Teilen beenden</button></div>').join('')
-        : '<p class="f5-k">Rezept unten suchen und teilen.</p>') +
+        : '<p class="f5-k">Noch nichts geteilt. Rezept unten suchen und teilen.</p>') +
       '<h3>Rezept teilen</h3><input data-rs style="width:100%" placeholder="Rezept suchen …"><div class="f5-treffer" data-rt></div>' +
       '<div data-rform hidden><div style="margin-top:8px"><b data-rname></b></div>' +
       '<label class="f5-reihe" style="gap:6px;align-items:center;font-size:14px"><input type="checkbox" data-rmit> Gemeinsam bearbeiten (nur eigene Rezepte)</label>' +
@@ -666,7 +667,7 @@ function shellRender(id, el, ctx){
   const tok = ctx.demo ? (ctx.musterToken || null) : null;          // Demo-Modus: nur Musterpraxis, mit Demo-Passwort
   const zeige = w => {
     $z.innerHTML = ''; $z.className = '';
-    if(!w){ $z.innerHTML = '<p class="f5-k">Unter Keys einen Key anlegen.</p>'; return; }
+    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine Klienten. Unter Keys einen Key anlegen.</p>'; return; }
     if(w.startsWith('muster-')){
       const nr = Number(w.slice(7)), k = muster && (muster.klienten || []).find(x => x.nr===nr) || {};
       mount($z, { nurTab: tab, muster: true, nr, token: tok, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
