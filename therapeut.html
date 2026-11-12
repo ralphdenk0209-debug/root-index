@@ -563,18 +563,18 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
-      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ausprobieren (Vorführung ohne Anmeldung)</a></p>
+      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ansehen (mit Passwort)</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
     </div>
   </section>
 
-  <!-- FL-4: Musterpraxis (Vorführung) mit Passwort -->
+  <!-- FL-4: Musterpraxis (Vorführung) mit gemeinsamem Passwort (Prüfung auf dem Server, cb_fl_muster_anmelden) -->
   <section id="bDemo" hidden>
     <h1>Musterpraxis ansehen</h1>
     <p class="unter">Vorführung mit erfundenen Personen. Produkte, Nährwerte und Scores sind echt.</p>
     <div class="karte">
-      <label for="demoPw">Passwort der Vorführung</label>
-      <input id="demoPw" type="password" autocomplete="off">
+      <label for="demoPw">Passwort</label>
+      <input id="demoPw" type="password" autocomplete="current-password">
       <button class="knopf" id="demoLos" type="button">Musterpraxis öffnen</button>
       <div class="meld" id="meldDemo"></div>
       <p style="margin:12px 0 0;font-size:14px">Kein Passwort? Vorführung anfragen: <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20Pro">kontakt@root-index.de</a></p>
@@ -774,6 +774,15 @@
       <div class="reihe" style="max-width:520px"><div><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input id="pwNeu" type="password" autocomplete="new-password"></div>
         <div style="flex:0 0 auto"><label>&nbsp;</label><button class="tb haupt" id="pwLos" type="button" style="height:46px">Speichern</button></div></div>
       <div class="meld" id="meldPw"></div>
+      <div id="mpwBox" hidden>
+      <h2 class="abschnitt">Passwort der Musterpraxis</h2>
+      <p class="fuss" id="mpwStand" style="margin:0 0 10px"></p>
+      <div class="reihe" style="max-width:520px"><div><label for="mpwNeu">Neues Passwort (mind. 10 Zeichen)</label><input id="mpwNeu" type="password" autocomplete="new-password"></div>
+        <div style="flex:0 0 auto"><label>&nbsp;</label><button class="tb haupt" id="mpwLos" type="button" style="height:46px">Speichern</button></div></div>
+      <p class="fuss" style="margin:8px 0 0">Gilt für alle, die die Musterpraxis ansehen. Nach dem Ändern gelten bisherige Zugänge nicht mehr.</p>
+      <div class="aktionen"><button class="tb" type="button" id="mpwWeg">Passwort entfernen</button></div>
+      <div class="meld" id="meldMpw"></div>
+      </div>
       </div>
       <h2 class="abschnitt" id="abmeldenTitel">Abmelden</h2>
       <button class="tb" type="button" id="abmelden2">Abmelden</button>
@@ -938,16 +947,27 @@ async function demoStart(pw){
   ladeAlles(); route();
   return true;
 }
+// Passwort → Zugang (gilt 8 Stunden, nur in diesem Tab gemerkt). Der Server prüft das Passwort und bremst bei vielen Fehlversuchen.
 $('demoLos').onclick = async function(){
-  const pw = $('demoPw').value.trim(); if(!pw) return meld('meldDemo', 'Bitte das Passwort eintragen.', 'fehler');
+  const pw = $('demoPw').value; if(!pw.trim()) return meld('meldDemo', 'Bitte das Passwort eintragen.', 'fehler');
   this.disabled = true; meld('meldDemo', '⏳ …');
-  const ok = await demoStart(pw); this.disabled = false;
-  if(!ok) return meld('meldDemo', 'Das Passwort stimmt nicht.', 'fehler');
+  const {data, error} = await client.rpc('cb_fl_muster_anmelden', {p_passwort: pw});
+  const r = json(data) || {};
+  const ok = !error && r.ok && await demoStart(r.token); this.disabled = false;
+  if(!ok) return meld('meldDemo', error ? 'Gerade nicht erreichbar. Bitte gleich noch einmal versuchen.'
+                              : r.grund === 'gesperrt' ? 'Zu viele Fehlversuche. In 15 Minuten wieder versuchen.' : 'Das Passwort stimmt nicht.', 'fehler');
   $('demoPw').value = ''; meld('meldDemo', '');
 };
 $('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
 $('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
-$('zurDemo').onclick = async e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); if(!(await demoStart('oeffentlich'))){ zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); } };
+async function demoOhnePasswort(){   // gemerkter Zugang aus diesem Tab, sonst angemeldete Fachperson/Admin (Server prüft)
+  const z = demoGemerkt();
+  if(z && await demoStart(z)) return true;
+  try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
+  const {data:{session}} = await client.auth.getSession();
+  return !!session && await demoStart('angemeldet');
+}
+$('zurDemo').onclick = async e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); if(!(await demoOhnePasswort())){ zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); } };
 function nurAnsehen(){
   let t = document.querySelector('.demo-toast');
   if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
@@ -1077,11 +1097,8 @@ function demoAbrechnung(){
 async function start(){
   if(inRecovery){ zeige('bNeuPass'); return; }
   if(demoGewuenscht()){
-    const z = new URLSearchParams(location.search).get('z') || demoGemerkt() || 'oeffentlich';
-    if(await demoStart(z)) return;
-    if(z !== 'oeffentlich' && await demoStart('oeffentlich')) return;
-    try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
-    zeige('bDemo'); return;
+    if(await demoOhnePasswort()) return;
+    zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); return;
   }
   const {data:{session}} = await client.auth.getSession();
   if(!session){ zeige('bLogin'); return; }
@@ -1106,7 +1123,7 @@ async function start(){
   $('hName').textContent = 'Übersicht';
   $('hPraxis').textContent = '';
   $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
-  zeichneKonto();
+  zeichneKonto(); mpwLaden();
   zeige('app');
   route();
   ladeAlles();
@@ -1619,6 +1636,33 @@ $('pwLos').onclick = async function(){
   this.disabled = true; const {error} = await client.auth.updateUser({password: p}); this.disabled = false;
   if(error) return meld('meldPw', 'Fehler: ' + error.message, 'fehler');
   $('pwNeu').value = ''; meld('meldPw', '✓ Gespeichert.', 'ok');
+};
+/* Passwort der Musterpraxis: nur Admin (Server prüft). Gespeichert wird nur ein Hash; angezeigt wird nie ein Passwort. */
+async function mpwLaden(){
+  if(DEMO) return;
+  const {data, error} = await client.rpc('cb_admin_fl_muster_passwort_stand');
+  if(error){ $('mpwBox').hidden = true; return; }
+  const d = json(data) || {};
+  $('mpwStand').textContent = d.gesetzt
+    ? 'Gesetzt am ' + new Date(d.geaendert_am).toLocaleString('de-DE', {dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin'}) + '. Offene Zugänge: ' + (d.zugaenge || 0) + '.' +
+      (d.fehlversuche ? ' Fehlversuche in den letzten 15 Minuten: ' + d.fehlversuche + '.' : '')
+    : 'Kein Passwort gesetzt. Die Musterpraxis ist für Gäste geschlossen.';
+  $('mpwWeg').hidden = !d.gesetzt;
+  $('mpwBox').hidden = false;
+}
+async function mpwSetzen(p, knopf, gut){
+  knopf.disabled = true; const {data, error} = await client.rpc('cb_admin_fl_muster_passwort', {p_passwort: p}); knopf.disabled = false;
+  const d = json(data) || {};
+  if(error || !d.ok) return meld('meldMpw', error ? 'Fehler: ' + error.message : (d.grund || 'Nicht gespeichert.'), 'fehler');
+  $('mpwNeu').value = ''; meld('meldMpw', gut, 'ok'); mpwLaden();
+}
+$('mpwLos').onclick = function(){
+  const p = $('mpwNeu').value; if(p.length < 10) return meld('meldMpw', 'Mindestens 10 Zeichen.', 'fehler');
+  mpwSetzen(p, this, '✓ Gespeichert. Bisherige Zugänge gelten nicht mehr.');
+};
+$('mpwWeg').onclick = function(){
+  if(!confirm('Passwort entfernen? Die Musterpraxis ist dann für Gäste geschlossen.')) return;
+  mpwSetzen(null, this, '✓ Entfernt. Die Musterpraxis ist für Gäste geschlossen.');
 };
 $('abmelden2').onclick = () => $('abmelden').click();
 /* Praxisdaten (cb_fp_praxis / cb_fp_praxis_setzen); in der Vorführung nur im Tab */
