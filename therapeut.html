@@ -388,11 +388,21 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
   body.demo .menue [data-v="bewertung"]:not(.an){opacity:.72}
   body.demo .ansicht[data-v="bewertung"] .werkzeug, body.demo #bewFrame, body.demo .bew-rahmen, body.demo #bewStand{display:none!important}
   .tip{position:fixed;z-index:90;max-width:260px;background:var(--ink);color:var(--paper);border-radius:9px;padding:7px 11px;font-size:13.5px;line-height:1.35;box-shadow:0 8px 24px rgba(0,0,0,.18);pointer-events:none}
-  .gesperrt-karte{max-width:640px;margin:24px 28px;display:grid;gap:10px;justify-items:start}
-  .gesperrt-karte .schloss-gross{width:36px;height:36px;fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-  .gesperrt-karte h2{margin:0;font-size:20px} .gesperrt-karte p{margin:0;color:var(--muted);font-size:15px}
-  .gesperrt-karte .aktionen{display:flex;gap:8px;flex-wrap:wrap}
-  @media (max-width:760px){ .gesperrt-karte{margin:16px 14px} }
+  /* Vorschau gesperrter Inhalte: nur PLATZHALTERtext, im Browser verschwommen (der echte Text kommt ohne Recht nie zum Browser) */
+  .vorschau-gesperrt{position:relative;margin:16px 28px 24px;border-radius:18px;background:var(--panel);overflow:hidden;min-height:540px}
+  .vorschau-text{filter:blur(5px);user-select:none;pointer-events:none;padding:26px 30px;color:var(--ink);opacity:.75}
+  .vorschau-text h3{margin:0 0 8px;font-size:19px} .vorschau-text p{margin:0 0 14px;font-size:15px;line-height:1.6}
+  .vorschau-text table{border-collapse:collapse;margin:4px 0 18px;font-size:14px} .vorschau-text td{border-bottom:1px solid var(--line);padding:6px 14px 6px 0}
+  .vorschau-schild{position:absolute;inset:0;display:grid;place-items:start center;padding:70px 16px 20px}
+  .vorschau-schild > div{max-width:460px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px;display:grid;gap:10px;justify-items:center;text-align:center;box-shadow:0 12px 36px rgba(0,0,0,.14)}
+  .vorschau-schild .schloss-gross{width:34px;height:34px;fill:none;stroke:var(--muted);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+  .vorschau-schild h2{margin:0;font-size:19px} .vorschau-schild p{margin:0;color:var(--muted);font-size:14.5px}
+  .vorschau-schild .aktionen{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+  @media (max-width:760px){ .vorschau-gesperrt{margin:12px 12px 20px} .vorschau-text{padding:18px} }
+  .gesperrt::after{content:"";display:inline-block;width:12px;height:12px;margin-left:6px;vertical-align:-1px;background:currentColor;opacity:.8;
+    -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='9.5' rx='2'/%3E%3Cpath d='M8.5 11V8a3.5 3.5 0 0 1 7 0v3'/%3E%3C/svg%3E") center/contain no-repeat;
+            mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.2' stroke-linecap='round'%3E%3Crect x='5' y='11' width='14' height='9.5' rx='2'/%3E%3Cpath d='M8.5 11V8a3.5 3.5 0 0 1 7 0v3'/%3E%3C/svg%3E") center/contain no-repeat}
+  .menue .gesperrt::after{display:none}
   .lizenz-hinweis a{color:inherit;font-weight:700}
   #keysLizenz{margin:14px 28px 0} @media (max-width:760px){ #keysLizenz{margin:12px 12px 0} }
   body.demo .statuszeile .punkt{background:var(--gelb)}
@@ -745,11 +755,20 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
     </div>
     <div class="bew-rahmen"><iframe id="bewFrame" title="So bewertet Root Index" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe></div>
     <p class="fuss" id="bewStand"></p>
-    <div class="gesperrt-karte" id="bewGesperrt" hidden>
-      <svg class="schloss-gross" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>
-      <h2>Nur für registrierte Fachleute in Root Index Pro</h2>
-      <p>Die ausführliche Fassung mit Rechenweg, Quellen und Grenzen der Bewertung steht nach der Registrierung in Root Index Pro bereit. Die öffentliche Fassung für Klient:innen ist frei lesbar.</p>
-      <div class="aktionen"><a class="tb haupt" href="therapeut.html#konto-anlegen">Konto anlegen</a><a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung</a></div>
+    <div class="vorschau-gesperrt" id="bewGesperrt" hidden>
+      <!-- NUR Platzhaltertext (Ralph 12.11.): der echte vertrauliche Text und seine Beispiele kommen im Muster nie zum Browser -->
+      <div class="vorschau-text" aria-hidden="true">
+        <h3>Abschnitt 1 · Platzhalter</h3><p>Platzhalter für die Vorschau. Der eigentliche Abschnitt steht registrierten Fachleuten in Root Index Pro zur Verfügung und ist hier absichtlich nicht enthalten. Platzhalter für die Vorschau. Der eigentliche Abschnitt steht registrierten Fachleuten in Root Index Pro zur Verfügung und ist hier absichtlich nicht enthalten. </p>
+        <h3>Abschnitt 2 · Platzhalter</h3><p>Platzhalter für die Vorschau. Der eigentliche Abschnitt steht registrierten Fachleuten in Root Index Pro zur Verfügung und ist hier absichtlich nicht enthalten. </p>
+        <table><tr><td>Beispiel A</td><td>Platzhalter</td><td>00</td></tr><tr><td>Beispiel B</td><td>Platzhalter</td><td>00</td></tr><tr><td>Beispiel C</td><td>Platzhalter</td><td>00</td></tr></table>
+        <h3>Abschnitt 3 · Platzhalter</h3><p>Platzhalter für die Vorschau. Der eigentliche Abschnitt steht registrierten Fachleuten in Root Index Pro zur Verfügung und ist hier absichtlich nicht enthalten. Platzhalter für die Vorschau. Der eigentliche Abschnitt steht registrierten Fachleuten in Root Index Pro zur Verfügung und ist hier absichtlich nicht enthalten. </p>
+      </div>
+      <div class="vorschau-schild"><div>
+        <svg class="schloss-gross" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9.5" rx="2"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>
+        <h2>Nur für registrierte Fachleute in Root Index Pro</h2>
+        <p>Die ausführliche Fassung mit Rechenweg, Beispielen und Quellen steht nach der Registrierung und der Verschwiegenheitsvereinbarung bereit. Die öffentliche Fassung für Klient:innen ist frei lesbar.</p>
+        <div class="aktionen"><a class="tb haupt" href="therapeut.html#konto-anlegen">Konto anlegen</a><a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung</a></div>
+      </div></div>
     </div>
   </section>
 
@@ -829,6 +848,12 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
       <p class="fuss" style="margin:8px 0 0">Automatisch folgt der Einstellung des Geräts. Gilt in diesem Browser.</p>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss lizenz-hinweis" id="zRegel2" style="margin-top:0"></p>
+      <div id="testLizenz" hidden>
+        <h2 class="abschnitt">Testansicht Lizenz</h2>
+        <p class="fuss" style="margin-top:0">Nur für die eigene Praxis: zeigt Root Index Pro so, wie Fachleute ohne Lizenz es sehen. Die Sperren gelten dabei wirklich, auch auf dem Server.</p>
+        <div class="segment" id="testLizenzWahl" role="group" aria-label="Testansicht Lizenz"><button type="button" data-tl="mit">Mit Lizenz</button><button type="button" data-tl="ohne">Ohne Lizenz</button></div>
+        <div class="meld" id="meldTl"></div>
+      </div>
       <div class="nicht-demo">
       <h2 class="abschnitt">Passwort ändern</h2>
       <div class="reihe" style="max-width:520px"><div><label for="pwNeu">Neues Passwort (mind. 8 Zeichen)</label><input id="pwNeu" type="password" autocomplete="new-password"></div>
@@ -1001,6 +1026,7 @@ async function demoStart(pw){
   KEYS_DA = true;
   document.body.classList.add('demo');
   const bewKnopf = document.querySelector('#menueListe [data-v="bewertung"]');   // FL-Lizenz: gesperrt, Tooltip für Screenreader mitlesen
+  if(bewKnopf) bewKnopf.classList.add('gesperrt');
   if(bewKnopf) bewKnopf.setAttribute('aria-label', 'So bewertet Root Index, gesperrt: Nur für registrierte Fachleute in Root Index Pro');
   demoLeiste();
   $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = '';
@@ -1696,15 +1722,37 @@ function ohneLizenz(){ return !DEMO && !!ICH && ICH.keys_erlaubt === false; }
 function lizenzHinweisHtml(){
   const m = (ICH && ICH.lizenz_kontakt) || 'kontakt@root-index.de';
   const p = ICH && ICH.key_preis_cent != null ? ' Preis: ' + (Number(ICH.key_preis_cent)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'}) + ' je Key und Monat.' : '';
-  return 'Klienten-Keys gibt es mit einer Lizenz für Root Index Pro.' + p + ' Eine Lizenz kann erworben werden, dazu bitte per Mail an <a href="mailto:' + esc(m) +
+  return (ICH && ICH.lizenz_testansicht_ohne ? 'Testansicht ohne Lizenz (umschalten unter Einstellungen). ' : '') + 'Klienten-Keys gibt es mit einer Lizenz für Root Index Pro.' + p + ' Eine Lizenz kann erworben werden, dazu bitte per Mail an <a href="mailto:' + esc(m) +
     '?subject=Lizenz%20f%C3%BCr%20Root%20Index%20Pro">' + esc(m) + '</a> wenden.';
 }
 function zeigeKeysLizenz(){ const b = $('keysLizenz'); b.innerHTML = lizenzHinweisHtml(); b.hidden = !ohneLizenz(); }
-(function(){   // Tooltip für gesperrte Menüpunkte im Muster (eigenes Element, weil die Menüleiste überlaufende Inhalte abschneidet)
+/* Bezahlte Funktionen ohne Lizenz: Schloss + Tooltip, Klick zeigt den Hinweis. Der Server sperrt Keys, Key-Mail und Riki zusätzlich;
+   QR-Karte und PDF entstehen nur im Browser und sind deshalb hier gesperrt. „Neuer Key“ führt weiter zum Hinweis unter Keys. */
+const LIZENZ_TIP = 'Mit Lizenz für Root Index Pro';
+const LIZENZ_SEL = '[data-neu],[data-akt="plus"],[data-akt="mail"],[data-akt="qr"],[data-km^="plus:"],#neuCodeMail,#neuCodeQr,[data-druck],[data-bdruck],[data-riki]';
+function markiereLizenz(){
+  const aus = ohneLizenz();
+  document.querySelectorAll(LIZENZ_SEL).forEach(b => {
+    if(aus){ b.classList.add('gesperrt'); b.dataset.tip = LIZENZ_TIP; }
+    else if(b.dataset.tip === LIZENZ_TIP){ b.classList.remove('gesperrt'); delete b.dataset.tip; }
+  });
+}
+new MutationObserver(() => { if(!markiereLizenz.an){ markiereLizenz.an = true; requestAnimationFrame(() => { markiereLizenz.an = false; markiereLizenz(); }); } })
+  .observe(document.body, {childList: true, subtree: true});
+document.addEventListener('click', e => {
+  const g = e.target.closest && e.target.closest('.gesperrt');
+  if(!g || !ohneLizenz() || g.matches('[data-neu]')) return;
+  e.preventDefault(); e.stopImmediatePropagation();
+  let t = document.querySelector('.demo-toast');
+  if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
+  t.textContent = LIZENZ_TIP + '. Lizenz per Mail an ' + ((ICH && ICH.lizenz_kontakt) || 'kontakt@root-index.de') + '.'; t.hidden = false;
+  clearTimeout(t.zu); t.zu = setTimeout(() => t.hidden = true, 3500);
+}, true);
+(function(){   // Tooltip für gesperrte Stellen (eigenes Element, weil die Menüleiste überlaufende Inhalte abschneidet)
   let tip = null;
   const weg = () => { if(tip) tip.hidden = true; };
   function zeig(el){
-    if(!el || !document.body.classList.contains('demo')) return weg();
+    if(!el || !el.classList.contains('gesperrt')) return weg();
     if(!tip){ tip = document.createElement('div'); tip.className = 'tip'; tip.id = 'tipText'; tip.setAttribute('role', 'tooltip'); document.body.appendChild(tip); }
     tip.textContent = el.dataset.tip; tip.hidden = false;
     const r = el.getBoundingClientRect(), w = tip.offsetWidth, h = tip.offsetHeight;
@@ -1717,9 +1765,25 @@ function zeigeKeysLizenz(){ const b = $('keysLizenz'); b.innerHTML = lizenzHinwe
   document.addEventListener('focusout', weg); document.addEventListener('click', weg); window.addEventListener('scroll', weg, true);
 })();
 
+/* Test-Umschalter mit/ohne Lizenz (Ralph 12.11.): nur Praxen, denen der Server ihn erlaubt; schaltet nur die eigene Praxis */
+function zeichneTestLizenz(){
+  const da = !DEMO && !!ICH && ICH.lizenz_umschalter === true;
+  $('testLizenz').hidden = !da; if(!da) return;
+  document.querySelectorAll('#testLizenzWahl [data-tl]').forEach(b => { const an = (b.dataset.tl === 'ohne') === !!ICH.lizenz_testansicht_ohne; b.classList.toggle('an', an); b.setAttribute('aria-pressed', an); });
+}
+document.querySelectorAll('#testLizenzWahl [data-tl]').forEach(b => b.onclick = async () => {
+  const ohne = b.dataset.tl === 'ohne'; if(ohne === !!ICH.lizenz_testansicht_ohne) return;
+  meld('meldTl', '⏳ …');
+  const {data, error} = await client.rpc('cb_fp_lizenz_testansicht', {p_ohne: ohne});
+  const d = json(data);
+  if(error || !d.ok) return meld('meldTl', error ? error.message : (d.grund || 'Fehlgeschlagen.'), 'fehler');
+  location.reload();
+});
+
 /* Einstellungen */
 function zeichneKonto(){
   if(!ICH) return;
+  zeichneTestLizenz();
   const L = {gruenderin_gratis: 'Gründerin, kostenlos', lizenz_bezahlt: 'Lizenz', vorfuehrung: 'Vorführung, nichts wird berechnet'};
   const z = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +

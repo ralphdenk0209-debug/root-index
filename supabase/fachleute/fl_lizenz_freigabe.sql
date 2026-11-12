@@ -13,6 +13,10 @@
 --     Mit Freigabe gilt key_preis_cent der Freigabe (Konto-Wert fachperson_konto.key_preis_cent geht vor, sonst allgemeiner Preis).
 --  5. cb_fp_ich / cb_fp_abrechnung liefern keys_erlaubt, preis_anzeigen, lizenz_kontakt; Preis nur, wenn erlaubt oder freigeschaltet.
 --  6. Admin: cb_admin_fachperson_freigabe(email, preis_cent, aktiv, notiz), cb_admin_fachperson_freigaben().
+--  7. Nachtrag (Ralph 12.11.): Lizenz sperrt nur bezahlte Funktionen – Keys anlegen/verlängern, Key-Mail,
+--     Riki-Rezeptideen (KI-Kosten). „So bewertet Root Index“ bleibt für Freigeschaltete mit Verschwiegenheit offen.
+--  8. Admin-Umschalter (Ralph 12.11.): Praxen in lizenz_umschalter_kuerzel (RALPH, RITEST) und Admins dürfen die EIGENE
+--     Praxis auf „ohne Lizenz“ stellen (cb_fp_lizenz_testansicht), wirkt serverseitig, nie für andere Fachpersonen.
 -- E-Mail-Adressen stehen NIE in dieser Datei (öffentliches Repo). Ralphs Konten (RALPH, RITEST) werden über das Kürzel freigegeben.
 -- Rückweg: Sicherung fl-lizenz-rueckweg.sql (Notizordner der FL-Sitzungen).
 
@@ -41,10 +45,18 @@ select lower(btrim(u.email)), null, true, 'Ralphs Konto ' || k.kuerzel || ' (FL-
  where k.kuerzel in ('RALPH', 'RITEST') and u.email is not null
 on conflict (email) do nothing;
 
+-- Testansicht „ohne Lizenz“ je Praxis (nur über cb_fp_lizenz_testansicht, nur eigene Praxis)
+alter table public.fachperson_konto add column if not exists lizenz_testansicht_ohne boolean not null default false;
+insert into public.fachleute_einstellung(schluessel, wert, notiz) values
+  ('lizenz_umschalter_kuerzel', 'RALPH,RITEST', 'FL-Lizenz 12.11.: Diese Praxen (und Admins) dürfen ihre eigene Praxis zum Testen auf „ohne Lizenz“ stellen')
+on conflict (schluessel) do nothing;
+
 -- 2) Helfer (nicht direkt aufrufbar) -----------------------------------------------------------------
 create or replace function public._fp_keys_erlaubt(p_auth uuid)
 returns boolean language sql stable security definer set search_path to 'public', 'auth' as $$
-  select p_auth is not null and (
+  select p_auth is not null
+     and not coalesce((select k.lizenz_testansicht_ohne from public.fachperson_konto k where k.auth_id = p_auth), false)   -- Testansicht „ohne Lizenz“
+     and (
          exists (select 1 from public."Benutzer" b where b.auth_id = p_auth and coalesce(b.is_admin, false))
       or exists (select 1 from public.fachperson_freigabe l join auth.users u on lower(btrim(u.email)) = l.email
                   where u.id = p_auth and l.aktiv));
@@ -58,6 +70,16 @@ returns integer language sql stable security definer set search_path to 'public'
 $$;
 revoke all on function public._fp_freigabe_preis(uuid) from public, anon, authenticated;
 
+create or replace function public._fp_umschalter_darf(p_auth uuid)
+returns boolean language sql stable security definer set search_path to 'public' as $$
+  select p_auth is not null and (
+         exists (select 1 from public."Benutzer" b where b.auth_id = p_auth and coalesce(b.is_admin, false))
+      or exists (select 1 from public.fachperson_konto k where k.auth_id = p_auth
+                    and k.kuerzel = any (string_to_array(replace(coalesce((select wert from public.fachleute_einstellung
+                                                                           where schluessel = 'lizenz_umschalter_kuerzel'), ''), ' ', ''), ','))));
+$$;
+revoke all on function public._fp_umschalter_darf(uuid) from public, anon, authenticated;
+
 -- Was die Oberfläche über Preis und Lizenz erfahren darf
 create or replace function public._fp_preis_info(p_auth uuid)
 returns jsonb language sql stable security definer set search_path to 'public' as $$
@@ -70,6 +92,8 @@ returns jsonb language sql stable security definer set search_path to 'public' a
        x as (select public._fp_keys_erlaubt(p_auth) erlaubt)
   select jsonb_build_object(
            'keys_erlaubt', x.erlaubt,
+           'lizenz_umschalter', public._fp_umschalter_darf(p_auth),
+           'lizenz_testansicht_ohne', coalesce((select k.lizenz_testansicht_ohne from public.fachperson_konto k where k.auth_id = p_auth), false),
            'preis_anzeigen', e.zeigen,
            'lizenz_kontakt', e.kontakt,
            'abrechnung', e.art,
@@ -282,3 +306,61 @@ begin
       from public.fachperson_konto f
       join public._fp_abrechnung(null, p_monat) a on a.fachperson_auth = f.auth_id), '[]'::jsonb);
 end $function$;
+
+-- 7) Bezahlte Funktionen: Riki-Rezeptideen und Key-Mail nur mit Lizenz ------------------------------------
+create or replace function public.cb_fl5_riki_limit()
+returns jsonb language plpgsql stable security definer set search_path to 'public' as $function$
+declare v public.fachperson_konto := public._fp_ich(); n int; l int;
+begin
+  if not public._fp_keys_erlaubt(v.auth_id) then   -- FL-Lizenz: KI kostet Geld, nur mit Lizenz
+    return jsonb_build_object('erlaubt', false, 'lizenz_noetig', true, 'heute', 0, 'limit', 0,
+      'grund', 'Rezeptideen von Riki gibt es mit einer Lizenz für Root Index Pro. Für eine Lizenz bitte per Mail an '
+               || coalesce((select wert from public.fachleute_einstellung where schluessel = 'lizenz_kontakt'), 'kontakt@root-index.de') || ' wenden.');
+  end if;
+  l := coalesce((select nullif(wert, '')::int from public.fachleute_einstellung where schluessel = 'fl5_riki_limit_tag'), 20);
+  select count(*) into n from public."Riki_Nutzung"
+   where akteur = auth.uid() and modus = 'fl5_rezeptideen' and erfolg and erfasst_am >= date_trunc('day', now());
+  return jsonb_build_object('erlaubt', n < l, 'heute', n, 'limit', l,
+    'grund', case when n >= l then 'Tageslimit für Riki-Rezeptideen erreicht (' || l || ' am Tag).' end);
+end $function$;
+
+create or replace function public.cb_fp_key_mail_vorbereiten(p_code text, p_email text)
+returns jsonb language plpgsql security definer set search_path to 'public', 'auth' as $function$
+declare v public.fachperson_konto := public._fp_ich(); g public.gratis_code; v_mail text := lower(trim(coalesce(p_email,'')));
+        v_id bigint; v_max_key int; v_max_fp int; v_fp_mail text;
+begin
+  select * into g from public.gratis_code where code = upper(trim(p_code)) and fachperson_auth = v.auth_id;
+  if not found then raise exception 'Diesen Key gibt es in diesem Konto nicht.' using errcode = '42501'; end if;
+  if not public._fp_keys_erlaubt(v.auth_id) then   -- FL-Lizenz: Key-Versand nur mit Lizenz
+    return jsonb_build_object('ok',false,'lizenz_noetig',true,'grund','Keys per Mail verschicken geht mit einer Lizenz für Root Index Pro. Für eine Lizenz bitte per Mail an '
+           || coalesce((select wert from public.fachleute_einstellung where schluessel = 'lizenz_kontakt'), 'kontakt@root-index.de') || ' wenden.'); end if;
+  if g.klient_auth is not null then return jsonb_build_object('ok',false,'grund','Der Key ist schon eingelöst.'); end if;
+  if g.beendet_am is not null or not g.aktiv then return jsonb_build_object('ok',false,'grund','Der Key ist beendet.'); end if;
+  if v_mail !~ '^[^@\s]+@[^@\s]+\.[^@\s]+$' or length(v_mail) > 200 then return jsonb_build_object('ok',false,'grund','Bitte eine gültige E-Mail eintragen.'); end if;
+  select coalesce((select wert::int from public.fachleute_einstellung where schluessel='mail_je_key_tag'),3),
+         coalesce((select wert::int from public.fachleute_einstellung where schluessel='mail_je_fachperson_tag'),30)
+    into v_max_key, v_max_fp;
+  perform pg_advisory_xact_lock(hashtext('fp_mail:' || v.auth_id::text));
+  if (select count(*) from public.fp_key_mail_log where code = g.code and status <> 'fehler' and am > now() - interval '24 hours') >= v_max_key then
+    return jsonb_build_object('ok',false,'grund','Für diesen Key sind heute schon ' || v_max_key || ' Mails rausgegangen. Bitte morgen wieder – oder den QR-Code nutzen.'); end if;
+  if (select count(*) from public.fp_key_mail_log where fachperson_auth = v.auth_id and status <> 'fehler' and am > now() - interval '24 hours') >= v_max_fp then
+    return jsonb_build_object('ok',false,'grund','Tageslimit von ' || v_max_fp || ' Mails erreicht. Bitte morgen wieder.'); end if;
+  insert into public.fp_key_mail_log(code, fachperson_auth, an_email) values (g.code, v.auth_id, v_mail) returning id into v_id;
+  select email into v_fp_mail from auth.users where id = v.auth_id;
+  return jsonb_build_object('ok',true,'log_id',v_id,'an',v_mail,'code',g.code,'tage',g.tage,
+    'link','https://root-index.de/klientin.html?code=' || g.code,
+    'fachperson',v.name,'praxis',v.praxis,'antwort_an',v_fp_mail);
+end $function$;
+
+-- 8) Admin-Umschalter: eigene Praxis „mit / ohne Lizenz“ (nur Admins und lizenz_umschalter_kuerzel) --------
+create or replace function public.cb_fp_lizenz_testansicht(p_ohne boolean)
+returns jsonb language plpgsql security definer set search_path to 'public' as $function$
+declare v public.fachperson_konto := public._fp_ich();
+begin
+  if not public._fp_umschalter_darf(v.auth_id) then
+    raise exception 'Nur für Praxen mit Test-Umschalter.' using errcode = '42501'; end if;
+  update public.fachperson_konto set lizenz_testansicht_ohne = coalesce(p_ohne, false) where auth_id = v.auth_id;   -- nur die eigene Praxis
+  return jsonb_build_object('ok', true) || public._fp_preis_info(v.auth_id);
+end $function$;
+revoke all on function public.cb_fp_lizenz_testansicht(boolean) from public, anon;
+grant execute on function public.cb_fp_lizenz_testansicht(boolean) to authenticated;
