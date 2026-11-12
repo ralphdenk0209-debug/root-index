@@ -660,7 +660,9 @@ function mount(el, opt){
       (vg ? '<div class="fd-klein">' + esc(vg) + '</div>' : '') +
       periodenBalken(zeig.map(p => Object.assign({}, p, {erfasst: p.wert==null ? 0 : p.erfasst})), p => [[p.wert, farbe(p)]],
                      soll && soll.soll, soll ? 'Soll ' + (ART[soll.art]||'') + ' ' + z(soll.soll, soll.soll < 20 ? 1 : 0) + ' ' + w.e : '', aktiv, true) +
-      '<div class="fd-klein">Durchschnitt je Tag mit Einträgen' + (w.k.startsWith('mikro:') ? '. Grau: Werte für weniger als die Hälfte des Gegessenen.' : '.') + ' Schraffiert: keine Einträge.</div></div>';
+      '<div class="fd-klein">Durchschnitt je Tag mit Einträgen' + (w.k.startsWith('mikro:') ? '. Grau: Werte für weniger als die Hälfte des Gegessenen.' : '.') + ' Schraffiert: keine Einträge.</div>' +
+      // Ralph 12.11.2026: „wenn wir es nicht wissen, geben wir es auch nicht an, ggf … einen hinweis“
+      '<div class="fd-klein">Vitamine und Mineralstoffe erscheinen erst, wenn für mindestens die Hälfte des Gegessenen Angaben vorliegen. Viele Etiketten nennen sie nicht. Fehlende Werte schätzt Root Index nicht.</div></div>';
   }
 
   function istSollKarte(d, is){
