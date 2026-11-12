@@ -832,18 +832,15 @@ function mount(el, opt){
     return h + '</div>';
   }
 
-  /* Wochenplanung: je Tag feste Plätze (Ralph: 3–4 Snacks), leere Plätze dezent. Alter Wert „Snack“ = Snack nachmittags. */
-  const SLOTS = ['Frühstück','Snack vormittags','Mittag','Snack nachmittags','Abendessen','Snack abends','Spätsnack'];
-  /* Absprache FL-5: Slot bleibt 'Snack' (alte Apps), die Tageszeit steht in snack_zeit. Ohne snack_zeit = Snack nachmittags. */
-  const SNACK_ZEIT = {vormittags:'Snack vormittags', nachmittags:'Snack nachmittags', abends:'Snack abends', spaet:'Spätsnack'};
-  const slotVon = y => y.slot==='Snack' ? (SNACK_ZEIT[y.snack_zeit] || 'Snack nachmittags') : (SLOTS.includes(y.slot) ? y.slot : 'Snack abends');
+  /* Wochenplanung: je Tag feste Plätze wie im Tagebuch der App (Ralph 12.11.2026: „ein Snack“), leere Plätze dezent. */
+  const SLOTS = ['Frühstück','Mittag','Abendessen','Snack'];
+  const slotVon = y => SLOTS.includes(y.slot) ? y.slot : 'Snack';
   function planKarte(d){
     if(!d.wochenplan) return '<div class="fd-karte"><h2>Wochenplanung</h2><p class="fd-klein">' + esc(d.wochenplan_hinweis || 'Kein Wochenplan.') + '</p></div>';
     const von = d.wochenplan_von || montag(heute);
-    const spaet = d.wochenplan.some(x => slotVon(x)==='Spätsnack');
-    const plaetze = SLOTS.filter(x => x!=='Spätsnack' || spaet);
-    const kurz = {'Frühstück':'Frühstück','Snack vormittags':'Snack vorm.','Mittag':'Mittag','Snack nachmittags':'Snack nachm.','Abendessen':'Abend','Snack abends':'Snack abends','Spätsnack':'Spätsnack'};
-    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was für diese und nächste Woche geplant ist, je Tag mit allen Mahlzeiten und Snacks.</div>';
+    const plaetze = SLOTS;
+    const kurz = {'Frühstück':'Frühstück','Mittag':'Mittag','Abendessen':'Abend','Snack':'Snack'};
+    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was für diese und nächste Woche geplant ist, je Tag mit allen Mahlzeiten und dem Snack.</div>';
     for(let w = 0; w < 2; w++){
       h += '<h3>' + (w ? 'Nächste Woche' : 'Diese Woche') + '</h3><div class="fd-plan">';
       for(let i = 0; i < 7; i++){

@@ -94,14 +94,13 @@ const dt = s => s ? D(s).toLocaleDateString('de-DE', {day:'2-digit', month:'2-di
 const tk = s => WT[D(s).getUTCDay()] + ' ' + D(s).getUTCDate() + '.' + (D(s).getUTCMonth()+1) + '.';
 const z = (x, st) => x==null || x==='' || isNaN(Number(x)) ? '–' : Number(x).toLocaleString('de-DE', {maximumFractionDigits: st==null?0:st});
 const SLOTS = ['Frühstück','Mittag','Abendessen','Snack'];
-/* Plätze je Tag (FL-5b): Slot bleibt 'Snack', die Tageszeit steht in snack_zeit (alte Apps zeigen einfach mehrere Snacks) */
+/* Plätze je Tag wie im Tagebuch der App (Ralph 12.11.2026: „ein Snack“): Frühstück, Mittag, Abendessen, Snack.
+   Die Spalte snack_zeit bleibt in der DB, ist aber immer leer (alte Werte wurden in den einen Snack zusammengeführt). */
 const PLAETZE = [
-  {k:'Frühstück', slot:'Frühstück', sz:null, l:'Frühstück'}, {k:'Snack:vormittags', slot:'Snack', sz:'vormittags', l:'Snack vormittags'},
-  {k:'Mittag', slot:'Mittag', sz:null, l:'Mittag'}, {k:'Snack:nachmittags', slot:'Snack', sz:'nachmittags', l:'Snack nachmittags'},
-  {k:'Abendessen', slot:'Abendessen', sz:null, l:'Abendessen'}, {k:'Snack:abends', slot:'Snack', sz:'abends', l:'Snack abends'},
-  {k:'Snack:spaet', slot:'Snack', sz:'spaet', l:'Spätsnack'}];
-const platzVon = y => y.slot==='Snack' ? 'Snack:' + (y.snack_zeit || 'nachmittags') : y.slot;
-const plaetzeFuer = (eintraege, spaet) => PLAETZE.filter(p => p.k!=='Snack:spaet' || spaet || (eintraege||[]).some(y => platzVon(y)==='Snack:spaet'));
+  {k:'Frühstück', slot:'Frühstück', sz:null, l:'Frühstück'}, {k:'Mittag', slot:'Mittag', sz:null, l:'Mittag'},
+  {k:'Abendessen', slot:'Abendessen', sz:null, l:'Abendessen'}, {k:'Snack', slot:'Snack', sz:null, l:'Snack'}];
+const platzVon = y => SLOTS.includes(y.slot) ? y.slot : 'Snack';
+const plaetzeFuer = () => PLAETZE;
 const KZ = {kcal:'Energie', protein:'Eiweiß', kh:'Kohlenhydrate', fett:'Fett', zucker:'Zucker', ballaststoffe:'Ballaststoffe', salz:'Salz',
             ges_fett:'Gesättigte Fettsäuren', 'gruppe:gemuese':'Gemüse', 'gruppe:obst':'Obst', 'gruppe:gemuese+obst':'Obst und Gemüse'};
 const ART = {mindestens:'mind.', hoechstens:'höchstens', etwa:'etwa', bereich:''};
@@ -270,7 +269,10 @@ function mount(el, opt){
   async function ladePlaene(){
     const r = opt.muster ? await opt.rpc('cb_fl5_muster_plaene', {p_token: opt.token || null, p_nr: opt.nr}) : await opt.rpc('cb_fp_plaene', {p_code: opt.code});
     st.plaene = (r && r.plaene) || [];
-    if(opt.muster){ const d = demoLaden(); st.plaene = ((d.plaene || {})[opt.nr] || []).map(x => Object.assign({}, x, {lokal: true})).concat(st.plaene); }
+    if(opt.muster){   // Vorführung: im Tab geänderte Musterpläne (ersetzt = id des Originals) stehen an dessen Stelle
+      const lok = ((demoLaden().plaene || {})[opt.nr] || []).map(x => Object.assign({}, x, {lokal: true}));
+      const ers = id => lok.find(x => x.ersetzt!=null && String(x.ersetzt)===String(id));
+      st.plaene = lok.filter(x => x.ersetzt==null).concat(st.plaene.map(x => ers(x.id) || x)); }
     return st.plaene;
   }
   async function plaenePanel(){
@@ -308,24 +310,28 @@ function mount(el, opt){
           (y.status==='anders' && y.gegessen ? '<small>gegessen: ' + esc(y.gegessen.join(', ')) + '</small>' : '') + (y.hinweis ? '<small>' + esc(y.hinweis) + '</small>' : '') + '</div>').join('') + '</td>').join('') +
           '<td class="z">' + (kp ? z(kp) + (x.ziel_kcal ? '<small style="display:block;color:var(--f5-muted)">' + z(Math.round(100 * kp / x.ziel_kcal)) + ' % vom Ziel</small>' : '') : '–') + '</td>' + (x.tage ? '<td class="z">' + (kT[t] && kT[t].kcal_ist!=null ? z(kT[t].kcal_ist) : (t < heute ? '–' : '')) + '</td>' : '') + '</tr>'; }).join('') +
       '</tbody></table></div>';
-    if(!opt.muster || x.lokal) h += (x.lokal ? '<div class="f5-k" style="margin-top:6px">Nur in diesem Browser-Tab gespeichert.</div>' : '') + '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +
+    if(opt.muster && !x.lokal) h += '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +   // Muster: Änderungen nur im Tab
+      '<button class="f5-b" data-pakt="vorlage" data-id="' + x.id + '" type="button">Als Vorlage nutzen</button></div>';
+    else h += (x.lokal ? '<div class="f5-k" style="margin-top:6px">' + (x.ersetzt!=null ? 'Geändert. ' : '') + 'Nur in diesem Browser-Tab gespeichert.</div>' : '') + '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +
       '<button class="f5-b' + (x.geteilt ? '' : ' gruen') + '" data-pakt="' + (x.geteilt ? 'zurueck' : 'teilen') + '" data-id="' + x.id + '" type="button">' + (x.geteilt ? 'Teilen beenden' : 'Mit ' + esc(opt.name || 'der Person') + ' teilen') + '</button>' +
       '<button class="f5-b" data-pakt="vorlage" data-id="' + x.id + '" type="button">Als Vorlage nutzen</button>' +
-      '<button class="f5-b rot" data-pakt="loeschen" data-id="' + x.id + '" type="button">Löschen</button></div><div class="f5-meld" data-pm="' + x.id + '"></div>';
+      '<button class="f5-b rot" data-pakt="loeschen" data-id="' + x.id + '" type="button">' + (x.ersetzt!=null ? 'Änderungen verwerfen' : 'Löschen') + '</button></div><div class="f5-meld" data-pm="' + x.id + '"></div>';
     return h + '</div>';
   }
   async function planAktion(akt, id, b){
     const x = st.plaene.find(y => String(y.id)===String(id)); if(!x) return;
+    if(opt.muster && !x.lokal && akt!=='bearbeiten' && akt!=='vorlage') return;     // Muster: nie in die Datenbank schreiben
     if(x.lokal && akt!=='bearbeiten' && akt!=='vorlage'){                       // Vorführung: nur lokal
       const d = demoLaden(); d.plaene = d.plaene || {}; const l = d.plaene[opt.nr] || [];
-      if(akt==='loeschen'){ if(!confirm('Plan „' + x.titel + '“ löschen?')) return; d.plaene[opt.nr] = l.filter(y => y.id!==x.id); }
+      if(akt==='loeschen'){ if(!confirm(x.ersetzt!=null ? 'Änderungen an „' + x.titel + '“ verwerfen?' : 'Plan „' + x.titel + '“ löschen?')) return; d.plaene[opt.nr] = l.filter(y => y.id!==x.id); }
       else l.forEach(y => { if(y.id===x.id) y.geteilt = akt==='teilen'; });
       demoSchreiben(d); return plaenePanel();
     }
     const m = t => { const el2 = $p.querySelector('[data-pm="' + id + '"]'); if(el2){ el2.textContent = t; el2.className = 'f5-meld f'; } };
-    if(akt==='bearbeiten'){ st.edit = {id:x.id, demo: !!x.lokal, titel:x.titel, notiz:x.notiz||'', von:x.von, bis:x.bis, eintraege:x.eintraege.map(kopEintrag), ziel:x.ziel_kcal, ziel_her:x.ziel_herkunft}; return editor(); }
+    if(akt==='bearbeiten'){ st.edit = {id:x.id, demo: !!opt.muster, titel:x.titel, notiz:x.notiz||'', von:x.von, bis:x.bis, eintraege:x.eintraege.map(kopEintrag), ziel:x.ziel_kcal, ziel_her:x.ziel_herkunft,
+                                       orig: opt.muster ? x : null}; return editor(); }
     if(akt==='vorlage'){ const n = tageZw(x.von, x.bis) + 1, v = plus(x.bis, 1) > heute ? plus(x.bis, 1) : montag(plus(heute, 7)), dv = tageZw(x.von, v);
-      st.edit = {titel:x.titel, notiz:x.notiz||'', von:v, bis:plus(v, n-1), eintraege:x.eintraege.map(y => Object.assign(kopEintrag(y), {datum:plus(y.datum, dv)}))}; return editor(); }
+      st.edit = {titel:x.titel, notiz:x.notiz||'', von:v, bis:plus(v, n-1), demo: !!opt.muster, eintraege:x.eintraege.map(y => Object.assign(kopEintrag(y), {datum:plus(y.datum, dv)}))}; return editor(); }
     if(akt==='loeschen' && !confirm('Plan „' + x.titel + '“ löschen? Bereits Übernommenes bleibt im Wochenplan der Person.')) return;
     b.disabled = true;
     try{
@@ -334,7 +340,7 @@ function mount(el, opt){
       plaenePanel();
     }catch(e){ b.disabled = false; m(e.message || e); }
   }
-  const kopEintrag = y => ({datum:y.datum, slot:y.slot, snack_zeit:y.slot==='Snack' ? (y.snack_zeit || null) : null, typ:y.typ, rezept_id:y.rezept_id, produkt_id:y.produkt_id, portionen:y.portionen, menge_g:y.menge_g,
+  const kopEintrag = y => ({datum:y.datum, slot:platzVon(y), snack_zeit:null, typ:y.typ, rezept_id:y.rezept_id, produkt_id:y.produkt_id, portionen:y.portionen, menge_g:y.menge_g,
                             titel: y.titel, hinweis:y.hinweis, kcal_plan:y.kcal_plan});
 
   /* ---------- Plan-Editor (mit Vorschlag, Tauschen, Festhalten) ---------- */
@@ -345,12 +351,11 @@ function mount(el, opt){
     (y.grund ? '<small>' + esc(y.grund) + '</small>' : '') + (y.hinweis ? '<small>' + esc(y.hinweis) + '</small>' : '') + '</div>';
   function editor(){
     const E = st.edit; const tage = []; for(let t = E.von; t <= E.bis && tage.length < 42; t = plus(t, 1)) tage.push(t);
-    const pl = plaetzeFuer(E.eintraege, E.spaet);
-    let h = '<h3>' + (E.demo ? 'Vorschlag für ' + esc(opt.name || '') : E.id ? 'Plan für ' + esc(opt.name || '') + ' bearbeiten' : 'Neuer Plan für ' + esc(opt.name || '')) + '</h3>' +
+    const pl = plaetzeFuer();
+    let h = '<h3>' + (E.id ? 'Plan für ' + esc(opt.name || '') + ' bearbeiten' : E.demo ? 'Vorschlag für ' + esc(opt.name || '') : 'Neuer Plan für ' + esc(opt.name || '')) + '</h3>' +
       '<div class="f5-reihe"><label style="flex:2;min-width:200px">Titel<input data-et maxlength="80" value="' + esc(E.titel) + '" placeholder="z. B. Woche 1: mehr Gemüse"></label>' +
       '<label>Von<input type="date" data-ev value="' + E.von + '"></label><label>Bis<input type="date" data-eb value="' + E.bis + '"></label></div>' +
-      '<div class="f5-reihe"><button class="f5-b" data-zr="tag" type="button">1 Tag</button><button class="f5-b" data-zr="woche" type="button">1 Woche</button><button class="f5-b" data-zr="monat" type="button">4 Wochen</button>' +
-      '<label style="flex-direction:row;align-items:center;gap:6px;font-weight:400"><input type="checkbox" data-spaet' + (E.spaet || pl.some(p => p.k==='Snack:spaet') ? ' checked' : '') + '> Spätsnack</label></div>' +
+      '<div class="f5-reihe"><button class="f5-b" data-zr="tag" type="button">1 Tag</button><button class="f5-b" data-zr="woche" type="button">1 Woche</button><button class="f5-b" data-zr="monat" type="button">4 Wochen</button></div>' +
       '<label style="font-size:13px;font-weight:800">Hinweis für die Person</label><textarea data-en maxlength="1000" style="min-height:54px">' + esc(E.notiz) + '</textarea>' +
       '<div class="f5-karte" style="border-width:1px;margin:10px 0;padding:10px 12px"><b>Vorschlag</b>' +
       '<div class="f5-k">Aus Rezepten und gut bewerteten Produkten, die die Person gern isst. Allergene, Laktose, Ernährungsform, Diabetes und Kalorienziel sind berücksichtigt. <b>Bitte fachlich prüfen.</b></div>' +
@@ -371,7 +376,7 @@ function mount(el, opt){
          '<div class="f5-reihe"><button class="f5-b gruen" data-demosp="1" type="button">Speichern und teilen</button><button class="f5-b" data-demosp="0" type="button">Als Entwurf speichern</button><button class="f5-b" data-eab type="button">Schließen</button></div>'
        : '<div class="f5-reihe"><button class="f5-b gruen" data-es="teilen" type="button">Speichern und teilen</button><button class="f5-b" data-es="entwurf" type="button">Als Entwurf speichern</button>' +
          '<button class="f5-b" data-eab type="button">Abbrechen</button></div>') + '<div class="f5-meld" data-em></div>' +
-      '<div class="f5-k">Portionen richten sich nach dem Kalorienziel: Frühstück 25 %, Mittag 30 %, Abendessen 25 %, Snacks 20 %.</div>';
+      '<div class="f5-k">Portionen richten sich nach dem Kalorienziel: Frühstück 25 %, Mittag 30 %, Abendessen 25 %, Snack 20 %.</div>';
     $p.innerHTML = h;
     const lies = () => { E.titel = $p.querySelector('[data-et]').value; E.notiz = $p.querySelector('[data-en]').value; };
     const setzeZeit = (v, b) => {
@@ -382,7 +387,6 @@ function mount(el, opt){
     const zeit = () => { lies(); setzeZeit($p.querySelector('[data-ev]').value, $p.querySelector('[data-eb]').value); };
     $p.querySelector('[data-ev]').onchange = zeit; $p.querySelector('[data-eb]').onchange = zeit;
     $p.querySelectorAll('[data-zr]').forEach(b => b.onclick = () => { lies(); setzeZeit(E.von, plus(E.von, {tag:0, woche:6, monat:27}[b.dataset.zr])); });
-    $p.querySelector('[data-spaet]').onchange = ev => { lies(); E.spaet = ev.target.checked; if(!E.spaet) E.eintraege = E.eintraege.filter(y => platzVon(y)!=='Snack:spaet'); editor(); };
     $p.querySelectorAll('[data-weg]').forEach(b => b.onclick = () => { lies(); E.eintraege.splice(Number(b.dataset.weg), 1); editor(); });
     $p.querySelectorAll('[data-fest]').forEach(b => b.onclick = () => { lies(); const y = E.eintraege[Number(b.dataset.fest)]; y.fest = !y.fest; editor(); });
     $p.querySelectorAll('[data-tausch]').forEach(b => b.onclick = () => { lies(); const y = E.eintraege[Number(b.dataset.tausch)]; vorschlagen('tausch', y); });
@@ -397,8 +401,15 @@ function mount(el, opt){
       lies(); if(!E.titel.trim()) return meld('[data-em]', 'Titel fehlt.', 'f');
       const d = demoLaden(); d.plaene = d.plaene || {}; const l = (d.plaene[opt.nr] = d.plaene[opt.nr] || []);
       const id = (typeof E.id==='string' && E.id.startsWith('d')) ? E.id : 'd' + Date.now();
-      const plan = {id, titel: E.titel, notiz: E.notiz, von: E.von, bis: E.bis, geteilt: b.dataset.demosp==='1', ziel_kcal: E.ziel || null, ziel_herkunft: E.ziel_her || null,
-                    eintraege: E.eintraege.map(y => Object.assign(kopEintrag(y), {status: 'offen'}))};
+      const o = E.orig, alt = o && !o.lokal ? o : null;              // geänderter Musterplan vom Server
+      const sch = y => [y.datum, platzVon(y), y.typ, y.rezept_id || '', y.produkt_id || '', y.typ==='frei' ? y.titel : ''].join('|');
+      const ist = {}; (o ? o.eintraege : []).forEach(y => { if(y.status && y.status!=='offen') ist[sch(y)] = {status: y.status, gegessen: y.gegessen || null}; });
+      const eintraege = E.eintraege.map(y => Object.assign(kopEintrag(y), ist[sch(y)] || {status: 'offen'}));
+      const vorbei = eintraege.filter(y => y.status!=='offen'), zahl = s => vorbei.filter(y => y.status===s).length;
+      const plan = {id, ersetzt: alt ? alt.id : (o && o.ersetzt!=null ? o.ersetzt : null), titel: E.titel, notiz: E.notiz, von: E.von, bis: E.bis, geteilt: b.dataset.demosp==='1',
+                    ziel_kcal: E.ziel || null, ziel_herkunft: E.ziel_her || null, eintraege,
+                    tage: o && o.tage && o.von===E.von && o.bis===E.bis ? o.tage : null,
+                    ist: vorbei.length ? {eintraege_vorbei: vorbei.length, wie_geplant: zahl('wie_geplant'), anders: zahl('anders'), nichts_eingetragen: zahl('nichts_eingetragen')} : null};
       const i = l.findIndex(y => y.id===id); if(i >= 0) l[i] = plan; else l.unshift(plan);
       demoSchreiben(d); st.edit = null; plaenePanel();
     });
@@ -407,7 +418,7 @@ function mount(el, opt){
       $p.querySelectorAll('[data-es]').forEach(x => x.disabled = true); meld('[data-em]', 'Wird gespeichert …');
       try{
         const r = await opt.rpc('cb_fp_plan_speichern', {p_code: opt.code, p_plan: {id: E.id || null, titel: E.titel, notiz: E.notiz, von: E.von, bis: E.bis,
-          eintraege: E.eintraege.map(y => ({datum:y.datum, slot:y.slot, snack_zeit: y.slot==='Snack' ? (y.snack_zeit || null) : null, typ:y.typ, rezept_id:y.rezept_id||null, produkt_id:y.produkt_id||null,
+          eintraege: E.eintraege.map(y => ({datum:y.datum, slot:platzVon(y), snack_zeit: null, typ:y.typ, rezept_id:y.rezept_id||null, produkt_id:y.produkt_id||null,
                                             portionen:y.portionen||null, menge_g:y.menge_g||null, titel: y.typ==='frei' ? y.titel : null, hinweis:y.hinweis||null}))}});
         if(!r || !r.ok) throw new Error((r && r.grund) || 'Speichern fehlgeschlagen.');
         if(b.dataset.es==='teilen'){ const r2 = await opt.rpc('cb_fp_plan_teilen', {p_plan: r.id, p_an: true}); if(r2 && r2.ok===false) throw new Error(r2.grund); }
@@ -419,8 +430,8 @@ function mount(el, opt){
      art: 'leer' = nur freie Plätze, 'neu' = alles außer 📌 neu, 'tausch' = genau dieser Eintrag */
   async function vorschlagen(art, eintrag){
     const E = st.edit; E.seed = (E.seed || 0) + 1;
-    const pl = plaetzeFuer(E.eintraege, E.spaet);
-    const ort = y => ({datum: y.datum, slot: y.slot, snack_zeit: y.slot==='Snack' ? (y.snack_zeit || 'nachmittags') : null});
+    const pl = plaetzeFuer();
+    const ort = y => ({datum: y.datum, slot: platzVon(y)});
     let o;
     if(art==='tausch') o = {plaetze: pl.map(p => p.k), seed: E.seed, nur: [ort(eintrag)], nur_rezepte: !!E.nurRezepte};
     else { if(art==='neu') E.eintraege = E.eintraege.filter(y => y.fest);

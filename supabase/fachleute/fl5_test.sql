@@ -15,7 +15,9 @@ declare
 begin
   create temp table _erg(nr serial, ok boolean, txt text) on commit drop;
   grant all on _erg to public; grant usage on sequence _erg_nr_seq to public;
-  select wert into tok from public.fachleute_einstellung where schluessel = 'muster_token';
+  -- Muster-Zugang seit FL-4 Passwort (12.11.): eigene Test-Sitzung, wird mit dem Test zurückgerollt
+  tok := 'fltest-' || md5(random()::text) || md5(random()::text);
+  insert into public.fl_muster_sitzung(token_hash, gueltig_bis) values (encode(extensions.digest(tok, 'sha256'), 'hex'), now() + interval '15 minutes');
 
   -- 1) Testpersonen: T1 mit K1, T2 mit K2, X1 ohne Fachperson ---------------------
   insert into auth.users(id, aud, role, email, created_at) values

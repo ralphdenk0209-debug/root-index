@@ -1,5 +1,7 @@
--- FL-5b Test: Snack-Zeit in Plänen, Plan-Vorschlag, Akte-Stichworte. Endet IMMER mit Fehler (= zurückgerollt).
+-- FL-5b Test: Snack in Plänen, Plan-Vorschlag, Akte-Stichworte. Endet IMMER mit Fehler (= zurückgerollt).
 -- Probelauf: fl5b_snacks_vorschlag.sql + diese Datei zusammen; danach nur diese Datei.
+-- FL-5e (12.11.2026, „ein Snack“): 5 Prüfungen erwarten jetzt den einen Snack ohne Tageszeit.
+--   Gilt erst mit fl5e_ein_snack.sql (Probelauf: fl5e_ein_snack.sql + diese Datei zusammen).
 do $test$
 #variable_conflict use_column
 declare
@@ -11,7 +13,9 @@ declare
 begin
   create temp table _erg(nr serial, ok boolean, txt text) on commit drop;
   grant all on _erg to public; grant usage on sequence _erg_nr_seq to public;
-  select wert into tok from public.fachleute_einstellung where schluessel = 'muster_token';
+  -- Muster-Zugang seit FL-4 Passwort (12.11.): eigene Test-Sitzung, wird mit dem Test zurückgerollt
+  tok := 'fltest-' || md5(random()::text) || md5(random()::text);
+  insert into public.fl_muster_sitzung(token_hash, gueltig_bis) values (encode(extensions.digest(tok, 'sha256'), 'hex'), now() + interval '15 minutes');
 
   -- 1) Musterpraxis: Vorschlag (anon mit Token) --------------------------------------
   perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
@@ -19,7 +23,9 @@ begin
   j := public.cb_fl5_muster_plan_vorschlag(tok, 1, mo, mo + 6, '{"plaetze":["Frühstück","Snack:vormittags","Mittag","Snack:nachmittags","Abendessen","Snack:abends"]}'::jsonb);
   select count(*) into n from jsonb_array_elements(j->'eintraege');
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and n >= 21, 'Anna Woche: ' || n || ' Vorschläge');
-  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'slot'='Snack' and x->>'snack_zeit'='vormittags'), 'Snack vormittags wird vorgeschlagen');
+  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'slot'='Snack')
+                                   and not exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'slot'='Snack' group by x->>'datum' having count(*) > 1)
+                                   and not exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'snack_zeit' is not null), 'Alte Snack-Plätze ergeben einen Snack je Tag, ohne Tageszeit');
   insert into _erg(ok,txt) values (not exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'slot' not in ('Frühstück','Mittag','Abendessen','Snack')), 'Nur die vier Slots (alte Apps)');
   insert into _erg(ok,txt) values ((j->>'ziel_kcal')::numeric = 1800, 'Kalorienziel aus Vorgabe (Anna 1800)');
   insert into _erg(ok,txt) values (not exists (
@@ -55,8 +61,8 @@ begin
   begin perform public._fl5_vorschlag('MUSTER-1', null, mo, mo + 6, '{}'); insert into _erg(ok,txt) values (false,'Kern direkt aufrufbar!');
   exception when others then insert into _erg(ok,txt) values (true,'Vorschlags-Kern nicht direkt aufrufbar'); end;
   j := public.cb_fl5_muster_plaene(tok, 1);
-  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements(j->'plaene'->0->'eintraege') x where x->>'snack_zeit'='vormittags')
-                                   and exists (select 1 from jsonb_array_elements(j->'plaene'->0->'eintraege') x where x->>'snack_zeit'='abends'), 'Musterplan Anna mit Snacks vormittags und abends');
+  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements(j->'plaene'->0->'eintraege') x where x->>'slot'='Snack')
+                                   and not exists (select 1 from jsonb_array_elements(j->'plaene'->0->'eintraege') x where x->>'snack_zeit' is not null), 'Musterplan Anna: Snacks im einen Snack, ohne Tageszeit');
   execute 'reset role';
 
   -- 2) Echte Fachperson und Klientin ---------------------------------------------------
@@ -131,19 +137,21 @@ begin
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'Plan mit zwei Snack-Zeiten gespeichert');
   begin perform public.cb_fp_plan_speichern(c1, jsonb_build_object('titel','x','von',heute,'bis',heute,'eintraege', jsonb_build_array(
          jsonb_build_object('datum',heute,'slot','Snack','snack_zeit','mitternacht','typ','frei','titel','x'))));
-        insert into _erg(ok,txt) values (false,'Unbekannte Snack-Zeit geht!');
-  exception when others then insert into _erg(ok,txt) values (true,'Unbekannte Snack-Zeit abgelehnt'); end;
-  j := public.cb_fp_plaene(c1)->'plaene'->0;
-  insert into _erg(ok,txt) values ((j->'eintraege'->0->>'snack_zeit') = 'vormittags' and (j->'eintraege'->1->>'slot') = 'Mittag'
-                                   and (j->'eintraege'->2->>'snack_zeit') = 'abends', 'Reihenfolge: Snack vormittags, Mittag, Snack abends');
+  exception when others then insert into _erg(ok,txt) values (false,'Alte Seite mit Snack-Zeit kann nicht speichern: ' || sqlerrm); end;
+  select x into j from jsonb_array_elements(public.cb_fp_plaene(c1)->'plaene') x where (x->>'id')::bigint = pl;
+  insert into _erg(ok,txt) values ((j->'eintraege'->0->>'slot') = 'Mittag' and (j->'eintraege'->1->>'produkt_id') = 'P190' and (j->'eintraege'->2->>'produkt_id') = 'P195'
+                                   and not exists (select 1 from jsonb_array_elements(j->'eintraege') x where x->>'snack_zeit' is not null), 'Reihenfolge: Mittag, dann beide Snacks im einen Snack');
   insert into _erg(ok,txt) values (j ? 'ziel_kcal' and (j->>'ziel_kcal')::numeric = 2000, 'Plan zeigt Kalorienziel');
   perform public.cb_fp_plan_teilen(pl, true);
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',k1)::text, true);
   j := public.cb_fl5_plan_uebernehmen(pl, false);
   execute 'reset role';
-  insert into _erg(ok,txt) values (exists (select 1 from public."Wochenplan" where "Benutzer_ID"='U-fl5btest-k1' and "Slot"='Snack' and "Titel" like '% · vormittags')
+  insert into _erg(ok,txt) values (not exists (select 1 from public.fl5_plan_eintrag e join public.fl5_plan p on p.id = e.plan_id where p.code = c1 and e.snack_zeit is not null)
+                                   and (select count(*) from public.fl5_plan p where p.code = c1) = 2,
+                                   'Snack-Zeit wird nicht mehr gespeichert (auch keine unbekannte)');
+  insert into _erg(ok,txt) values (exists (select 1 from public."Wochenplan" where "Benutzer_ID"='U-fl5btest-k1' and "Slot"='Snack') and not exists (select 1 from public."Wochenplan" where "Benutzer_ID"='U-fl5btest-k1' and "Titel" like '% · %')
                                    and not exists (select 1 from public."Wochenplan" where "Benutzer_ID"='U-fl5btest-k1' and "Slot" not in ('Frühstück','Mittag','Abendessen','Snack')),
-                                   'Übernahme: Slot bleibt Snack, Zeit im Titel');
+                                   'Übernahme: Slot Snack, keine Tageszeit im Titel');
   select count(*) filter (where ok), count(*) filter (where not ok), string_agg(case when not ok then '✗ ' else '' end || txt, ' | ' order by nr)
     into ok, bad, log from _erg;
   raise exception 'FL5B-TEST: % OK, % FEHLER | %', ok, bad, log;
