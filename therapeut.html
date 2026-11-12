@@ -7,6 +7,8 @@
 <meta name="robots" content="noindex,nofollow">
 <script>/* FL-4 (Ralph 12.11.): Musterpraxis hat eine eigene Adresse (therapeut-demo.html, liefert der Webspace per .htaccess aus dieser Datei aus).
    Alte Muster-Links auf therapeut.html (#demo, ?demo=1, ?z=…) gehen dorthin; therapeut.html zeigt nie das Muster. */
+/* FL-4 (Ralph 12.11.): Darstellung Hell / Dunkel / Automatisch, gemerkt im Browser, vor dem ersten Zeichnen gesetzt. */
+try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === 'dunkel') document.documentElement.setAttribute('data-theme', t0 === 'hell' ? 'light' : 'dark'); }catch(e){}
 (function(){ var l = location, q = new URLSearchParams(l.search);
   if(!/therapeut-demo\.html$/.test(l.pathname) && (/^#demo/.test(l.hash) || q.has('demo') || q.has('z'))) l.replace('therapeut-demo.html'); })();</script>
 <meta name="description" content="Root Index Pro für Ernährungsfachleute: Klient:innen begleiten, Tagebuch auswerten, Pläne schreiben.">
@@ -389,8 +391,10 @@
     --ok:#16a34a;--ok-zart:#dcfce7;--warn:#d97706;--warn-zart:#fef3c7;--bad:#dc2626;--bad-zart:#fee2e2;--leer:#eef0f3;
     --gruen:var(--blau);--dunkel:var(--ink);--creme:var(--paper);--linie:var(--line);--text:var(--ink);--karte:var(--panel);--gelb:var(--warn-zart);
     --lime:var(--blau);--lime-hell:var(--blau-zart);--frisch-grund:var(--paper);--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",Arial,sans-serif;color-scheme:light}
-  @media (prefers-color-scheme: dark){:root{--blau:#6b86ff;--blau-h:#8aa0ff;--blau-zart:#1b2452;--blau-tief:#0b1a6e;--ink:#eef0f4;--muted:#9aa2ae;--paper:#0d1016;--panel:#161a22;--line:#2a303b;
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--blau:#6b86ff;--blau-h:#8aa0ff;--blau-zart:#1b2452;--blau-tief:#0b1a6e;--ink:#eef0f4;--muted:#9aa2ae;--paper:#0d1016;--panel:#161a22;--line:#2a303b;
     --ok:#34d399;--ok-zart:#10392b;--warn:#fbbf24;--warn-zart:#3d2e0c;--bad:#f87171;--bad-zart:#4a1919;--leer:#232834;color-scheme:dark}}
+  :root[data-theme="dark"]{--blau:#6b86ff;--blau-h:#8aa0ff;--blau-zart:#1b2452;--blau-tief:#0b1a6e;--ink:#eef0f4;--muted:#9aa2ae;--paper:#0d1016;--panel:#161a22;--line:#2a303b;
+    --ok:#34d399;--ok-zart:#10392b;--warn:#fbbf24;--warn-zart:#3d2e0c;--bad:#f87171;--bad-zart:#4a1919;--leer:#232834;color-scheme:dark}
   body,body.app-an{font-family:var(--sans);background:var(--paper);color:var(--ink)}
   h1,h2,h3,h4{letter-spacing:-.015em;font-weight:700}
   input,select,textarea{background:var(--panel);color:var(--ink);border-color:var(--line)}
@@ -439,7 +443,13 @@
   /* Seitenkopf: große Überschrift, Unterzeile, Linie */
   body.app-an .band{margin:0 28px;padding:20px 0 12px;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;gap:2px}
   body.app-an .band h1{color:var(--ink);font-size:30px;font-weight:700}
-  body.app-an .band span{color:#525252} @media (prefers-color-scheme: dark){ body.app-an .band span{color:var(--muted)} }
+  body.app-an .band span{color:#525252} @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) body.app-an .band span{color:var(--muted)} }
+  :root[data-theme="dark"] body.app-an .band span{color:var(--muted)}
+  .farbe-wahl{display:inline-flex;gap:4px;padding:3px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .farbe-wahl button{border:0;background:transparent;color:var(--ink);font:inherit;font-size:14px;padding:7px 12px;border-radius:7px;cursor:pointer}
+  .farbe-wahl button[aria-pressed="true"]{background:var(--blau);color:#fff;font-weight:600}
+  .dd-menu .farbe-wahl{display:flex;margin:4px 6px 6px} .dd-menu .farbe-wahl button{width:auto;flex:1;text-align:center;padding:6px 4px;font-size:13px}
+  .dd-menu .dd-titel{padding:8px 10px 0;font-size:12.5px;color:var(--muted)}
   body.app-an .band.klein{margin:0;padding:12px 14px;flex-direction:row;align-items:center;background:var(--panel);color:var(--ink);border-bottom:1px solid var(--line)}
   body.app-an .werkzeug{padding:14px 28px 6px}
   .k2-kopf h3{color:var(--ink)} .k2-kopf span{color:var(--muted)}
@@ -524,6 +534,8 @@
     <div class="dd-menu rechts" role="menu">
       <div class="dd-info" id="nutzerInfo"></div>
       <button type="button" data-geh="einstellungen">Einstellungen</button>
+      <div class="dd-titel">Darstellung</div>
+      <div class="farbe-wahl" role="group" aria-label="Darstellung"><button type="button" data-farbe="hell">Hell</button><button type="button" data-farbe="dunkel">Dunkel</button><button type="button" data-farbe="auto">Automatisch</button></div>
       <button type="button" id="abmelden">Abmelden</button>
     </div>
   </div>
@@ -771,6 +783,9 @@
       </div>
       <div class="aktionen"><button class="tb haupt" type="button" id="pxLos">Praxisdaten speichern</button></div>
       <div class="meld" id="meldPx"></div>
+      <h2 class="abschnitt">Darstellung</h2>
+      <div class="farbe-wahl" role="group" aria-label="Darstellung"><button type="button" data-farbe="hell">Hell</button><button type="button" data-farbe="dunkel">Dunkel</button><button type="button" data-farbe="auto">Automatisch</button></div>
+      <p class="fuss" style="margin:8px 0 0">Automatisch folgt der Einstellung des Geräts. Gilt in diesem Browser.</p>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss" id="zRegel2" style="margin-top:0"></p>
       <div class="nicht-demo">
@@ -1584,8 +1599,9 @@ async function ladeBewertung(){
   if(error || !d.ok){ f.srcdoc = '<p style="font:16px system-ui;padding:24px;color:#5d6b61">' + esc(error ? error.message : d.grund) + '</p>'; return; }
   BEW_DA = true;
   f.onload = () => { try{ const h = f.contentDocument.documentElement.scrollHeight; f.style.height = (h + 20) + 'px'; }catch(e){} };
-  // hell wie der Rest der Oberfläche; Links öffnen in neuem Tab
-  f.srcdoc = String(d.html).replace(/<html/i, '<html data-theme="light"').replace(/<head>/i, '<head><base target="_blank">');
+  // Farbe wie der Rest der Oberfläche (Wahl unter Darstellung, sonst Gerät); Links öffnen in neuem Tab
+  const th = document.documentElement.getAttribute('data-theme');
+  f.srcdoc = String(d.html).replace(/<html/i, th ? '<html data-theme="' + th + '"' : '<html').replace(/<head>/i, '<head><base target="_blank">');
   $('bewStand').textContent = d.stand ? 'Fassung: ' + d.stand + '.' : '';
 }
 $('bewDruck').onclick = () => { try{ $('bewFrame').contentWindow.print(); }catch(e){ window.print(); } };
@@ -1671,6 +1687,21 @@ $('mpwWeg').onclick = function(){
   mpwSetzen(null, this, '✓ Entfernt. Die Musterpraxis ist für Gäste geschlossen.');
 };
 $('abmelden2').onclick = () => $('abmelden').click();
+/* Darstellung Hell / Dunkel / Automatisch (localStorage 'ri-pro-farbe', gilt für echte Praxis und Muster).
+   Nach der Wahl lädt die Seite neu, damit auch Diagramme und der Bewertungs-Frame die Farben übernehmen. */
+const FARBE_SCHLUESSEL = 'ri-pro-farbe';
+function farbeAktuell(){ try{ const t = localStorage.getItem(FARBE_SCHLUESSEL); return t === 'hell' || t === 'dunkel' ? t : 'auto'; }catch(e){ return 'auto'; } }
+function farbeKnoepfe(){ const t = farbeAktuell(); document.querySelectorAll('[data-farbe]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.farbe === t))); }
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-farbe]'); if(!b) return;
+  const t = b.dataset.farbe; if(t === farbeAktuell()) return;
+  let gemerkt = true;
+  try{ if(t === 'auto') localStorage.removeItem(FARBE_SCHLUESSEL); else localStorage.setItem(FARBE_SCHLUESSEL, t); }catch(err){ gemerkt = false; }
+  if(gemerkt){ location.reload(); return; }
+  if(t === 'auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t === 'hell' ? 'light' : 'dark');
+  document.querySelectorAll('[data-farbe]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+});
+farbeKnoepfe();
 /* Praxisdaten (cb_fp_praxis / cb_fp_praxis_setzen); in der Vorführung nur im Tab */
 async function ladePraxis(){
   let d;
