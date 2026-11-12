@@ -667,7 +667,7 @@ function shellRender(id, el, ctx){
   const tok = ctx.demo ? (ctx.musterToken || null) : null;          // Demo-Modus: nur Musterpraxis, mit Demo-Passwort
   const zeige = w => {
     $z.innerHTML = ''; $z.className = '';
-    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine Personen verbunden. Unter Keys einen Key anlegen.</p>'; return; }
+    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine Klient:innen verbunden. Unter Keys einen Key anlegen.</p>'; return; }
     if(w.startsWith('muster-')){
       const nr = Number(w.slice(7)), k = muster && (muster.klienten || []).find(x => x.nr===nr) || {};
       mount($z, { nurTab: tab, muster: true, nr, token: tok, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
