@@ -229,17 +229,17 @@ function mount(el, opt){
       kachel(z(grJeTag('gemuese')) + ' g', 'Gemüse Ø je Tag', gem && gem.soll ? 'Soll ' + (ART[gem.art]||'') + ' ' + z(gem.soll) + ' g · ' + herkunftKurz(gem) : '') +
       kachel(z(grJeTag('obst')) + ' g', 'Obst Ø je Tag', go && go.soll ? 'Obst+Gemüse: ' + z(go.ist) + ' von ' + z(go.soll) + ' g' : (obst && obst.soll ? 'Orientierung ' + z(obst.soll) + ' g' : '')) +
       kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
-      kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Ø-Werte je erfasstem Tag') +
+      kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Werte im Schnitt dieser Tage') +
     '</div></div>';
     h += zieleKarte(d);
     if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
 
     if(st.modus!=='tag'){
       h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
-           '<div class="fd-klein">Auf einen Tag tippen öffnet die Tagesansicht. Schraffiert = nichts eingetragen.</div></div>';
+           '<div class="fd-klein">Schraffiert: keine Einträge.</div></div>';
       const linie = go && go.soll ? go.soll : null;
       h += '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
-           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE-Orientierung ') + z(linie) + ' g') +
+           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE ') + z(linie) + ' g') +
            '<div class="fd-legende"><span><i style="background:var(--fd-gemuese)"></i>Gemüse &amp; Pilze</span><span><i style="background:var(--fd-obst)"></i>Obst</span>' +
            (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>';
     } else {
@@ -256,7 +256,7 @@ function mount(el, opt){
     if(v && window.FLStat) FLStat.verlauf(v, opt.verlauf, heute, opt.verlaufKey);
   }
   function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
-  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }
+  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Praxis' : x.soll_herkunft==='Ziel im Profil' ? 'App' : istModell(x) ? 'DGE-Rechenmodell' : /DGE/.test(x.soll_herkunft||'') ? 'DGE' : (x.soll_herkunft||''); }
   /* Gemüse 245 g und Obst 300 g sind Modellwerte der DGE-Berechnung (Schäfer 2024), keine eigene DGE-Empfehlung (Prüfer 11.11.) */
   function istModell(x){ return /Modellwert/i.test((x && x.hinweis) || '') || /Schäfer/i.test((x && x.quelle) || ''); }
 
@@ -271,10 +271,10 @@ function mount(el, opt){
     (p.unvertraeglichkeiten||[]).forEach(u => chips.push('ohne ' + u));
     if(p.diabetes_typ) chips.push('Diabetes ' + String(p.diabetes_typ).replace('typ','Typ '));
     const ziele = [p.ziel_kcal && z(p.ziel_kcal) + ' kcal', p.ziel_protein && z(p.ziel_protein) + ' g Eiweiß', p.ziel_kh && z(p.ziel_kh) + ' g KH', p.ziel_fett && z(p.ziel_fett) + ' g Fett'].filter(Boolean);
-    return '<div class="fd-karte"><h2>' + esc(p.name || 'Klient/in') + (d.code ? ' <span class="fd-chip hell">' + esc(d.code) + '</span>' : '') + '</h2>' +
+    return '<div class="fd-karte"><h2>' + esc(p.name || 'Person') + (d.code ? ' <span class="fd-chip hell">' + esc(d.code) + '</span>' : '') + '</h2>' +
       (p.steckbrief ? '<div class="fd-klein">' + esc(p.steckbrief) + '</div>' : '') +
       '<div class="fd-profil">' + chips.map(c => '<span class="fd-chip">' + esc(c) + '</span>').join('') + '</div>' +
-      (ziele.length ? '<div class="fd-klein" style="margin-top:8px">Eigene Ziele im Profil: ' + esc(ziele.join(' · ')) + '</div>' : '') +
+      (ziele.length ? '<div class="fd-klein" style="margin-top:8px">Ziele aus der App: ' + esc(ziele.join(', ')) + '</div>' : '') +
       (d.daten_ab ? '<div class="fd-klein" style="margin-top:4px">Einträge freigegeben ab ' + esc(D(d.daten_ab).toLocaleDateString('de-DE')) + '.</div>' : '') +
       '</div>';
   }
@@ -332,7 +332,7 @@ function mount(el, opt){
     // Nur für die Fachkraft: Diagnose-Stichworte und private Notiz (die Person sieht das nicht)
     const sw = a.stichworte || [];
     h += '<div class="fd-privat"><div class="fd-kopfzeile"><b>Nur für mich</b>' + (opt.privatSetzen ? '<button class="fd-k" type="button" data-pv-auf>Bearbeiten</button>' : '') + '</div>' +
-      '<div class="fd-klein" style="margin:2px 0 6px">Stichworte zur Diagnose und eigene Notiz. Die Person sieht beides nicht; Pläne und Rezeptvorschläge berücksichtigen die Stichworte.</div>' +
+      '<div class="fd-klein" style="margin:2px 0 6px">Sieht nur die Praxis. Planvorschläge beachten Diabetes, Laktose, Gluten, vegan und vegetarisch.</div>' +
       '<div class="fd-profil">' + (sw.length ? sw.map(x => '<span class="fd-chip sw">' + esc(x) + '</span>').join('') : '<span class="fd-klein">Noch keine Stichworte.</span>') + '</div>' +
       (a.privat_notiz ? '<div class="fd-akte-txt" style="margin-top:8px">' + esc(a.privat_notiz).replace(/\n/g, '<br>') + '</div>' : '') +
       (opt.privatSetzen ? '<form class="fd-akte-form" data-pv-form hidden>' +
@@ -432,8 +432,8 @@ function mount(el, opt){
     const mi = is.filter(x => x.kennzahl.startsWith('mikro:') && !/432\/2012/.test((x.soll_herkunft||'') + (x.quelle||'')))
                  .map(x => { const a = ABD[x.kennzahl]; const y = Object.assign({}, x, {abdeckung: a==null ? null : Number(a)});
                    if(y.abdeckung==null || y.abdeckung < 50) y.erfuellt = null; return y; });
-    let h = '<div class="fd-karte"><h2>Ist und Soll</h2><div class="fd-klein">Ist = Durchschnitt je erfasstem Tag' + (st.modus==='tag' ? '' : ' (' + (d.tage_erfasst||0) + ' Tage)') +
-      '. Soll in dieser Reihenfolge: Vorgabe der Fachperson, Ziel im Profil, Richtwert. Strich = 100 %.</div>' +
+    let h = '<div class="fd-karte"><h2>Ist und Soll</h2><div class="fd-klein">Ist ist der Durchschnitt der Tage mit Einträgen' + (st.modus==='tag' ? '' : ' (' + (d.tage_erfasst||0) + ' Tage)') +
+      '. Das Soll kommt von der Praxis, aus der App oder von der DGE. Der Strich markiert 100 %.</div>' +
       '<h3>Kalorien und Makros</h3><div class="fd-is">' + m.map(zeile).join('') + '</div>' +
       '<h3>Lebensmittelgruppen</h3><div class="fd-is">' + g.map(zeile).join('') + '</div>' +
       '<div class="fd-hinweis">Die DGE-Werte sind Orientierungswerte für gesunde Erwachsene. Laut DGE eignen sie sich nicht, den Verzehr einzelner Personen zu bewerten. Darum zeigen wir sie zum Vergleich, nicht als Note.</div>';
@@ -518,8 +518,8 @@ function mount(el, opt){
   const ZIELE = [['kcal','Kalorien','kcal'], ['protein','Eiweiß','g'], ['kh','Kohlenhydrate','g'], ['fett','Fett','g'],
                  ['ballaststoffe','Ballaststoffe','g'], ['zucker','Zucker','g'], ['salz','Salz','g'],
                  ['gruppe:gemuese','Gemüse','g'], ['gruppe:obst','Obst','g'], ['gruppe:gemuese+obst','Obst und Gemüse','g']];
-  const HERKUNFT = x => !x || x.soll==null ? ['kein Ziel', 'leer'] : x.soll_herkunft==='Vorgabe Therapeutin' ? ['eigene Vorgabe', 'vorgabe']
-                     : x.soll_herkunft==='Ziel im Profil' ? ['Profil / Rechner', 'profil'] : [istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||'Richtwert'), 'dge'];
+  const HERKUNFT = x => !x || x.soll==null ? ['kein Ziel', 'leer'] : x.soll_herkunft==='Vorgabe Therapeutin' ? ['Praxis', 'vorgabe']
+                     : x.soll_herkunft==='Ziel im Profil' ? ['App', 'profil'] : [istModell(x) ? 'DGE-Rechenmodell' : /DGE/.test(x.soll_herkunft||'') ? 'DGE' : (x.soll_herkunft||'Richtwert'), 'dge'];
   function zieleKarte(d){
     const is = d.ist_soll || [];
     const zeilen = ZIELE.map(z0 => {
@@ -539,8 +539,8 @@ function mount(el, opt){
         (opt.nurLesen ? '' : '<td class="z"><button class="fd-k" type="button" data-z-auf="' + k + '">Ändern</button></td>') + '</tr>' +
         (opt.nurLesen ? '' : '<tr class="fd-ziel-zeile" data-z-zeile="' + k + '" hidden><td colspan="4">' + edit + '</td></tr>');
     }).join('');
-    return '<div class="fd-karte"><h2>Ziele</h2><div class="fd-klein">Vorbelegt aus dem Profil der Person (Angaben und Rechner der App) oder aus der DGE-Orientierung. ' +
-      (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : 'Jedes Ziel lässt sich hier korrigieren; die Korrektur gilt ab heute und hat Vorrang.') + '</div>' +
+    return '<div class="fd-karte"><h2>Ziele</h2><div class="fd-klein">Die Ziele kommen aus der App oder von der DGE. ' +
+      (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : 'Eine Änderung gilt ab heute.') + '</div>' +
       '<div style="overflow-x:auto;margin-top:8px"><table class="fd-ziele"><thead><tr><th>Ziel und Herkunft</th><th class="z">Soll je Tag</th><th class="z">Ist Ø</th>' + (opt.nurLesen ? '' : '<th></th>') + '</tr></thead><tbody>' + zeilen + '</tbody></table></div>' +
       '<div class="fd-klein" data-z-m style="margin-top:6px"></div></div>';
   }
@@ -553,7 +553,7 @@ function mount(el, opt){
           (opt.nurLesen ? '' : '<td class="z"><button class="fd-k" data-vg-weg="' + esc(x.kennzahl) + '" type="button">Entfernen</button></td>') + '</tr>').join('') + '</tbody></table>'
        : '<p class="fd-klein">Noch keine Vorgaben.</p>';
     if(opt.nurLesen){
-      h += '<div class="fd-bald">In der Musterpraxis nur zum Ansehen. Im eigenen Konto lassen sich hier Kalorien, Eiweiß, Kohlenhydrate, Fett, Zucker, Ballaststoffe, Salz, Gemüse und Obst je Klient einstellen.</div>';
+      h += '<div class="fd-bald">In der Musterpraxis nur zum Ansehen. Im eigenen Konto lassen sich hier Kalorien, Eiweiß, Kohlenhydrate, Fett, Zucker, Ballaststoffe, Salz, Gemüse und Obst je Person einstellen.</div>';
     } else {
       h += '<div class="fd-vg-form"><select data-vg-k>' + Object.keys(KZ).map(k => '<option value="' + k + '">' + KZ[k][0] + ' (' + KZ[k][1] + ')</option>').join('') + '</select>' +
            '<select data-vg-a><option value="">Art: Standard</option><option value="mindestens">mindestens</option><option value="etwa">etwa (±10 %)</option><option value="hoechstens">höchstens</option></select>' +
@@ -571,7 +571,6 @@ function mount(el, opt){
           '<div style="flex:1"><b>' + esc(x.name) + '</b><div class="fd-klein">' + [x.kcal_portion && z(x.kcal_portion) + ' kcal je Portion', x.protein_portion && z(x.protein_portion,1) + ' g Eiweiß', x.mahlzeit].filter(Boolean).map(esc).join(' · ') + '</div></div>' +
           '<span class="fd-chip ' + (x.herkunft==='empfohlen' ? 'dunkel' : '') + '">' + (x.herkunft==='empfohlen' ? 'empfohlen' : x.herkunft==='gespeichert' ? 'gespeichert' : 'eigenes Rezept') + '</span></div>').join('')
        : '<p class="fd-klein">Keine eigenen Rezepte.</p>';
-    h += '<div class="fd-bald"><b>Bald:</b> Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen.</div>';
     return h + '</div>';
   }
 
@@ -617,7 +616,7 @@ function mount(el, opt){
       catch(e){ b.disabled = false; zm(e.message || String(e)); }
     });
     $in.querySelectorAll('[data-z-weg]').forEach(b => b.onclick = async () => {
-      if(!confirm('Eigene Vorgabe entfernen? Ab heute gilt wieder Profilziel bzw. DGE-Orientierung.')) return;
+      if(!confirm('Vorgabe der Praxis entfernen? Ab heute gilt wieder das Ziel aus der App oder der DGE.')) return;
       b.disabled = true;
       try{ await opt.vorgabeSetzen(b.dataset.zWeg, null, null, null); laden(); } catch(e){ b.disabled = false; zm(e.message || String(e)); }
     });

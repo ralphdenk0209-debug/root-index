@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Für Fachleute – Root Index</title>
+<title>Root Index Pro</title>
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Root Index für Ernährungsfachleute: Klienten-Keys anlegen und verwalten.">
+<meta name="description" content="Root Index Pro für Ernährungsfachleute: Klientel begleiten, Tagebuch auswerten, Pläne schreiben.">
 <!-- therapeut.html · 11.11.2026 · FL-1 Fundament Fachleute-Zugang.
      Eigene Anmeldung fuer Fachleute (E-Mail + Passwort, Passwort vergessen, Abmelden).
      Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth).
@@ -17,8 +17,8 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=13"></script>
-<script src="fachleute-statistik.js?v=9"></script>
+<script src="fachleute-dashboard.js?v=14"></script>
+<script src="fachleute-statistik.js?v=10"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -165,7 +165,8 @@
   .ampel{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
   .ampel.g{background:var(--gruen)} .ampel.o{background:#e0a100} .ampel.r{background:#c2412d} .ampel.x{background:#c9cfc8}
   .muster-mark{font-size:11.5px;font-weight:800;color:#7a5a00;background:#FFF4CC;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
-  .split{display:grid;grid-template-columns:290px 1fr;height:calc(100vh - 92px);min-height:480px}
+  .split{display:grid;grid-template-columns:290px minmax(0,1fr);height:calc(100vh - 92px);min-height:480px}
+  .split>*{min-width:0}
   .seite{background:#fff;border-right:1px solid var(--linie);display:flex;flex-direction:column;min-height:0}
   .suche{padding:8px 10px;border-bottom:1px solid var(--linie)}
   .suche input{padding:8px 10px;font-size:14.5px;border-radius:9px}
@@ -208,7 +209,7 @@
     .menue-liste{display:none;flex-direction:column;padding:4px 8px 10px}
     .menue.auf .menue-liste{display:flex}
     .menue-liste button{padding:10px 12px}
-    .split{grid-template-columns:1fr;height:auto}
+    .split{grid-template-columns:minmax(0,1fr);height:auto}
     .seite{border-right:0;border-bottom:1px solid var(--linie)}
     .baum,.suche{display:none}
     .nur-handy{display:block;margin:8px 10px;width:calc(100% - 20px)}
@@ -233,10 +234,10 @@
   body.app-an .band{background:transparent;color:var(--dunkel);padding:26px 28px 4px;align-items:baseline}
   body.app-an .band h1{color:var(--dunkel);font-size:26px;letter-spacing:-.01em}
   body.app-an .band span{color:var(--muted);font-size:14.5px}
-  body.app-an .band.klein{background:#fff;color:var(--dunkel);padding:12px 16px;border-bottom:1px solid var(--linie)}
+  body.app-an .band.klein{background:var(--panel);color:var(--dunkel);padding:12px 16px;border-bottom:1px solid var(--linie)}
   body.app-an .werkzeug{background:transparent;border:0;padding:10px 28px 6px}
   body.app-an .ueb{background:transparent;border:0;padding:6px 28px 22px}
-  body.app-an .fl5{background:#fff;margin:12px 28px;border-radius:16px;border:0;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06)}
+  body.app-an .fl5{background:var(--panel);margin:12px 28px;border-radius:16px;border:0;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06)}
   body.app-an .neu-panel,body.app-an .keyliste{margin:12px 28px;border-radius:16px;box-shadow:0 1px 2px rgba(19,53,33,.05),0 6px 20px rgba(19,53,33,.06);border:0;overflow:hidden}
   body.app-an .keyliste{margin-top:0}
   body.app-an .fuss{margin:10px 28px}
@@ -511,7 +512,7 @@
 </head>
 <body>
 <header class="kopf">
-  <a class="marke" href="https://root-index.de"><img src="logo-mark.png" alt="" width="22" height="22">Root Index <span>für Fachleute</span></a>
+  <a class="marke" href="https://root-index.de"><img src="logo-mark.png" alt="" width="22" height="22">Root Index <span>Pro</span></a>
   <div class="gruss" id="gruss" hidden><b id="grussText">Guten Tag</b><span id="grussUnter"></span></div>
   <div class="dd" id="nutzerDd" hidden>
     <button class="kopf-nutzer" type="button" data-dd aria-haspopup="true"><span id="nutzerName">–</span><svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
@@ -525,11 +526,11 @@
 
 <!-- FL-4: Menüleiste und Statuszeile (nur angemeldet als Fachperson) -->
 <nav class="menue" id="menue" hidden aria-label="Bereiche">
-  <div class="menue-marke"><img src="logo-mark.png" alt="" width="30" height="30"><span>Root Index<small>für Fachleute</small></span></div>
+  <div class="menue-marke"><img src="logo-mark.png" alt="" width="30" height="30"><span>Root Index<small>Pro</small></span></div>
   <button class="menue-auf" id="menueAuf" type="button" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="menueAktiv">Übersicht</span></button>
   <div class="menue-liste" id="menueListe">
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
-    <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klienten</button>
+    <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klientel</button>
     <button type="button" data-v="auswertungen"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M3 20h18"/></svg>Auswertungen</button>
     <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte<span class="bald">in Arbeit</span></button>
@@ -547,8 +548,8 @@
 
   <!-- Anmelden / Konto anlegen -->
   <section id="bLogin" hidden>
-    <h1>Anmeldung für Fachleute</h1>
-    <p class="unter">Für Ernährungsfachleute, die ihre Klientinnen und Klienten mit Root Index begleiten.</p>
+    <h1>Anmelden</h1>
+    <p class="unter">Für Ernährungsfachleute, die mit Root Index beraten.</p>
     <div class="karte">
       <div class="tabs">
         <button id="tabAn" class="an" type="button">Anmelden</button>
@@ -569,14 +570,14 @@
   <!-- FL-4: Musterpraxis (Vorführung) mit Passwort -->
   <section id="bDemo" hidden>
     <h1>Musterpraxis ansehen</h1>
-    <p class="unter">Vorführung der Fachleute-Oberfläche mit erfundenen Klientinnen und Klienten. Produkte, Nährwerte und Scores sind echt aus dem Root Index.</p>
+    <p class="unter">Vorführung mit erfundenen Personen. Produkte, Nährwerte und Scores sind echt.</p>
     <div class="karte">
       <label for="demoPw">Passwort der Vorführung</label>
       <input id="demoPw" type="password" autocomplete="off">
       <button class="knopf" id="demoLos" type="button">Musterpraxis öffnen</button>
       <div class="meld" id="meldDemo"></div>
-      <p style="margin:12px 0 0;font-size:14px">Kein Passwort? Vorführung anfragen: <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a></p>
-      <button class="link" type="button" id="demoZurAnmeldung">Zur Anmeldung für Fachleute</button>
+      <p style="margin:12px 0 0;font-size:14px">Kein Passwort? Vorführung anfragen: <a href="mailto:kontakt@root-index.de?subject=Vorf%C3%BChrung%20Root%20Index%20Pro">kontakt@root-index.de</a></p>
+      <button class="link" type="button" id="demoZurAnmeldung">Zur Anmeldung</button>
     </div>
   </section>
 
@@ -604,8 +605,8 @@
   <section id="bWartet" hidden>
     <div class="karte">
       <h2>Noch nicht freigeschaltet</h2>
-      <p>Angemeldet als <b id="wartetMail"></b>. Dieses Konto ist noch nicht als Fachperson freigeschaltet.</p>
-      <p style="margin:0">Freischaltung per E-Mail mit Name und Praxis an <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>. Danach diese Seite neu laden.</p>
+      <p>Angemeldet als <b id="wartetMail"></b>. Dieses Konto ist noch nicht freigeschaltet.</p>
+      <p style="margin:0">Bitte Name und Praxis an <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a> schicken.</p>
     </div>
   </section>
 
@@ -631,12 +632,12 @@
     <div class="werkzeug">
       <div class="dd"><button class="tb haupt" type="button" data-dd>Neuer Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-neu="mail">Anlegen und per E-Mail senden</button><button type="button" data-neu="qr">Anlegen als QR-Karte</button><button type="button" data-neu="nur">Nur anlegen</button></div></div>
-      <button class="tb" type="button" data-geh="klienten">Klienten öffnen</button>
+      <button class="tb" type="button" data-geh="klienten">Klientel öffnen</button>
     </div>
     <div class="seite-inhalt">
       <div id="uebStat"><div class="karte2 lade">Statistik wird geladen …</div></div>
       <div class="raster2 gleich">
-        <div class="karte2"><div class="k2-kopf"><h3>Klientinnen und Klienten</h3><span>Keys und Einwilligungen</span></div>
+        <div class="karte2"><div class="k2-kopf"><h3>Klientel</h3><span>Keys und Einwilligungen</span></div>
           <div class="kennzahlen" id="uebZahlen"></div>
           <div class="tabwrap"><table class="tab" id="uebTab"></table></div></div>
         <div class="karte2"><div class="k2-kopf"><h3>Abrechnung diesen Monat</h3><span>Stand heute</span></div>
@@ -653,9 +654,9 @@
   <section class="ansicht" data-v="klienten">
     <div class="split">
       <aside class="seite">
-        <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klienten</div>
-        <div class="suche"><input type="search" id="kSuche" placeholder="Name oder Key suchen" aria-label="Klienten suchen"></div>
-        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klienten filtern">
+        <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klientel</div>
+        <div class="suche"><input type="search" id="kSuche" placeholder="Name oder Key suchen" aria-label="Personen suchen"></div>
+        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klientel filtern">
           <button type="button" data-kf="aktiv" class="an">Aktiv</button><button type="button" data-kf="bald">Läuft ab</button>
           <button type="button" data-kf="warten">Wartet</button><button type="button" data-kf="archiv">Archiv</button></div>
         <select id="kAuswahl" class="nur-handy" aria-label="Person wählen"></select>
@@ -676,7 +677,7 @@
     <div class="seite-inhalt">
       <div id="awInfo"></div>
       <div id="awStat"><div class="karte2 lade">Wird geladen …</div></div>
-      <div class="karte2"><div class="k2-kopf"><h3>Alle Werte</h3><span>Ø je erfasstem Tag · Soll nach Vorgabe, sonst Profilziel oder DGE-Orientierung · eine Zeile antippen öffnet die Person</span></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Alle Werte</h3><span>Durchschnitt der Tage mit Einträgen.</span></div>
         <div class="tabwrap druckbar" id="awWrap"><table class="tab" id="awTab"></table></div></div>
     </div>
   </section>
@@ -686,17 +687,17 @@
   <section class="ansicht" data-v="berichte"><div class="band"><h1>Berichte</h1></div><div class="fl5" data-fl5="berichte"></div></section>
 
   <section class="ansicht" data-v="bewertung">
-    <div class="band"><h1>So bewertet Root Index</h1><span>vertraulich, nur für Fachleute mit Vereinbarung</span></div>
+    <div class="band"><h1>So bewertet Root Index</h1><span>Vertraulich. Nur mit unterschriebener Vereinbarung.</span></div>
     <div class="werkzeug">
-      <a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung für Klientinnen</a>
+      <a class="tb" href="wie-root-index-bewertet.html" target="_blank" rel="noopener">Öffentliche Fassung</a>
       <button class="tb" type="button" id="bewDruck">Drucken</button>
     </div>
-    <div class="bew-rahmen"><iframe id="bewFrame" title="Root Index für Fachleute" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe></div>
+    <div class="bew-rahmen"><iframe id="bewFrame" title="So bewertet Root Index" sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-modals"></iframe></div>
     <p class="fuss" id="bewStand"></p>
   </section>
 
   <section class="ansicht" data-v="keys">
-    <div class="band"><h1>Keys</h1><span>jeder Key ist für genau eine Person</span></div>
+    <div class="band"><h1>Keys</h1><span>Ein Key je Person.</span></div>
     <div class="werkzeug">
       <div class="dd"><button class="tb haupt" type="button" data-dd>Neuer Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-neu="mail">Anlegen und per E-Mail senden</button><button type="button" data-neu="qr">Anlegen als QR-Karte</button><button type="button" data-neu="nur">Nur anlegen</button></div></div>
@@ -716,7 +717,7 @@
           <select id="neuEinheit"><option value="tage">Tage</option><option value="wochen">Wochen</option><option value="monate" selected>Monate</option></select></div>
       </div>
       <label class="check" id="vereinbarungZeile" hidden><input type="checkbox" id="vereinbarung">
-        <span>Ich habe mit meinen Klientinnen und Klienten eine Vereinbarung zur Verschwiegenheit getroffen und erfülle sie. <span style="color:var(--muted)">(einmalig beim ersten Key)</span></span></label>
+        <span>Ich habe mit den Personen, die ich betreue, eine Vereinbarung zur Verschwiegenheit getroffen und erfülle sie. <span style="color:var(--muted)">(einmalig beim ersten Key)</span></span></label>
       <div class="aktionen"><button class="tb haupt" id="anlegen" type="button">Key anlegen</button><button class="tb" id="neuZu" type="button">Abbrechen</button></div>
       <div class="meld" id="meldNeu"></div>
       <div class="neu-code" id="neuCode" hidden>
@@ -732,14 +733,14 @@
     </div>
     <div class="keyliste" id="liste"><div class="leer">Lädt …</div></div>
     <div class="meld" id="meldListe"></div>
-    <p class="fuss">So geht es weiter: Die Klientin bekommt den Link, legt damit ein Konto an, erhält Premium für die Laufzeit und entscheidet selbst, ob ihre Einträge hier sichtbar werden. Ohne ihre Einwilligung ist nichts zu sehen.</p>
+    <p class="fuss">Mit dem Link legt die Person ein Konto an und hat Premium, solange der Key läuft. Ihre Einträge sind erst nach ihrer Einwilligung zu sehen.</p>
   </section>
 
   <section class="ansicht" data-v="abrechnung">
-    <div class="band"><h1>Abrechnung</h1><span>was die Praxis an Root Index zahlt</span></div>
+    <div class="band"><h1>Abrechnung</h1><span></span></div>
     <div class="seite-inhalt">
       <div class="karte2"><div class="k2-kopf"><h3>Preis und Modell</h3></div><p class="fuss" id="abrRegel" style="margin:0">Lädt …</p></div>
-      <div class="karte2"><div class="k2-kopf"><h3>Monate</h3><span>aktive Keys je Kalendermonat; der laufende Monat zählt bis heute</span></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Monate</h3><span>Laufender Monat bis heute.</span></div>
         <div class="tabwrap"><table class="tab" id="abrTab"><tbody><tr><td class="leer">Lädt …</td></tr></tbody></table></div></div>
     </div>
   </section>
@@ -754,7 +755,7 @@
       <h2 class="abschnitt">Konto</h2>
       <table class="tab schmal" id="kontoTab"></table>
       <h2 class="abschnitt">Praxisdaten</h2>
-      <p class="fuss" style="margin-top:0">Erscheinen auf Berichten, QR-Karten und in Mails an Klientinnen und Klienten.</p>
+      <p class="fuss" style="margin-top:0">Stehen auf Berichten, QR-Karten und in Key-Mails.</p>
       <div class="praxis-form" id="praxisForm">
         <div><label for="pxName">Name</label><input id="pxName" maxlength="120" autocomplete="name"></div>
         <div><label for="pxPraxis">Praxis</label><input id="pxPraxis" maxlength="160" autocomplete="organization"></div>
@@ -797,9 +798,9 @@
 <dialog id="dlgMail"><div class="dlg">
   <h2>Link per E-Mail senden</h2>
   <p id="mailFuer"></p>
-  <label for="mailAn">E-Mail der Klientin oder des Klienten</label>
+  <label for="mailAn">E-Mail der Person</label>
   <input id="mailAn" type="email" inputmode="email" autocomplete="off" placeholder="name@beispiel.de">
-  <p style="font-size:13px;margin-top:10px">Datenschutz: Die Adresse wird nur für diesen Versand genutzt und gespeichert, damit sichtbar bleibt, wohin der Link ging. Sobald der Key eingelöst oder beendet ist, wird sie gelöscht. Bitte nur mit Einverständnis der Klientin oder des Klienten eintragen. Antworten auf die Mail gehen an die Fachperson.</p>
+  <p style="font-size:13px;margin-top:10px">Datenschutz: Die Adresse wird nur für diesen Versand genutzt und gespeichert, damit sichtbar bleibt, wohin der Link ging. Sobald der Key eingelöst oder beendet ist, wird sie gelöscht. Bitte nur mit Einverständnis der Person eintragen. Antworten auf die Mail gehen an die Fachperson.</p>
   <div class="reihe-k"><button class="knopf zwei" type="button" id="mailAbbrechen">Abbrechen</button><button class="knopf" type="button" id="mailSenden">Senden</button></div>
   <div class="meld" id="meldMail"></div>
 </div></dialog>
@@ -927,7 +928,7 @@ async function demoStart(pw){
   KEYS_DA = true;
   document.body.classList.add('demo');
   demoLeiste();
-  $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
+  $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = '';
   $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
   zeichneKonto();
   $('grussText').textContent = 'Willkommen in der ' + (MUSTER.praxis || 'Musterpraxis');
@@ -1046,7 +1047,7 @@ function demoWunsch(){
   box.innerHTML = '<div class="k2-kopf"><h3>Verbesserung vorschlagen</h3></div>' +
     '<p>Ideen und Wünsche sammeln wir in der gemeinsamen Wunschliste der Fachleute. Dort lassen sich Wünsche eintragen, mit „Ich auch“ unterstützen und Skizzen anhängen. Eintragen geht nach der Anmeldung als Fachperson.</p>' +
     '<p><a class="tb haupt" href="therapeut.html#wunschliste" target="_blank" rel="noopener">Zur Wunschliste (Anmeldung)</a></p>' +
-    '<p class="fuss">Noch kein Zugang? Kurz schreiben an <a href="mailto:kontakt@root-index.de?subject=Vorschlag%20f%C3%BCr%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a>.</p>';
+    '<p class="fuss">Noch kein Zugang? Kurz schreiben an <a href="mailto:kontakt@root-index.de?subject=Vorschlag%20f%C3%BCr%20Root%20Index%20Pro">kontakt@root-index.de</a>.</p>';
   $('wunschFrame').hidden = true; sec.appendChild(box);
 }
 function demoZahlen(){
@@ -1092,7 +1093,7 @@ async function start(){
   if(d.lizenz_ok === false){
     $('wartetMail').textContent = d.email || '';
     $('bWartet').querySelector('h2').textContent = 'Lizenz abgelaufen';
-    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Angemeldet als <b>' + esc(d.email||'') + '</b>. Die Lizenz ist abgelaufen, deshalb sind Keys und Klienten gerade gesperrt.';
+    $('bWartet').querySelectorAll('p')[0].innerHTML = 'Angemeldet als <b>' + esc(d.email||'') + '</b>. Die Lizenz ist abgelaufen, deshalb sind Keys und Auswertungen gerade gesperrt.';
     zeige('bWartet'); return;
   }
   if(!d.vertrag_ok){
@@ -1102,7 +1103,7 @@ async function start(){
     zeige('bVertrag'); return;
   }
   $('hName').textContent = 'Übersicht';
-  $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
+  $('hPraxis').textContent = '';
   $('vereinbarungZeile').hidden = !!d.vereinbarung_bestaetigt_am;
   zeichneKonto();
   zeige('app');
@@ -1210,7 +1211,7 @@ function zeichne(){
       (k.beendet_grund==='wechsel' ? ' Die Person ist zu einer anderen Fachperson gewechselt.' : k.beendet_grund==='admin' ? ' Beendet durch Root Index.' : '');
     let klient = '';
     if(k.status!=='offen'){
-      klient = '<div class="key-info">' + (k.klient_name ? 'Klient/in: <b>' + esc(k.klient_name) + '</b>' + (k.aeltere_freigegeben ? ' · alle Einträge freigegeben' : k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
+      klient = '<div class="key-info">' + (k.klient_name ? 'Person: <b>' + esc(k.klient_name) + '</b>' + (k.aeltere_freigegeben ? ' · alle Einträge freigegeben' : k.daten_ab ? ' · Einträge sichtbar ab ' + datum(k.daten_ab) : '') :
         (k.einwilligung==='erteilt' ? 'Zugriff ruht (Key nicht aktiv).' : 'Solange keine Einwilligung vorliegt, sind keine Daten sichtbar.' + (k.status==='laeuft' && !k.besprochen ? ' Die Bestätigung „über Verschwiegenheit gesprochen“ fehlt noch.' : ''))) + '</div>';
     }
     const aktiv = k.status==='offen' || k.status==='laeuft' || k.status==='abgelaufen';
@@ -1265,7 +1266,7 @@ $('liste').addEventListener('click', async e => {
 /* ---------- FL-4: Arbeitsoberfläche (Menüleiste, Statuszeile, Klientenliste + Auswertung) ---------- */
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
-const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
+const NAMEN = {uebersicht:'Übersicht', klienten:'Klientel', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
                berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', abrechnung:'Abrechnung', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
 let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
@@ -1321,14 +1322,14 @@ function dashRpc(code, von, bis){
 function zeichneShell(){
   const v = verbunden(), warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt'),
         offen = KEYS.filter(x => x.status==='offen'), bald = KEYS.filter(x => x.status==='laeuft' && restTage(x.laeuft_bis) <= 14);
-  const t = [(DEMO ? 'Musterpraxis, alle Personen erfunden · ' : '') + zahlTxt(v.length, 'Klient verbunden', 'Klienten verbunden')];
+  const t = [(DEMO ? 'Musterpraxis, alle Personen erfunden · ' : '') + zahlTxt(v.length, 'Person verbunden', 'Personen verbunden')];
   if(warten.length) t.push(zahlTxt(warten.length, 'wartet auf Einwilligung', 'warten auf Einwilligung'));
   if(offen.length) t.push(zahlTxt(offen.length, 'Key noch nicht eingelöst', 'Keys noch nicht eingelöst'));
   bald.forEach(x => t.push(klientName(x) + ': Key läuft in ' + zahlTxt(restTage(x.laeuft_bis), 'Tag', 'Tagen') + ' ab'));
   $('statusText').textContent = t.join(' · ');
   $('statusPunkt').classList.toggle('gelb', bald.length > 0 || warten.length > 0);
   const kz = (n, txt, warn) => '<div class="kz' + (warn ? ' warn' : '') + '"><b>' + n + '</b><span>' + txt + '</span></div>';
-  $('uebZahlen').innerHTML = kz(v.length, 'Klienten verbunden') + kz(warten.length, 'warten auf Einwilligung', warten.length) +
+  $('uebZahlen').innerHTML = kz(v.length, 'Personen verbunden') + kz(warten.length, 'warten auf Einwilligung', warten.length) +
                              kz(offen.length, 'Keys nicht eingelöst') + kz(bald.length, 'laufen in 14 Tagen ab', bald.length);
   const zeilen = KEYS.filter(x => x.status==='laeuft' || x.status==='offen');
   $('uebTab').innerHTML = zeilen.length
@@ -1364,7 +1365,7 @@ function zeichneBaum(){
     if(n) b.innerHTML += ' <i>' + n + '</i>';
   });
   const liste = g[K_FILTER].filter(passt);
-  const titel = {aktiv: 'Meine Klienten', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Archiv: beendet oder abgelaufen'}[K_FILTER];
+  const titel = {aktiv: 'Klientel', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Beendet oder abgelaufen'}[K_FILTER];
   let h = '<div class="kopfzeile"><span>' + titel + '</span><span>' + liste.length + '</span></div>';
   h += liste.length ? liste.map(x => {
       const ok = x.status==='laeuft' && x.einwilligung==='erteilt', rt = x.laeuft_bis ? restTage(x.laeuft_bis) : null;
@@ -1375,14 +1376,13 @@ function zeichneBaum(){
       return '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel ' + ampel + '"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · ' + esc(unter) + '</small></span></button>';
     }).join('')
     : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : K_FILTER==='archiv' ? 'Noch keine beendeten Keys.' : K_FILTER==='aktiv' ? 'Noch niemand verbunden.' : 'Niemand.') + '</div>';
-  h += '<div class="baum-knoepfe"><button class="tb haupt" type="button" data-neu="mail">Klient hinzufügen</button></div>';
-  h += '<p class="baum-fuss">Hinzufügen heißt: einen Key anlegen und der Person schicken. Mit dem Einlösen und ihrer Einwilligung steht sie hier.</p>';
+  h += '<div class="baum-knoepfe"><button class="tb haupt" type="button" data-neu="mail">Person hinzufügen</button></div>';
+  h += '<p class="baum-fuss">Neue Personen bekommen einen Key. Nach Einlösen und Einwilligung erscheinen sie hier.</p>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
-  const v = g.aktiv;
-  $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
-    (g.archiv.length ? '<optgroup label="Archiv">' + g.archiv.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
+  // Handy: die Liste ist ausgeblendet, also folgt die Auswahl dem Filter (Prüfer 12.11.)
+  $('kAuswahl').innerHTML = '<option value="">' + (liste.length ? 'Person wählen …' : 'Niemand') + '</option>' +
+    (liste.length ? '<optgroup label="' + esc(titel) + '">' + liste.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
 document.querySelectorAll('#kFilter [data-kf]').forEach(b => b.onclick = () => { K_FILTER = b.dataset.kf; zeichneBaum(); });
@@ -1440,7 +1440,7 @@ async function zeigeKlient(wahl){
   zeichneBaum();
   const el = $('kDetail');
   if(!WAHL){
-    el.innerHTML = '<div class="leer-gross"><b>Noch keine verbundenen Klienten</b>Sobald jemand einen Key einlöst und einwilligt, steht die Person links.<br><br>' +
+    el.innerHTML = '<div class="leer-gross"><b>Noch niemand verbunden.</b>Erst einen Key anlegen.<br><br>' +
       '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
     return;
   }
@@ -1450,7 +1450,7 @@ async function zeigeKlient(wahl){
   if(!(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = keyKarte(k); bindeKeyKarte(el, k); return; }
   const code = WAHL;
   const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
-    '<small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
+    '<small>' + esc(k.code) + ', Key bis ' + datum(k.laeuft_bis) + ', Einwilligung liegt vor.</small></span>';
   const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: false, verlaufKey: code,
     verlauf: (von, bis) => dashRpc(code, von, bis),
     laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return DEMO ? demoMischen(code, json(r.data)) : json(r.data); },
@@ -1481,11 +1481,9 @@ async function ladeUebersichtStat(){
   if(!window.FLStat) return;
   const {info, personen} = await statPersonen();
   if(!personen.length){
-    $('uebStat').innerHTML = '<div class="karte2 start"><h3>Noch keine Klienten verbunden</h3>' +
-      '<ol class="schritte"><li><b>Key anlegen</b><span>oben mit „Neuer Key“, per E-Mail oder als QR-Karte</span></li>' +
-      '<li><b>Klientin löst ein und willigt ein</b><span>auf root-index.de/klientin.html, in wenigen Minuten</span></li>' +
-      '<li><b>Hier erscheinen Kennzahlen und Diagramme</b><span>Gemüse und Obst je Tag, Kalorien gegen Soll, Score, Verlauf</span></li></ol>' +
-      '<button class="tb haupt" type="button" data-neu="mail">Neuer Key</button></div>';
+    $('uebStat').innerHTML = '<div class="karte2 start"><h3>Noch niemand verbunden.</h3>' +
+      '<p>Erst einen Key anlegen und per E-Mail oder QR-Karte schicken. Nach Einlösen und Einwilligung erscheinen hier die Zahlen.</p>' +
+      '<button class="tb haupt" type="button" data-neu="mail">Key anlegen</button></div>';
     return;
   }
   const d = await FLStat.laden(personen, heuteBerlin(), 7);
@@ -1562,9 +1560,9 @@ window.addEventListener('resize', () => { const f = $('bewFrame'); if(BEW_DA && 
 /* Pläne, Rezepte, Berichte: Einhänge-Stelle für FL-5 (eigene Datei, z. B. fachleute-fl5.js)
    window.FLShell.bereich('plaene'|'rezepte'|'berichte', { render: async (el, ctx) => { … } }) */
 const FL5_TEXT = {
-  plaene:   ['Ernährungspläne', 'Pläne für Klientinnen und Klienten anlegen und in die App geben: kommt als Nächstes.', 'Den Wochenplan, den eine Person selbst plant, zeigt schon jetzt ihre Auswertung unter Klienten.'],
-  rezepte:  ['Rezepte', 'Rezepte gemeinsam mit der Klientin anlegen und mit ihr teilen: kommt als Nächstes.', 'Die eigenen und gespeicherten Rezepte einer Person zeigt schon jetzt ihre Auswertung unter Klienten.'],
-  berichte: ['Berichte', 'Fertige Berichte je Person als PDF: kommen als Nächstes.', 'Bis dahin: Person unter Klienten öffnen, dann „Exportieren“ und „Drucken“ oder „Als PDF speichern“.']
+  plaene:   ['Ernährungspläne', 'Pläne lassen sich gerade nicht laden.', 'Seite neu laden.'],
+  rezepte:  ['Rezepte', 'Rezepte lassen sich gerade nicht laden.', 'Seite neu laden.'],
+  berichte: ['Berichte', 'Berichte lassen sich gerade nicht laden.', 'Seite neu laden.']
 };
 window.FLShell = {
   _b: {},
@@ -1577,7 +1575,7 @@ function zeigeFl5(id){
   const el = document.querySelector('[data-fl5="' + id + '"]'), def = FLShell._b[id];
   if(def && typeof def.render === 'function'){ el.innerHTML = ''; Promise.resolve(def.render(el, FLShell.ctx())).catch(e => { el.textContent = 'Fehler: ' + (e.message || e); }); return; }
   const t = FL5_TEXT[id];
-  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klienten</button>';
+  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zur Klientel</button>';
 }
 
 /* Neuer Key ▾: Panel in „Keys“ öffnen; nach dem Anlegen direkt Mail oder QR */
@@ -1598,7 +1596,7 @@ function zeichneKonto(){
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +
     z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
     z('Verschwiegenheit Root Index', (ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') + (ICH.vertrag_version ? ' · Fassung ' + esc(ICH.vertrag_version) : '')) +
-    z('Verschwiegenheit Klienten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
+    z('Verschwiegenheit gegenüber Betreuten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
   const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));
   $('grussText').textContent = (h < 11 ? 'Guten Morgen, ' : h < 18 ? 'Guten Tag, ' : 'Guten Abend, ') + String(ICH.name || '').replace(/\s*\(.*\)\s*$/, '');
