@@ -21,15 +21,15 @@ begin
   insert into public."Benutzer"("Benutzer_ID","Name","Email",auth_id,tier,is_premium,is_admin) values
     ('U-fllizenz-k1','Klientin Lizenz','fl-lizenz-k1@example.invalid',k1,'free',false,false);
 
-  -- Admin: T1 ohne Freigabe (wie jede neue Registrierung), T2 mit Freigabe 5,00 €
+  -- Admin: T1 ohne Freigabe (wie jede neue Registrierung), T2 mit Freigabe 4,99 € (wie Petra, Ralph 12.11.)
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl-lizenz-t1@example.invalid','Lizenz Eins','FLLIZA','Praxis Eins',true,'lizenz_bezahlt');
   perform public.cb_admin_fachperson_setzen('fl-lizenz-t2@example.invalid','Lizenz Zwei','FLLIZB','Praxis Zwei',true,'lizenz_bezahlt');
-  j := public.cb_admin_fachperson_freigabe(' FL-Lizenz-T2@Example.invalid ', 500, true, 'wie Petra');
+  j := public.cb_admin_fachperson_freigabe(' FL-Lizenz-T2@Example.invalid ', 499, true, 'wie Petra');
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and j->'freigabe'->>'email'='fl-lizenz-t2@example.invalid' and j->>'fachperson'='FLLIZB',
                                    'Admin gibt T2 frei (E-Mail ohne Groß/Leerzeichen, Konto erkannt)');
   -- Freigabe schon VOR der Registrierung (Petra hat evtl. noch kein Konto)
-  j := public.cb_admin_fachperson_freigabe('fl-lizenz-t3@example.invalid', 500, true, 'vorab');
+  j := public.cb_admin_fachperson_freigabe('fl-lizenz-t3@example.invalid', 499, true, 'vorab');
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and not (j->>'konto_da')::boolean, 'Freigabe vor der Registrierung möglich');
   insert into _erg(ok,txt) values (jsonb_array_length(public.cb_admin_fachperson_freigaben()) >= 4, 'Admin sieht Freigabe-Liste');
   insert into _erg(ok,txt) values (public._fp_keys_erlaubt(ralph), 'RALPH (Admin) darf Keys');
@@ -78,10 +78,13 @@ begin
   update public.fachleute_einstellung set wert = 'nein' where schluessel = 'preis_anzeigen';
   execute 'set local role authenticated';
 
-  -- T2: mit Freigabe 5,00 €
+  -- T2: mit Freigabe 4,99 €. Allgemeiner Preis hier kurz 9,99 €, damit sichtbar ist, dass der Freigabe-Preis gilt
+  execute 'reset role';
+  update public.fachleute_einstellung set wert = '999' where schluessel = 'preis_cent';
+  execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   j := public.cb_fp_ich();
-  insert into _erg(ok,txt) values ((j->>'keys_erlaubt')::boolean and (j->>'key_preis_cent')::int = 500, 'T2 cb_fp_ich: Freigabe, Preis 5,00');
+  insert into _erg(ok,txt) values ((j->>'keys_erlaubt')::boolean and (j->>'key_preis_cent')::int = 499, 'T2 cb_fp_ich: Freigabe, Preis 4,99 (allgemein 9,99)');
   perform public.cb_fp_vertrag_bestaetigen(vv);
   j := public.cb_fp_key_anlegen(30, 'Frau Mit', true); c := j->>'code';
   insert into _erg(ok,txt) values ((j->>'ok')::boolean and c like 'FLLIZB-%', 'T2: Key angelegt (' || coalesce(c,'?') || ')');
@@ -89,8 +92,12 @@ begin
   perform public.cb_gratis_code_einloesen(c);
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   j := public.cb_fp_abrechnung(null);
-  insert into _erg(ok,txt) values ((j->>'preis_cent')::int = 500 and (j->>'keys_aktiv')::int = 1 and (j->>'betrag_cent')::int = 500,
-                                   'T2 Abrechnung: 1 Key × 5,00 = 5,00 (' || j::text || ')');
+  insert into _erg(ok,txt) values ((j->>'preis_cent')::int = 499 and (j->>'keys_aktiv')::int = 1 and (j->>'betrag_cent')::int = 499,
+                                   'T2 Abrechnung: 1 Key × 4,99 = 4,99 (' || j::text || ')');
+  execute 'reset role';
+  insert into _erg(ok,txt) values ((select betrag_cent from public._fp_abrechnung(t2, null)) = 499, 'Stripe-Grundlage (_fp_abrechnung) für T2: 4,99');
+  update public.fachleute_einstellung set wert = preis::text where schluessel = 'preis_cent';
+  execute 'set local role authenticated';
   j := public.cb_fp_key_laufzeit(c, 1, 'monate');
   insert into _erg(ok,txt) values ((j->>'ok')::boolean, 'T2 mit Freigabe verlängert');
   insert into _erg(ok,txt) values ((public.cb_fl5_riki_limit()->>'erlaubt')::boolean, 'T2: Riki-Rezeptideen erlaubt');
@@ -100,7 +107,7 @@ begin
   -- Freigabe entzogen: keine neuen Keys, kein Verlängern; Kürzen und Beenden gehen, Klient bleibt verbunden
   execute 'reset role';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
-  perform public.cb_admin_fachperson_freigabe('fl-lizenz-t2@example.invalid', 500, false, null);
+  perform public.cb_admin_fachperson_freigabe('fl-lizenz-t2@example.invalid', 499, false, null);
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   insert into _erg(ok,txt) values ((public.cb_fp_key_anlegen(30, 'noch einer', true)->>'lizenz_noetig')::boolean, 'Freigabe aus: kein neuer Key');
@@ -129,7 +136,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',ralph)::text, true);
   perform public.cb_admin_fachperson_setzen('fl-lizenz-t4@example.invalid','Lizenz Vier','FLLIZD',null,true,'gruenderin_gratis');
   perform public.cb_admin_fachperson_freigabe('fl-lizenz-t4@example.invalid', null, true, 'Test');
-  perform public.cb_admin_fachperson_freigabe('fl-lizenz-t2@example.invalid', 500, true, null);
+  perform public.cb_admin_fachperson_freigabe('fl-lizenz-t2@example.invalid', 499, true, null);
   update public.fachleute_einstellung set wert = wert || ',FLLIZD' where schluessel = 'lizenz_umschalter_kuerzel';
   insert into _erg(ok,txt) values (public._fp_umschalter_darf(ralph) and (ritest is null or public._fp_umschalter_darf(ritest)), 'RALPH und RITEST haben den Umschalter');
   execute 'set local role authenticated';

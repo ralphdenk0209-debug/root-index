@@ -2,7 +2,8 @@
 -- Ralph wörtlich: „nach der registrierung müssen wir unbedingt unterbinden, das ein key generiert werden kann und der preis
 -- für monatliche kosten muss da auch vorerst weg. eher dann der hinweis, das eine lizenz erworben werden kann und sie dazu
 -- kontakt mit mir per mail aufnehmen sollen … für petra und die anderen kontakte gilt der 5 euro preis … alle anderen sehen
--- den lizenz hinweis.“
+-- den lizenz hinweis.“ Korrektur Ralph 12.11.: „4,99 haben wir vereinbart für petra“ → Freigabe-Preis 499 Cent.
+-- Petra & Kolleginnen: select public.cb_admin_fachperson_freigabe('<mail>', 499, true, '<Name>');
 --
 -- Was diese Datei tut:
 --  1. Tabelle fachperson_freigabe: Freigabe je E-Mail (auch schon vor der Registrierung eintragbar) mit eigenem Key-Preis.
