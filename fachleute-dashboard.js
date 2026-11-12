@@ -149,6 +149,8 @@ const CSS = `
 .fd .fd-kachel em.fd-delta.ab{color:var(--warn,#d97706)}
 .fd .fd-balken .t{position:relative}
 .fd .fd-balken .t .w{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:12px;font-weight:800;color:#fff}
+.fd .fd-nw-wahl{display:flex;align-items:center;gap:8px;margin:2px 0 6px}
+.fd .fd-nw-wahl select{font:inherit;font-size:14px;padding:5px 8px;border-radius:9px;border:1px solid var(--fd-linie);background:var(--fd-weiss,#fff);color:inherit}
 `;
 function css(){ if(document.getElementById('fd-css')) return; const s=document.createElement('style'); s.id='fd-css'; s.textContent=CSS; document.head.appendChild(s); }
 
@@ -184,11 +186,11 @@ const TELLER_SEG = [
 
 /* Ansicht je Fachperson (Ralph 12.11.: Karten zuklappen und verschieben, gilt für alle Personen).
    opt.ansicht = {laden: () => layout|null, speichern: (layout|null) => …}; layout = {reihenfolge:[schlüssel], zu:[schlüssel]} */
-const ANSICHT_STANDARD = ['profil','akte','leer','kacheln','ziele','verlauf','kalorien','gemuese','score','tagebuch','teller','istsoll','produkte','rezepte','plan'];
+const ANSICHT_STANDARD = ['profil','akte','leer','kacheln','ziele','verlauf','kalorien','gemuese','score','naehrwerte','tagebuch','teller','istsoll','produkte','rezepte','plan'];
 const ANSICHT_TITEL = {profil:'Person', akte:'Akte', leer:'Hinweis', kacheln:'Kennzahlen', ziele:'Ziele', verlauf:'Verlauf der letzten 8 Wochen',
-  kalorien:'Kalorien', gemuese:'Gemüse und Obst', score:'Root-Index-Score', tagebuch:'Tagebuch', teller:'Teller', istsoll:'Ist und Soll',
+  kalorien:'Kalorien', gemuese:'Gemüse und Obst', score:'Root-Index-Score', naehrwerte:'Nährwerte', tagebuch:'Tagebuch', teller:'Teller', istsoll:'Ist und Soll',
   produkte:'Gegessene Produkte', rezepte:'Rezepte', plan:'Wochenplanung'};
-let ANSICHT = null, ANSICHT_LADEN = null;
+let ANSICHT = null, ANSICHT_LADEN = null, NW_WAHL = 'protein';
 function ansichtNorm(a){
   const liste = x => Array.isArray(x) ? x.filter(k => typeof k==='string' && ANSICHT_TITEL[k]).slice(0, 40) : [];
   return {reihenfolge: liste(a && a.reihenfolge), zu: liste(a && a.zu)};
@@ -253,6 +255,7 @@ function mount(el, opt){
       if(nr !== st.reqNr) return;
       st.daten = d; st.bereich = {von:b.von, bis:b.bis};
       if(st.modus!=='tag') await serieLaden(d).catch(e => console.warn('Verlauf nicht geladen', e));
+      await nwLaden(d).catch(e => { console.warn('Nährwerte nicht geladen', e); st.nw = null; });
       if(nr !== st.reqNr) return;
       zeichne();
     }catch(e){
@@ -319,6 +322,7 @@ function mount(el, opt){
     } else {
       add('tagebuch', tagebuchKarte(d));
     }
+    add('naehrwerte', nwKarte(d, is));
     add('teller', tellerKarte(d));
     add('istsoll', istSollKarte(d, is));
     add('produkte', produkteKarte(d));
@@ -417,7 +421,7 @@ function mount(el, opt){
     const aktiv = schl(st.bereich.von);
     return {liste: liste.slice(-(st.modus==='woche' ? 16 : 12)), alle: liste, aktiv};
   }
-  const perName = von => st.modus==='woche' ? 'Woche ' + tm(von) + '–' + tm(plus(von, 6)) : MON_LANG[D(von).getUTCMonth()] + ' ' + D(von).getUTCFullYear();
+  const perName = von => st.modus==='tag' ? lang(von) : st.modus==='woche' ? 'Woche ' + tm(von) + '–' + tm(plus(von, 6)) : MON_LANG[D(von).getUTCMonth()] + ' ' + D(von).getUTCFullYear();
   function vergleich(per){
     const i = per.alle.findIndex(p => p.von===per.aktiv); if(i < 1) return null;
     const cur = per.alle[i], prev = per.alle[i-1];
@@ -455,7 +459,7 @@ function mount(el, opt){
     if(linie) h += '<div class="fd-linie" style="bottom:' + (100 * linie / max).toFixed(1) + '%"><span>' + esc(linieText) + '</span></div>';
     const jede = liste.length > 12 ? 2 : 1;
     h += '</div><div class="fd-achse">' + liste.map((p, i) => '<span' + (p.von===aktiv ? ' class="an"' : '') + '>' +
-      ((i % jede===0 || p.von===aktiv) ? (st.modus==='woche' ? tm(p.von) : MON[D(p.von).getUTCMonth()]) : '') + '</span>').join('') + '</div>';
+      ((i % jede===0 || p.von===aktiv) ? (st.modus==='monat' ? MON[D(p.von).getUTCMonth()] : tm(p.von)) : '') + '</span>').join('') + '</div>';
     return h;
   }
   function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Praxis' : x.soll_herkunft==='Ziel im Profil' ? 'App' : istModell(x) ? 'DGE-Rechenmodell' : /DGE/.test(x.soll_herkunft||'') ? 'DGE' : (x.soll_herkunft||''); }
@@ -605,6 +609,58 @@ function mount(el, opt){
     if(linie) h += '<div class="fd-linie" style="bottom:' + (100 * linie / max).toFixed(1) + '%"><span>' + esc(linieText) + '</span></div>';
     h += '</div><div class="fd-achse">' + tage.map((t, i) => '<span>' + (tage.length <= 7 ? WT[D(t.datum).getUTCDay()] + ' ' + tm(t.datum) : (i % 5 === 0 || i === tage.length-1 ? tm(t.datum) : '')) + '</span>').join('') + '</div>';
     return h;
+  }
+
+  /* ---- Nährwerte als Diagramm je Tag/Woche/Monat (Ralph 12.11.), gerechnet von FL-2 ---- */
+  const NW = [['protein','Eiweiß','g'],['fett','Fett','g'],['ges_fett','Gesättigte Fettsäuren','g'],['kh','Kohlenhydrate','g'],
+              ['zucker','Zucker','g'],['ballaststoffe','Ballaststoffe','g'],['salz','Salz','g']];
+  async function nwLaden(d){
+    if(!opt.naehrwerte) return;
+    const raster = st.modus, bis = st.modus==='tag' ? st.anker : heute;
+    let von;
+    if(raster==='tag') von = plus(st.anker, -13);
+    else { const ab = d.daten_ab && d.daten_ab > '1900-01-01' ? d.daten_ab : null;
+           von = ab && ab > plus(heute, -400) ? ab : plus(heute, ab ? -400 : -182);
+           von = raster==='woche' ? montag(von) : monatsAnfang(von); }
+    const key = (opt.verlaufKey || '') + '|' + raster + '|' + von + '|' + bis;
+    if(st.nw && st.nw.key===key) return;
+    const zeilen = await opt.naehrwerte(von, bis, raster);
+    st.nw = {key, raster, von, bis, zeilen: zeilen || []};
+  }
+  function nwKarte(d, is){
+    const nw = st.nw; if(!nw || nw.raster !== st.modus) return '';
+    const schritt = k => nw.raster==='tag' ? plus(k, 1) : naechste(k);
+    const schl = nw.raster==='tag' ? (x => x) : nw.raster==='woche' ? montag : monatsAnfang;
+    const aktiv = schl(st.modus==='tag' ? st.anker : st.bereich.von);
+    // Auswahl: Makros immer, Mikros nur mit Werten für mindestens die Hälfte des Gegessenen im gewählten Zeitraum
+    const mikro = nw.zeilen.filter(z0 => z0.k.startsWith('mikro:') && z0.von===aktiv && Number(z0.abdeckung) >= 50 && !/Kreatin/i.test(z0.name||''));
+    const wahl = [...NW.map(([k, n, e]) => ({k, n, e})), ...mikro.map(z0 => ({k: z0.k, n: z0.name || z0.k.slice(6), e: z0.einheit || ''}))];
+    if(!wahl.find(w => w.k===NW_WAHL)) NW_WAHL = 'protein';
+    const w = wahl.find(x => x.k===NW_WAHL);
+    const m = new Map(nw.zeilen.filter(z0 => z0.k===w.k).map(z0 => [z0.von, z0]));
+    const liste = []; for(let k = schl(nw.von); k <= schl(nw.bis) && liste.length < 120; k = schritt(k)){
+      const z0 = m.get(k); liste.push({von: k, erfasst: z0 ? Number(z0.erfasst)||0 : 0, wert: z0 ? Number(z0.je_tag) : null, abd: z0 ? z0.abdeckung : null}); }
+    // ohne bekannten Behandlungsbeginn erst ab den ersten Einträgen (wie die übrigen Diagramme)
+    const ersteMit = liste.findIndex(p => p.wert!=null);
+    if(!(d.daten_ab && d.daten_ab > '1900-01-01') && ersteMit > 0 && nw.raster!=='tag') liste.splice(0, ersteMit);
+    const zeig = liste.slice(nw.raster==='tag' ? -14 : nw.raster==='woche' ? -16 : -12);
+    const soll = is.find(x => x.kennzahl===w.k && x.einheit!=='en%');
+    const i = liste.findIndex(p => p.von===aktiv), cur = liste[i], prev = i > 0 ? liste[i-1] : null;
+    const vorName = nw.raster==='tag' ? 'Vortag' : nw.raster==='woche' ? 'Vorwoche' : prev ? MON_LANG[D(prev.von).getUTCMonth()] : '';
+    let vg = '';
+    if(cur && prev && cur.erfasst && prev.erfasst && cur.wert!=null && prev.wert!=null){
+      const dlt = cur.wert - prev.wert, st0 = Math.abs(dlt) < 10 ? 1 : 0;
+      vg = 'Gegenüber ' + vorName + ': ' + w.n + ' ' + (Math.abs(dlt) < 0.05 ? '±0' : (dlt > 0 ? '+' : '−') + z(Math.abs(dlt), st0)) + ' ' + w.e + ' am Tag.';
+    } else if(prev && !prev.erfasst) vg = vorName + ' ohne Einträge, kein Vergleich.';
+    const farbe = p => p.abd!=null && p.abd < 50 && w.k.startsWith('mikro:') ? 'var(--fd-leer-balken,#9aa7a0)' : 'var(--fd-akzent,#2e7d46)';
+    const je = nw.raster==='tag' ? 'je Tag' : nw.raster==='woche' ? 'je Woche' : 'je Monat';
+    return '<div class="fd-karte"><h2>Nährwerte ' + je + '</h2>' +
+      '<label class="fd-nw-wahl"><span class="fd-klein">Nährwert</span> <select data-nw-wahl>' +
+      wahl.map(x => '<option value="' + esc(x.k) + '"' + (x.k===w.k ? ' selected' : '') + '>' + esc(x.n) + '</option>').join('') + '</select></label>' +
+      (vg ? '<div class="fd-klein">' + esc(vg) + '</div>' : '') +
+      periodenBalken(zeig.map(p => Object.assign({}, p, {erfasst: p.wert==null ? 0 : p.erfasst})), p => [[p.wert, farbe(p)]],
+                     soll && soll.soll, soll ? 'Soll ' + (ART[soll.art]||'') + ' ' + z(soll.soll, soll.soll < 20 ? 1 : 0) + ' ' + w.e : '', aktiv, true) +
+      '<div class="fd-klein">Durchschnitt je Tag mit Einträgen' + (w.k.startsWith('mikro:') ? '. Grau: Werte für weniger als die Hälfte des Gegessenen.' : '.') + ' Schraffiert: keine Einträge.</div></div>';
   }
 
   function istSollKarte(d, is){
@@ -824,6 +880,7 @@ function mount(el, opt){
     });
     $in.querySelectorAll('.fd-balken .s[data-tag]').forEach(s => s.onclick = () => { st.modus = 'tag'; st.anker = s.dataset.tag; laden(); });
     $in.querySelectorAll('.fd-balken .s[data-per]').forEach(s => s.onclick = () => { st.anker = s.dataset.per; laden(); });
+    const nwS = $in.querySelector('[data-nw-wahl]'); if(nwS) nwS.onchange = () => { NW_WAHL = nwS.value; zeichne(); };
     $in.querySelectorAll('[data-sort] button').forEach(b => b.onclick = () => { st.prodSort = b.dataset.s; zeichne(); });
     const alle = $in.querySelector('[data-alle]'); if(alle) alle.onclick = () => { st.prodAlle = true; zeichne(); };
     const los = $in.querySelector('[data-vg-los]');

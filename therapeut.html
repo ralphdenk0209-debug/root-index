@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=20"></script>
+<script src="fachleute-dashboard.js?v=22"></script>
 <script src="fachleute-statistik.js?v=10"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -1459,6 +1459,11 @@ async function zeigeKlient(wahl){
                   : { laden: async () => { const r = await client.rpc('cb_fp_ansicht'); if(r.error) throw new Error(r.error.message); return json(r.data); },
                       speichern: async a => { const r = await client.rpc('cb_fp_ansicht_setzen', {p_layout: a}); if(r.error) throw new Error(r.error.message); return json(r.data); } },
     verlauf: (von, bis) => dashRpc(code, von, bis),
+    naehrwerte: async (von, bis, raster) => {   // Nährwerte je Tag/Woche/Monat (FL-2), Ralph 12.11.
+      const kk = KEYS.find(x => x.code===code);
+      const r = DEMO ? await client.rpc('cb_fl_muster_naehrwerte', {p_token: DEMO, p_nr: kk ? kk.nr : 0, p_von: von, p_bis: bis, p_raster: raster})
+                     : await client.rpc('cb_fp_klient_naehrwerte', {p_code: code, p_von: von, p_bis: bis, p_raster: raster});
+      if(r.error) throw new Error(r.error.message); const j = r.data; return typeof j==='string' ? JSON.parse(j) : (j || []); },
     laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return DEMO ? demoMischen(code, json(r.data)) : json(r.data); },
     privatSetzen: async (notiz, sw) => { if(DEMO) return demoSetzen(code, 'privat', {privat_notiz: notiz, stichworte: sw});
       const r = await client.rpc('cb_fp_akte_privat_setzen', {p_code: code, p_notiz: notiz, p_stichworte: sw}); if(r.error) throw new Error(r.error.message); return json(r.data); },
