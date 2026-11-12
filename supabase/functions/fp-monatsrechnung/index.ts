@@ -84,9 +84,14 @@ Deno.serve(async (req) => {
       if (z.keys_betrag_cent > 0) {
         const was = z.abrechnung === "tag"
           ? `Klienten-Keys ${mn}: ${z.key_tage} Key-Tage, ${euro(z.preis_cent)} je Key und Monat, tagesgenau`
-          : `Klienten-Keys ${mn}: ${z.keys} × ${euro(z.preis_cent)} (jeder angefangene Monat zählt voll)`;
+          : `Klienten-Keys ${mn} (jeder angefangene Monat zählt voll)`;
+        // Monatsmodell: Menge = Keys, Einzelpreis = Key-Preis (Rechnung zeigt "2 x 4,99 EUR");
+        // Tagesmodell: ein Gesamtbetrag
+        const pos = z.abrechnung === "tag" || z.keys * z.preis_cent !== z.keys_betrag_cent
+          ? { amount: z.keys_betrag_cent }
+          : { quantity: z.keys, unit_amount_decimal: String(z.preis_cent) };
         await stripe(key, "POST", "invoiceitems", { customer: z.customer_id, invoice: inv.id, currency: "eur",
-          amount: z.keys_betrag_cent, description: was }, idem + "-keys");
+          ...pos, description: was }, idem + "-keys");
       }
       if (z.lizenz_betrag_cent > 0) {
         await stripe(key, "POST", "invoiceitems", { customer: z.customer_id, invoice: inv.id, currency: "eur",

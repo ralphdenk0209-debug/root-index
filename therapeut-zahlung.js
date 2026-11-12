@@ -50,7 +50,7 @@
   function zeichne(st, hinweis, art) {
     const f = feld(); if (!f) return;
     const rech = (st.rechnungen || []).map(r => `<tr><td>${ESC(MON(r.monat))}</td><td>${r.keys} Keys</td><td style="text-align:right">${EUR(r.betrag_cent)}</td>
-      <td>${ESC(STATUS[r.status] || r.status)}</td><td>${r.pdf_url ? `<a href="${ESC(r.pdf_url)}" target="_blank" rel="noopener">PDF</a>` : ''}</td></tr>`).join('');
+      <td>${ESC(STATUS[r.status] || r.status)}</td><td>${r.rechnung_url ? `<a href="${ESC(r.rechnung_url)}" target="_blank" rel="noopener">ansehen</a>` : ''}${r.pdf_url ? ` · <a href="${ESC(r.pdf_url)}" download>PDF laden</a>` : ''}</td></tr>`).join('');
     f.innerHTML = `
       ${st.modus === 'test' ? '<p class="fuss" style="color:var(--rot)">Testbetrieb: Es wird nichts echt abgebucht.</p>' : ''}
       <p style="margin:6px 0">Am 1. jedes Monats kommt die Rechnung für den Vormonat und wird automatisch eingezogen. Ohne Umsatzsteuer (§ 19 UStG).</p>

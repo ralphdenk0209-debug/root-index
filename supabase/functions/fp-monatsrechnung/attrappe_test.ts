@@ -53,8 +53,8 @@ Deno.test("Rechnung: 2 Keys x 4,99, Paragraf 19, abschliessen, Idempotenz", asyn
   assertEquals(s.map((x) => x.url.replace("https://api.stripe.com/v1/", "")), ["invoices", "invoiceitems", "invoices/in_1/finalize"]);
   assertEquals(s[0].body.includes("footer=Gemäß § 19 UStG wird keine Umsatzsteuer berechnet.".replace(/ /g, "+")) || s[0].body.includes("§ 19 UStG"), true);
   assertEquals(s[0].body.includes("collection_method=charge_automatically"), true);
-  assertEquals(s[1].body.includes("amount=998"), true);
-  assertEquals(s[1].body.includes("2+×+4,99") || s[1].body.includes("2 × 4,99"), true);
+  assertEquals(s[1].body.includes("quantity=2") && s[1].body.includes("unit_amount_decimal=499"), true);
+  assertEquals(s[1].body.includes("amount=998"), false);
   assertEquals(s[0].idem, "fp-rechnung-test-a1-2026-10-01-inv");
   // keine Klientendaten an Stripe
   assertEquals(s.some((x) => /STRTEST|Frau |bezeichnung|klient_auth/.test(x.body)), false);
