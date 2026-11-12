@@ -126,6 +126,7 @@ begin
   insert into _erg(ok,txt) values ((select (x->>'gramm')::numeric from jsonb_array_elements(j->'gruppen') x where x->>'gruppe' = 'gemuese') = 200,
                                    'Gemüse 200 g erkannt');
   insert into _erg(ok,txt) values (ev in ('fl4-2026-11-11','fl4-2026-11-12') and jsonb_array_length(j->'wochenplan') = 1, 'Einwilligung mit Wochenplan: T1 sieht den Wochenplan');
+  insert into _erg(ok,txt) values (j ? 'mikro_abdeckung', 'Dashboard liefert mikro_abdeckung');
   execute 'reset role';
   update public.fachperson_einwilligung set version = 'fl1-2026-11-11' where code = v_code;
   execute 'set local role authenticated';
