@@ -309,7 +309,7 @@ function mount(el, opt){
           '<td class="z">' + (kp ? z(kp) + (x.ziel_kcal ? '<small style="display:block;color:var(--f5-muted)">' + z(Math.round(100 * kp / x.ziel_kcal)) + ' % vom Ziel</small>' : '') : '–') + '</td>' + (x.tage ? '<td class="z">' + (kT[t] && kT[t].kcal_ist!=null ? z(kT[t].kcal_ist) : (t < heute ? '–' : '')) + '</td>' : '') + '</tr>'; }).join('') +
       '</tbody></table></div>';
     if(!opt.muster || x.lokal) h += (x.lokal ? '<div class="f5-k" style="margin-top:6px">Nur in diesem Browser-Tab gespeichert.</div>' : '') + '<div class="f5-reihe"><button class="f5-b" data-pakt="bearbeiten" data-id="' + x.id + '" type="button">Bearbeiten</button>' +
-      '<button class="f5-b' + (x.geteilt ? '' : ' gruen') + '" data-pakt="' + (x.geteilt ? 'zurueck' : 'teilen') + '" data-id="' + x.id + '" type="button">' + (x.geteilt ? 'Teilen beenden' : 'Mit ' + esc(opt.name || 'Klient') + ' teilen') + '</button>' +
+      '<button class="f5-b' + (x.geteilt ? '' : ' gruen') + '" data-pakt="' + (x.geteilt ? 'zurueck' : 'teilen') + '" data-id="' + x.id + '" type="button">' + (x.geteilt ? 'Teilen beenden' : 'Mit ' + esc(opt.name || 'der Person') + ' teilen') + '</button>' +
       '<button class="f5-b" data-pakt="vorlage" data-id="' + x.id + '" type="button">Als Vorlage nutzen</button>' +
       '<button class="f5-b rot" data-pakt="loeschen" data-id="' + x.id + '" type="button">Löschen</button></div><div class="f5-meld" data-pm="' + x.id + '"></div>';
     return h + '</div>';
@@ -667,7 +667,7 @@ function shellRender(id, el, ctx){
   const tok = ctx.demo ? (ctx.musterToken || null) : null;          // Demo-Modus: nur Musterpraxis, mit Demo-Passwort
   const zeige = w => {
     $z.innerHTML = ''; $z.className = '';
-    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine Klienten. Unter Keys einen Key anlegen.</p>'; return; }
+    if(!w){ $z.innerHTML = '<p class="f5-k">Noch keine Personen verbunden. Unter Keys einen Key anlegen.</p>'; return; }
     if(w.startsWith('muster-')){
       const nr = Number(w.slice(7)), k = muster && (muster.klienten || []).find(x => x.nr===nr) || {};
       mount($z, { nurTab: tab, muster: true, nr, token: tok, code: k.code, name: k.name, heute: (muster && muster.heute) || ctx.heute, praxis: (muster && muster.praxis) || 'Praxis Muster',
