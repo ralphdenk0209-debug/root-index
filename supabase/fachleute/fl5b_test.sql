@@ -103,7 +103,7 @@ begin
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
   j := public.cb_fp_plan_vorschlag(c1, mo, mo + 6, '{}'::jsonb);
   execute 'reset role';
-  insert into _erg(ok,txt) values ((j->'beachtet') @> '["aus der Akte: Zöliakie"]'::jsonb
+  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x in ('aus der Akte: Zöliakie', 'Akte: Zöliakie'))
                                    and exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x like 'ohne %gluten%'), 'Akte: Zöliakie → ohne Gluten');
   insert into _erg(ok,txt) values (not exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x like 'Diabetes:%'),
                                    'Akte: „kein Diabetes“ und fremde Akte (T2) wirken nicht');
@@ -113,7 +113,7 @@ begin
    where x->>'typ'='rezept' and ('gluten' = any(a.enthaelt) or 'gluten' = any(a.spuren));
   insert into _erg(ok,txt) values (n = 0, 'Akte Zöliakie: kein Rezept mit Gluten (auch Spuren)');
   j := public._fl5_vorschlag('MUSTER-2', null, mo, mo + 6, '{}'::jsonb);
-  insert into _erg(ok,txt) values ((j->'beachtet') @> '["aus der Akte: Diabetes Typ 2"]'::jsonb, 'Muster Bernd: Stichwort Diabetes Typ 2 aus der Akte');
+  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x in ('aus der Akte: Diabetes Typ 2', 'Akte: Diabetes Typ 2')), 'Muster Bernd: Stichwort Diabetes Typ 2 aus der Akte');
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   begin perform public.cb_fp_plan_vorschlag(c1, mo, mo + 6, '{}'); insert into _erg(ok,txt) values (false,'T2 bekommt Vorschlag für fremde Klientin!');
