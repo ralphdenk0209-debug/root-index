@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Root Index Pro</title>
 <meta name="robots" content="noindex,nofollow">
+<script>/* FL-4 (Ralph 12.11.): Musterpraxis hat eine eigene Adresse (therapeut-demo.html, liefert der Webspace per .htaccess aus dieser Datei aus).
+   Alte Muster-Links auf therapeut.html (#demo, ?demo=1, ?z=…) gehen dorthin; therapeut.html zeigt nie das Muster. */
+(function(){ var l = location, q = new URLSearchParams(l.search);
+  if(!/therapeut-demo\.html$/.test(l.pathname) && (/^#demo/.test(l.hash) || q.has('demo') || q.has('z'))) l.replace('therapeut-demo.html'); })();</script>
 <meta name="description" content="Root Index Pro für Ernährungsfachleute: Klient:innen begleiten, Tagebuch auswerten, Pläne schreiben.">
 <!-- therapeut.html · 11.11.2026 · FL-1 Fundament Fachleute-Zugang.
      Eigene Anmeldung fuer Fachleute (E-Mail + Passwort, Passwort vergessen, Abmelden).
@@ -914,7 +918,7 @@ $('neuPassLos').onclick = async function(){
 };
 
 $('abmelden').onclick = async () => {
-  if(DEMO){ try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace(location.pathname); return; }
+  if(DEMO){ try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace('therapeut.html'); return; }
   await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
 
 client.auth.onAuthStateChange((ev) => {
@@ -922,13 +926,16 @@ client.auth.onAuthStateChange((ev) => {
 });
 
 /* ---------- Start ---------- */
-/* ---------- FL-4: Musterpraxis als Vorführung (Passwort = Vorführungs-Code, Prüfung auf dem Server) ---------- */
+/* ---------- FL-4: Musterpraxis als Vorführung (Passwort = Vorführungs-Code, Prüfung auf dem Server) ----------
+   Der Modus kommt nur aus der Adresse: therapeut-demo.html = Musterpraxis, therapeut.html = echte Praxis. */
+const MUSTER_SEITE = /therapeut-demo\.html$/.test(location.pathname);
+if(MUSTER_SEITE) document.title = 'Musterpraxis – Root Index Pro';
 let DEMO = null;
 const DEMO_SPEICHER = 'fl-demo';
 const demoGemerkt = () => { try{ return sessionStorage.getItem(DEMO_SPEICHER); }catch(e){ return null; } };
-function demoGewuenscht(){ return /^#demo/.test(location.hash) || new URLSearchParams(location.search).has('demo') || !!demoGemerkt(); }
+function demoGewuenscht(){ return MUSTER_SEITE; }
 async function demoStart(pw){
-  if(!pw) return false;
+  if(!pw || !MUSTER_SEITE) return false;
   const {data, error} = await client.rpc('cb_fl_muster', {p_token: pw});
   if(error) return false;
   DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
@@ -959,7 +966,7 @@ $('demoLos').onclick = async function(){
   $('demoPw').value = ''; meld('meldDemo', '');
 };
 $('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
-$('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
+$('demoZurAnmeldung').onclick = () => { location.href = 'therapeut.html'; };
 async function demoOhnePasswort(){   // gemerkter Zugang aus diesem Tab, sonst angemeldete Fachperson/Admin (Server prüft)
   const z = demoGemerkt();
   if(z && await demoStart(z)) return true;
@@ -967,7 +974,6 @@ async function demoOhnePasswort(){   // gemerkter Zugang aus diesem Tab, sonst a
   const {data:{session}} = await client.auth.getSession();
   return !!session && await demoStart('angemeldet');
 }
-$('zurDemo').onclick = async e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); if(!(await demoOhnePasswort())){ zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); } };
 function nurAnsehen(){
   let t = document.querySelector('.demo-toast');
   if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }

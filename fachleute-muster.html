@@ -8,17 +8,14 @@
 <meta name="referrer" content="no-referrer">
 <!-- fachleute-muster.html · 11.11.2026 · FL-4
      Die Musterpraxis ist jetzt eine Vorführung der echten Fachleute-Oberfläche:
-     therapeut.html#demo (Passwort der Vorführung). Diese Seite leitet nur weiter,
+     therapeut-demo.html (eigene Adresse, Passwort). Diese Seite leitet nur weiter,
      alte Vorschau-Links (?z=…) führen seit 12.11.2026 zum Passwortfeld (der Link allein öffnet nichts mehr). -->
 <link rel="icon" href="favicon-96.png">
 <script>
-  (function(){
-    var z = new URLSearchParams(location.search).get('z');
-    location.replace('therapeut.html' + (z ? '?demo=1&z=' + encodeURIComponent(z) : '#demo'));
-  })();
+  location.replace('therapeut-demo.html');
 </script>
 </head>
 <body style="font-family:system-ui,sans-serif;background:#F3EEDC;color:#133521;padding:40px 16px;text-align:center">
-  <p>Weiter zur <a href="therapeut.html#demo">Musterpraxis</a> …</p>
+  <p>Weiter zur <a href="therapeut-demo.html">Musterpraxis</a> …</p>
 </body>
 </html>

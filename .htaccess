@@ -13,6 +13,9 @@ RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
 RewriteCond %{HTTP_HOST} ^root-index\.de$ [NC]
 RewriteCond %{HTTP:X-Forwarded-Proto} =http [NC]
 RewriteRule ^ https://root-index.de%{REQUEST_URI} [R=301,L]
+# FL-4 (12.11.2026): Musterpraxis hat eine eigene Adresse, aber denselben Code wie die echte Praxis.
+# therapeut-demo.html wird intern aus therapeut.html ausgeliefert (keine Weiterleitung, Adresse bleibt stehen).
+RewriteRule ^therapeut-demo\.html$ therapeut.html [L]
 
 <FilesMatch "\.(html)$">
   Header set Cache-Control "no-cache"
