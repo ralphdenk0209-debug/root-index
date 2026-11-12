@@ -523,6 +523,28 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
   .praxis-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;max-width:760px}
   .praxis-form .breit{grid-column:1/-1}
   .demo-wunsch{max-width:720px;margin:16px}
+  /* FL-4 Handy (12.11.2026): Kopf, Statuszeile und Seitenkopf bis 760 px. Steht am Ende, damit spätere Regeln (Seitenkopf 28 px) es nicht überschreiben.
+     Vorher: Begrüßung in schmaler Spalte neben dem Namen, fette graue Unterzeile mit weitem Zeilenabstand → drückte gegen die Zeile „Übersicht“;
+     Ampelpunkt allein in einer Zeile; Überschrift 30 px und 28 px eingerückt (Karten 12 px); Konto-Tabelle brach Wörter mitten durch. */
+  @media (max-width:760px){
+    body.app-an .kopf{align-items:flex-start;gap:10px;padding:12px 14px 10px}
+    .gruss{flex:1 1 auto;min-width:0}
+    .gruss b{font-size:19px;line-height:1.2;overflow-wrap:break-word}
+    .gruss span{display:block;margin-top:3px;font-size:13px;font-weight:500;line-height:1.35}
+    #nutzerDd{flex:0 0 auto}
+    body.app-an .kopf-nutzer{max-width:38vw;padding:7px 10px;border-radius:12px;font-size:14px}
+    body.app-an .statuszeile{align-items:flex-start;gap:8px;padding:8px 14px 0}
+    .statuszeile .punkt{margin-top:5px}
+    #statusText{flex:1 1 0;min-width:0}
+    .demo-leiste{flex-basis:100%;margin-left:0}
+    body.app-an .band{margin:0 14px;padding:16px 0 10px}
+    body.app-an .band h1{font-size:24px}
+    body.app-an .werkzeug{padding:12px 14px 4px}
+    .tab.schmal,.tab.schmal tbody,.tab.schmal tr,.tab.schmal th,.tab.schmal td{display:block;width:auto}
+    .tab.schmal{overflow:visible}
+    .tab.schmal th{padding:10px 2px 0;border:0;white-space:normal}
+    .tab.schmal td{padding:2px 2px 10px;word-break:normal;overflow-wrap:anywhere}
+  }
 </style>
 </head>
 <body>
