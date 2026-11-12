@@ -1,7 +1,7 @@
 {
-  "build": 202611121829,
-  "version": "1.0.9",
-  "notes": "Neuer Agent „Speicherplatz“: überwacht die Festplatte, warnt bei wenig Platz und findet doppelte Videos und Bilder (auch aus WhatsApp), alte Sicherungen, Caches, Bau-Reste, Installer und große Dateien. Per Klick bereinigen – immer mit Nachfrage, nur in den Papierkorb, Systemdateien sind gesperrt.",
-  "url": "https://foldair.de/download/Foldair-1.0.9.update",
-  "sha256": "f7a75b3a594224ce1e45b8a3720a83c9e0ec59fcb906cb746c4b21e01edd2a14"
+  "build": 202611121844,
+  "version": "1.0.10",
+  "notes": "Speicherplatz-Agent: jeder Fund mit Häkchen zum An- und Abwählen, Bau-Reste in Projekten werden nicht mehr vorausgewählt, KI-Modelle (LM Studio, Ollama, Hugging Face) werden erkannt.",
+  "url": "https://foldair.de/download/Foldair-1.0.10.update",
+  "sha256": "594f50e7dd8f785ae2b88b2b484024f24c61bc1cec69de8bdf2dbefd10056458"
 }
