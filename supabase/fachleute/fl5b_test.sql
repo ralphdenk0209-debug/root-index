@@ -11,7 +11,9 @@ declare
 begin
   create temp table _erg(nr serial, ok boolean, txt text) on commit drop;
   grant all on _erg to public; grant usage on sequence _erg_nr_seq to public;
-  select wert into tok from public.fachleute_einstellung where schluessel = 'muster_token';
+  -- Musterpraxis seit 12.11. nur mit Passwort-Sitzung (fl_muster_sitzung): eigene Test-Sitzung, wird mit zurückgerollt
+  tok := 'fl5btest-' || md5(random()::text) || md5(random()::text);
+  insert into public.fl_muster_sitzung(token_hash, gueltig_bis) values (encode(extensions.digest(tok, 'sha256'), 'hex'), now() + interval '10 minutes');
 
   -- 1) Musterpraxis: Vorschlag (anon mit Token) --------------------------------------
   perform set_config('request.jwt.claims', json_build_object('role','anon')::text, true);
