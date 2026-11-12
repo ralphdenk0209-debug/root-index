@@ -117,7 +117,7 @@ const CSS = `
 .fd .fd-akte-knoepfe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
 .fd .fd-wenig{color:var(--muted,#737373);font-style:italic}
 .fd .fd-privat{margin-top:14px;border:1px dashed var(--fd-linie);border-radius:12px;padding:10px 12px}
-.fd .fd-chip.sw{background:var(--blau-zart,#eaf1ff);color:var(--blau-tief,#04157e)}
+.fd .fd-chip.sw{background:var(--blau-zart,#eaf1ff);color:var(--blau,#0b2ff2)}
 .fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
 @media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
@@ -141,6 +141,14 @@ const CSS = `
 .fd .fd-ansicht-fuss{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 24px}
 @media print{.fd .fd-ctl,.fd .fd-ansicht-fuss,.fd .fd-stub{display:none!important}}
 @media (pointer:coarse){.fd .fd-ctl [data-a="zieh"]{display:none}.fd .fd-ctl button{width:36px;height:36px;font-size:17px}.fd .fd-block .fd-karte > h2:first-child,.fd .fd-block .fd-karte > .fd-kopfzeile:first-child,.fd .fd-block .fd-karte > b:first-child{margin-right:116px}}
+
+.fd .fd-balken .s.aktiv{outline:2px solid var(--fd-dunkel);outline-offset:2px;border-radius:3px}
+.fd .fd-achse span.an{font-weight:800;color:var(--fd-dunkel)}
+.fd .fd-kachel em.fd-delta{display:block;font-style:normal;font-size:12px;font-weight:700;margin-top:4px;color:var(--fd-muted)}
+.fd .fd-kachel em.fd-delta.auf{color:var(--ok,#16a34a)}
+.fd .fd-kachel em.fd-delta.ab{color:var(--warn,#d97706)}
+.fd .fd-balken .t{position:relative}
+.fd .fd-balken .t .w{position:absolute;top:4px;left:0;right:0;text-align:center;font-size:12px;font-weight:800;color:#fff}
 `;
 function css(){ if(document.getElementById('fd-css')) return; const s=document.createElement('style'); s.id='fd-css'; s.textContent=CSS; document.head.appendChild(s); }
 
@@ -153,6 +161,7 @@ const monatsAnfang = s => s.slice(0,8) + '01';
 const monatsEnde = s => { const d = D(monatsAnfang(s)); d.setUTCMonth(d.getUTCMonth()+1); d.setUTCDate(0); return iso(d); };
 const WT = ['So','Mo','Di','Mi','Do','Fr','Sa'];
 const MON = ['Jan.','Feb.','März','Apr.','Mai','Juni','Juli','Aug.','Sep.','Okt.','Nov.','Dez.'];
+const MON_LANG = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
 const tm = s => { const d = D(s); return d.getUTCDate() + '.' + (d.getUTCMonth()+1) + '.'; };
 const lang = s => { const d = D(s); return WT[d.getUTCDay()] + ', ' + d.getUTCDate() + '. ' + MON[d.getUTCMonth()] + ' ' + d.getUTCFullYear(); };
 const z = (x, st) => x==null || x==='' || isNaN(Number(x)) ? '–' : Number(x).toLocaleString('de-DE', {maximumFractionDigits: st==null?0:st, minimumFractionDigits: 0});
@@ -175,9 +184,9 @@ const TELLER_SEG = [
 
 /* Ansicht je Fachperson (Ralph 12.11.: Karten zuklappen und verschieben, gilt für alle Personen).
    opt.ansicht = {laden: () => layout|null, speichern: (layout|null) => …}; layout = {reihenfolge:[schlüssel], zu:[schlüssel]} */
-const ANSICHT_STANDARD = ['profil','akte','leer','kacheln','ziele','verlauf','kalorien','gemuese','tagebuch','teller','istsoll','produkte','rezepte','plan'];
+const ANSICHT_STANDARD = ['profil','akte','leer','kacheln','ziele','verlauf','kalorien','gemuese','score','tagebuch','teller','istsoll','produkte','rezepte','plan'];
 const ANSICHT_TITEL = {profil:'Person', akte:'Akte', leer:'Hinweis', kacheln:'Kennzahlen', ziele:'Ziele', verlauf:'Verlauf der letzten 8 Wochen',
-  kalorien:'Kalorien je Tag', gemuese:'Gemüse und Obst je Tag', tagebuch:'Tagebuch', teller:'Teller', istsoll:'Ist und Soll',
+  kalorien:'Kalorien', gemuese:'Gemüse und Obst', score:'Root-Index-Score', tagebuch:'Tagebuch', teller:'Teller', istsoll:'Ist und Soll',
   produkte:'Gegessene Produkte', rezepte:'Rezepte', plan:'Wochenplanung'};
 let ANSICHT = null, ANSICHT_LADEN = null;
 function ansichtNorm(a){
@@ -243,6 +252,8 @@ function mount(el, opt){
       const [d] = await Promise.all([opt.laden(b.von, bis), ansichtBereit(opt.ansicht)]);
       if(nr !== st.reqNr) return;
       st.daten = d; st.bereich = {von:b.von, bis:b.bis};
+      if(st.modus!=='tag') await serieLaden(d).catch(e => console.warn('Verlauf nicht geladen', e));
+      if(nr !== st.reqNr) return;
       zeichne();
     }catch(e){
       if(nr !== st.reqNr) return;
@@ -270,17 +281,34 @@ function mount(el, opt){
     const kcal = isK('kcal'), gem = isK('gruppe:gemuese'), go = isK('gruppe:gemuese+obst'), obst = isK('gruppe:obst');
     const proTag = (x) => n ? x / n : null;
     const grJeTag = g => { const r = (d.gruppen||[]).find(x => x.gruppe===g); return r ? r.gramm_je_tag : 0; };
+    const per = st.modus!=='tag' ? perioden() : null, vg = per ? vergleich(per) : null;
+    const dl = (k, einh, gut) => vg ? delta(vg, k, einh, gut) : '';
     add('kacheln', '<div class="fd-karte"><h2>Kennzahlen</h2><div class="fd-kacheln">' +
-      kachel(z(kcal ? kcal.ist : proTag(d.summe.kcal)), 'kcal Ø je Tag', kcal && kcal.soll ? 'Soll ' + (ART[kcal.art]||'') + ' ' + z(kcal.soll) + ' · ' + herkunftKurz(kcal) : '') +
-      kachel(z(grJeTag('gemuese')) + ' g', 'Gemüse Ø je Tag', gem && gem.soll ? 'Soll ' + (ART[gem.art]||'') + ' ' + z(gem.soll) + ' g · ' + herkunftKurz(gem) : '') +
-      kachel(z(grJeTag('obst')) + ' g', 'Obst Ø je Tag', go && go.soll ? 'Obst+Gemüse: ' + z(go.ist) + ' von ' + z(go.soll) + ' g' : (obst && obst.soll ? 'Orientierung ' + z(obst.soll) + ' g' : '')) +
-      kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
-      kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Werte im Schnitt dieser Tage') +
+      kachel(z(kcal ? kcal.ist : proTag(d.summe.kcal)), 'kcal Ø je Tag', kcal && kcal.soll ? 'Soll ' + (ART[kcal.art]||'') + ' ' + z(kcal.soll) + ' · ' + herkunftKurz(kcal) : '', dl('kcal', ' kcal', 0)) +
+      kachel(z(grJeTag('gemuese')) + ' g', 'Gemüse Ø je Tag', gem && gem.soll ? 'Soll ' + (ART[gem.art]||'') + ' ' + z(gem.soll) + ' g · ' + herkunftKurz(gem) : '', dl('gem', ' g', 1)) +
+      kachel(z(grJeTag('obst')) + ' g', 'Obst Ø je Tag', go && go.soll ? 'Obst+Gemüse: ' + z(go.ist) + ' von ' + z(go.soll) + ' g' : (obst && obst.soll ? 'Orientierung ' + z(obst.soll) + ' g' : ''), dl('obst', ' g', 1)) +
+      kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet', dl('score', '', 1)) +
+      kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Werte im Schnitt dieser Tage', '') +
     '</div></div>');
     add('ziele', zieleKarte(d));
-    if(opt.verlauf) add('verlauf', '<div class="fd-verlauf"></div>');
+    if(opt.verlauf && !per) add('verlauf', '<div class="fd-verlauf"></div>');
 
-    if(st.modus!=='tag'){
+    if(per){
+      // Woche/Monat: ein Balken je Woche bzw. Monat über den Behandlungszeitraum (Ralph 12.11.)
+      const je = st.modus==='woche' ? 'je Woche' : 'je Monat', aktiv = per.aktiv;
+      const unter = txt => '<div class="fd-klein">' + txt + '</div>';
+      add('kalorien', '<div class="fd-karte"><h2>Kalorien ' + je + '</h2>' + unter(vgText(vg, [['kcal', ' kcal', 'Kalorien']])) +
+           periodenBalken(per.liste, p => [[p.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll), aktiv) +
+           '<div class="fd-klein">Durchschnitt der Tage mit Einträgen. Schraffiert: keine Einträge.</div></div>');
+      const linie = go && go.soll ? go.soll : null;
+      add('gemuese', '<div class="fd-karte"><h2>Gemüse und Obst ' + je + '</h2>' + unter(vgText(vg, [['gem', ' g', 'Gemüse'], ['obst', ' g', 'Obst']])) +
+           periodenBalken(per.liste, p => [[p.gem, 'var(--fd-gemuese)'], [p.obst, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE ') + z(linie) + ' g', aktiv) +
+           '<div class="fd-legende"><span><i style="background:var(--fd-gemuese)"></i>Gemüse &amp; Pilze</span><span><i style="background:var(--fd-obst)"></i>Obst</span>' +
+           (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>');
+      add('score', '<div class="fd-karte"><h2>Root-Index-Score ' + je + '</h2>' + unter(vgText(vg, [['score', '', 'Score']])) +
+           periodenBalken(per.liste, p => [[p.score, '#a78bfa']], null, '', aktiv, true) +
+           '<div class="fd-klein">Nach Menge gewichtet.</div></div>');
+    } else if(st.modus!=='tag'){
       add('kalorien', '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
            '<div class="fd-klein">Schraffiert: keine Einträge.</div></div>');
       const linie = go && go.soll ? go.soll : null;
@@ -355,7 +383,81 @@ function mount(el, opt){
       zeichne();
     };
   }
-  function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
+  function kachel(w, t, u, dl){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + (dl || '') + '</div>'; }
+
+  /* ---- Woche/Monat über den Behandlungszeitraum (Ralph 12.11.) ---- */
+  // Tageswerte von Behandlungsbeginn (daten_ab) bzw. bis zu 26 Wochen zurück bis heute, einmal je Person geladen
+  async function serieLaden(d){
+    if(!opt.verlauf) return;
+    const ab = d.daten_ab && d.daten_ab > '1900-01-01' ? d.daten_ab : null;
+    const von = ab && ab > plus(heute, -400) ? ab : plus(heute, ab ? -400 : -182);
+    const key = (opt.verlaufKey || '') + '|' + von + '|' + heute;
+    if(st.serie && st.serie.key===key) return;
+    // der Server liefert höchstens 3 Monate am Stück: in Stücken zu 90 Tagen parallel laden
+    const stuecke = []; for(let a = von; a <= heute; a = plus(a, 90)){ const e = plus(a, 89); stuecke.push([a, e < heute ? e : heute]); }
+    const teile = await Promise.all(stuecke.map(async ([a, e]) => {
+      const r = await opt.verlauf(a, e);
+      if(r && r.error) throw new Error(r.error.message || r.error);
+      const dd = r && r.data !== undefined ? (typeof r.data==='string' ? JSON.parse(r.data) : r.data) : r;
+      return (dd && dd.tage) || [];
+    }));
+    st.serie = {key, ab, tage: [].concat(...teile)};
+  }
+  const mittel = a => { const b = a.filter(x => x!=null && !isNaN(Number(x))).map(Number); return b.length ? b.reduce((s, x) => s + x, 0) / b.length : null; };
+  const naechste = k => st.modus==='woche' ? plus(k, 7) : (() => { const x = D(k); x.setUTCMonth(x.getUTCMonth() + 1); return iso(x).slice(0, 8) + '01'; })();
+  function perioden(){
+    const s = st.serie; if(!s) return null;
+    const schl = st.modus==='woche' ? montag : monatsAnfang, m = new Map();
+    s.tage.forEach(t => { const k = schl(t.datum); if(!m.has(k)) m.set(k, []); if(!t.leer) m.get(k).push(t); });
+    const erste = s.tage.find(t => !t.leer);
+    let k = schl(s.ab || (erste ? erste.datum : heute)); const ende = schl(heute), liste = [];
+    while(k <= ende && liste.length < 80){ const t = m.get(k) || [];
+      liste.push({von: k, erfasst: t.length, kcal: mittel(t.map(x => x.kcal)), gem: mittel(t.map(x => x.gemuese_g)), obst: mittel(t.map(x => x.obst_g)), score: mittel(t.map(x => x.score))});
+      k = naechste(k); }
+    const aktiv = schl(st.bereich.von);
+    return {liste: liste.slice(-(st.modus==='woche' ? 16 : 12)), alle: liste, aktiv};
+  }
+  const perName = von => st.modus==='woche' ? 'Woche ' + tm(von) + '–' + tm(plus(von, 6)) : MON_LANG[D(von).getUTCMonth()] + ' ' + D(von).getUTCFullYear();
+  function vergleich(per){
+    const i = per.alle.findIndex(p => p.von===per.aktiv); if(i < 1) return null;
+    const cur = per.alle[i], prev = per.alle[i-1];
+    if(!cur.erfasst || !prev.erfasst) return {cur, prev, leer: true, name: st.modus==='woche' ? 'Vorwoche' : MON_LANG[D(prev.von).getUTCMonth()]};
+    return {cur, prev, name: st.modus==='woche' ? 'Vorwoche' : MON_LANG[D(prev.von).getUTCMonth()]};
+  }
+  // gut: 1 = mehr ist besser (grün), 0 = neutral (Kalorien hängen vom Ziel ab)
+  function delta(vg, k, einh, gut){
+    if(vg.leer) return '';
+    const a = vg.cur[k], b = vg.prev[k]; if(a==null || b==null) return '';
+    const dlt = a - b, r = Math.abs(dlt) < (k==='score' ? 0.5 : k==='erfasst' ? 0.5 : 1);
+    const kl = r || !gut ? 'gleich' : dlt > 0 ? 'auf' : 'ab';
+    return '<em class="fd-delta ' + kl + '">' + (r ? 'gleich wie ' + esc(vg.name) : (dlt > 0 ? '▲ ' : '▼ ') + z(Math.abs(dlt)) + einh + ' gegenüber ' + esc(vg.name)) + '</em>';
+  }
+  function vgText(vg, felder){
+    if(!vg) return st.modus==='woche' ? 'Je Balken eine Woche.' : 'Je Balken ein Monat.';
+    if(vg.leer) return esc(perName(vg.prev.von)) + ' hat keine Einträge, kein Vergleich.';
+    const teile = felder.map(([k, einh, name]) => { const a = vg.cur[k], b = vg.prev[k]; if(a==null || b==null) return null;
+      const dlt = Math.round(a - b); return name + ' ' + (dlt > 0 ? '+' : dlt < 0 ? '−' : '±') + z(Math.abs(dlt)) + einh; }).filter(Boolean);
+    return teile.length ? 'Gegenüber ' + esc(vg.name) + ': ' + teile.join(', ') + '.' : '';
+  }
+  function periodenBalken(liste, teile, linie, linieText, aktiv, mitWert){
+    let max = 0;
+    liste.forEach(p => { const s = teile(p).reduce((a, x) => a + (Number(x[0])||0), 0); if(s > max) max = s; });
+    if(linie && linie > max) max = linie;
+    max = max * 1.08 || 1;
+    let h = '<div class="fd-balken">';
+    liste.forEach(p => {
+      const kl = 's' + (p.erfasst ? '' : ' leer') + (p.von===aktiv ? ' aktiv' : '');
+      if(!p.erfasst){ h += '<div class="' + kl + '" data-per="' + p.von + '" title="' + esc(perName(p.von)) + ': keine Einträge"></div>'; return; }
+      const tt = teile(p);
+      h += '<div class="' + kl + '" data-per="' + p.von + '" title="' + esc(perName(p.von) + ': ' + tt.map(x => z(x[0])).join(' + ') + ' (' + p.erfasst + ' Tage)') + '">' +
+        tt.map(x => '<div class="t" style="height:' + (100 * (Number(x[0])||0) / max).toFixed(1) + '%;background:' + x[1] + '">' + (mitWert ? '<span class="w">' + z(x[0]) + '</span>' : '') + '</div>').join('') + '</div>';
+    });
+    if(linie) h += '<div class="fd-linie" style="bottom:' + (100 * linie / max).toFixed(1) + '%"><span>' + esc(linieText) + '</span></div>';
+    const jede = liste.length > 12 ? 2 : 1;
+    h += '</div><div class="fd-achse">' + liste.map((p, i) => '<span' + (p.von===aktiv ? ' class="an"' : '') + '>' +
+      ((i % jede===0 || p.von===aktiv) ? (st.modus==='woche' ? tm(p.von) : MON[D(p.von).getUTCMonth()]) : '') + '</span>').join('') + '</div>';
+    return h;
+  }
   function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Praxis' : x.soll_herkunft==='Ziel im Profil' ? 'App' : istModell(x) ? 'DGE-Rechenmodell' : /DGE/.test(x.soll_herkunft||'') ? 'DGE' : (x.soll_herkunft||''); }
   /* Gemüse 245 g und Obst 300 g sind Modellwerte der DGE-Berechnung (Schäfer 2024), keine eigene DGE-Empfehlung (Prüfer 11.11.) */
   function istModell(x){ return /Modellwert/i.test((x && x.hinweis) || '') || /Schäfer/i.test((x && x.quelle) || ''); }
@@ -721,6 +823,7 @@ function mount(el, opt){
       try{ await opt.vorgabeSetzen(b.dataset.zWeg, null, null, null); laden(); } catch(e){ b.disabled = false; zm(e.message || String(e)); }
     });
     $in.querySelectorAll('.fd-balken .s[data-tag]').forEach(s => s.onclick = () => { st.modus = 'tag'; st.anker = s.dataset.tag; laden(); });
+    $in.querySelectorAll('.fd-balken .s[data-per]').forEach(s => s.onclick = () => { st.anker = s.dataset.per; laden(); });
     $in.querySelectorAll('[data-sort] button').forEach(b => b.onclick = () => { st.prodSort = b.dataset.s; zeichne(); });
     const alle = $in.querySelector('[data-alle]'); if(alle) alle.onclick = () => { st.prodAlle = true; zeichne(); };
     const los = $in.querySelector('[data-vg-los]');

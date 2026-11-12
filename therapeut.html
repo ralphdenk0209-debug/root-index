@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Root Index Pro</title>
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="Root Index Pro für Ernährungsfachleute: Klientel begleiten, Tagebuch auswerten, Pläne schreiben.">
+<meta name="description" content="Root Index Pro für Ernährungsfachleute: Klient:innen begleiten, Tagebuch auswerten, Pläne schreiben.">
 <!-- therapeut.html · 11.11.2026 · FL-1 Fundament Fachleute-Zugang.
      Eigene Anmeldung fuer Fachleute (E-Mail + Passwort, Passwort vergessen, Abmelden).
      Gleicher Speicher-Schluessel wie app.js (sb-cleanbase-auth).
@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=15"></script>
+<script src="fachleute-dashboard.js?v=20"></script>
 <script src="fachleute-statistik.js?v=10"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -162,6 +162,7 @@
   .tab .gruppe td{background:#FAFAF8;font-weight:800;color:var(--dunkel);font-size:13.5px}
   .tab.schmal{max-width:620px}
   .tab.schmal th{width:180px;background:transparent}
+  @media (max-width:600px){.tab.schmal{display:block;max-width:100%;overflow-x:auto}.tab.schmal th{width:auto;white-space:normal}.tab.schmal td{word-break:break-word}}
   .ampel{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
   .ampel.g{background:var(--gruen)} .ampel.o{background:#e0a100} .ampel.r{background:#c2412d} .ampel.x{background:#c9cfc8}
   .muster-mark{font-size:11.5px;font-weight:800;color:#7a5a00;background:#FFF4CC;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
@@ -466,7 +467,7 @@
   #wunschFrame{background:var(--paper)}
   .klein{color:var(--muted)}
   /* Auswertung je Person (fachleute-dashboard.js) */
-  body .fd{--fd-gruen:var(--blau);--fd-akzent:var(--blau);--fd-dunkel:var(--ink);--fd-creme:var(--blau-zart);--fd-muted:var(--muted);--fd-linie:var(--line);--fd-gemuese:#16a34a;--fd-obst:#f59e0b;--fd-leer-balken:var(--muted)}
+  body .fd{--fd-hell:var(--paper);--fd-weiss:var(--panel);--fd-gruen:var(--blau);--fd-akzent:var(--blau);--fd-dunkel:var(--ink);--fd-creme:var(--blau-zart);--fd-muted:var(--muted);--fd-linie:var(--line);--fd-gemuese:#16a34a;--fd-obst:#f59e0b;--fd-leer-balken:var(--muted)}
   body .fd .fd-karte{background:var(--panel);border:1px solid var(--line)!important;box-shadow:none!important;border-radius:20px}
   body .fd h2,body .fd h3,body .fd h4,body .fd .fd-label,body .fd .fd-kachel b,body .fd .fd-is .n,body .fd .fd-rez b{color:var(--ink)}
   body .fd .fd-kachel{background:var(--blau-zart)}
@@ -530,7 +531,7 @@
   <button class="menue-auf" id="menueAuf" type="button" aria-expanded="false"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span id="menueAktiv">Übersicht</span></button>
   <div class="menue-liste" id="menueListe">
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
-    <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klientel</button>
+    <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klient:innen</button>
     <button type="button" data-v="auswertungen"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M3 20h18"/></svg>Auswertungen</button>
     <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte<span class="bald">in Arbeit</span></button>
@@ -632,12 +633,12 @@
     <div class="werkzeug">
       <div class="dd"><button class="tb haupt" type="button" data-dd>Neuer Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>
         <div class="dd-menu"><button type="button" data-neu="mail">Anlegen und per E-Mail senden</button><button type="button" data-neu="qr">Anlegen als QR-Karte</button><button type="button" data-neu="nur">Nur anlegen</button></div></div>
-      <button class="tb" type="button" data-geh="klienten">Klientel öffnen</button>
+      <button class="tb" type="button" data-geh="klienten">Klient:innen öffnen</button>
     </div>
     <div class="seite-inhalt">
       <div id="uebStat"><div class="karte2 lade">Statistik wird geladen …</div></div>
       <div class="raster2 gleich">
-        <div class="karte2"><div class="k2-kopf"><h3>Klientel</h3><span>Keys und Einwilligungen</span></div>
+        <div class="karte2"><div class="k2-kopf"><h3>Klient:innen</h3><span>Keys und Einwilligungen</span></div>
           <div class="kennzahlen" id="uebZahlen"></div>
           <div class="tabwrap"><table class="tab" id="uebTab"></table></div></div>
         <div class="karte2"><div class="k2-kopf"><h3>Abrechnung diesen Monat</h3><span>Stand heute</span></div>
@@ -654,9 +655,9 @@
   <section class="ansicht" data-v="klienten">
     <div class="split">
       <aside class="seite">
-        <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klientel</div>
+        <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klient:innen</div>
         <div class="suche"><input type="search" id="kSuche" placeholder="Name oder Key suchen" aria-label="Personen suchen"></div>
-        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klientel filtern">
+        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klient:innen filtern">
           <button type="button" data-kf="aktiv" class="an">Aktiv</button><button type="button" data-kf="bald">Läuft ab</button>
           <button type="button" data-kf="warten">Wartet</button><button type="button" data-kf="archiv">Archiv</button></div>
         <select id="kAuswahl" class="nur-handy" aria-label="Person wählen"></select>
@@ -1266,7 +1267,7 @@ $('liste').addEventListener('click', async e => {
 /* ---------- FL-4: Arbeitsoberfläche (Menüleiste, Statuszeile, Klientenliste + Auswertung) ---------- */
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
-const NAMEN = {uebersicht:'Übersicht', klienten:'Klientel', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
+const NAMEN = {uebersicht:'Übersicht', klienten:'Klient:innen', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
                berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', abrechnung:'Abrechnung', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
 let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
@@ -1365,7 +1366,7 @@ function zeichneBaum(){
     if(n) b.innerHTML += ' <i>' + n + '</i>';
   });
   const liste = g[K_FILTER].filter(passt);
-  const titel = {aktiv: 'Klientel', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Beendet oder abgelaufen'}[K_FILTER];
+  const titel = {aktiv: 'Klient:innen', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Beendet oder abgelaufen'}[K_FILTER];
   let h = '<div class="kopfzeile"><span>' + titel + '</span><span>' + liste.length + '</span></div>';
   h += liste.length ? liste.map(x => {
       const ok = x.status==='laeuft' && x.einwilligung==='erteilt', rt = x.laeuft_bis ? restTage(x.laeuft_bis) : null;
@@ -1580,7 +1581,7 @@ function zeigeFl5(id){
   const el = document.querySelector('[data-fl5="' + id + '"]'), def = FLShell._b[id];
   if(def && typeof def.render === 'function'){ el.innerHTML = ''; Promise.resolve(def.render(el, FLShell.ctx())).catch(e => { el.textContent = 'Fehler: ' + (e.message || e); }); return; }
   const t = FL5_TEXT[id];
-  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zur Klientel</button>';
+  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klient:innen</button>';
 }
 
 /* Neuer Key ▾: Panel in „Keys“ öffnen; nach dem Anlegen direkt Mail oder QR */
@@ -1601,7 +1602,7 @@ function zeichneKonto(){
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +
     z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
     z('Verschwiegenheit Root Index', (ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') + (ICH.vertrag_version ? ' · Fassung ' + esc(ICH.vertrag_version) : '')) +
-    z('Verschwiegenheit gegenüber Betreuten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
+    z('Verschwiegenheit gegenüber Klient:innen', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
   const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));
   $('grussText').textContent = (h < 11 ? 'Guten Morgen, ' : h < 18 ? 'Guten Tag, ' : 'Guten Abend, ') + String(ICH.name || '').replace(/\s*\(.*\)\s*$/, '');
