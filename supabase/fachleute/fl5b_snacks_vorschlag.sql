@@ -236,6 +236,7 @@ declare
   v_plaetze jsonb := coalesce(v_opt->'plaetze', '["Frühstück","Snack:vormittags","Mittag","Snack:nachmittags","Abendessen"]'::jsonb);
   v_ein jsonb := '[]'::jsonb; v_rez_ids text[]; r jsonb; v_beachtet text[] := '{}'; v_hinweise text[] := '{}';
   v_ist_daten boolean;
+  v_sw text[]; v_sw_ja text[] := '{}'; v_sw_rest text[] := '{}'; v_w text;
 begin
   if p_von is null or p_bis is null or p_bis < p_von or p_bis - p_von > 41 then
     raise exception 'Zeitraum ungültig (höchstens 6 Wochen).'; end if;
@@ -247,6 +248,24 @@ begin
       from public."Benutzer" b where b."Benutzer_ID" = p_benutzer;
   end if;
   v_unv := coalesce(v_unv, '{}');
+  -- FL-4-Akte: Diagnose-Stichworte der Fachperson (Muster: aus fl_muster_klient). Nur eindeutige Stichworte
+  -- wirken (Diabetes, Laktose, Zöliakie/Gluten, vegan/vegetarisch); alle anderen werden nur angezeigt.
+  v_sw := coalesce(public._fl_akte_stichworte(p_benutzer, auth.uid()), '{}');
+  foreach v_w in array v_sw loop
+    continue when nullif(trim(v_w), '') is null;
+    if v_w ~* '^\s*(kein|keine|ohne|nicht|v\.\s*a\.|verdacht)' then v_sw_rest := v_sw_rest || v_w;
+    elsif v_w ~* 'diabet' then
+      if nullif(v_diab, '') is null then v_diab := 'laut Akte'; end if; v_sw_ja := v_sw_ja || v_w;
+    elsif v_w ~* 'laktose' then
+      if not 'laktose' = any(v_unv) then v_unv := v_unv || 'laktose'::text; end if; v_sw_ja := v_sw_ja || v_w;
+    elsif v_w ~* 'z(ö|oe)liakie|gluten' then
+      if not 'gluten' = any(v_unv) then v_unv := v_unv || 'gluten'::text; end if; v_sw_ja := v_sw_ja || v_w;
+    elsif v_w ~* '^\s*vegan' then
+      if v_form is null or v_form not ilike 'vegan%' then v_form := 'vegan'; end if; v_sw_ja := v_sw_ja || v_w;
+    elsif v_w ~* '^\s*vegetar' then
+      if v_form is null or v_form not ilike 'veg%' then v_form := 'vegetarisch'; end if; v_sw_ja := v_sw_ja || v_w;
+    else v_sw_rest := v_sw_rest || v_w; end if;
+  end loop;
   v_ist_daten := public.cb_auswertung_daten_ab(p_benutzer) is not null;
   if v_ist_daten then
     select s.soll, s.soll_herkunft into v_ziel, v_ziel_her
@@ -262,6 +281,8 @@ begin
   if nullif(v_diab, '') is not null then v_beachtet := v_beachtet || 'Diabetes: weniger Zucker und Kohlenhydrat-Anteil zuerst, keine Desserts'::text; end if;
   if cardinality(v_unv) > 0 then v_hinweise := v_hinweise || 'Geprüft werden die 14 Hauptallergene und Laktose (auch Spuren); andere Unverträglichkeiten (z. B. Fruktose, Histamin) nicht.'::text; end if;
   if coalesce((v_opt->>'nur_rezepte')::boolean, false) then v_beachtet := v_beachtet || 'nur Rezepte, keine Markenprodukte'::text; end if;
+  if cardinality(v_sw_ja) > 0 then v_beachtet := v_beachtet || ('aus der Akte: ' || array_to_string(v_sw_ja, ', ')); end if;
+  if cardinality(v_sw_rest) > 0 then v_hinweise := v_hinweise || ('Aus der Akte, bei der Auswahl nicht automatisch berücksichtigt: ' || array_to_string(v_sw_rest, ', ') || ' – bitte selbst prüfen.'); end if;
   if v_ziel is not null then v_beachtet := v_beachtet || ('Portionen nach Kalorienziel ' || round(v_ziel) || ' kcal (' || coalesce(v_ziel_her, '') || ')'); end if;
 
   select array_agg(x."Rezept_ID") into v_rez_ids from public."Rezepte" x
@@ -369,7 +390,7 @@ begin
     'kandidaten', (select jsonb_object_agg(x.slot, x.n) from (select slot, count(*) n from kand group by slot) x))
   into r;
   if jsonb_array_length(r->'leer') > 0 then
-    v_hinweise := v_hinweise || 'Für manche Plätze passt nichts aus dem Bestand – dort bitte selbst wählen (später ergänzt Riki).'::text;
+    v_hinweise := v_hinweise || 'Für manche Plätze passt nichts aus dem Bestand – dort bitte selbst wählen oder Riki-Rezeptideen nutzen.'::text;
   end if;
   if not v_ist_daten then v_hinweise := v_hinweise || 'Ohne freigegebenes Tagebuch: keine Lieblingsprodukte und kein Kalorienziel.'::text; end if;
   return r || jsonb_build_object('hinweise', to_jsonb(v_hinweise));

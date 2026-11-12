@@ -1,4 +1,4 @@
--- FL-5b Test: Snack-Zeit in Plänen, Plan-Vorschlag. Endet IMMER mit Fehler (= zurückgerollt).
+-- FL-5b Test: Snack-Zeit in Plänen, Plan-Vorschlag, Akte-Stichworte. Endet IMMER mit Fehler (= zurückgerollt).
 -- Probelauf: fl5b_snacks_vorschlag.sql + diese Datei zusammen; danach nur diese Datei.
 do $test$
 #variable_conflict use_column
@@ -95,6 +95,25 @@ begin
   select count(*) into n from jsonb_array_elements(j->'eintraege') x join public.cb_rezept_allergene(array[x->>'rezept_id']) a on true
    where x->>'typ'='rezept' and ('milch' = any(a.enthaelt) or a.unvollstaendig);
   insert into _erg(ok,txt) values (n = 0, 'Ohne Milch: kein Rezept mit Milch oder unklaren Angaben');
+
+  -- Akte-Stichworte (FL-4, _fl_akte_stichworte) wirken im Vorschlag – nur die eigene Akte, Verneinung zählt nicht
+  insert into public.fl_akte(fachperson_auth, benutzer_id, stichworte) values (t1, 'U-fl5btest-k1', array['Zöliakie','kein Diabetes','Bluthochdruck']);
+  insert into public.fl_akte(fachperson_auth, benutzer_id, stichworte) values (t2, 'U-fl5btest-k1', array['Diabetes Typ 1']);
+  execute 'set local role authenticated';
+  perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t1)::text, true);
+  j := public.cb_fp_plan_vorschlag(c1, mo, mo + 6, '{}'::jsonb);
+  execute 'reset role';
+  insert into _erg(ok,txt) values ((j->'beachtet') @> '["aus der Akte: Zöliakie"]'::jsonb
+                                   and exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x like 'ohne %gluten%'), 'Akte: Zöliakie → ohne Gluten');
+  insert into _erg(ok,txt) values (not exists (select 1 from jsonb_array_elements_text(j->'beachtet') x where x like 'Diabetes:%'),
+                                   'Akte: „kein Diabetes“ und fremde Akte (T2) wirken nicht');
+  insert into _erg(ok,txt) values (exists (select 1 from jsonb_array_elements_text(j->'hinweise') x where x like '%kein Diabetes%' and x like '%Bluthochdruck%'),
+                                   'Akte: übrige Stichworte stehen als Hinweis');
+  select count(*) into n from jsonb_array_elements(j->'eintraege') x join public.cb_rezept_allergene(array[x->>'rezept_id']) a on true
+   where x->>'typ'='rezept' and ('gluten' = any(a.enthaelt) or 'gluten' = any(a.spuren));
+  insert into _erg(ok,txt) values (n = 0, 'Akte Zöliakie: kein Rezept mit Gluten (auch Spuren)');
+  j := public._fl5_vorschlag('MUSTER-2', null, mo, mo + 6, '{}'::jsonb);
+  insert into _erg(ok,txt) values ((j->'beachtet') @> '["aus der Akte: Diabetes Typ 2"]'::jsonb, 'Muster Bernd: Stichwort Diabetes Typ 2 aus der Akte');
   execute 'set local role authenticated';
   perform set_config('request.jwt.claims', json_build_object('role','authenticated','sub',t2)::text, true);
   begin perform public.cb_fp_plan_vorschlag(c1, mo, mo + 6, '{}'); insert into _erg(ok,txt) values (false,'T2 bekommt Vorschlag für fremde Klientin!');
