@@ -109,7 +109,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
       <tbody>
         <tr><td><strong>Nährwerte</strong></td><td class="zahl">40</td><td>Wie ist das Nährstoffprofil je 100 g? Weniger Zucker, gesättigte Fettsäuren und Salz bringen Punkte, mehr Ballaststoffe und Eiweiß ebenfalls. Dazu kommt, wie schnell die Kohlenhydrate ins Blut gehen (Kohlenhydrate je Gramm Ballaststoff).</td></tr>
         <tr><td><strong>Zutaten</strong></td><td class="zahl">30</td><td>Wie weit ist jede Zutat vom ursprünglichen Lebensmittel entfernt? Jede Zutat bekommt eine Note von 10 (roh) bis 2 (raffiniert oder isoliert). Was weiter vorn in der Zutatenliste steht, zählt mehr.</td></tr>
-        <tr><td><strong>Zusatzstoffe</strong></td><td class="zahl">15</td><td>Was ist über die enthaltenen E-Nummern behördlich bekannt? Belegt unbedenkliche Stoffe kosten nichts, kritisch bewertete kosten Punkte, und mehrere kritische addieren sich.</td></tr>
+        <tr><td><strong>Zusatzstoffe</strong></td><td class="zahl">15</td><td>Was ist über die enthaltenen E-Nummern behördlich bekannt? Belegt unbedenkliche Stoffe kosten nichts, bedenkliche kosten Punkte, und jeder weitere bedenkliche Stoff kostet zusätzlich.</td></tr>
         <tr><td><strong>Verarbeitung des Endprodukts</strong></td><td class="zahl">15</td><td>Wie stark ist das Produkt als Ganzes verarbeitet? Angelehnt an die NOVA-Einteilung: Enthält es stark verarbeitete oder isolierte Zutaten, gibt es hier wenig Punkte.</td></tr>
       </tbody>
     </table>
@@ -118,21 +118,21 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
 
   <div class="text">
     <h3>So wird gerechnet</h3>
-    <p>Index = Summe der vier Teile ÷ erreichbare Punkte × 100, kaufmännisch gerundet. Beispiel Wasa Knäckebrot Vollkorn Roggen (Zutaten: Vollkornroggenmehl, Hefe, Salz; Werte aus dem Index, Stand 12.11.2026):</p>
+    <p>Index = Summe der vier Teile ÷ erreichbare Punkte × 100, kaufmännisch gerundet. Beispiel Dr. Oetker High Protein Pudding Grieß (Werte aus dem Index, Stand 12.11.2026; warum die Teile so ausfallen, steht unten im Abschnitt „Ein Beispiel“):</p>
   </div>
   <div class="tab">
     <table>
       <thead><tr><th>Teil</th><th class="zahl">erreicht</th></tr></thead>
       <tbody>
-        <tr><td>Nährwerte</td><td class="zahl">33 / 40</td></tr>
-        <tr><td>Zutaten</td><td class="zahl">21,5 / 30</td></tr>
-        <tr><td>Zusatzstoffe</td><td class="zahl">15 / 15</td></tr>
-        <tr><td>Verarbeitung</td><td class="zahl">9 / 15</td></tr>
-        <tr><td><strong>Summe</strong></td><td class="zahl"><strong>78,5 / 100</strong></td></tr>
+        <tr><td>Nährwerte</td><td class="zahl">27,8 / 40</td></tr>
+        <tr><td>Zutaten</td><td class="zahl">15,6 / 30</td></tr>
+        <tr><td>Zusatzstoffe</td><td class="zahl">0 / 15</td></tr>
+        <tr><td>Verarbeitung</td><td class="zahl">3 / 15</td></tr>
+        <tr><td><strong>Summe</strong></td><td class="zahl"><strong>46,4 / 100</strong></td></tr>
       </tbody>
     </table>
   </div>
-  <p class="klein">78,5 ÷ 100 × 100 = 78,5, gerundet <strong>79, Gut</strong>. Erreichbar sind meist 100 Punkte. Hat ein Produkt keine Nährwert-Achse (Mineralwasser, energiefreie Getränke, Tee oder Kaffee ohne Nährwertangabe), sind es 60. Beispiel Coca-Cola Zero: 7,5 + 0 + 3 = 10,5 von 60, also 10,5 ÷ 60 × 100 = 17,5, gerundet <strong>18, Schwach</strong>.</p>
+  <p class="klein">46,4 ÷ 100 × 100 = 46,4, gerundet <strong>46, Schwach</strong>. Erreichbar sind meist 100 Punkte. Hat ein Produkt keine Nährwert-Achse (Mineralwasser, energiefreie Getränke, Tee oder Kaffee ohne Nährwertangabe), sind es 60. Beispiel Coca-Cola Zero: 7,5 + 0 + 3 = 10,5 von 60, also 10,5 ÷ 60 × 100 = 17,5, gerundet <strong>18, Schwach</strong>.</p>
 
   <div class="text">
     <h3>Von der Zahl zur Stufe</h3>
@@ -149,6 +149,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
     <h2>Die Grundsätze dahinter</h2>
     <ul class="saetze">
       <li><strong>Jede Eigenschaft zählt nur einmal.</strong> Die Zuckermenge wirkt bei den Nährwerten, nicht zusätzlich bei den Zutaten. Honig ist deshalb bei den Zutaten ein kaum verarbeitetes Lebensmittel, sein Zucker kostet bei den Nährwerten.</li>
+      <li><strong>Zwei Fragen an einen Zusatzstoff.</strong> Ein zugesetzter Stoff wie Phosphat zählt an zwei Stellen: bei den Zutaten (wie stark verarbeitet?) und bei den Zusatzstoffen (wie bedenklich?). Das sind zwei verschiedene Fragen, keine doppelte Strafe.</li>
       <li><strong>Natürlich enthalten ist nicht dasselbe wie zugesetzt.</strong> Phosphat aus Milch, Fleisch oder Nüssen wird nicht abgewertet. Zugesetzte Phosphate (etwa in Cola oder Fertigprodukten) schon, weil der Körper sie fast vollständig aufnimmt und die EFSA hier eine zu hohe Aufnahme beschrieben hat.</li>
       <li><strong>Fehlende Angaben werden nicht geschätzt.</strong> Fehlt ein Teil der Daten, gibt es keinen Index, statt einer hochgerechneten Zahl. Fehlt nur eine Angabe zur Verarbeitung einer Zutat, gilt die vorsichtigere Stufe. Weniger Information darf nie zu einer besseren Zahl führen.</li>
       <li><strong>Siegel geben keine Punkte.</strong> Bio sagt etwas über den Anbau, nicht über Verarbeitung oder Nährwerte. Bio-Zucker bleibt Zucker. Auch kein Hersteller kann Punkte kaufen.</li>
@@ -175,7 +176,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
         <tbody>
           <tr><td>Nährwerte</td><td class="zahl">27,8 / 40</td><td>Wenig Zucker (4,4 g) und Salz, viel Eiweiß. Ballaststoffe sind nicht angegeben und zählen deshalb mit 0.</td></tr>
           <tr><td>Zutaten</td><td class="zahl">15,6 / 30</td><td>Magermilch und Sahne stehen gut da (Note 8). Danach folgen Stärke, modifizierte Stärke, Aroma und drei Süßstoffe mit Noten von 2 bis 3.</td></tr>
-          <tr><td>Zusatzstoffe</td><td class="zahl">0 / 15</td><td>Drei künstliche Süßstoffe (Acesulfam K, Cyclamat, Saccharin) und ein zugesetztes Phosphat. Vier kritisch bewertete Stoffe zusammen verbrauchen alle 15 Punkte.</td></tr>
+          <tr><td>Zusatzstoffe</td><td class="zahl">0 / 15</td><td>Drei künstliche Süßstoffe (Acesulfam K, Cyclamat, Saccharin) und ein zugesetztes Phosphat. Vier bedenkliche Stoffe zusammen verbrauchen alle 15 Punkte.</td></tr>
           <tr><td>Verarbeitung</td><td class="zahl">3 / 15</td><td>Das Produkt enthält isolierte Zutaten (Stärke, Süßstoffe).</td></tr>
         </tbody>
       </table>
@@ -221,7 +222,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
       <li>Etikett: Zutatenliste, Nährwerttabelle und E-Nummern, belegt durch Etikettfotos oder Herstellerangaben</li>
       <li>Open Food Facts (Datenbank unter ODbL 1.0, Inhalte unter CC BY-SA 3.0), per EAN abgerufen und gegen die Nährwerte geprüft. Daher stammt der größte Teil der Produktdaten.</li>
       <li>Bundeslebensmittelschlüssel (BLS) 4.0, © Max Rubner-Institut, CC BY 4.0: Nähr- und Mikronährwerte allgemeiner Lebensmittel ohne Marke. Ergänzend, wo der BLS nichts führt: Frida (DTU), NEVO (RIVM), USDA FoodData Central.</li>
-      <li>EFSA: Tolerable Upper Intake Levels, Übersicht Version 11 (August 2025). Nahrungsergänzungsmittel bekommen statt eines Index einen Dosis-Check gegen diese Höchstwerte.</li>
+      <li>EFSA: Overview on Tolerable Upper Intake Levels, Version 11 (August 2025), und BfR-Stellungnahme 006/2024 zu Höchstmengen. Nahrungsergänzungsmittel bekommen keinen Root Index, sondern einen eigenen Reinheits-Index (Bedarf und Dosis 40, Wirkstoffqualität 30, Zusatzstoffe 15, Transparenz 15) und je Wirkstoff eine Dosis-Ampel gegen diese Höchstwerte.</li>
     </ul>
     <p class="klein">Die Quelle steht in der App bei jedem Produkt unter dem Index.</p>
 
@@ -236,6 +237,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
       <li>Verordnung (EG) Nr. 1334/2008 über Aromen</li>
       <li>Monteiro CA et al.: Ultra-processed foods: what they are and how to identify them. Public Health Nutrition, 2019 (NOVA)</li>
       <li>Mozaffarian RD et al.: Identifying whole grain foods. Public Health Nutrition, 2013 (Verhältnis Kohlenhydrate zu Ballaststoffen)</li>
+      <li>Atkinson FS et al.: International tables of glycemic index and glycemic load values 2021. American Journal of Clinical Nutrition, 2021</li>
       <li>DGE: Gut essen und trinken – die DGE-Empfehlungen und der DGE-Ernährungskreis, dge.de</li>
       <li>DGE/ÖGE: Referenzwerte für die Nährstoffzufuhr, 3. Auflage (2025)</li>
       <li>FET e.V.: Beratungsmaterialien, fet-ev.eu</li>
