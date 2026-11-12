@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=13"></script>
+<script src="fachleute-dashboard.js?v=14"></script>
 <script src="fachleute-statistik.js?v=9"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -165,7 +165,8 @@
   .ampel{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;vertical-align:1px}
   .ampel.g{background:var(--gruen)} .ampel.o{background:#e0a100} .ampel.r{background:#c2412d} .ampel.x{background:#c9cfc8}
   .muster-mark{font-size:11.5px;font-weight:800;color:#7a5a00;background:#FFF4CC;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:1px}
-  .split{display:grid;grid-template-columns:290px 1fr;height:calc(100vh - 92px);min-height:480px}
+  .split{display:grid;grid-template-columns:290px minmax(0,1fr);height:calc(100vh - 92px);min-height:480px}
+  .split>*{min-width:0}
   .seite{background:#fff;border-right:1px solid var(--linie);display:flex;flex-direction:column;min-height:0}
   .suche{padding:8px 10px;border-bottom:1px solid var(--linie)}
   .suche input{padding:8px 10px;font-size:14.5px;border-radius:9px}
@@ -208,7 +209,7 @@
     .menue-liste{display:none;flex-direction:column;padding:4px 8px 10px}
     .menue.auf .menue-liste{display:flex}
     .menue-liste button{padding:10px 12px}
-    .split{grid-template-columns:1fr;height:auto}
+    .split{grid-template-columns:minmax(0,1fr);height:auto}
     .seite{border-right:0;border-bottom:1px solid var(--linie)}
     .baum,.suche{display:none}
     .nur-handy{display:block;margin:8px 10px;width:calc(100% - 20px)}
@@ -1379,10 +1380,9 @@ function zeichneBaum(){
   h += '<p class="baum-fuss">Hinzufügen heißt: einen Key anlegen und der Person schicken. Mit dem Einlösen und ihrer Einwilligung steht sie hier.</p>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
-  const v = g.aktiv;
-  $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
-    (g.archiv.length ? '<optgroup label="Archiv">' + g.archiv.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
+  // Handy: die Liste ist ausgeblendet, also folgt die Auswahl dem Filter (Prüfer 12.11.)
+  $('kAuswahl').innerHTML = '<option value="">' + (liste.length ? 'Person wählen …' : 'Niemand') + '</option>' +
+    (liste.length ? '<optgroup label="' + esc(titel) + '">' + liste.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
 document.querySelectorAll('#kFilter [data-kf]').forEach(b => b.onclick = () => { K_FILTER = b.dataset.kf; zeichneBaum(); });
