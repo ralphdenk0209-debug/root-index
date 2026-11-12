@@ -17,7 +17,7 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=14"></script>
+<script src="fachleute-dashboard.js?v=15"></script>
 <script src="fachleute-statistik.js?v=10"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
@@ -1452,6 +1452,11 @@ async function zeigeKlient(wahl){
   const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
     '<small>' + esc(k.code) + ', Key bis ' + datum(k.laeuft_bis) + ', Einwilligung liegt vor.</small></span>';
   const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: false, verlaufKey: code,
+    // Ansicht (Reihenfolge, zugeklappt) je Fachperson für alle Personen; Vorführung nur im Browser-Tab
+    ansicht: DEMO ? { laden: () => { try{ return JSON.parse(sessionStorage.getItem('fl-demo-ansicht') || 'null'); }catch(e){ return null; } },
+                      speichern: a => { try{ a ? sessionStorage.setItem('fl-demo-ansicht', JSON.stringify(a)) : sessionStorage.removeItem('fl-demo-ansicht'); }catch(e){} } }
+                  : { laden: async () => { const r = await client.rpc('cb_fp_ansicht'); if(r.error) throw new Error(r.error.message); return json(r.data); },
+                      speichern: async a => { const r = await client.rpc('cb_fp_ansicht_setzen', {p_layout: a}); if(r.error) throw new Error(r.error.message); return json(r.data); } },
     verlauf: (von, bis) => dashRpc(code, von, bis),
     laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return DEMO ? demoMischen(code, json(r.data)) : json(r.data); },
     privatSetzen: async (notiz, sw) => { if(DEMO) return demoSetzen(code, 'privat', {privat_notiz: notiz, stichworte: sw});

@@ -121,6 +121,26 @@ const CSS = `
 .fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
 @media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
+
+.fd .fd-block{position:relative}
+.fd .fd-ctl{position:absolute;top:10px;right:10px;display:flex;gap:2px;z-index:2}
+.app-an .fd .fd-ctl{top:12px;right:12px}
+.fd .fd-ctl button{width:28px;height:28px;border:1px solid transparent;border-radius:8px;background:transparent;color:var(--fd-muted);font:inherit;font-size:15px;line-height:1;cursor:pointer;padding:0}
+.fd .fd-ctl button:hover:not(:disabled){border-color:var(--fd-linie);background:var(--fd-creme);color:var(--fd-dunkel)}
+.fd .fd-ctl button:focus-visible{outline:2px solid var(--blau,#0b2ff2);outline-offset:1px}
+.fd .fd-ctl button:disabled{opacity:.25;cursor:default}
+.fd .fd-ctl [data-a="zieh"]{cursor:grab}
+.fd .fd-block .fd-karte > h2:first-child,.fd .fd-block .fd-karte > .fd-kopfzeile:first-child,.fd .fd-block .fd-karte > b:first-child{margin-right:122px;display:block}
+.fd .fd-block .fd-karte > .fd-kopfzeile:first-child{display:flex}
+.fd .fd-stub{display:none;cursor:pointer;padding-top:14px!important;padding-bottom:14px!important}
+.fd .fd-stub h2{margin:0;color:var(--fd-muted)}
+.fd .fd-block.zu .fd-stub{display:block}
+.fd .fd-block.zu .fd-ik{display:none}
+.fd .fd-block.zieht{opacity:.45}
+.fd .fd-block.vor::before,.fd .fd-block.nach::after{content:"";display:block;height:3px;border-radius:3px;background:var(--blau,#0b2ff2)}
+.fd .fd-ansicht-fuss{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:6px 0 24px}
+@media print{.fd .fd-ctl,.fd .fd-ansicht-fuss,.fd .fd-stub{display:none!important}}
+@media (pointer:coarse){.fd .fd-ctl [data-a="zieh"]{display:none}.fd .fd-ctl button{width:36px;height:36px;font-size:17px}.fd .fd-block .fd-karte > h2:first-child,.fd .fd-block .fd-karte > .fd-kopfzeile:first-child,.fd .fd-block .fd-karte > b:first-child{margin-right:116px}}
 `;
 function css(){ if(document.getElementById('fd-css')) return; const s=document.createElement('style'); s.id='fd-css'; s.textContent=CSS; document.head.appendChild(s); }
 
@@ -152,6 +172,32 @@ const TELLER_SEG = [
   {k:'e', n:'Eiweiß',        col:'#c0583a', gruppen:['fleisch','fisch','eier','huelsenfruechte','milch']},
   {k:'k', n:'Kohlenhydrate', col:'#d4a12c', gruppen:['vollkorn','getreide','kartoffeln']}
 ];
+
+/* Ansicht je Fachperson (Ralph 12.11.: Karten zuklappen und verschieben, gilt für alle Personen).
+   opt.ansicht = {laden: () => layout|null, speichern: (layout|null) => …}; layout = {reihenfolge:[schlüssel], zu:[schlüssel]} */
+const ANSICHT_STANDARD = ['profil','akte','leer','kacheln','ziele','verlauf','kalorien','gemuese','tagebuch','teller','istsoll','produkte','rezepte','plan'];
+const ANSICHT_TITEL = {profil:'Person', akte:'Akte', leer:'Hinweis', kacheln:'Kennzahlen', ziele:'Ziele', verlauf:'Verlauf der letzten 8 Wochen',
+  kalorien:'Kalorien je Tag', gemuese:'Gemüse und Obst je Tag', tagebuch:'Tagebuch', teller:'Teller', istsoll:'Ist und Soll',
+  produkte:'Gegessene Produkte', rezepte:'Rezepte', plan:'Wochenplanung'};
+let ANSICHT = null, ANSICHT_LADEN = null;
+function ansichtNorm(a){
+  const liste = x => Array.isArray(x) ? x.filter(k => typeof k==='string' && ANSICHT_TITEL[k]).slice(0, 40) : [];
+  return {reihenfolge: liste(a && a.reihenfolge), zu: liste(a && a.zu)};
+}
+function ansichtBereit(store){
+  if(ANSICHT) return Promise.resolve();
+  if(!ANSICHT_LADEN) ANSICHT_LADEN = Promise.resolve().then(() => store ? store.laden() : null).catch(() => null).then(a => { ANSICHT = ansichtNorm(a); });
+  return ANSICHT_LADEN;
+}
+function ansichtOrdnung(){
+  const r = (ANSICHT ? ANSICHT.reihenfolge : []).filter((k, i, a) => a.indexOf(k)===i);
+  ANSICHT_STANDARD.forEach((k, i) => {
+    if(r.includes(k)) return;
+    let p = -1; for(let j = i - 1; j >= 0; j--){ p = r.indexOf(ANSICHT_STANDARD[j]); if(p >= 0) break; }
+    r.splice(p + 1, 0, k);
+  });
+  return r;
+}
 
 function mount(el, opt){
   css();
@@ -194,7 +240,7 @@ function mount(el, opt){
     const bis = b.bis > heute ? heute : b.bis;
     $in.innerHTML = '<div class="fd-laden">Lädt …</div>';
     try{
-      const d = await opt.laden(b.von, bis);
+      const [d] = await Promise.all([opt.laden(b.von, bis), ansichtBereit(opt.ansicht)]);
       if(nr !== st.reqNr) return;
       st.daten = d; st.bereich = {von:b.von, bis:b.bis};
       zeichne();
@@ -212,48 +258,102 @@ function mount(el, opt){
     const tage = d.tage || [];
     const n = d.tage_erfasst || 0;
     const nTage = tage.length;
-    let h = '';
-    h += profilKarte(d) + akteKarte(d);
+    const teile = [], add = (k, html) => { if(html) teile.push([k, html]); };
+    add('profil', profilKarte(d)); add('akte', akteKarte(d));
     if(!n){
-      h += '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
-           (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>';
-      h += zieleKarte(d) + rezepteKarte(d) + planKarte(d);
-      $in.innerHTML = h; binde(); return;
+      add('leer', '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
+           (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>');
+      add('ziele', zieleKarte(d)); add('rezepte', rezepteKarte(d)); add('plan', planKarte(d));
+      return zeigeTeile(teile);
     }
     // Kacheln
     const kcal = isK('kcal'), gem = isK('gruppe:gemuese'), go = isK('gruppe:gemuese+obst'), obst = isK('gruppe:obst');
     const proTag = (x) => n ? x / n : null;
     const grJeTag = g => { const r = (d.gruppen||[]).find(x => x.gruppe===g); return r ? r.gramm_je_tag : 0; };
-    h += '<div class="fd-karte"><div class="fd-kacheln">' +
+    add('kacheln', '<div class="fd-karte"><h2>Kennzahlen</h2><div class="fd-kacheln">' +
       kachel(z(kcal ? kcal.ist : proTag(d.summe.kcal)), 'kcal Ø je Tag', kcal && kcal.soll ? 'Soll ' + (ART[kcal.art]||'') + ' ' + z(kcal.soll) + ' · ' + herkunftKurz(kcal) : '') +
       kachel(z(grJeTag('gemuese')) + ' g', 'Gemüse Ø je Tag', gem && gem.soll ? 'Soll ' + (ART[gem.art]||'') + ' ' + z(gem.soll) + ' g · ' + herkunftKurz(gem) : '') +
       kachel(z(grJeTag('obst')) + ' g', 'Obst Ø je Tag', go && go.soll ? 'Obst+Gemüse: ' + z(go.ist) + ' von ' + z(go.soll) + ' g' : (obst && obst.soll ? 'Orientierung ' + z(obst.soll) + ' g' : '')) +
       kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
       kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Werte im Schnitt dieser Tage') +
-    '</div></div>';
-    h += zieleKarte(d);
-    if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
+    '</div></div>');
+    add('ziele', zieleKarte(d));
+    if(opt.verlauf) add('verlauf', '<div class="fd-verlauf"></div>');
 
     if(st.modus!=='tag'){
-      h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
-           '<div class="fd-klein">Schraffiert: keine Einträge.</div></div>';
+      add('kalorien', '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
+           '<div class="fd-klein">Schraffiert: keine Einträge.</div></div>');
       const linie = go && go.soll ? go.soll : null;
-      h += '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
+      add('gemuese', '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
            balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE ') + z(linie) + ' g') +
            '<div class="fd-legende"><span><i style="background:var(--fd-gemuese)"></i>Gemüse &amp; Pilze</span><span><i style="background:var(--fd-obst)"></i>Obst</span>' +
-           (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>';
+           (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>');
     } else {
-      h += tagebuchKarte(d);
+      add('tagebuch', tagebuchKarte(d));
     }
-    h += tellerKarte(d);
-    h += istSollKarte(d, is);
-    h += produkteKarte(d);
-    if(st.modus!=='tag' && n) h += '';
-    h += rezepteKarte(d) + planKarte(d);
-    $in.innerHTML = h;
-    binde();
-    const v = $in.querySelector('.fd-verlauf');
+    add('teller', tellerKarte(d));
+    add('istsoll', istSollKarte(d, is));
+    add('produkte', produkteKarte(d));
+    add('rezepte', rezepteKarte(d)); add('plan', planKarte(d));
+    zeigeTeile(teile);
+    const v = $in.querySelector('.fd-block:not(.zu) .fd-verlauf');
     if(v && window.FLStat) FLStat.verlauf(v, opt.verlauf, heute, opt.verlaufKey);
+  }
+  // Karten in der gespeicherten Reihenfolge, mit Zuklappen und Verschieben
+  function zeigeTeile(teile){
+    const ord = ansichtOrdnung(), zu = (ANSICHT && ANSICHT.zu) || [];
+    teile.sort((a, b) => ord.indexOf(a[0]) - ord.indexOf(b[0]));
+    const knopf = (a, t, txt, extra) => '<button type="button" data-a="' + a + '" title="' + t + '" aria-label="' + t + '"' + (extra||'') + '>' + txt + '</button>';
+    $in.innerHTML = teile.map(([k, html], i) => {
+      const istZu = zu.includes(k), titel = ANSICHT_TITEL[k] || k;
+      return '<div class="fd-block' + (istZu ? ' zu' : '') + '" data-k="' + k + '"><div class="fd-ctl">' +
+        knopf('zieh', 'Ziehen zum Verschieben', '⠿', ' draggable="true"') +
+        knopf('hoch', titel + ' nach oben', '↑', i===0 ? ' disabled' : '') +
+        knopf('runter', titel + ' nach unten', '↓', i===teile.length-1 ? ' disabled' : '') +
+        knopf('klapp', istZu ? titel + ' aufklappen' : titel + ' zuklappen', istZu ? '▸' : '▾', ' aria-expanded="' + !istZu + '"') + '</div>' +
+        '<div class="fd-karte fd-stub" data-a="klapp"><h2>' + esc(titel) + '</h2></div>' +
+        '<div class="fd-ik">' + html + '</div></div>';
+    }).join('') +
+    '<div class="fd-ansicht-fuss"><button type="button" class="fd-k" data-ansicht-zurueck>Ansicht zurücksetzen</button>' +
+    '<span class="fd-klein">Reihenfolge und zugeklappte Karten gelten für alle Personen.</span></div>';
+    binde(); bindeAnsicht();
+  }
+  function ansichtSichern(ord, zu){
+    ANSICHT = {reihenfolge: ord, zu: zu};
+    if(opt.ansicht) Promise.resolve().then(() => opt.ansicht.speichern(ANSICHT)).catch(e => console.warn('Ansicht nicht gespeichert', e));
+    zeichne();
+  }
+  function verschiebe(k, ziel, vor){
+    if(!k || k===ziel) return;
+    const ord = ansichtOrdnung().filter(x => x!==k);
+    const i = ord.indexOf(ziel); ord.splice(vor ? i : i + 1, 0, k);
+    ansichtSichern(ord, (ANSICHT && ANSICHT.zu) || []);
+  }
+  function bindeAnsicht(){
+    const bl = [...$in.querySelectorAll('.fd-block')], sicht = bl.map(b => b.dataset.k);
+    bl.forEach(b => {
+      const k = b.dataset.k, i = sicht.indexOf(k);
+      b.querySelectorAll('[data-a="klapp"]').forEach(x => x.onclick = () => {
+        const zu = ((ANSICHT && ANSICHT.zu) || []).filter(y => y!==k); if(!b.classList.contains('zu')) zu.push(k);
+        ansichtSichern(ansichtOrdnung(), zu);
+      });
+      b.querySelector('[data-a="hoch"]').onclick = () => verschiebe(k, sicht[i-1], true);
+      b.querySelector('[data-a="runter"]').onclick = () => verschiebe(k, sicht[i+1], false);
+      const g = b.querySelector('[data-a="zieh"]');
+      g.addEventListener('dragstart', e => { st.zieh = k; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', k);
+        try{ e.dataTransfer.setDragImage(b, 24, 24); }catch(_){} b.classList.add('zieht'); });
+      g.addEventListener('dragend', () => { st.zieh = null; bl.forEach(x => x.classList.remove('zieht', 'vor', 'nach')); });
+      b.addEventListener('dragover', e => { if(!st.zieh || st.zieh===k) return; e.preventDefault();
+        const r = b.getBoundingClientRect(), vor = e.clientY < r.top + r.height / 2; b.classList.toggle('vor', vor); b.classList.toggle('nach', !vor); });
+      b.addEventListener('dragleave', () => b.classList.remove('vor', 'nach'));
+      b.addEventListener('drop', e => { if(!st.zieh) return; e.preventDefault(); const vor = b.classList.contains('vor'), was = st.zieh; st.zieh = null; verschiebe(was, k, vor); });
+    });
+    const zr = $in.querySelector('[data-ansicht-zurueck]');
+    if(zr) zr.onclick = () => {
+      ANSICHT = {reihenfolge: [], zu: []};
+      if(opt.ansicht) Promise.resolve().then(() => opt.ansicht.speichern(null)).catch(e => console.warn(e));
+      zeichne();
+    };
   }
   function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
   function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Praxis' : x.soll_herkunft==='Ziel im Profil' ? 'App' : istModell(x) ? 'DGE-Rechenmodell' : /DGE/.test(x.soll_herkunft||'') ? 'DGE' : (x.soll_herkunft||''); }
