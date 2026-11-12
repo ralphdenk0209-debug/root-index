@@ -18,7 +18,16 @@
   function feld() {
     let f = document.getElementById('fpZahlung');
     if (f) return f;
-    const anker = document.getElementById('zRegel2');
+    // bevorzugt: eigene Karte auf der Seite "Abrechnung" (nach "Preis und Modell")
+    const inhalt = document.querySelector('section[data-v="abrechnung"] .seite-inhalt');
+    if (inhalt) {
+      const k = document.createElement('div'); k.className = 'karte2 nicht-demo';
+      k.innerHTML = '<div class="k2-kopf"><h3>Zahlung und Rechnungen</h3></div><div id="fpZahlung"></div>';
+      const erste = inhalt.querySelector('.karte2');
+      erste ? erste.insertAdjacentElement('afterend', k) : inhalt.prepend(k);
+      return document.getElementById('fpZahlung');
+    }
+    const anker = document.getElementById('zRegel2');   // aeltere Seite: Einstellungen
     if (!anker) return null;
     f = document.createElement('div'); f.id = 'fpZahlung'; f.className = 'nicht-demo'; f.style.maxWidth = '620px';
     anker.insertAdjacentElement('afterend', f);
@@ -51,7 +60,7 @@
         ${st.zahlungsart ? '<button class="tb" type="button" id="fpZPortal">Rechnungen und Rechnungsadresse</button>' : ''}
       </div>
       <div class="meld" id="meldZahlung"></div>
-      ${rech ? `<h3 style="margin:16px 0 6px;font-size:16px">Monatsrechnungen</h3><table class="tab schmal">${rech}</table>` : ''}`;
+      ${rech ? `<h3 style="margin:16px 0 6px;font-size:16px">Monatsrechnungen</h3><div class="tabwrap"><table class="tab"><tr><th>Monat</th><th>Keys</th><th style="text-align:right">Betrag</th><th>Stand</th><th>Rechnung</th></tr>${rech}</table></div>` : ''}`;
     if (hinweis) meld('meldZahlung', hinweis, art);
     $('fpZEinrichten').onclick = async function () {
       this.disabled = true; meld('meldZahlung', '⏳ Stripe wird geöffnet …');

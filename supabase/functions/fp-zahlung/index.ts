@@ -70,8 +70,8 @@ Deno.serve(async (req) => {
       const s = await stripe(key, "POST", "checkout/sessions", {
         mode: "setup", customer: kunde, currency: "eur", locale: "de",
         payment_method_types: ["sepa_debit", "card"],
-        success_url: zurueck + "?zahlung=ok&sid={CHECKOUT_SESSION_ID}#einstellungen",
-        cancel_url: zurueck + "?zahlung=abbruch#einstellungen",
+        success_url: zurueck + "?zahlung=ok&sid={CHECKOUT_SESSION_ID}#abrechnung",
+        cancel_url: zurueck + "?zahlung=abbruch#abrechnung",
         metadata: { root_index_fachperson: ich.auth_id },
       });
       return json({ ok: true, url: s.url });
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
         conf = c.id;
         await admin.from("fachleute_einstellung").upsert({ schluessel: sk, wert: conf, notiz: "Stripe-Kundenportal Fachleute (" + ich.modus + ")" });
       }
-      const p = await stripe(key, "POST", "billing_portal/sessions", { customer: ich.customer_id, configuration: conf, return_url: zurueck + "#einstellungen", locale: "de" });
+      const p = await stripe(key, "POST", "billing_portal/sessions", { customer: ich.customer_id, configuration: conf, return_url: zurueck + "#abrechnung", locale: "de" });
       return json({ ok: true, url: p.url });
     }
 
