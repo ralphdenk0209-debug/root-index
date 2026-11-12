@@ -1,7 +1,7 @@
 {
-  "build": 202611120417,
-  "version": "1.0.8",
-  "notes": "Neu: mehrere Ablage-Bereiche (z. B. je Firma) und Sammelordner Rechnungen › Jahr für die Steuer, Belege ohne Anhang (z. B. Meta, Google, Klarna) werden als PDF abgelegt, Bestellungen und Zahlungsbestätigungen werden besser erkannt, NAS-Adressen mit Freigabe funktionieren, Netzlaufwerke in der Ordnerauswahl",
-  "url": "https://foldair.de/download/Foldair-1.0.8.update",
-  "sha256": "8267a68d8a8d0f3c5aaa6d794683bc43be65cef14bcf2141bdf9641cce0716d4"
+  "build": 202611121829,
+  "version": "1.0.9",
+  "notes": "Neuer Agent „Speicherplatz“: überwacht die Festplatte, warnt bei wenig Platz und findet doppelte Videos und Bilder (auch aus WhatsApp), alte Sicherungen, Caches, Bau-Reste, Installer und große Dateien. Per Klick bereinigen – immer mit Nachfrage, nur in den Papierkorb, Systemdateien sind gesperrt.",
+  "url": "https://foldair.de/download/Foldair-1.0.9.update",
+  "sha256": "f7a75b3a594224ce1e45b8a3720a83c9e0ec59fcb906cb746c4b21e01edd2a14"
 }
