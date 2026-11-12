@@ -1,6 +1,8 @@
 -- =====================================================================
 -- FL-5b (11./12.11.2026): Snack-Plätze in den Plänen der Therapeutin und
 -- Plan-Vorschlag je Klient aus dem eigenen Bestand.
+-- TEXTE im Plan-Vorschlag: fl5d_texte_vorschlag.sql ersetzt _fl5_vorschlag und
+-- cb_fl5_muster_plan_vorschlag (nur Texte). Diese Datei nicht allein neu einspielen.
 -- Setzt fl5_plaene_rezepte.sql (live, Migration 20261111200526) voraus.
 -- NUR ADDITIV: eine neue Spalte, neue Funktionen; geänderte Funktionen sind
 -- ausschließlich FL-5-eigene (gleiche Signatur). Wochenplan, cb_plan_woche,
