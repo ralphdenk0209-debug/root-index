@@ -84,7 +84,7 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
 </head><body>
 
 <main class="blatt">
-  <div class="kopf"><span>Root Index · Information für Fachleute</span><span>Stand 11.11.2026</span></div>
+  <div class="kopf"><span>Root Index Pro · Information zur Bewertung</span><span>Stand 12.11.2026</span></div>
   <h1>Wie Root Index bewertet</h1>
   <div class="text">
     <p class="lead">Root Index gibt einem einzelnen verpackten Lebensmittel eine Zahl von 0 bis 100. Die Zahl beschreibt, <strong>woraus das Produkt besteht und wie stark es verarbeitet ist</strong>. Grundlage sind nur die Angaben auf dem Etikett.</p>
@@ -115,6 +115,24 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
     </table>
   </div>
   <p class="klein">Die Nährwerte sind der größte Teil, aber nicht die Mehrheit. Fast die Hälfte des Index (Zutaten und Verarbeitung, 45 Punkte) fragt nach dem Verarbeitungsgrad. Diese Gewichtung ist eine Entscheidung von Root Index.</p>
+
+  <div class="text">
+    <h3>So wird gerechnet</h3>
+    <p>Index = Summe der vier Teile ÷ erreichbare Punkte × 100, kaufmännisch gerundet. Beispiel Wasa Knäckebrot Vollkorn Roggen (Zutaten: Vollkornroggenmehl, Hefe, Salz; Werte aus dem Index, Stand 12.11.2026):</p>
+  </div>
+  <div class="tab">
+    <table>
+      <thead><tr><th>Teil</th><th class="zahl">erreicht</th></tr></thead>
+      <tbody>
+        <tr><td>Nährwerte</td><td class="zahl">33 / 40</td></tr>
+        <tr><td>Zutaten</td><td class="zahl">21,5 / 30</td></tr>
+        <tr><td>Zusatzstoffe</td><td class="zahl">15 / 15</td></tr>
+        <tr><td>Verarbeitung</td><td class="zahl">9 / 15</td></tr>
+        <tr><td><strong>Summe</strong></td><td class="zahl"><strong>78,5 / 100</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="klein">78,5 ÷ 100 × 100 = 78,5, gerundet <strong>79, Gut</strong>. Erreichbar sind meist 100 Punkte. Hat ein Produkt keine Nährwert-Achse (Mineralwasser, energiefreie Getränke, Tee oder Kaffee ohne Nährwertangabe), sind es 60. Beispiel Coca-Cola Zero: 7,5 + 0 + 3 = 10,5 von 60, also 10,5 ÷ 60 × 100 = 17,5, gerundet <strong>18, Schwach</strong>.</p>
 
   <div class="text">
     <h3>Von der Zahl zur Stufe</h3>
@@ -198,7 +216,16 @@ ul.saetze li::before{ content:""; position:absolute; left:0; top:.62em; width:7p
     <h3>Zur FET</h3>
     <p>Die Fachgesellschaft für Ernährungstherapie und Prävention (FET) e.V. stellt Fachkräften Beratungsmaterialien bereit, darunter Lebensmittellisten, die Lebensmittel unter anderem nach Energiedichte, Verarbeitung und Portionsgröße einordnen. Solche Listen helfen bei der Frage, welche Art von Lebensmittel passt. Root Index kann danach helfen, das konkrete Produkt im Regal zu wählen.</p>
 
-    <h2>Quellen</h2>
+    <h2>Datengrundlagen</h2>
+    <ul class="quellen">
+      <li>Etikett: Zutatenliste, Nährwerttabelle und E-Nummern, belegt durch Etikettfotos oder Herstellerangaben</li>
+      <li>Open Food Facts (Datenbank unter ODbL 1.0, Inhalte unter CC BY-SA 3.0), per EAN abgerufen und gegen die Nährwerte geprüft. Daher stammt der größte Teil der Produktdaten.</li>
+      <li>Bundeslebensmittelschlüssel (BLS) 4.0, © Max Rubner-Institut, CC BY 4.0: Nähr- und Mikronährwerte allgemeiner Lebensmittel ohne Marke. Ergänzend, wo der BLS nichts führt: Frida (DTU), NEVO (RIVM), USDA FoodData Central.</li>
+      <li>EFSA: Tolerable Upper Intake Levels, Übersicht Version 11 (August 2025). Nahrungsergänzungsmittel bekommen statt eines Index einen Dosis-Check gegen diese Höchstwerte.</li>
+    </ul>
+    <p class="klein">Die Quelle steht in der App bei jedem Produkt unter dem Index.</p>
+
+    <h2>Quellen der Regeln</h2>
     <p class="klein">Die wichtigsten Grundlagen. Jede einzelne Regel trägt im Regelwerk ihre eigene Quelle.</p>
     <ul class="quellen">
       <li>Verordnung (EU) Nr. 1169/2011 (LMIV), Art. 18: Zutaten in absteigender Reihenfolge des Gewichtsanteils – Grundlage der Gewichtung</li>
