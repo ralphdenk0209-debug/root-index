@@ -17,8 +17,8 @@
 <link rel="icon" href="favicon-96.png">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-<script src="fachleute-dashboard.js?v=3"></script>
-<script src="fachleute-statistik.js?v=6"></script>
+<script src="fachleute-dashboard.js?v=13"></script>
+<script src="fachleute-statistik.js?v=9"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <style>
   @font-face{font-family:Inter;src:url(fonts/inter-latin-400-normal.woff2) format("woff2");font-weight:400;font-display:swap}
@@ -377,8 +377,136 @@
   body.demo .keyliste .aktionen, body.demo .nicht-demo, body.demo [data-v="bewertung"], body.demo [data-v="wunschliste"]{display:none!important}
   body.demo .statuszeile .punkt{background:var(--gelb)}
   .demo-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--dunkel);color:#fff;border-radius:12px;padding:10px 16px;font-size:14.5px;z-index:80;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  /* ========== FL-4: Optik wie Content Studio (Ralph 11.11.2026), hell und dunkel ==========
+     Farben nur über Variablen. Ampel (--ok/--warn/--bad) nur für Ist gegen Soll und Status. Altes Grün nur noch im Logo. */
+  :root{--blau:#0b2ff2;--blau-h:#0922d7;--blau-zart:#eaf1ff;--blau-tief:#04157e;--ink:#0a0a0a;--muted:#737373;--paper:#f3f4f6;--panel:#fff;--line:#e5e5e5;
+    --ok:#16a34a;--ok-zart:#dcfce7;--warn:#d97706;--warn-zart:#fef3c7;--bad:#dc2626;--bad-zart:#fee2e2;--leer:#eef0f3;
+    --gruen:var(--blau);--dunkel:var(--ink);--creme:var(--paper);--linie:var(--line);--text:var(--ink);--karte:var(--panel);--gelb:var(--warn-zart);
+    --lime:var(--blau);--lime-hell:var(--blau-zart);--frisch-grund:var(--paper);--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Noto Sans",Arial,sans-serif;color-scheme:light}
+  @media (prefers-color-scheme: dark){:root{--blau:#6b86ff;--blau-h:#8aa0ff;--blau-zart:#1b2452;--blau-tief:#0b1a6e;--ink:#eef0f4;--muted:#9aa2ae;--paper:#0d1016;--panel:#161a22;--line:#2a303b;
+    --ok:#34d399;--ok-zart:#10392b;--warn:#fbbf24;--warn-zart:#3d2e0c;--bad:#f87171;--bad-zart:#4a1919;--leer:#232834;color-scheme:dark}}
+  body,body.app-an{font-family:var(--sans);background:var(--paper);color:var(--ink)}
+  h1,h2,h3,h4{letter-spacing:-.015em;font-weight:700}
+  input,select,textarea{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--blau);box-shadow:0 0 0 3px var(--blau-zart)}
+  a{color:var(--blau)}
+  .kopf{background:linear-gradient(100deg,var(--blau-tief),#213be3);color:#fff}
+  .kopf a{color:#fff}
+  .karte,.karte2,.kpi,.neu-panel,.keyliste,.fl5{background:var(--panel);border:1px solid var(--line)!important;box-shadow:none!important;border-radius:20px}
+  .knopf,.tb.haupt{background:var(--blau);border-color:var(--blau);color:#fff;border-radius:14px;font-weight:600}
+  .knopf:hover,.tb.haupt:hover{background:var(--blau-h)}
+  .knopf.zwei,.tb,.klein-knopf{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:12px;font-weight:600}
+  .tb:hover,.klein-knopf:hover{background:var(--paper)}
+  .tb.haupt{color:#fff}
+  .tabs button{background:var(--panel);color:var(--muted);border-color:var(--line)} .tabs button.an{background:var(--blau);border-color:var(--blau);color:#fff}
+  .hinweis,.hinweis-band{background:var(--warn-zart);border-color:transparent;color:var(--ink)}
+  .vertrag{background:var(--paper)}
+  .neu-code{background:var(--blau-tief)}
+  dialog{background:var(--panel);color:var(--ink)}
+  .chip.laeuft,.chip.erteilt{background:var(--ok-zart);color:var(--ok)} .chip.offen{background:var(--blau-zart);color:var(--blau)}
+  .chip.keine{background:var(--warn-zart);color:var(--warn)} .chip.widerrufen{background:var(--bad-zart);color:var(--bad)} .chip.abgelaufen,.chip.beendet{background:var(--leer);color:var(--muted)}
+  .key-code{color:var(--ink)}
+  .ampel.g{background:var(--ok)} .ampel.o{background:var(--warn)} .ampel.r{background:var(--bad)} .ampel.x{background:var(--leer)}
+  .statuszeile .punkt{background:var(--ok)} .statuszeile .punkt.gelb,body.demo .statuszeile .punkt{background:var(--warn)}
+  body.app-an .statuszeile{color:var(--muted)}
+  /* Seitenleiste: blauer Verlauf wie Content Studio */
+  @media (min-width:1001px){
+    body.app-an{padding-left:262px}
+    body.app-an .menue{left:8px;top:8px;bottom:8px;width:246px;border-radius:14px;background:linear-gradient(#8097f5,#213be3);box-shadow:none;padding:16px 12px}
+    body.app-an .menue-marke{color:#fff} .menue-marke small{color:#ffffffb3!important}
+    body.app-an .menue button{color:#fff;font-weight:500;border:1px solid transparent}
+    body.app-an .menue button:hover{background:#ffffff1f}
+    body.app-an .menue button.an{background:#ffffff33;border-color:#ffffff55;color:#fff;box-shadow:none;font-weight:600}
+    .menue-marke img{background:#fff;padding:3px}
+  }
+  @media (max-width:1000px){
+    body.app-an .menue{background:var(--panel);border-bottom:1px solid var(--line)}
+    body.app-an .menue button{color:var(--ink)} body.app-an .menue button.an{background:var(--blau-zart);color:var(--blau)}
+    .menue-auf{color:var(--ink)!important}
+  }
+  body.app-an .kopf{background:transparent;color:var(--ink)}
+  .gruss b{color:var(--ink)} .gruss span{color:var(--muted)}
+  body.app-an .kopf-nutzer{background:var(--panel);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+  .dd-menu{background:var(--panel);border-color:var(--line)} .dd-menu button{color:var(--ink)} .dd-menu button:hover{background:var(--blau-zart)}
+  .dd-info{border-color:var(--line)} .dd-info b{color:var(--ink)}
+  .segment{border-color:var(--line)} .segment button{background:var(--panel);color:var(--muted)} .segment button.an{background:var(--blau);color:#fff}
+  /* Seitenkopf: große Überschrift, Unterzeile, Linie */
+  body.app-an .band{margin:0 28px;padding:20px 0 12px;border-bottom:1px solid var(--line);flex-direction:column;align-items:flex-start;gap:2px}
+  body.app-an .band h1{color:var(--ink);font-size:30px;font-weight:700}
+  body.app-an .band span{color:#525252} @media (prefers-color-scheme: dark){ body.app-an .band span{color:var(--muted)} }
+  body.app-an .band.klein{margin:0;padding:12px 14px;flex-direction:row;align-items:center;background:var(--panel);color:var(--ink);border-bottom:1px solid var(--line)}
+  body.app-an .werkzeug{padding:14px 28px 6px}
+  .k2-kopf h3{color:var(--ink)} .k2-kopf span{color:var(--muted)}
+  .kpi-titel,.baum .kopfzeile,.abschnitt.eyebrow,.eyebrow{text-transform:uppercase;letter-spacing:.09em;color:var(--blau);font-weight:700;font-size:11.5px}
+  .kpi-wert{color:var(--ink)} .kpi-wert small,.kpi-fuss{color:var(--muted)}
+  .kpi-symbol.lime,.kpi-symbol.gelb,.kpi-symbol.orange,.kpi-symbol.tanne{background:var(--blau-zart);color:var(--blau)}
+  .kpi-delta.gut{background:var(--ok-zart);color:var(--ok)} .kpi-delta.schlecht{background:var(--warn-zart);color:var(--warn)}
+  .tabwrap{background:var(--panel)}
+  .tab th{background:var(--paper);color:var(--muted);border-color:var(--line)} .tab td{border-color:var(--line)}
+  .tab tr.klick:hover td{background:var(--blau-zart)}
+  .tab .gruppe td{background:var(--paper);color:var(--ink)}
+  .kennzahlen{border-color:var(--line)} .kz{background:var(--panel);border-color:var(--line)} .kz b{color:var(--ink)} .kz.warn b{color:var(--warn)}
+  .seite{background:var(--panel);border-color:var(--line)} .suche{border-color:var(--line)}
+  .baum button{color:var(--ink)} .baum button:hover{background:var(--paper)} .baum button.an{background:var(--blau-zart)} .baum button.an .n{color:var(--blau)} .baum button .n{color:var(--ink)}
+  body.app-an .detail,body.app-an .detail .fd .fd-zeit{background:var(--paper)}
+  .detail-kopf{background:var(--panel);border-color:var(--line)} .detail-kopf .n{color:var(--ink)}
+  .blick-k{background:var(--panel);border-color:var(--line)} .blick-k:hover{border-color:var(--blau);box-shadow:0 6px 20px rgba(11,47,242,.12)}
+  .blick-kopf b,.blick-werte b{color:var(--ink)} .blick-tage i.ja{background:var(--blau)} .blick-tage i.leer{background:var(--leer)}
+  .hinw-z{background:var(--paper);color:var(--ink)} .hinw-z:hover{background:var(--blau-zart)} .hinw-z b{color:var(--ink)} .hinw-t{color:var(--muted)}
+  .hinw-z i.orange{background:var(--warn)} .hinw-z i.gelb{background:#eab308} .hinw-z i.rot{background:var(--bad)} .hinw-z i.grau{background:var(--leer)}
+  .legende2 i.ja,.matrix td.ja{background:var(--ok-zart)} .legende2 i.nein,.matrix td.nein{background:var(--warn-zart)}
+  .legende2 i.ueber,.matrix td.ueber{background:var(--bad-zart)} .legende2 i.leer,.matrix td.leer{background:var(--leer)}
+  .matrix td{color:var(--ink)} .matrix tbody th{color:var(--ink)} .legende2 i.strich{border-color:var(--ink)}
+  .bz-name{color:var(--ink)} .bz-spur{background:var(--leer)} .bz-marke{border-color:var(--ink)}
+  .muster-mark,.mini-muster{background:var(--warn-zart);color:var(--warn)}
+  .demo-toast{background:var(--blau-tief);color:#fff}
+  .karte2.start h3,.schritte b{color:var(--ink)}
+  .bew-rahmen{background:var(--paper)}
+  #wunschFrame{background:var(--paper)}
+  .klein{color:var(--muted)}
+  /* Auswertung je Person (fachleute-dashboard.js) */
+  body .fd{--fd-gruen:var(--blau);--fd-akzent:var(--blau);--fd-dunkel:var(--ink);--fd-creme:var(--blau-zart);--fd-muted:var(--muted);--fd-linie:var(--line);--fd-gemuese:#16a34a;--fd-obst:#f59e0b;--fd-leer-balken:var(--muted)}
+  body .fd .fd-karte{background:var(--panel);border:1px solid var(--line)!important;box-shadow:none!important;border-radius:20px}
+  body .fd h2,body .fd h3,body .fd h4,body .fd .fd-label,body .fd .fd-kachel b,body .fd .fd-is .n,body .fd .fd-rez b{color:var(--ink)}
+  body .fd .fd-kachel{background:var(--blau-zart)}
+  body .fd .fd-modus{background:var(--panel);border-color:var(--line)} body .fd .fd-modus button{background:var(--panel);color:var(--muted)} body .fd .fd-modus button.an{background:var(--blau);color:#fff}
+  body .fd .fd-pfeil,body .fd .fd-k,body .fd .fd-tab button{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  body .fd .fd-tab button.an,body .fd .fd-k.gruen{background:var(--blau);border-color:var(--blau);color:#fff}
+  body .fd .fd-chip{background:var(--blau-zart);color:var(--blau)} body .fd .fd-chip.dunkel{background:var(--blau);color:#fff} body .fd .fd-chip.hell{background:var(--leer);color:var(--muted)}
+  body .fd .fd-bar{background:var(--leer)} body .fd .fd-bar .m{border-color:var(--ink)}
+  body .fd td,body .fd th{border-color:var(--line)}
+  body .fd .fd-linie{border-top-color:var(--ink)} body .fd .fd-linie span{background:var(--panel);color:var(--ink)}
+  body .fd .fd-balken .s.leer{background:repeating-linear-gradient(45deg,var(--leer),var(--leer) 4px,transparent 4px,transparent 8px)}
+  body .fd .fd-hinweis{background:var(--warn-zart);border-color:transparent;color:var(--ink)}
+  body .fd .fd-bald{border-color:var(--line);color:var(--muted)}
+  body .fd .fd-plan .tag{background:var(--paper)} body .fd .fd-plan .tag b{color:var(--ink)} body .fd .fd-plan .tag.heute{outline-color:var(--blau)} body .fd .fd-plan .e{background:var(--panel)}
+  body .fd .fd-rez .ph,body .fd .fd-rez img{background:var(--paper)}
+  body .fd .fd-her.vorgabe{background:var(--blau);color:#fff} body .fd .fd-her.profil{background:var(--blau-zart);color:var(--blau)} body .fd .fd-her.dge{background:var(--leer);color:var(--muted)} body .fd .fd-her.leer{background:transparent;color:var(--muted);border:1px dashed var(--line)}
+  body .fd .fd-ist.ja{background:var(--ok-zart)} body .fd .fd-ist.nein{background:var(--warn-zart)} body .fd .fd-ist.ueber{background:var(--bad-zart)}
+  body .fd .fd-ziel-zeile td{background:var(--paper)}
+  body .fd .fd-ziel-edit select,body .fd .fd-ziel-edit input,body .fd .fd-vg-form select,body .fd .fd-vg-form input{background:var(--panel);color:var(--ink);border-color:var(--line)}
+  .menue button .bald{margin-left:auto;font-size:10.5px;font-weight:700;border-radius:999px;padding:1px 7px;background:#ffffff2b;color:#fff;letter-spacing:.02em}
+  @media (max-width:1000px){ .menue button .bald{background:var(--warn-zart);color:var(--warn)} }
+  .bald.gross{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;background:var(--warn-zart);color:var(--warn);margin-bottom:8px}
+  .baum-fuss{font-size:12.5px;color:var(--muted);padding:10px 14px;margin:6px 0 0;border-top:1px solid var(--line);line-height:1.4}
   [hidden]{display:none!important}
   @media (max-width:520px){ .zahlen{grid-template-columns:1fr 1fr 1fr} .zahl b{font-size:20px} }
+
+  /* FL-4 Nachtplan: Klientenfilter, Vorführungsleiste, Übergabe, Praxisdaten */
+  .k-filter{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 10px}
+  .k-filter button{border:1px solid var(--line,#e5e5e5);background:var(--panel,#fff);border-radius:999px;padding:4px 10px;font:inherit;font-size:13px;color:var(--muted,#737373);cursor:pointer}
+  .k-filter button.an{background:var(--blau,#0b2ff2);border-color:var(--blau,#0b2ff2);color:#fff}
+  .k-filter button i{font-style:normal;font-weight:700;margin-left:2px}
+  .baum-knoepfe{padding:10px 12px 0}
+  .demo-leiste{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto}
+  .demo-leiste span{font-size:13px;color:var(--muted,#737373)}
+  .demo-leiste .tb{padding:4px 10px;font-size:13px}
+  .statuszeile{flex-wrap:wrap}
+  .ueber-schritte{padding-left:20px;line-height:1.5} .ueber-schritte li{margin:6px 0}
+  .dd-menu .rot{color:var(--bad,#b42318)}
+  .praxis-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;max-width:760px}
+  .praxis-form .breit{grid-column:1/-1}
+  .demo-wunsch{max-width:720px;margin:16px}
 </style>
 </head>
 <body>
@@ -403,11 +531,12 @@
     <button type="button" data-v="uebersicht"><svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>Übersicht</button>
     <button type="button" data-v="klienten"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.8c1.9.7 3.1 2.4 3.5 5.2"/></svg>Klienten</button>
     <button type="button" data-v="auswertungen"><svg viewBox="0 0 24 24"><path d="M5 20V11M11 20V5M17 20v-7M3 20h18"/></svg>Auswertungen</button>
-    <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne</button>
-    <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte</button>
-    <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte</button>
+    <button type="button" data-v="plaene"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Pläne<span class="bald">in Arbeit</span></button>
+    <button type="button" data-v="rezepte"><svg viewBox="0 0 24 24"><path d="M4 11h16v2.5a6.5 6.5 0 0 1-6.5 6.5h-3A6.5 6.5 0 0 1 4 13.5z"/><path d="M8.5 8c0-1.4 1-1.8 1-3.2M12.5 8c0-1.4 1-1.8 1-3.2"/></svg>Rezepte<span class="bald">in Arbeit</span></button>
+    <button type="button" data-v="berichte"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M10 13h6M10 17h6"/></svg>Berichte<span class="bald">in Arbeit</span></button>
     <button type="button" data-v="bewertung"><svg viewBox="0 0 24 24"><path d="M12 4v16M6 20h12M5 7.5h14M5 7.5l-2.5 6a2.5 2.5 0 0 0 5 0zM19 7.5l-2.5 6a2.5 2.5 0 0 0 5 0z"/></svg>So bewertet Root Index</button>
     <button type="button" data-v="keys"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="M11 12l8.5-8.5M16.5 6.5l3 3M13.5 9.5l2 2"/></svg>Keys</button>
+    <button type="button" data-v="abrechnung"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 10h17M7.5 15h4"/></svg>Abrechnung</button>
     <button type="button" data-v="wunschliste"><svg viewBox="0 0 24 24"><path d="M9.5 18h5M10.5 21h3M12 3a6 6 0 0 0-3.6 10.8c.7.5 1.1 1.3 1.1 2.2h5c0-.9.4-1.7 1.1-2.2A6 6 0 0 0 12 3z"/></svg>Wunschliste</button>
     <button type="button" data-v="einstellungen"><svg viewBox="0 0 24 24"><path d="M4 6h10M18 6h2M4 12h3M11 12h9M4 18h11M19 18h1"/><circle cx="16" cy="6" r="2"/><circle cx="9" cy="12" r="2"/><circle cx="17" cy="18" r="2"/></svg>Einstellungen</button>
   </div>
@@ -432,7 +561,7 @@
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
-      <p style="margin:12px 0 0;font-size:14px"><a href="#demo" id="zurDemo">Musterpraxis ansehen (Vorführung mit Passwort)</a></p>
+      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ausprobieren (Vorführung ohne Anmeldung)</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
     </div>
   </section>
@@ -525,7 +654,10 @@
     <div class="split">
       <aside class="seite">
         <div class="band klein"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/></svg>Klienten</div>
-        <div class="suche"><input type="search" id="kSuche" placeholder="Suchen" aria-label="Klienten suchen"></div>
+        <div class="suche"><input type="search" id="kSuche" placeholder="Name oder Key suchen" aria-label="Klienten suchen"></div>
+        <div class="k-filter" id="kFilter" role="tablist" aria-label="Klienten filtern">
+          <button type="button" data-kf="aktiv" class="an">Aktiv</button><button type="button" data-kf="bald">Läuft ab</button>
+          <button type="button" data-kf="warten">Wartet</button><button type="button" data-kf="archiv">Archiv</button></div>
         <select id="kAuswahl" class="nur-handy" aria-label="Person wählen"></select>
         <div class="baum" id="kBaum"></div>
       </aside>
@@ -603,6 +735,15 @@
     <p class="fuss">So geht es weiter: Die Klientin bekommt den Link, legt damit ein Konto an, erhält Premium für die Laufzeit und entscheidet selbst, ob ihre Einträge hier sichtbar werden. Ohne ihre Einwilligung ist nichts zu sehen.</p>
   </section>
 
+  <section class="ansicht" data-v="abrechnung">
+    <div class="band"><h1>Abrechnung</h1><span>was die Praxis an Root Index zahlt</span></div>
+    <div class="seite-inhalt">
+      <div class="karte2"><div class="k2-kopf"><h3>Preis und Modell</h3></div><p class="fuss" id="abrRegel" style="margin:0">Lädt …</p></div>
+      <div class="karte2"><div class="k2-kopf"><h3>Monate</h3><span>aktive Keys je Kalendermonat; der laufende Monat zählt bis heute</span></div>
+        <div class="tabwrap"><table class="tab" id="abrTab"><tbody><tr><td class="leer">Lädt …</td></tr></tbody></table></div></div>
+    </div>
+  </section>
+
   <section class="ansicht" data-v="wunschliste">
     <iframe id="wunschFrame" title="Wunschliste der Fachleute" loading="lazy"></iframe>
   </section>
@@ -612,6 +753,18 @@
     <div class="ueb">
       <h2 class="abschnitt">Konto</h2>
       <table class="tab schmal" id="kontoTab"></table>
+      <h2 class="abschnitt">Praxisdaten</h2>
+      <p class="fuss" style="margin-top:0">Erscheinen auf Berichten, QR-Karten und in Mails an Klientinnen und Klienten.</p>
+      <div class="praxis-form" id="praxisForm">
+        <div><label for="pxName">Name</label><input id="pxName" maxlength="120" autocomplete="name"></div>
+        <div><label for="pxPraxis">Praxis</label><input id="pxPraxis" maxlength="160" autocomplete="organization"></div>
+        <div><label for="pxBeruf">Berufsbezeichnung</label><input id="pxBeruf" maxlength="120" placeholder="z. B. Diätassistentin, Ernährungsberaterin (VDOE)"></div>
+        <div><label for="pxTel">Telefon</label><input id="pxTel" maxlength="60" inputmode="tel" autocomplete="tel"></div>
+        <div class="breit"><label for="pxAnschrift">Anschrift</label><input id="pxAnschrift" maxlength="300" autocomplete="street-address"></div>
+        <div class="breit"><label for="pxWeb">Webseite</label><input id="pxWeb" maxlength="200" inputmode="url" placeholder="praxis-beispiel.de"></div>
+      </div>
+      <div class="aktionen"><button class="tb haupt" type="button" id="pxLos">Praxisdaten speichern</button></div>
+      <div class="meld" id="meldPx"></div>
       <h2 class="abschnitt">Abrechnung</h2>
       <p class="fuss" id="zRegel2" style="margin-top:0"></p>
       <div class="nicht-demo">
@@ -626,6 +779,19 @@
   </section>
 </main>
 <div class="klein" id="fussKlein">Root Index – wir lesen die Rückseite. <a href="https://root-index.de/">root-index.de</a> · <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
+
+<!-- Übergabe an eine andere Fachkraft -->
+<dialog id="dlgUeber"><div class="dlg">
+  <h2>An andere Fachkraft übergeben</h2>
+  <p id="ueberText"></p>
+  <ol class="ueber-schritte">
+    <li>Die neue Fachkraft legt in ihrem Bereich einen Key für die Person an und schickt ihn ihr.</li>
+    <li>Die Person löst den neuen Key ein und willigt dort ein. Damit entscheidet sie selbst über den Wechsel.</li>
+    <li>Der Key hier endet in dem Moment automatisch. Die Daten sind dann hier nicht mehr sichtbar, die Person steht im Archiv.</li>
+  </ol>
+  <p class="fuss">Eine direkte Weitergabe von Daten zwischen Fachleuten gibt es nicht. Eigene Notizen und Stichworte bleiben bei der bisherigen Fachkraft.</p>
+  <button class="knopf" type="button" onclick="this.closest('dialog').close()">Verstanden</button>
+</div></dialog>
 
 <!-- Einlöse-Link per E-Mail (Edge-Funktion fp-key-mail) -->
 <dialog id="dlgMail"><div class="dlg">
@@ -757,10 +923,10 @@ async function demoStart(pw){
   DEMO = pw; try{ sessionStorage.setItem(DEMO_SPEICHER, pw); }catch(e){}
   MUSTER = json(data);
   ICH = {name: MUSTER.praxis || 'Praxis Muster', praxis: 'Musterpraxis, alle Personen erfunden', email: '', kuerzel: 'MUSTER', lizenz_art: 'gruenderin_gratis', vertrag_ok: true, demo: true};
-  KEYS = (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
-                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+  KEYS = demoKeys(musterKeys());
   KEYS_DA = true;
   document.body.classList.add('demo');
+  demoLeiste();
   $('hName').textContent = 'Übersicht'; $('hPraxis').textContent = 'alle Klientinnen und Klienten im Blick';
   $('abmelden').textContent = 'Musterpraxis verlassen'; $('abmelden2').textContent = 'Musterpraxis verlassen'; $('abmeldenTitel').textContent = 'Musterpraxis verlassen';
   zeichneKonto();
@@ -779,7 +945,7 @@ $('demoLos').onclick = async function(){
 };
 $('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
 $('demoZurAnmeldung').onclick = () => { history.replaceState(null, '', location.pathname); zeige('bLogin'); };
-$('zurDemo').onclick = e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); };
+$('zurDemo').onclick = async e => { e.preventDefault(); history.replaceState(null, '', location.pathname + '#demo'); if(!(await demoStart('oeffentlich'))){ zeige('bDemo'); setTimeout(() => $('demoPw').focus(), 50); } };
 function nurAnsehen(){
   let t = document.querySelector('.demo-toast');
   if(!t){ t = document.createElement('div'); t.className = 'demo-toast'; document.body.appendChild(t); }
@@ -787,11 +953,131 @@ function nurAnsehen(){
   clearTimeout(nurAnsehen.t); nurAnsehen.t = setTimeout(() => t.hidden = true, 2200);
 }
 
+/* ---------- FL-4: Vorführung zum Ausprobieren (Ralph 11.11.: „Demo-Seite zum Testen der Funktionen“) ----------
+   Alles, was man in der Vorführung ändert (Key anlegen, verlängern, beenden, Ziele, Akte, Notizen, Praxisdaten),
+   bleibt in diesem Browser-Tab (sessionStorage). Es gibt keinen Schreibweg ohne Anmeldung zur Datenbank; echte
+   Daten sind nicht erreichbar, Mails gehen nicht raus. „Vorführung zurücksetzen“ oder Tab schließen = frisch. */
+const DEMO_DATEN_SCHLUESSEL = 'fl-demo-daten';
+function demoDaten(){ try{ return JSON.parse(sessionStorage.getItem(DEMO_DATEN_SCHLUESSEL)) || {}; }catch(e){ return {}; } }
+function demoSichern(d){ try{ sessionStorage.setItem(DEMO_DATEN_SCHLUESSEL, JSON.stringify(d)); }catch(e){} }
+function demoReset(){   // alle Vorführungsdaten (auch die von FL-5, Schlüssel „fl-demo-…“), den Zugang behalten
+  try{ Object.keys(sessionStorage).filter(k => k.startsWith('fl-demo-')).forEach(k => sessionStorage.removeItem(k)); }catch(e){}
+  location.reload(); }
+function musterKeys(){
+  return (MUSTER.klienten||[]).map(k => ({code: k.code, nr: k.nr, status: 'laeuft', einwilligung: 'erteilt', besprochen: true, klient_name: k.name,
+                                          bezeichnung: k.steckbrief, tage: 90, start_am: k.start_am, laeuft_bis: k.laeuft_bis, erstellt_am: k.start_am}));
+}
+function demoKeys(muster){
+  const d = demoDaten(), st = d.keyStatus || {};
+  return muster.concat(d.keys || []).map(k => Object.assign({}, k, st[k.code] || {}));
+}
+function demoKeyMerken(code, aend){ const d = demoDaten(); d.keyStatus = d.keyStatus || {}; d.keyStatus[code] = Object.assign(d.keyStatus[code] || {}, aend); demoSichern(d); }
+function demoKeyAnlegen(tage, bez){
+  const z = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789', r = n => Array.from({length: n}, () => z[Math.floor(Math.random()*z.length)]).join('');
+  const code = 'DEMO-' + r(4) + '-' + r(4), heute = new Date().toISOString();
+  const k = {code, status: 'offen', einwilligung: 'keine', tage, bezeichnung: bez || null, erstellt_am: heute, demo_neu: true};
+  const d = demoDaten(); d.keys = (d.keys || []).concat([k]); demoSichern(d);
+  KEYS.push(k);
+  return {ok: true, code, tage, link: 'https://root-index.de/klientin.html?code=' + code};
+}
+function demoKeyAktion(rpc, a){
+  const k = KEYS.find(x => x.code===a.p_code); if(!k) return {ok: false, grund: 'Key nicht gefunden.'};
+  if(rpc==='cb_fp_key_bezeichnung'){ demoKeyMerken(k.code, {bezeichnung: a.p_bezeichnung}); }
+  else if(rpc==='cb_fp_key_beenden'){ demoKeyMerken(k.code, {status: 'beendet', beendet_am: new Date().toISOString(), beendet_grund: 'fachperson'}); }
+  else if(rpc==='cb_fp_key_laufzeit'){
+    const n = a.p_menge, tage = a.p_einheit==='tage' ? n : a.p_einheit==='wochen' ? n*7 : Math.round(n*30.4);
+    if(k.status==='offen') demoKeyMerken(k.code, {tage: Math.max(1, (k.tage||0) + tage)});
+    else { const b = new Date(k.laeuft_bis || Date.now()); b.setDate(b.getDate() + tage);
+      const aend = {laeuft_bis: b.toISOString().slice(0,10)};
+      if(b < new Date()) Object.assign(aend, {status: 'abgelaufen'}); else if(k.status==='abgelaufen') aend.status = 'laeuft';
+      demoKeyMerken(k.code, aend); }
+  }
+  KEYS = demoKeys(musterKeys());
+  return {ok: true};
+}
+/* Änderungen an Zielen, Akte und Notizen je Person im Sandkasten */
+function demoSetzen(code, art, x){
+  const d = demoDaten(); d.p = d.p || {}; const p = d.p[code] = d.p[code] || {vorgaben: {}, akte: {}, protokoll: []};
+  const heute = new Date().toISOString();
+  if(art==='vorgabe'){ if(x.wert==null) delete p.vorgaben[x.kennzahl]; else p.vorgaben[x.kennzahl] = {wert: Number(x.wert), art: x.art || 'etwa', notiz: x.notiz || null}; }
+  if(art==='privat'){ p.privat_notiz = x.privat_notiz; p.stichworte = (x.stichworte || []).slice(0, 20); }
+  let n = 0;
+  if(art==='akte') Object.keys(x).forEach(f => { const alt = f in p.akte ? p.akte[f] : (DEMO_LETZT[code] && DEMO_LETZT[code][f]); const neu = x[f]==='' ? null : x[f];
+    if(JSON.stringify(alt) !== JSON.stringify(neu)){ p.protokoll.unshift({feld: f, alt: alt==null ? null : alt, neu, am: heute}); n++; } p.akte[f] = neu; });
+  demoSichern(d);
+  return {ok: true, geaendert: n};
+}
+const DEMO_LETZT = {};
+function demoMischen(code, r){
+  const p = (demoDaten().p || {})[code]; const a = r.akte || {};
+  a.nur_ansehen = false;
+  DEMO_LETZT[code] = Object.assign({}, a.felder || {}, {ziel_text: a.ziel_text, sport_text: a.sport_text, notiz_text: a.notiz_text});
+  if(!p){ r.akte = a; return r; }
+  ['ziel_text','sport_text','notiz_text'].forEach(f => { if(f in p.akte) a[f] = p.akte[f]; });
+  a.felder = Object.assign({}, a.felder || {});
+  Object.keys(p.akte).forEach(f => { if(!/_text$/.test(f)) a.felder[f] = /_cm|_kg/.test(f) && p.akte[f]!=null ? Number(String(p.akte[f]).replace(',', '.')) : p.akte[f]; });
+  if(p.akte.gewicht_kg != null) r.profil = Object.assign({}, r.profil, {gewicht_kg: a.felder.gewicht_kg});
+  ['groesse_cm','ernaehrungsform','diabetes_typ','unvertraeglichkeiten','geschlecht'].forEach(f => { if(f in p.akte) r.profil = Object.assign({}, r.profil, {[f]: a.felder[f]}); });
+  if('privat_notiz' in p) a.privat_notiz = p.privat_notiz;
+  if(p.stichworte) a.stichworte = p.stichworte;
+  a.protokoll = (p.protokoll || []).concat(a.protokoll || []);
+  Object.entries(p.vorgaben).forEach(([k, v]) => {
+    (r.ist_soll || []).filter(x => x.kennzahl===k && x.einheit!=='en%').forEach(x => {
+      x.soll = v.wert; x.art = v.art; x.soll_herkunft = 'Vorgabe Therapeutin'; x.hinweis = v.notiz;
+      const ist = Number(x.ist); x.ist_prozent_vom_soll = v.wert ? Math.round(ist / v.wert * 100) : null;
+      x.erfuellt = x.ist==null ? null : v.art==='mindestens' ? ist >= v.wert : v.art==='hoechstens' ? ist <= v.wert : Math.abs(ist - v.wert) <= v.wert * 0.1;
+    });
+  });
+  r.akte = a; return r;
+}
+function demoLeiste(){
+  if($('demoLeiste')) return;
+  const l = document.createElement('span'); l.id = 'demoLeiste'; l.className = 'demo-leiste';
+  l.innerHTML = '<span>Vorführung: Änderungen bleiben nur in diesem Browser-Tab.</span>' +
+    '<button type="button" class="tb" id="demoVorschlag">Verbesserung vorschlagen</button><button type="button" class="tb" id="demoReset">Vorführung zurücksetzen</button>';
+  $('statusZeile').appendChild(l);
+  $('demoVorschlag').onclick = () => geh('wunschliste');
+  $('demoReset').onclick = () => { if(confirm('Alle Änderungen in der Vorführung verwerfen?')) demoReset(); };
+}
+function demoWunsch(){
+  const sec = document.querySelector('.ansicht[data-v="wunschliste"]');
+  if(sec.querySelector('.demo-wunsch')) return;
+  const box = document.createElement('div'); box.className = 'karte2 demo-wunsch';
+  box.innerHTML = '<div class="k2-kopf"><h3>Verbesserung vorschlagen</h3></div>' +
+    '<p>Ideen und Wünsche sammeln wir in der gemeinsamen Wunschliste der Fachleute. Dort lassen sich Wünsche eintragen, mit „Ich auch“ unterstützen und Skizzen anhängen. Eintragen geht nach der Anmeldung als Fachperson.</p>' +
+    '<p><a class="tb haupt" href="therapeut.html#wunschliste" target="_blank" rel="noopener">Zur Wunschliste (Anmeldung)</a></p>' +
+    '<p class="fuss">Noch kein Zugang? Kurz schreiben an <a href="mailto:kontakt@root-index.de?subject=Vorschlag%20f%C3%BCr%20Root%20Index%20f%C3%BCr%20Fachleute">kontakt@root-index.de</a>.</p>';
+  $('wunschFrame').hidden = true; sec.appendChild(box);
+}
+function demoZahlen(){
+  const aktiv = KEYS.filter(x => x.status==='laeuft').length;
+  $('zAktiv').textContent = aktiv; $('zNeu').textContent = KEYS.filter(x => x.demo_neu).length;
+  $('zBetrag').textContent = (aktiv * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+  $('zRegel').textContent = 'Beispiel: 4,99 € je Key und Monat, jeder angefangene Monat zählt voll. In der Vorführung wird nichts berechnet.';
+  $('zRegel2').textContent = $('zRegel').textContent;
+}
+function demoAbrechnung(){
+  demoZahlen();
+  $('abrRegel').textContent = $('zRegel').textContent;
+  const h = heuteBerlin(), zeilen = [];
+  for(let i = 0; i < 6; i++){
+    const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i);
+    const von = d.toISOString().slice(0,10), e = new Date(d); e.setUTCMonth(e.getUTCMonth() + 1); e.setUTCDate(0); const bis = e.toISOString().slice(0,10);
+    const ak = KEYS.filter(k => k.start_am && String(k.start_am).slice(0,10) <= bis && (!k.laeuft_bis || String(k.laeuft_bis).slice(0,10) >= von));
+    const neu = ak.filter(k => String(k.start_am).slice(0,10) >= von).length;
+    const euro = (ak.length * 4.99).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+    zeilen.push('<tr><td><b>' + MONATE[d.getUTCMonth()] + ' ' + d.getUTCFullYear() + '</b>' + (i===0 ? ' <small style="color:var(--muted)">bis heute</small>' : '') + '</td><td class="z">' + ak.length +
+      '</td><td class="z">' + neu + '</td><td class="z">' + euro + '</td><td class="z">–</td><td class="z"><b>' + euro + '</b></td></tr>');
+  }
+  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' + zeilen.join('') + '</tbody>';
+}
+
 async function start(){
   if(inRecovery){ zeige('bNeuPass'); return; }
   if(demoGewuenscht()){
-    const z = new URLSearchParams(location.search).get('z') || demoGemerkt();
-    if(z && await demoStart(z)) return;
+    const z = new URLSearchParams(location.search).get('z') || demoGemerkt() || 'oeffentlich';
+    if(await demoStart(z)) return;
+    if(z !== 'oeffentlich' && await demoStart('oeffentlich')) return;
     try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
     zeige('bDemo'); return;
   }
@@ -827,7 +1113,7 @@ async function ladeAlles(){
   if(DEMO){   // Vorführung: Keys sind die Musterklienten, keine Abrechnung
     zeichne(); zeichneShell();
     ['zAktiv','zBetrag','zNeu'].forEach(id => $(id).textContent = '–');
-    $('zRegel').textContent = 'In der Musterpraxis gibt es keine Abrechnung.'; $('zRegel2').textContent = $('zRegel').textContent;
+    demoZahlen();
     if(AKTIV==='uebersicht') ladeUebersichtStat();
     if(AKTIV==='klienten' && !$('kDash')) zeigeKlient(WAHL || standardWahl());
     return;
@@ -874,7 +1160,7 @@ $('anlegen').onclick = async function(){
   if(tage > 730) return meld('meldNeu','Höchstens 2 Jahre.','fehler');
   if(!$('vereinbarungZeile').hidden && !$('vereinbarung').checked) return meld('meldNeu','Bitte zuerst die Vereinbarung zur Verschwiegenheit bestätigen.','fehler');
   this.disabled = true; meld('meldNeu','⏳ …');
-  const {data, error} = await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
+  const {data, error} = DEMO ? {data: demoKeyAnlegen(tage, $('neuBez').value.trim())} : await client.rpc('cb_fp_key_anlegen', { p_tage: tage, p_bezeichnung: $('neuBez').value.trim() || null, p_vereinbarung_bestaetigt: $('vereinbarung').checked });
   this.disabled = false;
   const d = json(data);
   if(error || !d.ok){ meld('meldNeu', error ? error.message : d.grund, 'fehler'); if(d.vereinbarung_noetig) $('vereinbarungZeile').hidden = false; return; }
@@ -970,7 +1256,7 @@ $('liste').addEventListener('click', async e => {
     rpc = 'cb_fp_key_beenden'; args = { p_code: code };
   }
   box.querySelectorAll('button').forEach(x => x.disabled = true); setM('⏳ …');
-  const {data, error} = await client.rpc(rpc, args);
+  const {data, error} = DEMO ? {data: demoKeyAktion(rpc, args)} : await client.rpc(rpc, args);
   const d = json(data);
   if(error || !d.ok){ box.querySelectorAll('button').forEach(x => x.disabled = false); return setM(error ? error.message : d.grund, 'fehler'); }
   ladeAlles();
@@ -980,7 +1266,7 @@ $('liste').addEventListener('click', async e => {
 function heuteBerlin(){ return new Date().toLocaleDateString('sv-SE', {timeZone:'Europe/Berlin'}); }
 function plusTage(s, n){ const d = new Date(s + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0,10); }
 const NAMEN = {uebersicht:'Übersicht', klienten:'Klienten', auswertungen:'Auswertungen', plaene:'Pläne', rezepte:'Rezepte',
-               berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
+               berichte:'Berichte', bewertung:'So bewertet Root Index', keys:'Keys', abrechnung:'Abrechnung', wunschliste:'Wunschliste', einstellungen:'Einstellungen'};
 let KEYS_DA = false, AKTIV = 'uebersicht', WAHL = null, MUSTER = null, NEU_ABSICHT = 'nur', AW_TAGE = 7;
 const verbunden = () => KEYS.filter(x => x.status==='laeuft' && x.einwilligung==='erteilt');
 const klientName = x => x.klient_name || x.bezeichnung || x.code;
@@ -993,7 +1279,7 @@ document.addEventListener('click', e => {
   document.querySelectorAll('.dd.auf').forEach(d => { if(!t || d !== t.closest('.dd')) d.classList.remove('auf'); });
   if(t){ t.closest('.dd').classList.toggle('auf'); return; }
   const g = e.target.closest('[data-geh]'); if(g){ geh(g.dataset.geh); return; }
-  const n = e.target.closest('[data-neu]'); if(n){ if(DEMO) nurAnsehen(); else neuerKey(n.dataset.neu); return; }
+  const n = e.target.closest('[data-neu]'); if(n){ neuerKey(n.dataset.neu); return; }
   if(e.target.closest('[data-druck]')){ drucken(); return; }
   const aw = e.target.closest('[data-aw]'); if(aw){ AW_TAGE = Number(aw.dataset.aw); $('awZeitText').textContent = aw.textContent; ladeAuswertungen(); return; }
   const tr = e.target.closest('tr[data-ziel]'); if(tr){ geh(tr.dataset.ziel); return; }
@@ -1008,7 +1294,7 @@ function route(){
   const h = decodeURIComponent(location.hash.slice(1)) || 'uebersicht';
   const teil = h.split('/');
   let v = NAMEN[teil[0]] ? teil[0] : 'uebersicht';
-  if(DEMO && (v==='wunschliste' || v==='bewertung')) v = 'uebersicht';   // in der Vorführung nicht dabei
+  if(DEMO && v==='bewertung') v = 'uebersicht';   // vertraulich, in der Vorführung nicht dabei
   AKTIV = v;
   document.querySelectorAll('.ansicht').forEach(s => s.classList.toggle('an', s.dataset.v===v));
   document.querySelectorAll('#menueListe [data-v]').forEach(b => { b.classList.toggle('an', b.dataset.v===v); b.setAttribute('aria-current', b.dataset.v===v ? 'page' : 'false'); });
@@ -1016,9 +1302,12 @@ function route(){
   if(v==='klienten') zeigeKlient(teil[1] || WAHL || standardWahl());
   if(v==='auswertungen') ladeAuswertungen();
   if(v==='uebersicht') ladeUebersichtStat();
-  if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
+  if(v==='wunschliste' && DEMO) demoWunsch();
+  else if(v==='wunschliste' && !$('wunschFrame').getAttribute('src')) $('wunschFrame').src = 'fachleute-wuensche.html?eingebettet=1';
   if(v==='plaene' || v==='rezepte' || v==='berichte') zeigeFl5(v);
   if(v==='bewertung') ladeBewertung();
+  if(v==='abrechnung') ladeAbrechnung();
+  if(v==='einstellungen') ladePraxis();
   window.scrollTo(0,0);
 }
 function standardWahl(){ const v = verbunden(); return v.length ? v[0].code : null; }
@@ -1054,23 +1343,96 @@ function zeichneShell(){
     : '<tbody><tr><td class="leer">Noch keine Keys. Oben mit „Neuer Key“ den ersten anlegen.</td></tr></tbody>';
   zeichneBaum();
 }
+let K_FILTER = 'aktiv';
+const BALD_TAGE = 14;
+function kGruppen(){
+  const v = verbunden();
+  return {
+    aktiv: v,
+    bald: v.filter(x => restTage(x.laeuft_bis) <= BALD_TAGE),
+    warten: KEYS.filter(x => x.status==='offen' || (x.status==='laeuft' && x.einwilligung!=='erteilt')),
+    archiv: KEYS.filter(x => x.status==='beendet' || x.status==='abgelaufen' || (x.status==='laeuft' && x.einwilligung==='widerrufen'))
+  };
+}
 function zeichneBaum(){
   const q = ($('kSuche').value || '').trim().toLowerCase();
-  const passt = s => !q || String(s||'').toLowerCase().includes(q);
-  const v = verbunden().filter(x => passt(klientName(x)) || passt(x.code));
-  const warten = KEYS.filter(x => x.status==='laeuft' && x.einwilligung!=='erteilt').filter(x => passt(klientName(x)) || passt(x.code));
-  let h = '<div class="kopfzeile"><span>Meine Klienten</span><span>' + v.length + '</span></div>';
-  h += v.length ? v.map(x => '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel g"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · bis ' + datum(x.laeuft_bis) + '</small></span></button>').join('')
-                : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : 'Noch niemand verbunden.') + '</div>';
-  if(warten.length) h += warten.map(x => '<button type="button" data-geh="keys"><span class="ampel o"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>wartet auf Einwilligung</small></span></button>').join('');
+  const passt = x => !q || [klientName(x), x.code, x.bezeichnung].some(s0 => String(s0||'').toLowerCase().includes(q));
+  const g = kGruppen();
+  document.querySelectorAll('#kFilter [data-kf]').forEach(b => {
+    const n = g[b.dataset.kf].length; b.classList.toggle('an', b.dataset.kf===K_FILTER);
+    b.innerHTML = b.dataset.kf==='aktiv' ? 'Aktiv' : b.dataset.kf==='bald' ? 'Läuft ab' : b.dataset.kf==='warten' ? 'Wartet' : 'Archiv';
+    if(n) b.innerHTML += ' <i>' + n + '</i>';
+  });
+  const liste = g[K_FILTER].filter(passt);
+  const titel = {aktiv: 'Meine Klienten', bald: 'Key läuft in ' + BALD_TAGE + ' Tagen ab', warten: 'Wartet auf Einlösen oder Einwilligung', archiv: 'Archiv: beendet oder abgelaufen'}[K_FILTER];
+  let h = '<div class="kopfzeile"><span>' + titel + '</span><span>' + liste.length + '</span></div>';
+  h += liste.length ? liste.map(x => {
+      const ok = x.status==='laeuft' && x.einwilligung==='erteilt', rt = x.laeuft_bis ? restTage(x.laeuft_bis) : null;
+      const ampel = ok ? (rt <= BALD_TAGE ? 'o' : 'g') : x.status==='offen' ? 'x' : x.einwilligung==='widerrufen' ? 'r' : x.status==='laeuft' ? 'o' : 'x';
+      const unter = ok ? (rt <= BALD_TAGE ? 'läuft in ' + zahlTxt(rt, 'Tag', 'Tagen') + ' ab' : 'bis ' + datum(x.laeuft_bis))
+                  : x.status==='offen' ? 'Key noch nicht eingelöst' : x.status==='laeuft' ? (x.einwilligung==='widerrufen' ? 'Einwilligung widerrufen' : 'wartet auf Einwilligung')
+                  : x.status==='beendet' ? 'beendet am ' + datum(x.beendet_am) : 'abgelaufen am ' + datum(x.laeuft_bis);
+      return '<button type="button" data-wahl="' + esc(x.code) + '"><span class="ampel ' + ampel + '"></span><span><span class="n">' + esc(klientName(x)) + '</span><small>' + esc(x.code) + ' · ' + esc(unter) + '</small></span></button>';
+    }).join('')
+    : '<div class="leer-klein">' + (q ? 'Kein Treffer.' : K_FILTER==='archiv' ? 'Noch keine beendeten Keys.' : K_FILTER==='aktiv' ? 'Noch niemand verbunden.' : 'Niemand.') + '</div>';
+  h += '<div class="baum-knoepfe"><button class="tb haupt" type="button" data-neu="mail">Klient hinzufügen</button></div>';
+  h += '<p class="baum-fuss">Hinzufügen heißt: einen Key anlegen und der Person schicken. Mit dem Einlösen und ihrer Einwilligung steht sie hier.</p>';
   $('kBaum').innerHTML = h;
   $('kBaum').querySelectorAll('[data-wahl]').forEach(b => { b.classList.toggle('an', b.dataset.wahl===WAHL); b.onclick = () => geh('klienten/' + b.dataset.wahl); });
+  const v = g.aktiv;
   $('kAuswahl').innerHTML = '<option value="">Person wählen …</option>' +
-    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
+    (v.length ? '<optgroup label="Meine Klienten">' + v.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '') +
+    (g.archiv.length ? '<optgroup label="Archiv">' + g.archiv.map(x => '<option value="' + esc(x.code) + '">' + esc(klientName(x)) + '</option>').join('') + '</optgroup>' : '');
   $('kAuswahl').value = WAHL || '';
 }
+document.querySelectorAll('#kFilter [data-kf]').forEach(b => b.onclick = () => { K_FILTER = b.dataset.kf; zeichneBaum(); });
 $('kSuche').addEventListener('input', zeichneBaum);
 $('kAuswahl').onchange = () => { if($('kAuswahl').value) geh('klienten/' + $('kAuswahl').value); };
+
+/* Key einer Person: Verlängern, Beenden, Übertragen (Klientenkopf und Archiv-Karte) */
+function keyMenue(k){
+  return '<span class="dd"><button class="tb" type="button" data-dd>Key<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
+    '<span class="dd-menu rechts"><button type="button" data-km="plus:1">Um 1 Monat verlängern</button><button type="button" data-km="plus:3">Um 3 Monate verlängern</button>' +
+    '<button type="button" data-km="plus:6">Um 6 Monate verlängern</button><button type="button" data-km="ueber">An andere Fachkraft übergeben …</button>' +
+    '<button type="button" data-km="keys">In der Key-Liste öffnen</button><button type="button" data-km="ende" class="rot">Key beenden …</button></span></span>';
+}
+async function keyAusfuehren(k, was){
+  let rpc, args;
+  if(was.startsWith('plus:')){ const m = Number(was.split(':')[1]); rpc = 'cb_fp_key_laufzeit'; args = {p_code: k.code, p_menge: m, p_einheit: 'monate'}; }
+  else if(was==='ende'){ if(!confirm('Key ' + k.code + ' endgültig beenden? Premium und der Zugriff enden sofort. Die Person wandert ins Archiv.')) return; rpc = 'cb_fp_key_beenden'; args = {p_code: k.code}; }
+  else return;
+  const {data, error} = DEMO ? {data: demoKeyAktion(rpc, args)} : await client.rpc(rpc, args);
+  const d = json(data);
+  if(error || !d.ok){ alert(error ? error.message : d.grund); return; }
+  if(DEMO){ zeichne(); zeichneShell(); zeigeKlient(k.code); if(AKTIV==='abrechnung') ladeAbrechnung(); } else ladeAlles();
+}
+function bindeKeyMenue(el, k){
+  el.querySelectorAll('[data-km]').forEach(b => b.onclick = () => {
+    const was = b.dataset.km; b.closest('.dd').classList.remove('auf');
+    if(was==='keys'){ FILTER = 'alle'; document.querySelectorAll('#filter button').forEach(x => x.classList.toggle('an', x.dataset.f===FILTER)); zeichne(); geh('keys'); return; }
+    if(was==='ueber'){ uebergabeDialog(k); return; }
+    keyAusfuehren(k, was);
+  });
+}
+function uebergabeDialog(k){
+  const d = $('dlgUeber');
+  $('ueberText').innerHTML = 'So geht <b>' + esc(klientName(k)) + '</b> zu einer anderen Fachkraft, ohne dass Daten ohne Zustimmung weitergehen:';
+  d.showModal();
+}
+function keyKarte(k){
+  const info = k.status==='offen' ? 'Key angelegt am ' + datum(k.erstellt_am) + ', noch nicht eingelöst (' + dauerText(k.tage) + ' ab Einlösen).'
+    : k.status==='beendet' ? 'Beendet am ' + datum(k.beendet_am) + (k.beendet_grund==='wechsel' ? ', die Person ist zu einer anderen Fachkraft gewechselt.' : '.')
+    : k.status==='abgelaufen' ? 'Abgelaufen am ' + datum(k.laeuft_bis) + '.'
+    : k.einwilligung==='widerrufen' ? 'Die Person hat die Einwilligung widerrufen. Der Key läuft bis ' + datum(k.laeuft_bis) + '.'
+    : 'Key eingelöst, die Einwilligung fehlt noch. Ohne sie ist nichts sichtbar.';
+  const archiv = k.status==='beendet' || k.status==='abgelaufen';
+  return '<div class="detail-kopf"><span><span class="n">' + esc(klientName(k)) + '</span><small>' + esc(k.code) + ' · ' + esc(STATUS[k.status]) + '</small></span></div>' +
+    '<div class="karte2" style="margin:16px"><div class="k2-kopf"><h3>' + (archiv ? 'Im Archiv' : 'Noch nicht verbunden') + '</h3></div><p>' + esc(info) + '</p>' +
+    (archiv ? '<p class="fuss">Daten sind nach dem Ende nicht mehr sichtbar. Soll die Person wieder begleitet werden: neuen Key anlegen und schicken.</p>' : '') +
+    '<div class="aktionen">' + (k.status==='abgelaufen' ? '<button class="tb haupt" type="button" data-km="plus:3">Um 3 Monate verlängern</button>' : '') +
+      (archiv ? '<button class="tb haupt" type="button" data-neu="mail">Neuen Key anlegen</button>' : '<button class="tb" type="button" data-km="keys">In der Key-Liste öffnen</button>') + '</div></div>';
+}
+function bindeKeyKarte(el, k){ bindeKeyMenue(el, k); }
 
 /* Rechts: Auswertung der gewählten Person */
 async function zeigeKlient(wahl){
@@ -1084,18 +1446,23 @@ async function zeigeKlient(wahl){
   }
   if(!KEYS_DA){ el.innerHTML = '<div class="leer-gross">Lädt …</div>'; return; }
   const k = KEYS.find(x => x.code===WAHL);
-  if(!k || !(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = '<div class="leer-gross"><b>Kein Zugriff</b>Für diese Person läuft kein Key mit Einwilligung.</div>'; return; }
+  if(!k){ el.innerHTML = '<div class="leer-gross"><b>Nicht gefunden</b>Diesen Key gibt es in dieser Praxis nicht.</div>'; return; }
+  if(!(k.status==='laeuft' && k.einwilligung==='erteilt')){ el.innerHTML = keyKarte(k); bindeKeyKarte(el, k); return; }
   const code = WAHL;
   const kopf = '<span><span class="n">' + esc(klientName(k)) + '</span>' + (DEMO ? '<span class="muster-mark">erfunden</span>' : '') +
     '<small>' + esc(k.code) + ' · Key läuft bis ' + datum(k.laeuft_bis) + ' · Einwilligung erteilt</small></span>';
-  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: !!DEMO, verlaufKey: code,
+  const opt = { heute: DEMO ? MUSTER.heute : heuteBerlin(), nurLesen: false, verlaufKey: code,
     verlauf: (von, bis) => dashRpc(code, von, bis),
-    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return json(r.data); },
-    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
+    laden: async (von, bis) => { const r = await dashRpc(code, von, bis); if(r.error) throw new Error(r.error.message); return DEMO ? demoMischen(code, json(r.data)) : json(r.data); },
+    privatSetzen: async (notiz, sw) => { if(DEMO) return demoSetzen(code, 'privat', {privat_notiz: notiz, stichworte: sw});
+      const r = await client.rpc('cb_fp_akte_privat_setzen', {p_code: code, p_notiz: notiz, p_stichworte: sw}); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    vorgabeSetzen: async (kennzahl, wert, art, notiz) => { if(DEMO) return demoSetzen(code, 'vorgabe', {kennzahl, wert, art, notiz}); const r = await client.rpc('cb_fp_vorgabe_setzen', {p_code: code, p_kennzahl: kennzahl, p_wert: wert, p_art: art, p_notiz: notiz || null}); if(r.error) throw new Error(r.error.message); return json(r.data); },
+    akteSetzen: async (daten) => { if(DEMO) return demoSetzen(code, 'akte', daten); const r = await client.rpc('cb_fp_akte_setzen', {p_code: code, p_daten: daten}); if(r.error) throw new Error(r.error.message); return json(r.data); } };
   el.innerHTML = '<div class="detail-kopf">' + kopf + '<span style="display:flex;gap:6px">' +
     '<span class="dd"><button class="tb" type="button" data-dd>Exportieren<svg class="pfeil" viewBox="0 0 12 12"><path d="M3 4.5l3 3 3-3"/></svg></button>' +
     '<span class="dd-menu rechts"><button type="button" data-druck>Drucken</button><button type="button" data-druck>Als PDF speichern</button></span></span>' +
-    (DEMO ? '' : '<button class="tb" type="button" data-geh="keys">Key verwalten</button>') + '</span></div><div id="kDash"></div>';
+    keyMenue(k) + '</span></div><div id="kDash"></div>';
+  bindeKeyMenue(el, k);
   FLDash.mount($('kDash'), opt);
 }
 function drucken(){
@@ -1157,6 +1524,23 @@ async function ladeAuswertungen(){
     daten.map(zeile).join('') + '</tbody>';
 }
 
+/* Abrechnung: laufender Monat und die 5 Monate davor (cb_fp_abrechnung je Monat, FL-1) */
+const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+async function ladeAbrechnung(){
+  if(DEMO) return demoAbrechnung();
+  const euro = c => c==null ? '–' : (Number(c)/100).toLocaleString('de-DE', {style: 'currency', currency: 'EUR'});
+  const h = heuteBerlin(), mon = [];
+  for(let i = 0; i < 6; i++){ const d = new Date(h.slice(0,7) + '-01T12:00:00Z'); d.setUTCMonth(d.getUTCMonth() - i); mon.push(d.toISOString().slice(0,10)); }
+  const erg = await Promise.all(mon.map(m => client.rpc('cb_fp_abrechnung', {p_monat: m}).then(r => r.error ? {fehler: r.error.message} : json(r.data))));
+  $('abrRegel').textContent = $('zRegel').textContent;
+  $('abrTab').innerHTML = '<thead><tr><th>Monat</th><th class="z">Keys aktiv</th><th class="z">neu eingelöst</th><th class="z">Keys</th><th class="z">Lizenz</th><th class="z">Betrag</th></tr></thead><tbody>' +
+    erg.map((d, i) => { const m = new Date(mon[i] + 'T12:00:00Z');
+      if(d.fehler) return '<tr><td>' + MONATE[m.getUTCMonth()] + ' ' + m.getUTCFullYear() + '</td><td colspan="5" class="leer">' + esc(d.fehler) + '</td></tr>';
+      return '<tr><td><b>' + MONATE[m.getUTCMonth()] + ' ' + m.getUTCFullYear() + '</b>' + (i===0 ? ' <small style="color:var(--muted)">bis heute</small>' : '') + '</td>' +
+        '<td class="z">' + (d.keys_aktiv ?? '–') + '</td><td class="z">' + (d.keys_neu ?? '–') + '</td>' +
+        '<td class="z">' + euro(d.keys_betrag_cent) + '</td><td class="z">' + euro(d.lizenz_betrag_cent) + '</td><td class="z"><b>' + euro(d.betrag_cent) + '</b></td></tr>'; }).join('') + '</tbody>';
+}
+
 /* So bewertet Root Index: vertrauliche Fassung (FL-3) aus der Datenbank, nur für Fachleute mit Vereinbarung.
    Eigenes Dokument im iframe (srcdoc), damit Schrift und Stil von FL-3 unverändert bleiben. */
 let BEW_DA = false;
@@ -1184,7 +1568,7 @@ const FL5_TEXT = {
 };
 window.FLShell = {
   _b: {},
-  bereich(id, def){ this._b[id] = def; if(AKTIV===id) zeigeFl5(id); },
+  bereich(id, def){ this._b[id] = def; const b = document.querySelector('#menueListe [data-v="' + id + '"] .bald'); if(b) b.remove(); if(AKTIV===id) zeigeFl5(id); },
   ctx(){ const w = WAHL || '', k = KEYS.find(x => x.code===w); return { client, ich: ICH, keys: KEYS, klient: !DEMO && w ? w : null,
                                         muster: !!DEMO && !!w, musterNr: DEMO && k ? k.nr : null, demo: !!DEMO, musterToken: DEMO,
                                         heute: heuteBerlin(), neu: ladeAlles, geh }; }
@@ -1193,7 +1577,7 @@ function zeigeFl5(id){
   const el = document.querySelector('[data-fl5="' + id + '"]'), def = FLShell._b[id];
   if(def && typeof def.render === 'function'){ el.innerHTML = ''; Promise.resolve(def.render(el, FLShell.ctx())).catch(e => { el.textContent = 'Fehler: ' + (e.message || e); }); return; }
   const t = FL5_TEXT[id];
-  el.innerHTML = '<h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klienten</button>';
+  el.innerHTML = '<span class="bald gross">in Arbeit</span><h2>' + t[0] + '</h2><p>' + t[1] + '</p><p>' + t[2] + '</p><button class="tb" type="button" data-geh="klienten">Zu den Klienten</button>';
 }
 
 /* Neuer Key ▾: Panel in „Keys“ öffnen; nach dem Anlegen direkt Mail oder QR */
@@ -1213,7 +1597,7 @@ function zeichneKonto(){
   const z = (a, b) => '<tr><th>' + a + '</th><td>' + b + '</td></tr>';
   $('kontoTab').innerHTML = '<tbody>' + z('Name', esc(ICH.name)) + z('Praxis', esc(ICH.praxis || '–')) + z('E-Mail', esc(ICH.email || '')) +
     z('Kürzel', esc(ICH.kuerzel || '')) + z('Lizenz', esc(L[ICH.lizenz_art] || ICH.lizenz_art || '') + (ICH.lizenz_bis ? ' bis ' + datum(ICH.lizenz_bis) : '')) +
-    z('Verschwiegenheit Root Index', ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') +
+    z('Verschwiegenheit Root Index', (ICH.vertrag_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vertrag_bestaetigt_am) : '–') + (ICH.vertrag_version ? ' · Fassung ' + esc(ICH.vertrag_version) : '')) +
     z('Verschwiegenheit Klienten', ICH.vereinbarung_bestaetigt_am ? 'bestätigt am ' + datum(ICH.vereinbarung_bestaetigt_am) : 'wird beim ersten Key bestätigt') + '</tbody>';
   $('nutzerName').textContent = ICH.name;
   const h = Number(new Date().toLocaleString('de-DE', {hour: 'numeric', hour12: false, timeZone: 'Europe/Berlin'}));
@@ -1228,6 +1612,25 @@ $('pwLos').onclick = async function(){
   $('pwNeu').value = ''; meld('meldPw', '✓ Gespeichert.', 'ok');
 };
 $('abmelden2').onclick = () => $('abmelden').click();
+/* Praxisdaten (cb_fp_praxis / cb_fp_praxis_setzen); in der Vorführung nur im Tab */
+async function ladePraxis(){
+  let d;
+  if(DEMO) d = Object.assign({name: ICH.name, praxis: '', beruf: 'Ernährungsberatung (Beispiel)', anschrift: 'Musterstraße 1, 12345 Musterstadt', telefon: '', webseite: ''}, demoDaten().praxis || {});
+  else { const r = await client.rpc('cb_fp_praxis'); if(r.error){ meld('meldPx', 'Praxisdaten gerade nicht verfügbar: ' + r.error.message, 'fehler'); return; } d = json(r.data); }
+  $('pxName').value = d.name || ''; $('pxPraxis').value = d.praxis || ''; $('pxBeruf').value = d.beruf || '';
+  $('pxTel').value = d.telefon || ''; $('pxAnschrift').value = d.anschrift || ''; $('pxWeb').value = d.webseite || '';
+}
+$('pxLos').onclick = async function(){
+  const v = {name: $('pxName').value.trim(), praxis: $('pxPraxis').value.trim(), beruf: $('pxBeruf').value.trim(), anschrift: $('pxAnschrift').value.trim(), telefon: $('pxTel').value.trim(), webseite: $('pxWeb').value.trim()};
+  if(v.name.length < 2) return meld('meldPx', 'Bitte einen Namen eintragen.', 'fehler');
+  if(DEMO){ const d = demoDaten(); d.praxis = v; demoSichern(d); return meld('meldPx', '✓ Gespeichert (nur in der Vorführung).', 'ok'); }
+  this.disabled = true; meld('meldPx', '⏳ …');
+  const {data, error} = await client.rpc('cb_fp_praxis_setzen', {p_name: v.name, p_praxis: v.praxis, p_beruf: v.beruf, p_anschrift: v.anschrift, p_telefon: v.telefon, p_webseite: v.webseite});
+  this.disabled = false; const d = json(data);
+  if(error || !d.ok) return meld('meldPx', error ? error.message : d.grund, 'fehler');
+  meld('meldPx', '✓ Gespeichert.', 'ok');
+  ICH.name = d.name; ICH.praxis = d.praxis; zeichneKonto();
+};
 /* ---------- Link per E-Mail ---------- */
 let MAILCODE = null;
 function mailDialog(code, tage){
@@ -1240,6 +1643,7 @@ $('mailAbbrechen').onclick = () => $('dlgMail').close();
 $('mailSenden').onclick = async function(){
   const email = $('mailAn').value.trim();
   if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return meld('meldMail','Bitte eine gültige E-Mail eintragen.','fehler');
+  if(DEMO){ meld('meldMail','Vorführung: Es wird keine Mail verschickt. Im echten Bereich ginge der Link jetzt an ' + email + '.','ok'); return; }
   this.disabled = true; meld('meldMail','⏳ Wird gesendet …');
   const {data, error} = await client.functions.invoke('fp-key-mail', { body: { code: MAILCODE, email } });
   let d = json(data);

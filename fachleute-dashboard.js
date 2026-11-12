@@ -74,6 +74,8 @@ const CSS = `
 .fd .fd-plan .tag.heute{outline:2px solid var(--fd-gruen)}
 .fd .fd-plan .e{background:#fff;border-radius:7px;padding:3px 5px;margin-top:4px;line-height:1.25}
 .fd .fd-plan .e small{display:block;color:var(--fd-muted)}
+.fd .fd-plan .e.leer{background:transparent;border:1px dashed var(--fd-linie);color:var(--fd-muted)}
+.fd .fd-plan-kcal{float:right;font-weight:400;color:var(--fd-muted);font-size:11px}
 .fd .fd-rez{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid #eef0ee}
 .fd .fd-rez img{width:48px;height:48px;border-radius:10px;object-fit:cover;background:var(--fd-creme)}
 .fd .fd-rez .ph{width:48px;height:48px;border-radius:10px;background:var(--fd-creme)}
@@ -84,8 +86,39 @@ const CSS = `
 .fd .fd-k{background:#fff;color:var(--fd-dunkel);border:1px solid var(--fd-linie);border-radius:9px;padding:7px 11px;font:inherit;font-size:14px;font-weight:800;cursor:pointer}
 .fd .fd-k.gruen{background:var(--fd-gruen);border-color:var(--fd-gruen);color:#fff}
 .fd .fd-k:disabled{opacity:.5;cursor:default}
+.fd .fd-ziele{width:100%;border-collapse:collapse;font-size:14px}
+.fd .fd-ziele th{font-size:12px;color:var(--fd-muted);font-weight:800;text-align:left;padding:6px;border-bottom:1px solid var(--fd-linie);white-space:nowrap}
+.fd .fd-ziele td{padding:8px 6px;border-bottom:1px solid #eef0ee;vertical-align:middle}
+.fd .fd-ziele td.z,.fd .fd-ziele th.z{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+.fd .fd-her{display:inline-block;border-radius:999px;padding:1px 8px;font-size:11.5px;font-weight:800;white-space:nowrap;margin-top:3px}
+.fd .fd-her.vorgabe{background:#133521;color:#fff} .fd .fd-her.profil{background:#e6effa;color:#1d4f91} .fd .fd-her.dge{background:#F3EEDC;color:#5b4a1e} .fd .fd-her.leer{background:#f1f1f1;color:#777}
+.fd .fd-ist{border-radius:8px;padding:2px 7px} .fd .fd-ist.ja{background:#DDEFE2} .fd .fd-ist.nein{background:#FCEBD3} .fd .fd-ist.ueber{background:#F8D7D0}
+.fd .fd-ziel-edit{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+.fd .fd-ziel-zeile td{background:#F7F9F5}
+.fd .fd-ziel-edit select,.fd .fd-ziel-edit input{padding:6px 7px;border:1px solid var(--fd-linie);border-radius:8px;font:inherit;font-size:14px;background:#fff}
+.fd .fd-ziel-edit input{width:90px!important}
+.fd .fd-ziel-edit select{width:auto!important}
+.fd .fd-vg-form select{width:auto}
 .fd details summary{cursor:pointer;font-weight:800;color:var(--fd-dunkel);font-size:15px}
 .fd .fd-laden{color:var(--fd-muted);padding:30px 0;text-align:center}
+.fd .fd-kopfzeile{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.fd .fd-akte-txte{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:10px;margin-top:6px}
+.fd .fd-akte-txt{background:var(--fd-hell,#f6f7f8);border-radius:10px;padding:9px 11px;font-size:14px;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.fd .fd-akte-txt small{display:block;font-size:12px;font-weight:800;color:var(--fd-muted);margin-bottom:2px}
+.fd .fd-akte-form{margin-top:14px;border-top:1px solid var(--fd-linie);padding-top:12px}
+.fd .fd-akte-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:10px}
+.fd .fd-akte-form label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:var(--fd-muted);min-width:0}
+.fd .fd-akte-form input:not([type=checkbox]),.fd .fd-akte-form select,.fd .fd-akte-form textarea{font:inherit;font-size:14px;font-weight:400;color:var(--fd-dunkel);border:1px solid var(--fd-linie);border-radius:9px;padding:7px 9px;background:var(--fd-weiss,#fff);width:100%!important;box-sizing:border-box}
+.fd .fd-akte-lang{margin-top:10px}
+.fd .fd-akte-unv{border:1px solid var(--fd-linie);border-radius:10px;margin:12px 0 0;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px 14px}
+.fd .fd-akte-unv legend{font-size:12px;font-weight:800;color:var(--fd-muted);padding:0 4px}
+.fd .fd-akte-unv label{flex-direction:row;align-items:center;gap:6px;font-weight:400;font-size:14px;color:var(--fd-dunkel);width:auto!important;flex:0 0 auto;white-space:nowrap}
+.fd .fd-akte-unv input{width:16px!important;height:16px;margin:0;flex:0 0 auto}
+.fd .fd-akte-knoepfe{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.fd .fd-wenig{color:var(--muted,#737373);font-style:italic}
+.fd .fd-privat{margin-top:14px;border:1px dashed var(--fd-linie);border-radius:12px;padding:10px 12px}
+.fd .fd-chip.sw{background:var(--blau-zart,#eaf1ff);color:var(--blau-tief,#04157e)}
+.fd .fd-akte-prot{margin-top:12px;font-size:14px} .fd .fd-akte-prot summary{cursor:pointer;font-weight:800;color:var(--fd-muted)}
 .fd .fd-bald{border:1px dashed #b7c4b9;border-radius:12px;padding:10px 12px;font-size:14px;color:var(--fd-muted);margin-top:10px}
 @media (max-width:560px){ .fd .fd-modus{order:0} .fd .fd-pfeil[data-p="-1"]{order:1} .fd .fd-pfeil[data-p="1"]{order:2} .fd .fd-label{order:3;flex-basis:100%} .fd .fd-plan{grid-template-columns:repeat(2,1fr)} .fd .fd-is{grid-template-columns:1fr auto} .fd .fd-is .bw{grid-column:1/-1} }
 `;
@@ -180,11 +213,11 @@ function mount(el, opt){
     const n = d.tage_erfasst || 0;
     const nTage = tage.length;
     let h = '';
-    h += profilKarte(d);
+    h += profilKarte(d) + akteKarte(d);
     if(!n){
       h += '<div class="fd-karte"><b>Keine Einträge in diesem Zeitraum.</b><p class="fd-klein" style="margin:4px 0 0">' +
            (st.modus==='tag' ? 'An diesem Tag wurde nichts eingetragen.' : 'Mit den Pfeilen oben zurückblättern.') + '</p></div>';
-      h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
+      h += zieleKarte(d) + rezepteKarte(d) + planKarte(d);
       $in.innerHTML = h; binde(); return;
     }
     // Kacheln
@@ -198,14 +231,15 @@ function mount(el, opt){
       kachel(d.summe.score==null ? '–' : z(d.summe.score), 'Root-Index-Score Ø', 'nach Menge gewichtet') +
       kachel(n + ' / ' + nTage, 'Tage erfasst', st.modus==='tag' ? '' : 'Ø-Werte je erfasstem Tag') +
     '</div></div>';
+    h += zieleKarte(d);
     if(opt.verlauf) h += '<div class="fd-verlauf"></div>';
 
     if(st.modus!=='tag'){
-      h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, '#2e7d46']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
+      h += '<div class="fd-karte"><h2>Kalorien je Tag</h2>' + balken(tage, t => [[t.kcal, 'var(--fd-akzent,#2e7d46)']], kcal && kcal.soll, 'Soll ' + z(kcal && kcal.soll)) +
            '<div class="fd-klein">Auf einen Tag tippen öffnet die Tagesansicht. Schraffiert = nichts eingetragen.</div></div>';
       const linie = go && go.soll ? go.soll : null;
       h += '<div class="fd-karte"><h2>Gemüse und Obst je Tag</h2>' +
-           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE ') + z(linie) + ' g') +
+           balken(tage, t => [[t.gemuese_g, 'var(--fd-gemuese)'], [t.obst_g, 'var(--fd-obst)']], linie, (go && go.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe ' : 'DGE-Orientierung ') + z(linie) + ' g') +
            '<div class="fd-legende"><span><i style="background:var(--fd-gemuese)"></i>Gemüse &amp; Pilze</span><span><i style="background:var(--fd-obst)"></i>Obst</span>' +
            (linie ? '<span>- - Obst und Gemüse zusammen</span>' : '') + '</div></div>';
     } else {
@@ -215,14 +249,16 @@ function mount(el, opt){
     h += istSollKarte(d, is);
     h += produkteKarte(d);
     if(st.modus!=='tag' && n) h += '';
-    h += vorgabenKarte(d) + rezepteKarte(d) + planKarte(d);
+    h += rezepteKarte(d) + planKarte(d);
     $in.innerHTML = h;
     binde();
     const v = $in.querySelector('.fd-verlauf');
     if(v && window.FLStat) FLStat.verlauf(v, opt.verlauf, heute, opt.verlaufKey);
   }
   function kachel(w, t, u){ return '<div class="fd-kachel"><b>' + w + '</b><span>' + esc(t) + '</span>' + (u ? '<i>' + esc(u) + '</i>' : '') + '</div>'; }
-  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }
+  function herkunftKurz(x){ return x.soll_herkunft==='Vorgabe Therapeutin' ? 'Vorgabe' : x.soll_herkunft==='Ziel im Profil' ? 'Profilziel' : istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||''); }
+  /* Gemüse 245 g und Obst 300 g sind Modellwerte der DGE-Berechnung (Schäfer 2024), keine eigene DGE-Empfehlung (Prüfer 11.11.) */
+  function istModell(x){ return /Modellwert/i.test((x && x.hinweis) || '') || /Schäfer/i.test((x && x.quelle) || ''); }
 
   function profilKarte(d){
     const p = d.profil || {};
@@ -241,6 +277,115 @@ function mount(el, opt){
       (ziele.length ? '<div class="fd-klein" style="margin-top:8px">Eigene Ziele im Profil: ' + esc(ziele.join(' · ')) + '</div>' : '') +
       (d.daten_ab ? '<div class="fd-klein" style="margin-top:4px">Einträge freigegeben ab ' + esc(D(d.daten_ab).toLocaleDateString('de-DE')) + '.</div>' : '') +
       '</div>';
+  }
+
+  /* Persönliche Daten gemeinsam bearbeiten (Ralph 11.11.: „zusammen mit der Patientin anlegen und bearbeiten“).
+     Schreibt über cb_fp_akte_setzen nur mit Einwilligung „Bearbeiten“; jede Änderung wird protokolliert. */
+  const AKTE_FELD = {geschlecht:'Geschlecht', geburtsdatum:'Geburtsdatum', groesse_cm:'Größe', gewicht_kg:'Gewicht', aktivitaet:'Aktivität',
+    ernaehrungsform:'Ernährungsform', diabetes_typ:'Diabetes', unvertraeglichkeiten:'Unverträglichkeiten', ziel_text:'Ziel', sport_text:'Sport und Bewegung', notiz_text:'Notiz'};
+  const DIAB = {typ1:'Typ 1', typ2:'Typ 2', praediabetes:'Prädiabetes', gestationsdiabetes:'Schwangerschaftsdiabetes', sonstiger:'Sonstiger'};
+  const UNV = {laktose:'Laktose', gluten:'Gluten', krebstiere:'Krebstiere', ei:'Ei', fisch:'Fisch', erdnuss:'Erdnüsse', soja:'Soja', milch:'Milch (Milcheiweiß)',
+    schalenfruechte:'Schalenfrüchte (Nüsse)', sellerie:'Sellerie', senf:'Senf', sesam:'Sesam', sulfite:'Schwefeldioxid/Sulfite', lupinen:'Lupinen', weichtiere:'Weichtiere'};
+  function akteWert(f, v){
+    if(v==null || v==='' || (Array.isArray(v) && !v.length)) return '–';
+    if(f==='diabetes_typ') return DIAB[v] || v;
+    if(f==='unvertraeglichkeiten') return v.map(x => UNV[x] || x).join(', ');
+    if(f==='geburtsdatum') return D(v).toLocaleDateString('de-DE');
+    if(f==='groesse_cm') return z(v) + ' cm';
+    if(f==='gewicht_kg') return z(v,1) + ' kg';
+    return String(v);
+  }
+  function akteKarte(d){
+    const a = d.akte; if(!a) return '';
+    const f = a.felder || {};
+    const txt = (t, k) => '<div class="fd-akte-txt"><small>' + t + '</small>' + (a[k] ? esc(a[k]).replace(/\n/g, '<br>') : '<span class="fd-klein">noch nichts festgehalten</span>') + '</div>';
+    let h = '<div class="fd-karte" id="fd-akte"><div class="fd-kopfzeile"><h2>Akte</h2>' +
+      (a.darf_bearbeiten ? '<button class="fd-k" type="button" data-akte-auf>Gemeinsam bearbeiten</button>' : '') + '</div>' +
+      '<div class="fd-akte-txte">' + txt('Ziel', 'ziel_text') + txt('Sport und Bewegung', 'sport_text') + txt('Notiz', 'notiz_text') + '</div>';
+    if(!a.darf_bearbeiten) h += '<p class="fd-klein" style="margin:8px 0 0">' + esc(a.bearbeiten_hinweis || '') + '</p>';
+    if(a.darf_bearbeiten){
+      const sel = (k, opts, leer) => '<select data-af="' + k + '"><option value="">' + (leer || '–') + '</option>' +
+        opts.map(o => { const [v, t] = Array.isArray(o) ? o : [o, o]; return '<option value="' + esc(v) + '"' + (f[k]===v ? ' selected' : '') + '>' + esc(t) + '</option>'; }).join('') + '</select>';
+      const inp = (k, typ, wert, extra) => '<input data-af="' + k + '" type="' + typ + '" value="' + esc(wert==null ? '' : wert) + '"' + (extra || '') + '>';
+      const unv = f.unvertraeglichkeiten || [];
+      h += '<form class="fd-akte-form" data-akte-form hidden>' +
+        '<p class="fd-klein" style="margin:0 0 10px">Gemeinsam mit der Person ausfüllen. Profilangaben gelten danach auch in ihrer App; jede Änderung wird mit Datum gespeichert.</p>' +
+        '<div class="fd-akte-grid">' +
+          '<label>Geschlecht' + sel('geschlecht', ['weiblich','männlich','divers']) + '</label>' +
+          (opt.nurLesen ? '<label>Alter' + inp('alter', 'text', f.alter ? f.alter + ' Jahre' : '', ' disabled') : '<label>Geburtsdatum' + inp('geburtsdatum', 'date', f.geburtsdatum)) + '</label>' +
+          '<label>Größe (cm)' + inp('groesse_cm', 'number', f.groesse_cm, ' min="50" max="250" step="1"') + '</label>' +
+          '<label>Gewicht (kg)' + inp('gewicht_kg', 'number', f.gewicht_kg, ' min="20" max="400" step="0.1"') + '</label>' +
+          '<label>Aktivität' + sel('aktivitaet', ['Sitzend','Leicht aktiv','Mäßig aktiv','Sehr aktiv']) + '</label>' +
+          '<label>Ernährungsform' + sel('ernaehrungsform', ['Omnivor','Flexitarisch','Pescetarisch','Vegetarisch','Vegan']) + '</label>' +
+          '<label>Diabetes' + sel('diabetes_typ', Object.entries(DIAB), 'Keine Angabe') + '</label>' +
+        '</div>' +
+        '<fieldset class="fd-akte-unv"><legend>Unverträglichkeiten und Allergien</legend>' +
+          Object.entries(UNV).map(([k, t]) => '<label><input type="checkbox" data-unv value="' + k + '"' + (unv.includes(k) ? ' checked' : '') + '>' + esc(t) + '</label>').join('') +
+        '</fieldset>' +
+        '<label class="fd-akte-lang">Ziel<textarea data-af="ziel_text" rows="2" maxlength="2000" placeholder="z. B. bis Sommer 5 kg leichter">' + esc(a.ziel_text || '') + '</textarea></label>' +
+        '<label class="fd-akte-lang">Sport und Bewegung<textarea data-af="sport_text" rows="2" maxlength="2000" placeholder="z. B. 2× Schwimmen, täglich 30 Minuten zu Fuß">' + esc(a.sport_text || '') + '</textarea></label>' +
+        '<label class="fd-akte-lang">Notiz<textarea data-af="notiz_text" rows="3" maxlength="4000">' + esc(a.notiz_text || '') + '</textarea></label>' +
+        '<div class="fd-akte-knoepfe"><button class="fd-k gruen" type="submit" data-akte-los' + (opt.nurLesen ? ' disabled' : '') + '>Speichern</button>' +
+        '<button class="fd-k" type="button" data-akte-zu>Abbrechen</button><span class="fd-klein" data-akte-m>' + (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : '') + '</span></div>' +
+      '</form>';
+    }
+    // Nur für die Fachkraft: Diagnose-Stichworte und private Notiz (die Person sieht das nicht)
+    const sw = a.stichworte || [];
+    h += '<div class="fd-privat"><div class="fd-kopfzeile"><b>Nur für mich</b>' + (opt.privatSetzen ? '<button class="fd-k" type="button" data-pv-auf>Bearbeiten</button>' : '') + '</div>' +
+      '<div class="fd-klein" style="margin:2px 0 6px">Stichworte zur Diagnose und eigene Notiz. Die Person sieht beides nicht; Pläne und Rezeptvorschläge berücksichtigen die Stichworte.</div>' +
+      '<div class="fd-profil">' + (sw.length ? sw.map(x => '<span class="fd-chip sw">' + esc(x) + '</span>').join('') : '<span class="fd-klein">Noch keine Stichworte.</span>') + '</div>' +
+      (a.privat_notiz ? '<div class="fd-akte-txt" style="margin-top:8px">' + esc(a.privat_notiz).replace(/\n/g, '<br>') + '</div>' : '') +
+      (opt.privatSetzen ? '<form class="fd-akte-form" data-pv-form hidden>' +
+        '<label>Stichworte (mit Komma trennen, höchstens 20)<input data-pv-sw list="fd-sw-liste" value="' + esc(sw.join(', ')) + '" placeholder="z. B. Diabetes Typ 2, Bluthochdruck"></label>' +
+        '<datalist id="fd-sw-liste">' + ['Übergewicht','Adipositas','Diabetes Typ 1','Diabetes Typ 2','Prädiabetes','Bluthochdruck','Fettstoffwechselstörung','Gicht',
+          'Reizdarm','Laktoseintoleranz','Fruktoseintoleranz','Zöliakie','Histaminintoleranz','Nierenerkrankung','Eisenmangel','Schwangerschaft','Stillzeit',
+          'Essstörung','Leistungssport','Vegetarisch','Vegan','Schichtdienst'].map(x => '<option value="' + x + '">').join('') + '</datalist>' +
+        '<label class="fd-akte-lang">Private Notiz<textarea data-pv-notiz rows="4" maxlength="8000">' + esc(a.privat_notiz || '') + '</textarea></label>' +
+        '<div class="fd-akte-knoepfe"><button class="fd-k gruen" type="submit">Speichern</button><button class="fd-k" type="button" data-pv-zu>Abbrechen</button><span class="fd-klein" data-pv-m></span></div>' +
+      '</form>' : '') + '</div>';
+    const pr = a.protokoll || [];
+    if(pr.length) h += '<details class="fd-akte-prot"><summary>Änderungen (' + pr.length + ')</summary><table class="fd-ziele"><tbody>' +
+      pr.map(x => '<tr><td>' + esc(D(String(x.am).slice(0,10)).toLocaleDateString('de-DE')) + '</td><td>' + esc(AKTE_FELD[x.feld] || x.feld) + '</td><td>' +
+        esc(akteWert(x.feld, x.alt)) + ' → ' + esc(akteWert(x.feld, x.neu)) + '</td></tr>').join('') + '</tbody></table></details>';
+    return h + '</div>';
+  }
+  function akteBinde(){
+    const pf = $in.querySelector('[data-pv-form]'), pa = $in.querySelector('[data-pv-auf]');
+    if(pf && pa){
+      pa.onclick = () => { pf.hidden = !pf.hidden; pa.textContent = pf.hidden ? 'Bearbeiten' : 'Schließen'; };
+      pf.querySelector('[data-pv-zu]').onclick = () => { pf.hidden = true; pa.textContent = 'Bearbeiten'; };
+      pf.onsubmit = async ev => {
+        ev.preventDefault();
+        const m = t => { pf.querySelector('[data-pv-m]').textContent = t; };
+        const sw = pf.querySelector('[data-pv-sw]').value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean);
+        if(sw.length > 20) return m('Höchstens 20 Stichworte.');
+        m('⏳ Speichert …');
+        try{ const r = await opt.privatSetzen(pf.querySelector('[data-pv-notiz]').value, sw); if(r && r.ok === false) return m(r.grund || 'Ging nicht.'); m('✓ Gespeichert.'); setTimeout(laden, 500); }
+        catch(e){ m(e.message || String(e)); }
+      };
+    }
+    const form = $in.querySelector('[data-akte-form]'); if(!form) return;
+    const a = st.daten.akte || {}, f = a.felder || {};
+    const auf = $in.querySelector('[data-akte-auf]');
+    if(auf) auf.onclick = () => { form.hidden = !form.hidden; auf.textContent = form.hidden ? 'Gemeinsam bearbeiten' : 'Bearbeiten schließen'; };
+    const zu = form.querySelector('[data-akte-zu]'); if(zu) zu.onclick = () => { form.hidden = true; if(auf) auf.textContent = 'Gemeinsam bearbeiten'; };
+    const m = t => { const x = form.querySelector('[data-akte-m]'); if(x) x.textContent = t; };
+    form.onsubmit = async ev => {
+      ev.preventDefault();
+      if(opt.nurLesen) return m('In der Musterpraxis nur zum Ansehen.');
+      const neu = {}, gleich = (x, y) => String(x==null ? '' : x) === String(y==null ? '' : y);
+      form.querySelectorAll('[data-af]').forEach(i => {
+        const k = i.dataset.af, v = i.value.trim();
+        const alt = ['ziel_text','sport_text','notiz_text'].includes(k) ? a[k] : f[k];
+        if(['groesse_cm','gewicht_kg'].includes(k) ? !(v==='' && alt==null) && Number(v) !== Number(alt) : !gleich(v, alt)) neu[k] = v;
+      });
+      const unv = [...form.querySelectorAll('[data-unv]:checked')].map(x => x.value).sort();
+      if(unv.join() !== [...(f.unvertraeglichkeiten || [])].sort().join()) neu.unvertraeglichkeiten = unv;
+      if(!Object.keys(neu).length) return m('Nichts geändert.');
+      const b = form.querySelector('[data-akte-los]'); b.disabled = true; m('⏳ Speichert …');
+      try{ const r = await opt.akteSetzen(neu); m('✓ Gespeichert (' + (r && r.geaendert) + ' Änderungen).'); setTimeout(laden, 700); }
+      catch(e){ b.disabled = false; m(e.message || String(e)); }
+    };
   }
 
   function balken(tage, teile, linie, linieText){
@@ -266,7 +411,7 @@ function mount(el, opt){
       const einh = x.einheit==='en%' ? '%' : x.einheit;
       const bez = x.bezug==='woche' ? ' je Woche' : ' je Tag';
       const p = x.soll ? Math.min(150, Math.max(0, x.ist_prozent_vom_soll||0)) : 0;
-      const farbe = x.erfuellt==null ? '#9aa7a0' : x.erfuellt ? '#2e7d46' : (x.art==='hoechstens' ? '#b42318' : '#e8920c');
+      const farbe = x.erfuellt==null ? 'var(--fd-leer-balken,#9aa7a0)' : x.erfuellt ? 'var(--ok,#2e7d46)' : (x.art==='hoechstens' ? 'var(--bad,#b42318)' : 'var(--warn,#e8920c)');
       const soll = x.soll==null ? '–' : (x.art==='bereich' ? z(x.soll, 1) + '–' + z(x.soll_bis, 1) : (ART[x.art]||'') + ' ' + z(x.soll, x.einheit==='en%'?0:1));
       const her = x.soll_herkunft==='Vorgabe Therapeutin' ? '<b>Vorgabe</b>' + (x.quelle ? ' · ' + esc(x.quelle) : '') + (x.hinweis ? ' · ' + esc(x.hinweis) : '')
                 : x.soll_herkunft==='Ziel im Profil' ? 'Ziel aus dem Profil der Person'
@@ -275,18 +420,26 @@ function mount(el, opt){
         '<div class="bw"><div class="fd-bar"><div class="f" style="width:' + (p/1.5).toFixed(1) + '%;background:' + farbe + '"></div>' +
         (x.soll ? '<div class="m" style="left:' + (100/1.5).toFixed(1) + '%"></div>' : '') + '</div></div>' +
         '<div class="w">' + (x.ist==null ? '–' : z(x.ist, x.einheit==='en%'?0:1) + ' ' + esc(einh)) + '<small>' + (x.soll ? z(x.ist_prozent_vom_soll) + ' %' : '') + '</small></div>' +
-        '<div class="her">' + her + '</div>';
+        '<div class="her">' + her + (x.kennzahl.startsWith('mikro:') ? ' · <span class="' + (x.abdeckung!=null && x.abdeckung >= 50 ? '' : 'fd-wenig') + '">' +
+          (x.abdeckung==null ? 'Datenlage unbekannt' : 'Werte für ' + z(x.abdeckung) + ' % der gegessenen Menge' + (x.abdeckung < 50 ? ', zu wenig für eine Aussage' : '')) + '</span>' : '') + '</div>';
     };
     const makro = ['kcal','protein','kh','fett','zucker','ballaststoffe','salz'];
     const m = is.filter(x => makro.includes(x.kennzahl)).sort((a, b) => makro.indexOf(a.kennzahl) - makro.indexOf(b.kennzahl) || (a.einheit==='en%') - (b.einheit==='en%'));
     const g = is.filter(x => x.kennzahl.startsWith('gruppe:'));
-    const mi = is.filter(x => x.kennzahl.startsWith('mikro:'));
+    // Vitamine und Mineralstoffe: nur echte Bedarfswerte (keine Werbeaussage-Werte wie Kreatin, EU-VO 432/2012);
+    // bei wenig Daten grau statt Ampel (Prüfer 11.11.: Jod 10 von 200 µg ist meist fehlende Angabe, nicht Mangel)
+    const ABD = d.mikro_abdeckung || {};
+    const mi = is.filter(x => x.kennzahl.startsWith('mikro:') && !/432\/2012/.test((x.soll_herkunft||'') + (x.quelle||'')))
+                 .map(x => { const a = ABD[x.kennzahl]; const y = Object.assign({}, x, {abdeckung: a==null ? null : Number(a)});
+                   if(y.abdeckung==null || y.abdeckung < 50) y.erfuellt = null; return y; });
     let h = '<div class="fd-karte"><h2>Ist und Soll</h2><div class="fd-klein">Ist = Durchschnitt je erfasstem Tag' + (st.modus==='tag' ? '' : ' (' + (d.tage_erfasst||0) + ' Tage)') +
-      '. Soll in dieser Reihenfolge: Vorgabe der Therapeutin, Ziel im Profil, Richtwert. Strich = 100 %.</div>' +
+      '. Soll in dieser Reihenfolge: Vorgabe der Fachperson, Ziel im Profil, Richtwert. Strich = 100 %.</div>' +
       '<h3>Kalorien und Makros</h3><div class="fd-is">' + m.map(zeile).join('') + '</div>' +
       '<h3>Lebensmittelgruppen</h3><div class="fd-is">' + g.map(zeile).join('') + '</div>' +
       '<div class="fd-hinweis">Die DGE-Werte sind Orientierungswerte für gesunde Erwachsene. Laut DGE eignen sie sich nicht, den Verzehr einzelner Personen zu bewerten. Darum zeigen wir sie zum Vergleich, nicht als Note.</div>';
-    if(mi.length) h += '<details style="margin-top:12px"><summary>Vitamine und Mineralstoffe (' + mi.length + ')</summary><div class="fd-is" style="margin-top:8px">' + mi.map(zeile).join('') + '</div></details>';
+    if(mi.length) h += '<details style="margin-top:12px"><summary>Vitamine und Mineralstoffe (' + mi.length + ')</summary>' +
+      '<div class="fd-klein" style="margin-top:6px">Viele Etiketten nennen keine Vitamine und Mineralstoffe, Jodsalz und Leitungswasser fehlen meist im Tagebuch. Darum steht bei jedem Wert, für wie viel der gegessenen Menge Angaben vorliegen; unter 50 % bleibt der Balken grau.</div>' +
+      '<div class="fd-is" style="margin-top:8px">' + mi.map(zeile).join('') + '</div></details>';
     else if(d.muster) h += '<div class="fd-bald">Vitamine und Mineralstoffe: in echten Konten sichtbar, in der Musterpraxis ausgeblendet.</div>';
     return h + '</div>';
   }
@@ -360,6 +513,38 @@ function mount(el, opt){
     return h + '</div>';
   }
 
+  /* Ziele der Person: vorbelegt aus Profil (Rechner der App) bzw. DGE-Orientierung, korrigierbar durch die Fachperson.
+     Grundlage ist das Ist-Soll des Servers (Vorrang: Vorgabe > Profilziel > Richtwert). */
+  const ZIELE = [['kcal','Kalorien','kcal'], ['protein','Eiweiß','g'], ['kh','Kohlenhydrate','g'], ['fett','Fett','g'],
+                 ['ballaststoffe','Ballaststoffe','g'], ['zucker','Zucker','g'], ['salz','Salz','g'],
+                 ['gruppe:gemuese','Gemüse','g'], ['gruppe:obst','Obst','g'], ['gruppe:gemuese+obst','Obst und Gemüse','g']];
+  const HERKUNFT = x => !x || x.soll==null ? ['kein Ziel', 'leer'] : x.soll_herkunft==='Vorgabe Therapeutin' ? ['eigene Vorgabe', 'vorgabe']
+                     : x.soll_herkunft==='Ziel im Profil' ? ['Profil / Rechner', 'profil'] : [istModell(x) ? 'Modellwert DGE-Berechnung' : /DGE/.test(x.soll_herkunft||'') ? 'DGE-Orientierung' : (x.soll_herkunft||'Richtwert'), 'dge'];
+  function zieleKarte(d){
+    const is = d.ist_soll || [];
+    const zeilen = ZIELE.map(z0 => {
+      const k = z0[0], x = is.find(y => y.kennzahl===k && y.einheit!=='en%'), her = HERKUNFT(x);
+      const soll = x && x.soll!=null ? Number(x.soll) : null, woche = x && x.bezug==='woche';
+      const ist = x && x.ist!=null ? z(x.ist, 0) + ' ' + z0[2] : '–';
+      const cls = !x || x.erfuellt==null ? '' : x.erfuellt ? 'ja' : (x.art==='hoechstens' ? 'ueber' : 'nein');
+      const sollTxt = soll==null ? '–' : (ART[x.art]||'') + ' ' + z(soll, 0) + ' ' + z0[2] + (woche ? ' je Woche' : '');
+      const edit = opt.nurLesen ? '' :
+        '<span class="fd-ziel-edit"><select data-z-art="' + k + '" aria-label="Art"><option value="mindestens"' + (x && x.art==='mindestens' ? ' selected' : '') + '>mind.</option>' +
+        '<option value="etwa"' + (x && x.art==='etwa' ? ' selected' : '') + '>etwa</option><option value="hoechstens"' + (x && x.art==='hoechstens' ? ' selected' : '') + '>höchstens</option></select>' +
+        '<input type="number" min="1" step="1" inputmode="decimal" data-z-wert="' + k + '" value="' + (soll!=null && !woche ? Math.round(soll) : '') + '" aria-label="Ziel ' + esc(z0[1]) + ' in ' + z0[2] + ' je Tag">' +
+        '<button class="fd-k gruen" type="button" data-z-los="' + k + '">Übernehmen</button>' +
+        (her[1]==='vorgabe' ? '<button class="fd-k" type="button" data-z-weg="' + k + '" title="Zurück auf Profil bzw. DGE">Zurücksetzen</button>' : '') + '</span>';
+      return '<tr><td><b>' + esc(z0[1]) + '</b><br><span class="fd-her ' + her[1] + '">' + esc(her[0]) + '</span>' + (x && x.hinweis && her[1]==='vorgabe' ? '<div class="fd-klein">' + esc(x.hinweis) + '</div>' : '') + '</td>' +
+        '<td class="z">' + esc(sollTxt) + '</td><td class="z"><span class="fd-ist ' + cls + '">' + ist + '</span></td>' +
+        (opt.nurLesen ? '' : '<td class="z"><button class="fd-k" type="button" data-z-auf="' + k + '">Ändern</button></td>') + '</tr>' +
+        (opt.nurLesen ? '' : '<tr class="fd-ziel-zeile" data-z-zeile="' + k + '" hidden><td colspan="4">' + edit + '</td></tr>');
+    }).join('');
+    return '<div class="fd-karte"><h2>Ziele</h2><div class="fd-klein">Vorbelegt aus dem Profil der Person (Angaben und Rechner der App) oder aus der DGE-Orientierung. ' +
+      (opt.nurLesen ? 'In der Musterpraxis nur zum Ansehen.' : 'Jedes Ziel lässt sich hier korrigieren; die Korrektur gilt ab heute und hat Vorrang.') + '</div>' +
+      '<div style="overflow-x:auto;margin-top:8px"><table class="fd-ziele"><thead><tr><th>Ziel und Herkunft</th><th class="z">Soll je Tag</th><th class="z">Ist Ø</th>' + (opt.nurLesen ? '' : '<th></th>') + '</tr></thead><tbody>' + zeilen + '</tbody></table></div>' +
+      '<div class="fd-klein" data-z-m style="margin-top:6px"></div></div>';
+  }
+
   function vorgabenKarte(d){
     const v = d.vorgaben || [];
     const txt = x => (KZ[x.kennzahl] ? KZ[x.kennzahl][0] : x.kennzahl) + ' ' + (ART[x.art]||'') + ' ' + z(x.wert, 1) + ' ' + (x.einheit==='g/kg' ? 'g je kg Körpergewicht' : x.einheit) + ' je Tag';
@@ -390,16 +575,27 @@ function mount(el, opt){
     return h + '</div>';
   }
 
+  /* Wochenplanung: je Tag feste Plätze (Ralph: 3–4 Snacks), leere Plätze dezent. Alter Wert „Snack“ = Snack nachmittags. */
+  const SLOTS = ['Frühstück','Snack vormittags','Mittag','Snack nachmittags','Abendessen','Snack abends','Spätsnack'];
+  /* Absprache FL-5: Slot bleibt 'Snack' (alte Apps), die Tageszeit steht in snack_zeit. Ohne snack_zeit = Snack nachmittags. */
+  const SNACK_ZEIT = {vormittags:'Snack vormittags', nachmittags:'Snack nachmittags', abends:'Snack abends', spaet:'Spätsnack'};
+  const slotVon = y => y.slot==='Snack' ? (SNACK_ZEIT[y.snack_zeit] || 'Snack nachmittags') : (SLOTS.includes(y.slot) ? y.slot : 'Snack abends');
   function planKarte(d){
     if(!d.wochenplan) return '<div class="fd-karte"><h2>Wochenplanung</h2><p class="fd-klein">' + esc(d.wochenplan_hinweis || 'Kein Wochenplan.') + '</p></div>';
     const von = d.wochenplan_von || montag(heute);
-    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was die Person für diese und nächste Woche geplant hat.</div>';
+    const spaet = d.wochenplan.some(x => slotVon(x)==='Spätsnack');
+    const plaetze = SLOTS.filter(x => x!=='Spätsnack' || spaet);
+    const kurz = {'Frühstück':'Frühstück','Snack vormittags':'Snack vorm.','Mittag':'Mittag','Snack nachmittags':'Snack nachm.','Abendessen':'Abend','Snack abends':'Snack abends','Spätsnack':'Spätsnack'};
+    let h = '<div class="fd-karte"><h2>Wochenplanung</h2><div class="fd-klein">Was für diese und nächste Woche geplant ist, je Tag mit allen Mahlzeiten und Snacks.</div>';
     for(let w = 0; w < 2; w++){
       h += '<h3>' + (w ? 'Nächste Woche' : 'Diese Woche') + '</h3><div class="fd-plan">';
       for(let i = 0; i < 7; i++){
         const t = plus(von, w*7 + i), e = d.wochenplan.filter(x => x.datum===t);
-        h += '<div class="tag' + (t===heute ? ' heute' : '') + '"><b>' + WT[D(t).getUTCDay()] + ' ' + tm(t) + '</b>' +
-             e.map(x => '<div class="e">' + esc(x.titel||'') + '<small>' + esc(x.slot) + (x.kcal_portion ? ' · ' + z(x.kcal_portion) + ' kcal' : '') + '</small></div>').join('') + '</div>';
+        const kcal = e.reduce((a, x) => a + (Number(x.kcal_portion)||0), 0);
+        h += '<div class="tag' + (t===heute ? ' heute' : '') + '"><b>' + WT[D(t).getUTCDay()] + ' ' + tm(t) + (kcal ? '<span class="fd-plan-kcal">' + z(kcal) + ' kcal</span>' : '') + '</b>' +
+             plaetze.map(sl => { const x = e.filter(y => slotVon(y)===sl);
+               return x.length ? x.map(y => '<div class="e"><small>' + esc(kurz[sl]) + '</small>' + esc(y.titel||'') + (y.kcal_portion ? '<small>' + z(y.kcal_portion) + ' kcal</small>' : '') + '</div>').join('')
+                               : '<div class="e leer"><small>' + esc(kurz[sl]) + '</small>–</div>'; }).join('') + '</div>';
       }
       h += '</div>';
     }
@@ -407,6 +603,24 @@ function mount(el, opt){
   }
 
   function binde(){
+    akteBinde();
+    $in.querySelectorAll('[data-z-auf]').forEach(b => b.onclick = () => {
+      const z = $in.querySelector('[data-z-zeile="' + b.dataset.zAuf + '"]'); z.hidden = !z.hidden;
+      if(!z.hidden){ const i = z.querySelector('input'); if(i) i.focus(); }
+    });
+    const zm = t => { const m = $in.querySelector('[data-z-m]'); if(m) m.textContent = t; };
+    $in.querySelectorAll('[data-z-los]').forEach(b => b.onclick = async () => {
+      const k = b.dataset.zLos, w = Number(String($in.querySelector('[data-z-wert="' + k + '"]').value).replace(',', '.')), a = $in.querySelector('[data-z-art="' + k + '"]').value;
+      if(!(w > 0)) return zm('Bitte einen Wert eintragen.');
+      b.disabled = true; zm('⏳ …');
+      try{ const r = await opt.vorgabeSetzen(k, w, a, null); if(r && r.ok === false){ b.disabled = false; return zm(r.grund || 'Ging nicht.'); } laden(); }
+      catch(e){ b.disabled = false; zm(e.message || String(e)); }
+    });
+    $in.querySelectorAll('[data-z-weg]').forEach(b => b.onclick = async () => {
+      if(!confirm('Eigene Vorgabe entfernen? Ab heute gilt wieder Profilziel bzw. DGE-Orientierung.')) return;
+      b.disabled = true;
+      try{ await opt.vorgabeSetzen(b.dataset.zWeg, null, null, null); laden(); } catch(e){ b.disabled = false; zm(e.message || String(e)); }
+    });
     $in.querySelectorAll('.fd-balken .s[data-tag]').forEach(s => s.onclick = () => { st.modus = 'tag'; st.anker = s.dataset.tag; laden(); });
     $in.querySelectorAll('[data-sort] button').forEach(b => b.onclick = () => { st.prodSort = b.dataset.s; zeichne(); });
     const alle = $in.querySelector('[data-alle]'); if(alle) alle.onclick = () => { st.prodAlle = true; zeichne(); };
