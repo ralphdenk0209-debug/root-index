@@ -38,7 +38,9 @@ if ! node _werkzeuge/produktseiten-generieren.mjs >> "$LOG" 2>&1; then melden "G
 node _werkzeuge/produktseiten-international.mjs >> "$LOG" 2>&1 || log "International fehlgeschlagen - deutsche Seiten laufen weiter."
 
 # Gegenmessen: nichts Leeres veroeffentlichen (wie bisher im Workflow)
-SEITEN=$(ls produkt/*.html 2>/dev/null | wc -l | tr -d ' ')
+# find statt ls produkt/*.html: bei ueber 60.000 Dateien ist die Argumentliste
+# fuer ls zu lang, ls scheitert still und zaehlt 0 (Nachtlauf 12.11. 03:55)
+SEITEN=$(find produkt -maxdepth 1 -name '*.html' 2>/dev/null | wc -l | tr -d ' ')
 URLS=$(grep -c "<loc>" sitemap-top.xml 2>/dev/null || echo 0)
 if [ "$SEITEN" -lt 1000 ] || [ "$URLS" -lt 1000 ] || [ ! -s robots.txt ]; then
   melden "Gegenmessung fehlgeschlagen (Seiten $SEITEN, Sitemap $URLS) - nichts veroeffentlicht"; git checkout -q -f HEAD; exit 1
