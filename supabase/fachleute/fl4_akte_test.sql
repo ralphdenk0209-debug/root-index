@@ -77,6 +77,7 @@ begin
   j := public.cb_fp_klient_dashboard(v_code, heute - 7, heute);
   insert into _erg(ok,txt) values (not (j->'akte'->>'darf_bearbeiten')::boolean and j->'akte'->'felder' = 'null'::jsonb
                                    and j->'akte'->>'bearbeiten_hinweis' is not null, 'Ohne Bearbeiten-Einwilligung: Akte nur lesen, Hinweis');
+  insert into _erg(ok,txt) values (j ? 'mikro_abdeckung', 'Dashboard liefert mikro_abdeckung (Schlüssel vorhanden)');
   begin perform public.cb_fp_akte_setzen(v_code, '{"gewicht_kg":68}'); insert into _erg(ok,txt) values (false,'Schreiben ohne Einwilligung geht!');
   exception when others then insert into _erg(ok,txt) values (true,'Schreiben ohne Bearbeiten-Einwilligung abgelehnt'); end;
 
