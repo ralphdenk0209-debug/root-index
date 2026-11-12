@@ -1236,7 +1236,7 @@ async function ladeZahlen(){
   const euro = c => (Number(c||0)/100).toLocaleString('de-DE',{style:'currency',currency:'EUR'});
   $('zAktiv').textContent = d.keys_aktiv ?? '–'; $('zNeu').textContent = d.keys_neu ?? '–';
   if(ohneLizenz()){   // FL-Lizenz: kein Preis, nur der Hinweis
-    $('zBetrag').textContent = '–'; $('zRegel').innerHTML = lizenzHinweisHtml(); $('zRegel2').innerHTML = $('zRegel').innerHTML; return; }
+    $('zBetrag').textContent = '–'; $('zRegel').innerHTML = lizenzHinweisHtml(); $('zRegel2').innerHTML = $('abrRegel').innerHTML = $('zRegel').innerHTML; return; }
   $('zBetrag').textContent = d.betrag_cent==null ? '–' : euro(d.betrag_cent);
   const keys = d.abrechnung==='tag'
       ? euro(d.preis_cent) + ' je Key und Monat, anteilig nach Tagen (' + d.key_tage + ' Key-Tage)'
@@ -1249,7 +1249,7 @@ async function ladeZahlen(){
     lizenz_plus_keys: 'Abrechnung: ' + lizenz + ' plus ' + keys + '.'
   }[d.modell || 'je_key'] || ('Abrechnung: ' + keys + '.');
   $('zRegel').textContent = regel + (d.modell === 'gratis' ? '' : ' Grundlage der monatlichen Rechnung, Stand heute.');
-  $('zRegel2').textContent = $('zRegel').textContent;
+  $('zRegel2').textContent = $('abrRegel').textContent = $('zRegel').textContent;   // Abrechnung auch, falls sie schon offen ist (sonst bleibt dort der Platzhalter stehen)
 }
 
 $('vertragLos').onclick = async function(){
@@ -1930,5 +1930,6 @@ $('qrDruck').onclick = () => { $('dlgQr').close(); document.body.classList.add('
 start();
 </script>
 <script src="fachleute-fl5.js?v=8"></script>
+<script src="therapeut-zahlung.js?v=4"></script>
 </body>
 </html>

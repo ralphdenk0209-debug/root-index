@@ -1,13 +1,22 @@
-/* therapeut-zahlung.js – ENTWURF 11.11.2026 (FL-1, Stripe-Abrechnung der Fachleute)
+/* therapeut-zahlung.js – FL-1, Stripe-Abrechnung der Fachleute (11.11.2026, Lizenz-Abgleich 12.11.2026)
    Eigener Baustein, damit therapeut.html (FL-4) kaum angefasst wird.
-   Einbinden beim Ausrollen mit EINER Zeile am Ende von therapeut.html:
-     <script src="therapeut-zahlung.js?v=1"></script>
-   Nutzt die globalen `client` und `$` der Seite. Zeigt im Bereich
-   Einstellungen › Abrechnung: Zahlungsart, Knopf hinterlegen/ändern,
-   Rechnungen (Stripe-Kundenportal) und die Liste der Monatsrechnungen.
+   Eingebunden mit EINER Zeile am Ende von therapeut.html:
+     <script src="therapeut-zahlung.js?v=4"></script>
+   Nutzt die globalen `client`, `$`, `meld`, `ICH`, `DEMO` und `ohneLizenz` der Seite.
+   Zeigt auf der Seite Abrechnung die Karte „Zahlung und Rechnungen“: Zahlungsart,
+   Knopf hinterlegen/ändern, Rechnungen (Stripe-Kundenportal), Monatsrechnungen.
+   FL-Lizenz (main 57ec8b1): Karte nur, wenn cb_fp_ich.keys_erlaubt stimmt.
+   Ohne Lizenz bleibt allein der Lizenz-Hinweis der Seite stehen.
    Daten: cb_fp_zahlung_stand (RPC), Edge-Funktion fp-zahlung. */
 (function () {
   if (typeof client === 'undefined') return;
+  // FL-Lizenz: erst entscheiden, wenn cb_fp_ich geladen ist (ICH). Ohne Lizenz keine Karte.
+  const ichDa = () => typeof ICH !== 'undefined' && !!ICH;
+  const keysErlaubt = () => ichDa() && (typeof ohneLizenz === 'function' ? !ohneLizenz() : ICH.keys_erlaubt !== false);
+  async function warteAufIch() {
+    for (let i = 0; i < 100 && !ichDa(); i++) await new Promise(r => setTimeout(r, 150));   // höchstens 15 s
+    return ichDa();
+  }
   const ESC = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const EUR = c => ((c || 0) / 100).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
   const MON = iso => new Date(iso + 'T12:00:00').toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
@@ -78,6 +87,10 @@
     if (typeof DEMO !== 'undefined' && DEMO) return;
     const { data: { session } } = await client.auth.getSession();
     if (!session) return;
+    if (!(await warteAufIch()) || !keysErlaubt()) {   // keine Fachperson oder keine Lizenz: keine Karte
+      const f = document.getElementById('fpZahlung'); if (f) (f.closest('.karte2') || f).remove();
+      return;
+    }
     let hinweis = '', art = '';
     const q = new URLSearchParams(location.search);
     if (q.get('zahlung') === 'ok' && q.get('sid')) {

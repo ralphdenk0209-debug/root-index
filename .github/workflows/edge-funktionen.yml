@@ -78,7 +78,7 @@ jobs:
           else
             # Alles, was dieser Push unter supabase/functions/ angefasst hat.
             LISTE=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} -- 'supabase/functions/**' \
-                    | awk -F/ 'NF>2 {print $3}' | sort -u || true)
+                    | awk -F/ 'NF>2 && $3 !~ /^_/ {print $3}' | sort -u || true)   # _ordner sind geteilter Code, keine Funktion
           fi
           echo "Gefunden:"; echo "$LISTE"
           echo "liste<<ENDE" >> $GITHUB_OUTPUT
