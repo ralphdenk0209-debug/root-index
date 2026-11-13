@@ -157,9 +157,14 @@ function uebersicht(el, daten, info){
       scales: {x: {stacked: true, grid: {display: false}}, y: {stacked: true, beginAtZero: true, grid: {color: F.linie}, ticks: {callback: v => v + ' g'}}}}});
   const gr = {}; ok.forEach(d => (d.kurz.gruppen||[]).forEach(g => { gr[g.gruppe] = gr[g.gruppe] || {gruppe: g.gruppe, gramm: 0}; gr[g.gruppe].gramm += Number(g.gramm)||0; }));
   const t = tellerAus(Object.values(gr)), sum = t.seg.reduce((a, s) => a + s.g, 0);
-  chart(document.getElementById('chTeller'), {type: 'doughnut',
+  // Ralph 13.11.2026: „auf der übersicht soll auch der volle teller sein“ – volle Torte mit Prozenten wie in der Ansicht je Person (tellerKarte)
+  const tellerProzent = {id: 'tellerProzent', afterDatasetsDraw(c){
+    const ctx = c.ctx; ctx.save(); ctx.fillStyle = '#fff'; ctx.font = '700 13px ' + Chart.defaults.font.family; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    c.getDatasetMeta(0).data.forEach((arc, i) => { const p = (t.seg[i].g || 0) / (sum || 1); if(p <= 0.07) return; const q = arc.tooltipPosition(); ctx.fillText(Math.round(100 * p) + ' %', q.x, q.y); });
+    ctx.restore(); }};
+  chart(document.getElementById('chTeller'), {type: 'pie', plugins: [tellerProzent],
     data: {labels: t.seg.map(s => s.n), datasets: [{data: t.seg.map(s => Math.round(s.g)), backgroundColor: t.seg.map(s => s.col), borderWidth: 2, borderColor: '#fff'}]},
-    options: {responsive: true, maintainAspectRatio: false, cutout: '62%', plugins: {legend: {position: 'bottom'},
+    options: {responsive: true, maintainAspectRatio: false, plugins: {legend: {position: 'bottom'},
       tooltip: {callbacks: {label: c => ' ' + c.label + ': ' + Math.round(100 * c.parsed / (sum||1)) + ' %'}}}}});
   document.getElementById('tellerFuss').innerHTML = 'Zum Vergleich der FET-Teller: halb Gemüse und Obst, je ein Viertel Eiweiß und Kohlenhydrate.' + (t.aus ? ' Nicht auf dem Teller (Nüsse, Öl, Gewürze): ' + z(t.aus) + ' g.' : '');
   bindeZiel(el);
