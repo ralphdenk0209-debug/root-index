@@ -20,7 +20,12 @@ const CORS = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+// 13.11.2026 (N1, Ralph „Ja, so bauen“): Standard Sonnet 5.5. claude-sonnet-5 = Ziel der
+// server-seitigen Ausweichschaltung (fallbacks: "default"), gleicher Preis.
+const STANDARD_MODELL = "claude-sonnet-5-5";
 const PREISE: Record<string, { in: number; out: number }> = {
+  "claude-sonnet-5-5": { in: 2.0, out: 10.0 },
+  "claude-sonnet-5": { in: 2.0, out: 10.0 },
   "claude-haiku-4-5-20251001": { in: 1.0, out: 5.0 },
   "claude-sonnet-4-6": { in: 3.0, out: 15.0 },
 };
@@ -49,6 +54,14 @@ OBERSTE REGELN:
 3. Die kcal-Angabe ist eine EHRLICHE SCHÄTZUNG pro Portion. Gib sie an, aber verstehe: es ist ein
    Richtwert, keine Messung. Übertreibe keine Genauigkeit (runde auf ~10 kcal).
 4. Mach die Vorschläge VERSCHIEDEN (nicht dreimal dasselbe mit anderem Namen).
+5. JEDER VORSCHLAG BRAUCHT EINE ECHTE ANLEITUNG zum Nachkochen (siehe ZUBEREITUNG).
+
+ZUBEREITUNG ("zubereitung"): nummerierte Schritte, je Schritt eine eigene Zeile, getrennt durch
+einen Zeilenumbruch (\n), Form "1. …", "2. …". 4 bis 10 Schritte. Jeder Schritt ist eine konkrete
+Handlung mit Hitze/Stufe und Zeit, wo es darauf ankommt (z. B. "3. Öl in einer Pfanne bei mittlerer
+Hitze erhitzen, Zwiebel 3–4 Minuten glasig dünsten."). JEDE Zutat aus "zutaten" kommt in mindestens
+einem Schritt vor, mit ihrer Menge beim ersten Auftauchen. Kein Einleitungssatz, kein Fazit, keine
+Gesundheitsversprechen.
 
 KALORIEN-PASSUNG:
 - "kcal_tag" ist der TAGESbedarf des Nutzers. Ein einzelnes Gericht ist eine MAHLZEIT, kein ganzer Tag.
@@ -79,7 +92,7 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
       "passt_zu_kcal": boolean,
       "zutaten": [ { "name": string, "menge": string|null, "menge_g": number|null, "aus_vorrat": boolean } ],
       "extra_zutaten": string[],
-      "zubereitung": string
+      "zubereitung": string   // "1. …\n2. …\n3. …" (4–10 Schritte)
     }
   ],
   "hinweis": string|null
@@ -155,18 +168,28 @@ Deno.serve(async (req) => {
       `Schlage ${anzahl} verschiedene, machbare Gerichte vor, die überwiegend diese Zutaten nutzen und deren Portion zum Kalorienbedarf passt. ` +
       `kcal pro Portion als ehrliche Schätzung. Nichts erfinden, was den Rahmen sprengt.`;
 
-    const modell: string = body.modell ?? "claude-haiku-4-5-20251001";
+    const modell: string = typeof body.modell === "string" && PREISE[body.modell] ? body.modell : STANDARD_MODELL;
+    const istSonnet55 = modell === "claude-sonnet-5-5";
     const t0 = Date.now();
 
+    // Sonnet 5.5: adaptives Denken (Standard) bei effort "low" – kein temperature/top_p, kein
+    // budget_tokens. max_tokens großzügig, weil Denken mitzählt. Server-seitige Ausweichschaltung
+    // bei Ablehnung durch die Sicherheitsfilter (fallbacks: "default" + Beta-Kopfzeile).
+    const anfrage: Record<string, unknown> = {
+      model: modell,
+      max_tokens: istSonnet55 ? 12000 : 3500,
+      system: [{ type: "text", text: REGELWERK, cache_control: { type: "ephemeral" } }],
+      messages: [{ role: "user", content: frage }],
+    };
+    const kopf: Record<string, string> = { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" };
+    if (istSonnet55) {
+      anfrage.output_config = { effort: "low" };
+      anfrage.fallbacks = "default";
+      kopf["anthropic-beta"] = "server-side-fallback-2026-07-01";
+    }
+
     const ai = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "x-api-key": key, "anthropic-version": "2023-06-01", "content-type": "application/json" },
-      body: JSON.stringify({
-        model: modell,
-        max_tokens: 3500,
-        system: [{ type: "text", text: REGELWERK, cache_control: { type: "ephemeral" } }],
-        messages: [{ role: "user", content: frage }],
-      }),
+      method: "POST", headers: kopf, body: JSON.stringify(anfrage),
     });
 
     const j = await ai.json();
@@ -177,6 +200,36 @@ Deno.serve(async (req) => {
         { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
     }
 
+    // Kosten: usage.iterations ist je Versuch maßgeblich (bei Ausweichschaltung mehrere Modelle),
+    // sonst die Gesamtzahlen. Jeder Versuch zum Preis des Modells, das ihn ausgeführt hat.
+    const usage: any = j.usage ?? {};
+    const versuche: any[] = Array.isArray(usage.iterations) && usage.iterations.length ? usage.iterations : [usage];
+    let inTok = 0, outTok = 0, kosten = 0;
+    for (const v of versuche) {
+      const vin = (v.input_tokens ?? 0) + (v.cache_creation_input_tokens ?? 0) + (v.cache_read_input_tokens ?? 0);
+      const vout = v.output_tokens ?? 0;
+      const p = PREISE[String(v.model ?? j.model ?? modell)] ?? PREISE[modell];
+      inTok += vin; outTok += vout; kosten += (vin / 1e6) * p.in + (vout / 1e6) * p.out;
+    }
+    const bedientVon: string = String(j.model ?? modell);
+
+    // Ablehnung durch die Sicherheitsfilter (auch nach Ausweichschaltung): sauber als Fehler melden.
+    if (j.stop_reason === "refusal") {
+      const kat = j.stop_details?.category ?? null;
+      await sb.rpc("cb_riki_buchen", { p_modus: "rezept", p_modell: bedientVon, p_in: inTok, p_out: outTok,
+        p_kosten: Number(kosten.toFixed(6)), p_produkt_id: null, p_erfolg: false,
+        p_fehler: ("refusal" + (kat ? ":" + kat : "")).slice(0, 400) });
+      return new Response(JSON.stringify({ error: "Riki darf zu dieser Anfrage keine Vorschläge machen. Bitte formuliere die Zutaten anders." }),
+        { status: 422, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+    if (j.stop_reason === "max_tokens") {
+      await sb.rpc("cb_riki_buchen", { p_modus: "rezept", p_modell: bedientVon, p_in: inTok, p_out: outTok,
+        p_kosten: Number(kosten.toFixed(6)), p_produkt_id: null, p_erfolg: false, p_fehler: "max_tokens" });
+      return new Response(JSON.stringify({ error: "Riki ist mit der Antwort nicht fertig geworden. Bitte nochmal versuchen." }),
+        { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
+    }
+
+    // Nur text-Blöcke lesen (thinking- und fallback-Blöcke ignorieren).
     const text = (j.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("");
     let ergebnis: any = null;
     try {
@@ -184,17 +237,21 @@ Deno.serve(async (req) => {
       ergebnis = JSON.parse(m ? m[0] : text);
     } catch { ergebnis = null; }
 
-    const usage: any = j.usage ?? {};
-    const inTok = (usage.input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0);
-    const outTok = usage.output_tokens ?? 0;
-    const preis = PREISE[modell] ?? PREISE["claude-haiku-4-5-20251001"];
-    const kosten = (inTok / 1e6) * preis.in + (outTok / 1e6) * preis.out;
-
-    await sb.rpc("cb_riki_buchen", { p_modus: "rezept", p_modell: modell,
+    await sb.rpc("cb_riki_buchen", { p_modus: "rezept", p_modell: bedientVon,
       p_in: inTok, p_out: outTok, p_kosten: Number(kosten.toFixed(6)),
       p_produkt_id: null, p_erfolg: true, p_fehler: null });
 
     const vorschlaege = Array.isArray(ergebnis?.vorschlaege) ? ergebnis.vorschlaege : [];
+    // Schritte vereinheitlichen: immer ein Text "1. …\n2. …" (falls Riki eine Liste liefert)
+    // plus "schritte" als Liste ohne Nummer für die Anzeige in Web und iPhone.
+    for (const v of vorschlaege) {
+      const roh: string[] = Array.isArray(v?.zubereitung)
+        ? v.zubereitung.map((x: unknown) => String(x ?? ""))
+        : String(v?.zubereitung ?? "").split(/\n+/);
+      const schritte = roh.map((x) => x.replace(/^\s*\d+[.)]\s*/, "").trim()).filter((x) => x.length > 0);
+      v.schritte = schritte;
+      v.zubereitung = schritte.map((x, i) => `${i + 1}. ${x}`).join("\n");
+    }
     if (!vorschlaege.length) {
       return new Response(JSON.stringify({ error: "Riki hat keine verwertbaren Vorschläge geliefert. Versuch es mit mehr oder anderen Zutaten." }),
         { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -204,7 +261,7 @@ Deno.serve(async (req) => {
       vorschlaege,
       hinweis: ergebnis?.hinweis ?? "Vorschläge von Riki – die kcal-Angabe ist eine Schätzung. Wähl einen Vorschlag, dann kannst du ihn als Rezept übernehmen und anpassen.",
       meta: {
-        modell, kosten_usd: Number(kosten.toFixed(6)), dauer_ms: Date.now() - t0,
+        modell: bedientVon, kosten_usd: Number(kosten.toFixed(6)), dauer_ms: Date.now() - t0,
         kcal_tag: isFinite(kcalTag) && kcalTag > 0 ? Math.round(kcalTag) : null, mahlzeit,
         heute_genutzt: (limit?.heute_genutzt ?? 0) + 1, limit_tag: limit?.limit_tag,
       },

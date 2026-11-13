@@ -17100,10 +17100,12 @@ function _tbNum1(x){ return (Math.round((+x||0)*100)/100).toString().replace('.'
 function _tbRezPortTxt(p){ p=+p||1; return (p===1)?'1 Portion':(_tbNum1(p)+' Portionen'); }
 async function tbRezOpen(i){
   var r=(window._tbRezList||[])[i]; if(!r) return;
-  window._tbRezPick={ id:r.id, name:r.name, modus:'portion', p:1, gesamt_g:null, kcal_portion:null };
+  window._tbRezPick={ id:r.id, name:r.name, modus:'portion', p:1, gesamt_g:null, kcal_portion:null, fehlt:[] };
   try{ var res=await client.rpc("cb_rezept_portion_info",{p_rezept:r.id}); var info=(res&&res.data&&res.data[0])||{};
     window._tbRezPick.p=info.portionen||1; window._tbRezPick.gesamt_g=info.gesamt_g||null; window._tbRezPick.kcal_portion=info.kcal_portion||null;
   }catch(e){}
+  /* N3 13.11.2026: Zutaten, die NICHT gebucht werden (kein Produkt / kein Gewicht), vor dem Buchen zeigen. */
+  try{ var nf=await client.rpc("cb_rezept_nicht_gebucht",{p_rezept:r.id}); if(nf&&!nf.error&&Array.isArray(nf.data)) window._tbRezPick.fehlt=nf.data; }catch(e){}
   tbRezBuchenRender();
 }
 function tbRezBuchenRender(){
@@ -17122,10 +17124,18 @@ function tbRezBuchenRender(){
         ? '<div style="display:flex;gap:8px;align-items:center"><input id="tbRezVal" type="number" min="0.25" step="0.25" value="1" oninput="tbRezVorschau()" style="width:88px;padding:10px;border:1px solid var(--k-e7e0d4);border-radius:10px;text-align:center;font-size:16px;background:var(--k-f3efe8);color:var(--k-1d3c24)"><span style="color:var(--k-6b6256)">Portion(en)</span></div>'
         : '<div style="display:flex;gap:8px;align-items:center"><input id="tbRezVal" type="number" min="1" step="10" value="'+(perPortG||100)+'" oninput="tbRezVorschau()" style="width:88px;padding:10px;border:1px solid var(--k-e7e0d4);border-radius:10px;text-align:center;font-size:16px;background:var(--k-f3efe8);color:var(--k-1d3c24)"><span style="color:var(--k-6b6256)">g</span></div>')
     +'<div id="tbRezVorschau" style="font-size:12.5px;color:var(--k-2e7d32);font-weight:600;margin-top:8px;min-height:16px"></div>'
+    +tbRezFehltHtml(s.fehlt)
     +'<button onclick="tbRezBuchenSave()" style="margin-top:10px;width:100%;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:600;cursor:pointer">Ins Tagebuch eintragen</button>'
     +'<button onclick="tbSetTab(window._tbTab||\'rezepte\')" style="margin-top:8px;background:none;border:0;color:var(--k-6b6256);font-size:12px;cursor:pointer;text-decoration:underline">‹ zurück</button>'
     +'<div id="tbRezMsg" style="font-size:12px;margin-top:6px"></div></div>';
   tbRezVorschau();
+}
+function tbRezFehltHtml(f){
+  if(!Array.isArray(f)||!f.length) return '';
+  return '<div style="margin-top:9px;padding:8px 10px;border-radius:9px;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.25);font-size:12px;line-height:1.45;color:var(--k-57534e)">'
+    +'<div style="font-weight:700;color:var(--k-b45309);margin-bottom:3px">Wird nicht mitgezählt:</div>'
+    +f.map(function(z){ return '<div>• '+esc(z.zutat||'Zutat')+(z.menge?(' ('+esc(z.menge)+')'):'')+' – '+esc(z.grund==='ohne Gewicht'?'ohne Gewicht':'nicht zugeordnet')+', zählt nicht</div>'; }).join('')
+    +'<div style="margin-top:4px;color:var(--k-6b6256)">Im Rezept einem Produkt zuordnen bzw. ein Gewicht eintragen, dann zählt es mit.</div></div>';
 }
 function tbRezMode(m){ if(m==='gramm'&&!window._tbRezPick.gesamt_g) return; window._tbRezPick.modus=m; tbRezBuchenRender(); }
 function tbRezVorschau(){
@@ -17183,7 +17193,7 @@ function tbBatchLines(rows){
 }
 function tbBatchToggle(b){ window._tbBatchOpen=window._tbBatchOpen||{}; window._tbBatchOpen[b]=!window._tbBatchOpen[b]; try{ loadTagebuch(); }catch(e){} }
 function tbDelRezept(b){ if(!b) return; client.rpc("cb_tb_rezept_del",{p_batch:b}).then(function(){ loadTagebuch(); }); }
-if(typeof window!=='undefined'){ window.tbRezOpen=tbRezOpen; window.tbRezBuchenRender=tbRezBuchenRender; window.tbRezMode=tbRezMode; window.tbRezVorschau=tbRezVorschau; window.tbRezBuchenSave=tbRezBuchenSave; window.tbBatchLines=tbBatchLines; window.tbBatchToggle=tbBatchToggle; window.tbDelRezept=tbDelRezept; }
+if(typeof window!=='undefined'){ window.tbRezOpen=tbRezOpen; window.tbRezBuchenRender=tbRezBuchenRender; window.tbRezMode=tbRezMode; window.tbRezVorschau=tbRezVorschau; window.tbRezFehltHtml=tbRezFehltHtml; window.tbRezBuchenSave=tbRezBuchenSave; window.tbBatchLines=tbBatchLines; window.tbBatchToggle=tbBatchToggle; window.tbDelRezept=tbDelRezept; }
 
 /* ===== APP-STORE-VORBEREITUNG (Ralph 25.07.) =====
    1) Native-Erkennung (Capacitor), 2) Bezahl-Weiche (iOS -> Apple statt Stripe),
@@ -17597,14 +17607,24 @@ function rezVorschlagRender(d){
     var kc=(v.kcal_geschaetzt!=null)?('~'+Math.round(v.kcal_geschaetzt)+' kcal/Portion'):'kcal unklar';
     var passt=(v.passt_zu_kcal===false)?'<span style="font-size:11px;color:var(--k-b45309)"> · passt nicht ganz zum Bedarf</span>':'';
     var zl=(Array.isArray(v.zutaten)?v.zutaten:[]).map(function(z){ return esc((z.menge?(z.menge+' '):'')+(z.name||''))+(z.aus_vorrat===false?' <span style="color:var(--k-b45309)">(dazu)</span>':''); }).join(' · ');
+    /* N1 13.11.2026 (Sandra: „Vorschläge ohne Anleitung“): Schritte aufklappbar auf der Karte. */
+    var st=rezVorschlagSchritte(v);
+    var anl=st.length?('<details style="margin-top:7px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--greendk,var(--k-166534))">Anleitung ('+st.length+' Schritte) ▸</summary>'
+      +'<ol style="margin:6px 0 0;padding-left:20px;font-size:12.5px;line-height:1.5;color:var(--ink)">'+st.map(function(x){ return '<li style="margin:3px 0">'+esc(x)+'</li>'; }).join('')+'</ol></details>'):'';
     return '<div style="border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin-top:10px;background:var(--bg)">'
       +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px"><div style="font-weight:700;font-size:14.5px">'+esc(v.name||('Vorschlag '+(i+1)))+ef+'</div><div style="font-size:11.5px;color:var(--muted);white-space:nowrap">⏱ '+(v.zeit_min!=null?(v.zeit_min+' min'):'–')+'</div></div>'
       +(v.kurz?('<div style="font-size:12.5px;color:var(--ink);margin-top:2px">'+esc(v.kurz)+'</div>'):'')
       +'<div style="font-size:12px;color:var(--muted);margin-top:5px"><b style="color:var(--greendk,var(--k-166534))">'+kc+'</b>'+passt+'</div>'
       +'<div style="font-size:12px;color:var(--muted);margin-top:5px;line-height:1.5">'+zl+'</div>'
+      +anl
       +'<button onclick="rezVorschlagUebernehmen('+i+')" style="margin-top:10px;padding:8px 13px;border:0;border-radius:9px;background:var(--green);color:var(--auf-gruen);font-weight:700;font-size:13px;cursor:pointer">Als Rezept übernehmen ▸</button>'
     +'</div>';
   }).join("");
+}
+/* Schritte eines Vorschlags: neue Server-Antwort liefert v.schritte, ältere nur v.zubereitung ("1. …\n2. …"). */
+function rezVorschlagSchritte(v){
+  if(v&&Array.isArray(v.schritte)&&v.schritte.length) return v.schritte.map(String);
+  return String((v&&v.zubereitung)||'').split(/\n+/).map(function(x){ return x.replace(/^\s*\d+[.)]\s*/,'').trim(); }).filter(function(x){ return x.length>0; });
 }
 async function rezVorschlagUebernehmen(i){
   var v=(window._rezVorschlaege||[])[i]; if(!v) return;
@@ -17624,7 +17644,8 @@ async function rezVorschlagUebernehmen(i){
       else { z.treffer={grund:(t&&t.grund)||"nicht im Katalog"}; }
     }catch(e){}
   }));
-  var d={ vorschlag:{ name:v.name, portionen:v.portionen, zeit_min:v.zeit_min, zubereitung:v.zubereitung,
+  var _st=rezVorschlagSchritte(v);
+  var d={ vorschlag:{ name:v.name, portionen:v.portionen, zeit_min:v.zeit_min, zubereitung:(_st.length?_st.map(function(x,k){ return (k+1)+'. '+x; }).join('\n'):v.zubereitung),
     ernaehrungsform:v.ernaehrungsform, naehrwerte_portion:{ kcal:v.kcal_geschaetzt }, zutaten:zut },
     warnungen:['Die kcal-Angabe ist eine Schätzung – danach den Knopf „Nährwerte aus Zutaten berechnen“ drücken für die echten Werte.'
       +(zug<zut.length?' Nicht zugeordnete Zutaten bleiben freie Zutat (kannst du von Hand verknüpfen).':'')],
@@ -18385,7 +18406,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-11-04";
+const APP_BUILD="2026-11-13-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
