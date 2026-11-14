@@ -537,7 +537,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
   .k-filter button i{font-style:normal;font-weight:700;margin-left:2px}
   .baum-knoepfe{padding:10px 12px 0}
   .demo-leiste{display:inline-flex;flex-wrap:wrap;align-items:center;gap:8px;margin-left:auto}
-  .demo-leiste span{font-size:13px;color:var(--muted,#737373)}
+  .demo-leiste span{font-size:13px;color:var(--muted,#737373)} .demo-leiste span b{color:var(--ink,#133521);font-weight:700}
   .demo-leiste .tb{padding:4px 10px;font-size:13px}
   .statuszeile{flex-wrap:wrap}
   .ueber-schritte{padding-left:20px;line-height:1.5} .ueber-schritte li{margin:6px 0}
@@ -623,7 +623,7 @@ try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === '
       <button class="knopf" id="los" type="button">Anmelden</button>
       <div class="meld" id="meldLogin"></div>
       <button class="link" id="vergessen" type="button">Passwort vergessen?</button>
-      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ansehen (mit Passwort)</a></p>
+      <p style="margin:12px 0 0;font-size:14px"><a href="therapeut-demo.html" id="zurDemo">Musterpraxis ansehen</a></p>
       <div class="hinweis" id="neuHinweis" hidden>Nach dem Anlegen schalten wir das Konto als Fachperson frei. Kurze Nachricht mit Name und Praxis an: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></div>
     </div>
   </section>
@@ -1011,7 +1011,7 @@ $('neuPassLos').onclick = async function(){
 };
 
 $('abmelden').onclick = async () => {
-  if(DEMO){ try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace('therapeut.html'); return; }
+  if(DEMO){ const zu = DEMO === 'oeffentlich' ? 'pro.html' : 'therapeut.html'; try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){} location.replace(zu); return; }
   await client.auth.signOut(); ICH = null; KEYS = []; WAHL = null; BEW_DA = false; $('bewFrame').srcdoc = ''; MUSTER = null; history.replaceState(null, '', location.pathname); setModus('an'); zeige('bLogin'); };
 
 client.auth.onAuthStateChange((ev) => {
@@ -1068,7 +1068,10 @@ async function demoOhnePasswort(){   // gemerkter Zugang aus diesem Tab, sonst a
   if(z && await demoStart(z)) return true;
   try{ sessionStorage.removeItem(DEMO_SPEICHER); }catch(e){}
   const {data:{session}} = await client.auth.getSession();
-  return !!session && await demoStart('angemeldet');
+  if(session && await demoStart('angemeldet')) return true;
+  /* 14.11.2026 (Ralph „A“): öffentliche Vorführung ohne Passwort. Der Server lässt den Token „oeffentlich“ nur zu,
+     solange fachleute_einstellung.muster_oeffentlich = 'ja' (_fl_muster_token_ok); sonst bleibt das Passwortfeld. */
+  return await demoStart('oeffentlich');
 }
 function nurAnsehen(){
   let t = document.querySelector('.demo-toast');
@@ -1157,7 +1160,8 @@ function demoMischen(code, r){
 function demoLeiste(){
   if($('demoLeiste')) return;
   const l = document.createElement('span'); l.id = 'demoLeiste'; l.className = 'demo-leiste';
-  l.innerHTML = '<span>Vorführung: Änderungen bleiben nur in diesem Browser-Tab.</span>' +
+  l.innerHTML = '<span><b>Vorführung mit erfundenen Personen – nichts wird gespeichert.</b> Änderungen gelten nur in diesem Browser-Tab.</span>' +
+    '<a class="tb haupt" href="pro.html#anfrage" id="demoPro">Anfrage oder Konto</a>' +
     '<button type="button" class="tb" id="demoVorschlag">Verbesserung vorschlagen</button><button type="button" class="tb" id="demoReset">Vorführung zurücksetzen</button>';
   $('statusZeile').appendChild(l);
   $('demoVorschlag').onclick = () => geh('wunschliste');
