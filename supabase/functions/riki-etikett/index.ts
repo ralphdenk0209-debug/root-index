@@ -18,6 +18,8 @@
 //   gemessene Befund (P1593, P1532, P1391) trat ausschliesslich im Modus
 //   "rohtext" auf. Es gibt keinen gemessenen Anlass, hier etwas zu aendern.
 //
+// v25 (2026-11-14, N11, Ralph jaja): "<0,5 g" -> Zahl 0.5 + naehrwerte_100g.kleiner_als ["zucker"];
+//   der Eingang (cb_produkt_ingest) schreibt daraus Naehrwerte_Makro.Vergleichsoperatoren. Fall: Haehnchenbrust ja! P96672.
 // v24 (2026-08-16, Work #78, Ralph-Go 16.08.): ZUTATENZEILEN STRUKTURIEREN.
 // Zutaten werden nicht mehr als unteilbarer Komplettstring fuer die Stammsuche behandelt.
 // Grundzutat, Verarbeitung, explizite Attribute und Klammerrolle werden getrennt geliefert.
@@ -84,6 +86,8 @@ Nährwerttabellen haben oft ZWEI Spalten. Du MUSST die 100-g-Spalte nehmen. Steh
 === ZUSATZZEILEN DER NAEHRWERTTABELLE (13.10.2026) ===
 Steht unter Kohlenhydrate "davon mehrwertige Alkohole" (auch "Polyole", "davon Erythrit"): Wert in "polyole". Sonst polyole=null.
 "ballaststoffe_angegeben": true, wenn eine Zeile Ballaststoffe in der Tabelle steht; false, wenn die Tabelle vollständig sichtbar ist und KEINE Ballaststoff-Zeile hat; null, wenn die Tabelle abgeschnitten oder unlesbar ist.
+=== KLEINER-ALS-WERTE (14.11.2026) ===
+Steht in der 100-g-Spalte ein Wert mit "<" oder "unter" (z. B. "<0,5 g", "< 0,1 g", "unter 0,01 g"): trage die Zahl OHNE Zeichen ein (0.5, 0.1, 0.01) und nenne den Feldnamen in naehrwerte_100g.kleiner_als (z. B. ["zucker"]). Niemals null wegen "<". Ohne solche Werte: kleiner_als=[].
 
 === BEZUG: 100 g ODER 100 ml ===
 Setze \"bezug\" exakt nach sichtbarer Spaltenueberschrift: \"100g\" | \"100ml\" | null. Nicht nach Produktart raten.
@@ -173,7 +177,7 @@ ANTWORTE AUSSCHLIESSLICH MIT JSON, ohne Markdown:
   \"portion_g\": number|null,
   \"ean_auf_foto\": string|null,
   \"etikett_sprachen\": string[],
-  \"naehrwerte_100g\": { \"kcal\": number|null, \"protein\": number|null, \"kh\": number|null, \"zucker\": number|null, \"fett\": number|null, \"ges_fett\": number|null, \"ballaststoffe\": number|null, \"salz\": number|null, \"polyole\": number|null, \"ballaststoffe_angegeben\": true|false|null },
+  \"naehrwerte_100g\": { \"kcal\": number|null, \"protein\": number|null, \"kh\": number|null, \"zucker\": number|null, \"fett\": number|null, \"ges_fett\": number|null, \"ballaststoffe\": number|null, \"salz\": number|null, \"polyole\": number|null, \"ballaststoffe_angegeben\": true|false|null, \"kleiner_als\": string[] },
   \"zutaten\": [ {
     \"name\": string,
     \"original_text\": string,
