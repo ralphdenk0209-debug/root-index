@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Root Index Pro – für Ernährungsberatung und Ernährungstherapie</title>
+<meta name="description" content="Root Index Pro für Ernährungsberatung, Ernährungstherapie und Diätassistenz: Tagebuch der Klient:innen mit Einwilligung, Auswertung mit DGE-Abgleich, Pläne, Berichte, Rezepte. 6,99 € je Key und Monat.">
+<link rel="canonical" href="https://root-index.de/pro.html">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Root Index Pro – für Ernährungsfachleute">
+<meta property="og:description" content="Tagebuch der Klient:innen mit Einwilligung, Auswertung mit DGE-Abgleich, Pläne, Berichte, Rezepte. 6,99 € je Key und Monat, keine Grundgebühr.">
+<meta property="og:url" content="https://root-index.de/pro.html">
+<meta property="og:image" content="https://root-index.de/icon-512.png">
+<meta name="theme-color" content="#f3f6f2">
+<link rel="icon" href="favicon-96.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<!-- pro.html · 14.11.2026 · Öffentliche Zielseite für Root Index Pro (Ziel der Google-Suchanzeigen).
+     Jede Aussage ist gegen den Code geprüft (therapeut.html, fachleute-*.js, therapeut-zahlung.js,
+     Supabase). Vertrauliche Bewertungsregeln stehen hier nicht, nur das Prinzip aus wie-root-index-bewertet.html.
+     PREIS steht hier fest im Text. Maßgeblich für die Abrechnung ist die Datenbank:
+     fachleute_einstellung.preis_cent (699 seit 14.11.2026), abrechnung = 'monat' (jeder angefangene Monat zählt voll),
+     abrechnungsmodell = 'je_key'; je Praxis abweichend fachperson_konto.key_preis_cent bzw. fachperson_freigabe.key_preis_cent.
+     Ändert sich der Preis dort, diese Seite und die meta description mit ändern.
+     HERKUNFT: ?herkunft=… (oder ?von=… bzw. utm_source/utm_campaign wie in app.js) wird nur im Speicher dieses
+     Aufrufs gehalten (nichts auf dem Gerät, TDDDG § 25) und an die Links zu therapeut.html / therapeut-demo.html
+     angehängt. therapeut.html gibt sie beim Konto-Anlegen als Konto-Metadatum mit (Trigger in "Benutzer"). -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<script>/* Darstellung wie in Root Index Pro (therapeut.html): gewählte Farbe nur lesen, nichts speichern */
+try{ var t0 = localStorage.getItem('ri-pro-farbe'); if(t0 === 'hell' || t0 === 'dunkel') document.documentElement.setAttribute('data-theme', t0 === 'hell' ? 'light' : 'dark'); }catch(e){}</script>
+<style>
+/* Stil von wie-root-index-bewertet.html: helles Grün, ein Blatt, Bricolage für Überschriften, Source Serif für Text. */
+:root{
+  --bg:#f3f6f2; --paper:#ffffff; --ink:#1d3c24; --muted:#5d6a5f; --line:#dbe3d9;
+  --accent:#047857; --accent-ink:#ffffff; --accent-soft:#e3f3ea; --warn:#9a5b0f;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Serif 4", Georgia, "Times New Roman", serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#0f1a13; --paper:#152219; --ink:#e3efe6; --muted:#9fb3a5; --line:#2a3b2f;
+  --accent:#6ee7b7; --accent-ink:#0f1a13; --accent-soft:#163a2a; --warn:#f0b866; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#0f1a13; --paper:#152219; --ink:#e3efe6; --muted:#9fb3a5; --line:#2a3b2f;
+  --accent:#6ee7b7; --accent-ink:#0f1a13; --accent-soft:#163a2a; --warn:#f0b866; color-scheme:dark }
+
+*{ box-sizing:border-box }
+body{ margin:0; background:var(--bg); color:var(--ink); font-family:var(--body); font-size:17px; line-height:1.6;
+  padding-left:max(16px, env(safe-area-inset-left, 0px)); padding-right:max(16px, env(safe-area-inset-right, 0px)); padding-block:24px 48px; overflow-wrap:break-word }
+/* Silbentrennung nur in den schmalen Kästen (lange Wörter wie Verschwiegenheitsvereinbarung), nicht in Überschriften */
+.punkt p, .preis li, ol.schritte li{ hyphens:auto; -webkit-hyphens:auto }
+a[href^="mailto:"]{ hyphens:manual; -webkit-hyphens:manual; white-space:nowrap }
+.blatt{ max-width:860px; margin:0 auto; background:var(--paper); border:1px solid var(--line); border-radius:6px;
+  padding-block:28px 40px; padding-inline:clamp(18px, 6vw, 64px) }
+h1,h2,h3{ font-family:var(--display); text-wrap:balance; line-height:1.15; margin:0 }
+h1{ font-size:clamp(30px, 5.4vw, 46px); font-weight:700; letter-spacing:-0.015em; margin-top:26px }
+h2{ font-size:23px; font-weight:700; margin-top:46px; margin-bottom:12px; padding-top:20px; border-top:1px solid var(--line) }
+h3{ font-size:17.5px; font-weight:700; margin:0 0 4px }
+p{ margin:0 0 12px }
+a{ color:var(--accent) }
+strong{ font-weight:600 }
+:focus-visible{ outline:2px solid var(--accent); outline-offset:2px }
+
+.marke{ display:flex; align-items:center; justify-content:space-between; gap:10px 16px; flex-wrap:wrap }
+.marke a.logo{ display:flex; align-items:center; gap:10px; text-decoration:none; color:var(--ink); font-family:var(--display); font-weight:700; font-size:19px }
+.marke a.logo small{ font-family:var(--mono); font-weight:500; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--accent); border:1px solid currentColor; border-radius:20px; padding:1px 8px; margin-left:2px }
+.marke img{ width:32px; height:32px; border-radius:7px }
+.marke .anmelden{ font-family:var(--display); font-size:15px }
+.zeile{ font-family:var(--mono); font-size:12.5px; color:var(--muted); letter-spacing:.04em; text-transform:uppercase; margin-top:28px }
+.lead{ font-size:19.5px; margin-top:14px; max-width:62ch }
+
+.knoepfe{ display:flex; flex-wrap:wrap; gap:10px 12px; margin-top:22px }
+.knopf{ display:inline-flex; align-items:center; justify-content:center; min-height:46px; padding:10px 20px; border-radius:8px; font-family:var(--display); font-weight:700; font-size:16.5px; text-decoration:none; border:1.5px solid var(--accent) }
+.knopf.voll{ background:var(--accent); color:var(--accent-ink) }
+.knopf.voll:hover{ filter:brightness(1.08) }
+.knopf.rand{ color:var(--accent); background:transparent }
+.knopf.rand:hover{ background:var(--accent-soft) }
+.knopf-hinweis{ font-size:14.5px; color:var(--muted); margin-top:10px; max-width:66ch }
+
+.raster{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px; margin-top:6px }
+.punkt{ border:1px solid var(--line); border-radius:6px; padding:16px 18px 6px }
+.punkt .nr{ font-family:var(--mono); font-size:12.5px; color:var(--accent); letter-spacing:.04em; display:block; margin-bottom:6px }
+.punkt p{ font-size:16px; line-height:1.55 }
+.punkt.breit{ grid-column:1 / -1; background:var(--accent-soft); border-color:transparent }
+@media (max-width:640px){ .raster{ grid-template-columns:minmax(0,1fr) } }
+
+.leiste{ display:flex; height:28px; border-radius:4px; overflow:hidden; margin:10px 0 12px; font-family:var(--mono); font-size:12px }
+.leiste span{ display:flex; align-items:center; padding-left:8px; white-space:nowrap; overflow:hidden; color:#1d3c24 }
+.leiste b{ font-weight:400 }
+@media (max-width:640px){ .leiste b{ display:none } .leiste span{ padding-left:6px } }
+
+.preis{ display:grid; grid-template-columns:minmax(0,15em) minmax(0,1fr); gap:18px 28px; align-items:start; border:1.5px solid var(--accent); border-radius:6px; padding:20px 22px }
+.preis .betrag{ font-family:var(--display); font-weight:700; font-size:44px; line-height:1; letter-spacing:-0.02em }
+.preis .je{ font-family:var(--display); font-size:16px; color:var(--muted); margin-top:6px }
+.preis ul{ margin:0; padding:0; list-style:none; display:grid; gap:8px; font-size:16px }
+.preis li{ padding-left:18px; position:relative }
+.preis li::before{ content:""; position:absolute; left:0; top:.62em; width:7px; height:7px; border-radius:50%; background:var(--accent) }
+@media (max-width:640px){ .preis{ grid-template-columns:minmax(0,1fr) } }
+
+ol.schritte{ margin:6px 0 0; padding:0; list-style:none; counter-reset:s; display:grid; gap:12px }
+ol.schritte li{ counter-increment:s; display:grid; grid-template-columns:2.1em 1fr; gap:10px; align-items:baseline }
+ol.schritte li::before{ content:counter(s); font-family:var(--mono); font-size:14px; color:var(--accent); border:1px solid var(--accent); border-radius:50%; width:1.9em; height:1.9em; display:inline-flex; align-items:center; justify-content:center }
+
+.klein{ font-size:14.5px; color:var(--muted) }
+footer{ max-width:860px; margin:18px auto 0; font-size:14px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between; padding-inline:4px }
+footer nav{ display:flex; flex-wrap:wrap; gap:6px 16px }
+footer a{ color:var(--muted) }
+@media print{ body{ padding:0; background:#fff } .blatt{ border:0; padding:0 } .knoepfe{ display:none } }
+</style>
+</head>
+<body>
+
+<main class="blatt">
+  <div class="marke">
+    <a class="logo" href="https://root-index.de/"><img src="logo-mark.png" alt="" width="32" height="32">Root Index <small>Pro</small></a>
+    <a class="anmelden" href="therapeut.html" data-pro-link>Anmelden</a>
+  </div>
+
+  <div class="zeile">Für Ernährungsberatung · Ernährungstherapie · Diätassistenz</div>
+  <h1>Das Ernährungstagebuch der Klient:innen, ausgewertet für die Beratung</h1>
+  <p class="lead">Root Index Pro ist der Bereich für Ernährungsfachleute. Klient:innen erfassen ihre Mahlzeiten in Root Index. Nach ihrer Einwilligung sieht die Fachkraft Tagebuch und Auswertungen und arbeitet damit weiter: Ziele, Pläne, Berichte, Rezepte.</p>
+
+  <div class="knoepfe">
+    <a class="knopf voll" href="therapeut.html#konto-anlegen" data-pro-link>Konto anlegen</a>
+    <a class="knopf rand" href="therapeut-demo.html" data-pro-link>Musterpraxis ansehen</a>
+  </div>
+  <p class="knopf-hinweis">Nach dem Anlegen wird das Konto als Fachperson freigeschaltet. Dafür genügt eine kurze Nachricht mit Name und Praxis an <a href="mailto:kontakt@root-index.de?subject=Freischaltung%20Root%20Index%20Pro">kontakt@root-index.de</a>. Die Musterpraxis zeigt die echte Oberfläche mit erfundenen Personen und echten Produkten; der Zugang ist mit einem Passwort geschützt, das es auf Anfrage über dieselbe Adresse gibt.</p>
+
+  <h2>Was Root Index Pro kann</h2>
+  <div class="raster">
+    <section class="punkt">
+      <span class="nr">01 · Keys</span>
+      <h3>Ein Key je Klient:in</h3>
+      <p>Den Key per E-Mail, als QR-Karte oder als Code weitergeben. Damit legt die Person ein Konto an und nutzt Root Index Premium, solange der Key läuft. Laufzeit verlängern oder Key beenden geht jederzeit.</p>
+    </section>
+    <section class="punkt">
+      <span class="nr">02 · Einwilligung</span>
+      <h3>Tagebuch nur mit Einwilligung</h3>
+      <p>Einträge sind erst sichtbar, wenn die Person eingewilligt hat. Widerruft sie, ist wieder nichts zu sehen. Vor dem Start bestätigt jede Fachperson eine Verschwiegenheitsvereinbarung mit Root Index.</p>
+    </section>
+    <section class="punkt">
+      <span class="nr">03 · Auswertung</span>
+      <h3>Tag, Woche, Monat, mit DGE-Abgleich</h3>
+      <p>Energie, Eiweiß, Kohlenhydrate, Fett, Zucker, Ballaststoffe, Salz sowie Gemüse und Obst, verglichen mit den Referenzwerten der DGE oder mit eigenen Vorgaben der Fachkraft. Dazu der Verlauf über den Begleitzeitraum und eine Statistik der ganzen Praxis.</p>
+    </section>
+    <section class="punkt">
+      <span class="nr">04 · Arbeiten</span>
+      <h3>Pläne, Berichte, Rezepte</h3>
+      <p>Ernährungspläne schreiben und mit dem Tagebuch vergleichen (Ist gegen Plan). Berichte drucken oder als PDF speichern. Rezepte mit einer oder mehreren Personen teilen.</p>
+    </section>
+    <section class="punkt breit">
+      <span class="nr">05 · Bewertung</span>
+      <h3>Jedes verpackte Lebensmittel bekommt eine Zahl von 0 bis 100</h3>
+      <p>Der Root Index beschreibt, woraus ein Produkt besteht und wie stark es verarbeitet ist. Er setzt sich aus vier Teilen zusammen; Grundlage sind die Angaben auf dem Etikett.</p>
+      <div class="leiste" role="img" aria-label="Aufteilung der 100 Punkte: Nährwerte 40, Zutaten 30, Zusatzstoffe 15, Verarbeitung 15">
+        <span style="width:40%;background:#5aa77a"><b>Nährwerte&nbsp;</b>40</span>
+        <span style="width:30%;background:#2f7d55;color:#fff"><b>Zutaten&nbsp;</b>30</span>
+        <span style="width:15%;background:#a7cdb4"><b>Zusätze&nbsp;</b>15</span>
+        <span style="width:15%;background:#cfe3d5"><b>Verarb.&nbsp;</b>15</span>
+      </div>
+      <p class="klein">Nährwerte 40, Zutaten 30, Zusatzstoffe 15, Verarbeitung des Endprodukts 15 Punkte.</p>
+      <p>Der Index ist keine Verzehrempfehlung; wie viel und wie oft, bleibt Sache der Beratung. <a href="wie-root-index-bewertet.html">Wie Root Index bewertet</a></p>
+    </section>
+  </div>
+
+  <h2>Preis</h2>
+  <div class="preis">
+    <div>
+      <div class="betrag">6,99 €</div>
+      <div class="je">je Klient:in (Key) und Monat</div>
+    </div>
+    <ul>
+      <li><strong>Keine Grundgebühr.</strong> Berechnet werden eingelöste Keys; jeder angefangene Monat zählt voll.</li>
+      <li>Abrechnung monatlich über Stripe: Die Rechnung für den Vormonat kommt am 1. und wird per SEPA-Lastschrift oder Karte eingezogen.</li>
+      <li>Keys lassen sich jederzeit beenden.</li>
+      <li>Preise ohne Umsatzsteuer: Kleinunternehmer nach § 19 UStG.</li>
+    </ul>
+  </div>
+
+  <h2>So beginnt die Arbeit</h2>
+  <ol class="schritte">
+    <li><span><strong>Konto anlegen</strong> mit E-Mail und Passwort.</span></li>
+    <li><span><strong>Kurze Nachricht</strong> mit Name und Praxis an <a href="mailto:kontakt@root-index.de?subject=Freischaltung%20Root%20Index%20Pro">kontakt@root-index.de</a>. Danach wird das Konto als Fachperson freigeschaltet.</span></li>
+    <li><span><strong>Verschwiegenheitsvereinbarung bestätigen</strong> und unter Abrechnung eine Zahlungsart hinterlegen.</span></li>
+    <li><span><strong>Ersten Key anlegen</strong> und an die Person schicken. Nach Einlösen und Einwilligung erscheinen ihre Zahlen.</span></li>
+  </ol>
+
+  <div class="knoepfe">
+    <a class="knopf voll" href="therapeut.html#konto-anlegen" data-pro-link>Konto anlegen</a>
+    <a class="knopf rand" href="therapeut-demo.html" data-pro-link>Musterpraxis ansehen</a>
+  </div>
+  <p class="klein" style="margin-top:16px">Fragen vorab: <a href="mailto:kontakt@root-index.de?subject=Frage%20zu%20Root%20Index%20Pro">kontakt@root-index.de</a></p>
+</main>
+
+<footer>
+  <span>Root Index · root-index.de</span>
+  <nav aria-label="Rechtliches">
+    <a href="impressum.html">Impressum</a>
+    <a href="datenschutz.html">Datenschutz</a>
+    <a href="agb.html">AGB</a>
+    <a href="mailto:kontakt@root-index.de">Kontakt</a>
+  </nav>
+</footer>
+
+<script>
+/* Herkunft (Messkette): Kennung aus ?herkunft= bzw. ?von=, sonst utm-<quelle>-<kampagne> wie app.js.
+   Schreibweise wie in "Benutzer".herkunft erlaubt (a-z0-9-, max 40): g_pro_suche -> g-pro-suche.
+   Nur im Speicher dieses Aufrufs; sie geht als ?herkunft= an die Links nach therapeut.html. */
+(function(){ try{
+  var p = new URLSearchParams(location.search);
+  var k = function(x, n){ return String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, n || 40).replace(/-+$/, ''); };
+  var h = k(p.get('herkunft') || p.get('von'));
+  if(!h){ var us = k(p.get('utm_source'), 20), uc = k(p.get('utm_campaign'), 20);
+    if(us || uc) h = k('utm-' + (us || 'x') + (uc ? '-' + uc : '')); }
+  if(!h) return;
+  document.querySelectorAll('a[data-pro-link]').forEach(function(a){
+    var u = new URL(a.getAttribute('href'), location.href);
+    u.searchParams.set('herkunft', h);
+    a.setAttribute('href', u.pathname.replace(/^.*\//, '') + u.search + u.hash);
+  });
+}catch(e){} })();
+</script>
+</body>
+</html>

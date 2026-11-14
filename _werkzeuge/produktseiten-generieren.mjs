@@ -742,6 +742,8 @@ async function main() {
 
   // Die englischen Seiten sind von Hand gepflegt (en/), stehen aber in der Sitemap.
   const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`, `${DOMAIN}/en/`, `${DOMAIN}/en/how-we-rate.html`,
+    /* 14.11.2026: Zielseite Root Index Pro (Google-Suchanzeigen), indexierbar */
+    `${DOMAIN}/pro.html`,
     /* 14.11.2026: Rechtsseiten (_werkzeuge/rechtsseiten-generieren.mjs), indexierbar */
     ...["impressum.html", "datenschutz.html", "agb.html", "widerrufsbelehrung.html", "datenloeschung.html",
         "en/legal-notice.html", "en/privacy.html", "en/terms.html", "en/withdrawal.html",

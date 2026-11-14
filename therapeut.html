@@ -923,6 +923,18 @@ const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<'
 const datum = d => d ? new Date(d).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}) : '–';
 const restTage = d => Math.max(0, Math.ceil((new Date(d) - new Date())/86400000));
 const json = d => (typeof d==='string') ? JSON.parse(d) : (d||{});
+/* Herkunft (Messkette, 14.11.2026): Kennung von der Zielseite pro.html (?herkunft=…, auch ?von= / utm_* wie app.js).
+   Nur im Speicher dieses Aufrufs (TDDDG § 25). Geht beim Konto-Anlegen als Metadatum mit; der Trigger in "Benutzer"
+   übernimmt sie (a-z0-9-, max 40). Links zwischen Anmeldung und Musterpraxis tragen sie weiter. */
+const PRO_HERKUNFT = (function(){ try{
+  const p = new URLSearchParams(location.search);
+  const k = (x, n) => String(x || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, n || 40).replace(/-+$/, '');
+  let h = k(p.get('herkunft') || p.get('von'));
+  if(!h){ const us = k(p.get('utm_source'), 20), uc = k(p.get('utm_campaign'), 20); if(us || uc) h = k('utm-' + (us || 'x') + (uc ? '-' + uc : '')); }
+  return h || null;
+}catch(e){ return null; } })();
+const mitHerkunft = url => PRO_HERKUNFT ? url.replace(/^([^?#]*)(\?[^#]*)?/, (m, pfad, q) => pfad + (q ? q + '&' : '?') + 'herkunft=' + PRO_HERKUNFT) : url;
+if(PRO_HERKUNFT) document.querySelectorAll('a[href^="therapeut"]').forEach(a => a.setAttribute('href', mitHerkunft(a.getAttribute('href'))));
 const BEREICHE = ['bLogin','bMail','bNeuPass','bWartet','bVertrag','bDemo'];
 function zeige(id){
   const app = id==='app';
@@ -955,7 +967,7 @@ $('los').onclick = async function(){
   this.disabled = true; meld('meldLogin','⏳ Einen Moment …');
   try{
     if(modus==='neu'){
-      const {data, error} = await client.auth.signUp({ email, password: pass, options:{ emailRedirectTo: location.origin + location.pathname } });
+      const {data, error} = await client.auth.signUp({ email, password: pass, options:{ emailRedirectTo: location.origin + location.pathname, data: PRO_HERKUNFT ? {herkunft: PRO_HERKUNFT} : undefined } });
       if(error){
         if(/registered|exists/i.test(error.message)){ setModus('an'); meld('meldLogin','Diese E-Mail hat schon ein Konto – bitte anmelden.','fehler'); }
         else meld('meldLogin','Fehler: ' + error.message,'fehler');
@@ -1050,7 +1062,7 @@ $('demoLos').onclick = async function(){
   $('demoPw').value = ''; meld('meldDemo', '');
 };
 $('demoPw').addEventListener('keydown', e => { if(e.key==='Enter') $('demoLos').click(); });
-$('demoZurAnmeldung').onclick = () => { location.href = 'therapeut.html'; };
+$('demoZurAnmeldung').onclick = () => { location.href = mitHerkunft('therapeut.html'); };
 async function demoOhnePasswort(){   // gemerkter Zugang aus diesem Tab, sonst angemeldete Fachperson/Admin (Server prüft)
   const z = demoGemerkt();
   if(z && await demoStart(z)) return true;
