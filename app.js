@@ -2746,11 +2746,22 @@ document.addEventListener("keydown", function(e){
   if(ov && ov.classList.contains("open") && !ov.classList.contains("fgEditorFull")
      && !document.getElementById("tbAddOv") && !document.getElementById("infoPopOverlay")) closeP();
 });
-async function prodToEinkauf(id){
+async function prodToEinkauf(id, fahne){
   if(!ME){ openLogin(); return; }
   if(!hasFeat('planer')){ premiumInfo(); return; }
   const p=(ALL||[]).find(x=>x.id===id); if(!p) return;
+  if(fahne){ fahne.disabled=true; }
   const {error}=await client.rpc("cb_einkauf_add",{p_titel:null, p_menge:null, p_produkt_id:id});
+  /* 14.11.2026 (Variante B): kommt der Aufruf von der Fahne oben in der Produktkarte,
+     zeigt die Fahne danach „Steht auf der Einkaufsliste“ - wie in der App. */
+  if(fahne){
+    if(error){ fahne.disabled=false; alert("Fehler: "+error.message); return; }
+    window._pkAufListe=window._pkAufListe||{}; window._pkAufListe[id]=true;
+    fahne.classList.add('pkFahneAn'); fahne.innerHTML=PK_SVG_HAKEN;
+    fahne.title='Steht auf der Einkaufsliste'; fahne.setAttribute('aria-label','Steht auf der Einkaufsliste');
+    if(typeof toast==='function') toast('✓ „'+p.name+'“ steht auf der Einkaufsliste.');
+    return;
+  }
   alert(error?("Fehler: "+error.message):("✓ „"+p.name+"“ zur Einkaufsliste hinzugefügt."));
 }
 /* ===== 28z15: BESSERE ALTERNATIVEN (Ralph: "gleich die bessere alternative vorschlagen,
@@ -3740,6 +3751,63 @@ function suppFuss(a){
     +(wn?'<div style="margin-top:5px;font-size:10.5px;color:var(--k-5a6660);line-height:1.5">'+wn+'</div>':"")
   +'</div>';
 }
+/* ===== 14.11.2026 (Ralph, Variante B): Bausteine der neuen Produktkarte ===== */
+/* Dieselben sechs Belege wie in der App (QuellenBelege.swift, Belege.produkt). Die Texte
+   kommen vom Server (cb_quellen_gesundheit) - dieselbe Liste wie die Quellen-Seite. */
+var PK_BELEGE=["nova_monteiro","zucker_who","salz_who","fett_dge","allergene_eu","zucker_dge_dag_ddg"];
+var _pkQuellenCache=null;
+function pkBelegeHtml(){
+  if(!_pkQuellenCache) return '<span style="color:var(--muted)">Lädt …</span>';
+  var h=PK_BELEGE.map(function(k){ return _pkQuellenCache.find(function(q){ return q.schluessel===k; }); })
+    .filter(Boolean).map(function(q){
+      return '<a href="'+esc(q.url)+'" target="_blank" rel="noopener" style="display:block;text-decoration:none;color:inherit;border-top:1px solid var(--line);padding:7px 0">'
+        +'<div style="font-size:12.5px;color:var(--ink)">'+esc(q.wofuer)+'</div>'
+        +'<div style="font-size:11.5px;color:var(--greendk,var(--green))">'+esc(q.herausgeber)+(q.jahr?', '+q.jahr:'')+' ↗</div></a>';
+    }).join('');
+  return h||'<span style="color:var(--muted)">Quellen konnten nicht geladen werden.</span>';
+}
+async function pkBelegeLaden(){
+  if(_pkQuellenCache){ return; }
+  try{ var r=await client.rpc('cb_quellen_gesundheit'); if(r.error) throw r.error; _pkQuellenCache=r.data||[]; }
+  catch(e){ _pkQuellenCache=null; var el0=document.getElementById('pkBelege'); if(el0) el0.innerHTML='<span style="color:var(--muted)">Quellen konnten nicht geladen werden.</span>'; return; }
+  var el=document.getElementById('pkBelege'); if(el) el.innerHTML=pkBelegeHtml();
+}
+function pkQuellenZeigen(){
+  var q=document.getElementById('pkQuellen'); if(!q) return;
+  q.open=true;
+  try{ q.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){ q.scrollIntoView(); }
+}
+/* Produktfoto: Produkte.Bild_URL ueber cb_produkt_bilder (eine Abfrage je Seitenaufruf).
+   NUR Bilder aus unserem eigenen Speicher (Supabase-Storage „produktbilder“) - fremde
+   Hersteller-/Shop-Bilder (Shopify, Amazon …) bleiben aus, deren Rechte haben wir nicht.
+   Unabhaengig von SHOW_PRODUKTBILDER (das schaltet die Bilder in den LISTEN). */
+var _pkFotoKarte=null, _pkFotoLaeuft=null;
+function pkEigenesBild(u){ return /^https:\/\/haurbpfkfaaehorirzee\.supabase\.co\/storage\/v1\/object\/public\/produktbilder\//.test(String(u||'')); }
+async function pkFotoLaden(id){
+  if(!_pkFotoKarte){
+    _pkFotoLaeuft=_pkFotoLaeuft||client.rpc('cb_produkt_bilder').then(function(r){
+      var k={}; ((r&&r.data)||[]).forEach(function(x){ if(x.id&&pkEigenesBild(x.bild_url)) k[x.id]=x.bild_url; });
+      if(!(r&&r.error)) _pkFotoKarte=k; _pkFotoLaeuft=null; return k;
+    },function(){ _pkFotoLaeuft=null; return {}; });
+    await _pkFotoLaeuft;   /* bei Fehler bleibt _pkFotoKarte leer - beim naechsten Mal neu fragen */
+  }
+  var url=(_pkFotoKarte||{})[id]; if(!url) return;
+  if(window._pkOffenId!==id) return;   /* spaete Antwort darf nicht in die naechste Karte schreiben */
+  var el=document.getElementById('pkFoto'); if(!el) return;
+  var img=new Image(); img.alt='';   /* kein loading=lazy: das Bild haengt noch nicht im DOM und wuerde nie geladen */
+  img.onload=function(){ if(window._pkOffenId===id && el.isConnected){ el.innerHTML=''; el.appendChild(img); } };
+  img.src=url;
+}
+var PK_SVG_ZURUECK='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>';
+var PK_SVG_BESTECK='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 2v9M4.5 2v6a2.5 2.5 0 0 0 5 0V2M7 11v11"/><path d="M17 22V2c-2.2 1.2-3.5 3.8-3.5 7v4H17"/></svg>';
+var PK_SVG_WAGEN='<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 3h2.5l2.2 11.2a1.5 1.5 0 0 0 1.5 1.2h8.6a1.5 1.5 0 0 0 1.5-1.1L19.6 9"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/><path d="M15 2.5v6M12 5.5h6"/></svg>';
+var PK_SVG_HAKEN='<svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5"/><path d="M7.5 12.3l3 3 6-6.3"/></svg>';
+var PK_SVG_PLATZHALTER='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8h12l-1.2 12.2a1 1 0 0 1-1 .8H8.2a1 1 0 0 1-1-.8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>';
+if(typeof window!=="undefined"){ window.pkQuellenZeigen=pkQuellenZeigen; }
+/* Stil der neuen Karte steht hier statt in ui.css - so reicht beim Ausrollen der app.js-Pin. */
+(function(){ try{ if(document.getElementById('pkStil')) return; var st=document.createElement('style'); st.id='pkStil';
+  st.textContent='.pkKopf{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 12px}.pkZurueck{display:inline-flex;align-items:center;gap:2px;border:0;background:none;color:var(--greendk,var(--green));font-size:15px;font-weight:600;cursor:pointer;padding:6px 6px 6px 0}.pkFahnen{display:flex;gap:8px}.pkFahne{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);padding:0}.pkFahne:hover{border-color:var(--green)}.pkFahne.pkFahneAn{color:var(--green);border-color:var(--green);cursor:default}.pkIndexKarte{border:1px solid var(--line);border-radius:16px;padding:14px 14px 12px;margin:0 0 8px}.pkFoto{width:42px;height:42px;flex:0 0 42px;border-radius:9px;background:var(--bg);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}.pkFoto img{width:100%;height:100%;object-fit:cover;display:block}.pkQuellenLink{font-size:13px;font-weight:700;color:var(--greendk,var(--green));text-decoration:none}.pkQuellen{border-top:1px solid var(--line);margin-top:6px;scroll-margin-top:8px}.pkQuellen>summary{cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;padding:11px 2px;font-size:14px;color:var(--ink)}.pkQuellen>summary::-webkit-details-marker{display:none}.pkUnten{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 4px;padding-top:12px;border-top:1px solid var(--line)}.pkUnten button{padding:8px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer}';
+  document.head.appendChild(st); }catch(e){} })();
 function detail2(d){
   try{ if(d&&d.id) client.rpc("cb_log_aufruf",{p_id:d.id}).then(function(){},function(){}); }catch(e){}
   if(d&&d.id) nutzungMelden("produkt_ansehen");
@@ -3965,27 +4033,32 @@ function detail2(d){
   var _nurIndex=(!_fZut && !_fBz && !_fNw);
 
   var panel=document.getElementById("panel"); if(!panel) return;
+  /* 14.11.2026 (Ralph, Variante B - gleich wie die iPhone-App): oben nur Zurueck und
+     zwei kleine Fahnen (Tagebuch, Einkaufsliste). Gleich danach die Index-Karte mit
+     Fluxkompensator und kleinem Produktfoto. Quellen, Teilen und „Fehler melden“
+     stehen ganz unten; der Link „n Quellen ↓“ unter dem Index fuehrt dorthin. */
+  var _pkAufListe=!!(window._pkAufListe&&window._pkAufListe[d.id]);
   panel.innerHTML=
-    '<button class="close" onclick="closeP()">Schließen ✕</button>'
+    '<div class="pkKopf">'
+      + '<button class="pkZurueck" onclick="closeP()" aria-label="Zurück">'+PK_SVG_ZURUECK+'<span>Zurück</span></button>'
+      + '<div class="pkFahnen">'
+        + '<button class="pkFahne" onclick="prodInsTagebuch(\''+d.id+'\')" title="Ins Tagebuch" aria-label="Ins Tagebuch">'+PK_SVG_BESTECK+'</button>'
+        + '<button class="pkFahne'+(_pkAufListe?' pkFahneAn':'')+'" id="pkEinkFahne" onclick="prodToEinkauf(\''+d.id+'\',this)"'+(_pkAufListe?' disabled':'')
+          + ' title="'+(_pkAufListe?'Steht auf der Einkaufsliste':'Auf die Einkaufsliste')+'" aria-label="'+(_pkAufListe?'Steht auf der Einkaufsliste':'Auf die Einkaufsliste')+'">'
+          + (_pkAufListe?PK_SVG_HAKEN:PK_SVG_WAGEN)+'</button>'
+      + '</div>'
+    + '</div>'
     + adminBar
-    /* 28z28: Pille raus aus der Kopf-Flexzeile (Ralph-Fund: vegan-Pille lag ueber dem
-       Schliessen-Knopf). Der Knopf ist float:right - Floats greifen NICHT in
-       Flex-Container, also schob sich die Zeile darunter. Jetzt normaler Block:
-       der Titel umfliesst den Knopf, die Pille steht unter der Marken-Zeile. */
-    + '<div style="min-width:0"><h2 style="margin:0 0 2px">'+esc(d.name)+'</h2>'
+    + '<div class="pkIndexKarte">'
+    /* 28z28: Pille steht unter der Marken-Zeile (Ralph-Fund: vegan-Pille lag ueber dem
+       Schliessen-Knopf). Der Knopf sitzt seit Variante B in der Kopfzeile darueber. */
+    + '<div style="display:flex;gap:12px;align-items:flex-start">'
+      + '<div class="pkFoto" id="pkFoto" aria-hidden="true">'+PK_SVG_PLATZHALTER+'</div>'
+      + '<div style="min-width:0;flex:1"><h2 style="margin:0 0 2px">'+esc(d.name)+'</h2>'
       + '<div class="marke" style="margin:0">'+((mkLabel(d.marke)?esc(mkLabel(d.marke))+' · ':'')+esc(d.kategorie||''))+(d.unterkategorie?(' · '+esc(d.unterkategorie)):'')+'</div>'
       + ((efPill(d.ernaehrungsform)||bioPill(d)||bratenPill(d)||salmiakPill(d))?('<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:6px;align-items:center">'+efPill(d.ernaehrungsform)+bioPill(d)+bratenPill(d)+salmiakPill(d)+'</div>'):'')
+      + '</div>'
     + '</div>'
-    /* 25.10.2026 (Ralph, Yuka-Recherche): "Ergebnis teilen" - Bild mit Score + Link. */
-    + '<div style="margin:8px 0 2px"><button onclick="riErgebnisTeilen(window._pkTeilen)" style="padding:7px 13px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:13px;font-weight:600;cursor:pointer">📤 Ergebnis teilen</button></div>'
-    + warn
-    + (d.ohne_index?'<div style="margin:12px 0 6px;padding:12px 14px;border:1px solid var(--k-e4a343,#e4a343);border-radius:12px;background:var(--k-fff7ea,#fff7ea);font-size:12.5px;line-height:1.55;color:var(--k-7a5c1e,#7a5c1e)"><b>🌱 Bewusst ohne Index.</b> Für dieses Produkt gibt es keine belegbaren Nährwerte (typisch bei frischen Sprossen/Keimlingen – weder Hersteller noch BLS/USDA führen Werte). Wir zeigen lieber keine Zahl als eine erfundene.</div>':'')
-    /* Platz fuer den Rueckstands-Hinweis. Er wird NACH dem Zeichnen befuellt, weil die
-       Referenz asynchron kommt - die Karte darf darauf nicht warten. Kommt nichts, bleibt
-       der Kasten leer und niemand merkt etwas (§1.11n-f: nach jedem await neu zeichnen). */
-    + '<div id="pkRueck"></div>'
-    + '<div id="hwBox" data-pid="'+esc(d.id)+'"></div>'   /* 01.10.2026: Gesundheits-Hinweise (Buch Kap. 3), befuellt von hwBoxLaden */
-    + '<div id="alBox" data-pid="'+esc(d.id)+'"></div>'   /* 30.09.2026: Allergene / Unvertraeglichkeiten, befuellt von alBoxLaden */
     /* 2026-07-24w: Feature-Schranken der alten Karte in detail2 uebernommen (Ralphs Fund 23.07.:
        Free/Gast sahen alles - die Sperren sassen nur im toten Code der alten Karte). pk_ringe
        sperrt NUR die Achsen-Grafik; die Index-ZAHL bleibt fuer alle sichtbar (ZdE). */
@@ -4012,6 +4085,18 @@ function detail2(d){
             + '<div style="font-size:20px;font-weight:800;letter-spacing:.2px;color:'+(s==null?'var(--muted)':fCol)+';margin-top:4px">'+esc(bewTxt||'–')+'</div>')
     + platzChip(d)
     + '</div>')
+    /* 14.11.2026 (Variante B): Quellen stehen ganz unten - hier der Sprung dorthin,
+       mit der echten Anzahl. Gleich wie die App (Apple 1.4.1: Quellen nah am Index). */
+    + '<div style="text-align:center;margin:2px 0 0"><a href="#pkQuellen" class="pkQuellenLink" onclick="pkQuellenZeigen();return false">'+PK_BELEGE.length+' Quellen ↓</a></div>'
+    + '</div>'   /* pkIndexKarte */
+    + warn
+    + (d.ohne_index?'<div style="margin:12px 0 6px;padding:12px 14px;border:1px solid var(--k-e4a343,#e4a343);border-radius:12px;background:var(--k-fff7ea,#fff7ea);font-size:12.5px;line-height:1.55;color:var(--k-7a5c1e,#7a5c1e)"><b>🌱 Bewusst ohne Index.</b> Für dieses Produkt gibt es keine belegbaren Nährwerte (typisch bei frischen Sprossen/Keimlingen – weder Hersteller noch BLS/USDA führen Werte). Wir zeigen lieber keine Zahl als eine erfundene.</div>':'')
+    /* Platz fuer den Rueckstands-Hinweis. Er wird NACH dem Zeichnen befuellt, weil die
+       Referenz asynchron kommt - die Karte darf darauf nicht warten. Kommt nichts, bleibt
+       der Kasten leer und niemand merkt etwas (§1.11n-f: nach jedem await neu zeichnen). */
+    + '<div id="pkRueck"></div>'
+    + '<div id="hwBox" data-pid="'+esc(d.id)+'"></div>'   /* 01.10.2026: Gesundheits-Hinweise (Buch Kap. 3), befuellt von hwBoxLaden */
+    + '<div id="alBox" data-pid="'+esc(d.id)+'"></div>'   /* 30.09.2026: Allergene / Unvertraeglichkeiten, befuellt von alBoxLaden */
     + ((_istSalz||hasFeat('pk_ringe')||_nurIndex)?'':pkSperre('Die vier Achsen','Zutaten · Zusatzstoffe · Verarbeitung · Nährwerte als Grafik'))
     + sonder
     + (_fNw
@@ -4025,13 +4110,9 @@ function detail2(d){
           + kachel('m_kh','Kohlenhydrate','g') + kachel('m_protein','Eiweiß','g')
           + '</div>'
         : (_nurIndex?'':pkSperre('Nährwerte pro 100 g','Energie, Fett, Zucker, Ballaststoffe, Eiweiß, Salz')))
-    + '<div style="display:flex;gap:7px;margin:12px 0;flex-wrap:wrap">'
-      /* 30.09.2026 Webtest P6: wie in der App - direkt aus der Karte ins Tagebuch */
-      + '<button onclick="prodInsTagebuch(\''+d.id+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green);color:var(--auf-gruen,#fff);cursor:pointer;font-size:12.5px;font-weight:700">📒 Ins Tagebuch</button>'
-      + '<button onclick="prodToEinkauf(\''+d.id+'\')" style="padding:7px 11px;border:1px solid var(--green);border-radius:8px;background:var(--greenlt);color:var(--greendk);cursor:pointer;font-size:12.5px;font-weight:600">🛒 Einkaufsliste</button>'
-      + '<button onclick="prodMelden(\''+d.id+'\')" title="Falsches Produkt zum Barcode, fehlende Zutaten, falsche Nährwerte" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--muted);cursor:pointer;font-size:12.5px;font-weight:600">⚠️ Fehler melden</button>'
-      + amazonBtn(d,true)
-    + '</div>'
+    /* 14.11.2026 (Variante B): Tagebuch/Einkaufsliste sind Fahnen in der Kopfzeile,
+       Teilen und „Fehler melden“ stehen ganz unten. Amazon bleibt aus (amazonBtn = ""). */
+    + amazonBtn(d,true)
     + (amazonUrl(d)?AMZ_HINWEIS:'')
     + altSektion(d)   /* 28z15: Variante A Karten-Reihe (Ralph-Entscheid) */
     + '<div style="margin-top:6px">'
@@ -4059,10 +4140,28 @@ function detail2(d){
               +(hasFeat('pk_platzierung')?katRangHtml(d):pkSperre('Platzierung','Platz in der Kategorie und die Besten'))
               /* Die Herleitung erklaert DIESES Produkt. Wer wissen will, warum wir
                  ueberhaupt so rechnen, kommt von hier auf die Methodik-Seite. */
-              +methodikLinkHtml())
-          + (_fZut?ACC('🛡️','Quelle &amp; Beleg',quellenBlock(d)):''))
+              +methodikLinkHtml()))
+    + '</div>'
+    /* 14.11.2026 (Ralph, Variante B): ganz unten, in dieser Reihenfolge - Quellen,
+       Ergebnis teilen, Fehler melden. Der Quellen-Abschnitt traegt jetzt auch
+       „Quelle & Beleg“ (Datenquelle des Produkts) und die Studien hinter der
+       Bewertung - dieselben sechs wie in der App (Belege.produkt). */
+    + '<details id="pkQuellen" class="pkQuellen"><summary><span>📚 Quellen ('+PK_BELEGE.length+')</span><span style="color:var(--muted);font-size:12px">▾</span></summary>'
+      + '<div style="padding:2px 2px 12px">'
+        + (_fZut?quellenBlock(d):'')
+        + '<div id="pkBelege" style="margin-top:8px;font-size:13px">'+pkBelegeHtml()+'</div>'
+        + '<div style="margin-top:8px"><a href="#" onclick="quellenOpen();return false" style="color:var(--greendk,var(--green));font-weight:700;font-size:12.5px">Alle Quellen &amp; Studien ›</a></div>'
+        + (_fZut?'':'<div style="margin-top:6px;font-size:11.5px;color:var(--muted)">Root Index ersetzt keine ärztliche Beratung.</div>')   /* mit quellenBlock steht MED_HINWEIS schon da */
+      + '</div>'
+    + '</details>'
+    /* 25.10.2026 (Ralph, Yuka-Recherche): "Ergebnis teilen" - Bild mit Score + Link. */
+    + '<div class="pkUnten">'
+      + '<button onclick="riErgebnisTeilen(window._pkTeilen)">📤 Ergebnis teilen</button>'
+      + '<button onclick="prodMelden(\''+d.id+'\')" title="Falsches Produkt zum Barcode, fehlende Zutaten, falsche Nährwerte" style="color:var(--muted)">⚠️ Fehler melden</button>'
     + '</div>';
   document.getElementById("overlay").classList.add("open");
+  try{ pkFotoLaden(d.id); }catch(e){}   /* 14.11.2026: Produktfoto nachladen */
+  try{ pkBelegeLaden(); }catch(e){}
   if(_istSalz){ setTimeout(function(){ try{ ladeSalzFakten(d.id); }catch(e){} }, 30); }
   /* Work #371, 02.09.2026 nachgezogen: der Aufruf stand am Ende von detail() -
      also in einem Zweig, der nie laeuft. detail() gibt in der ersten Zeile
@@ -18446,7 +18545,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-13-01";
+const APP_BUILD="2026-11-14-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
