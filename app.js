@@ -2,20 +2,52 @@ const SUPABASE_URL = "https://haurbpfkfaaehorirzee.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
 
 /* 07.11.2026 Werbe-Herkunft (W006 ff.): Links wie root-index.de/app?von=w006 oder /?von=w006.
-   Wert (nur a-z0-9-, max. 40) 30 Tage im Browser merken. Bei der Registrierung geht er als
-   Konto-Metadatum mit (Trigger in "Benutzer" uebernimmt ihn), nach der ersten Anmeldung
-   meldet riHerkunftMelden() ihn zusaetzlich per ri_herkunft_setzen. Server prueft: nur neue Konten. */
+   14.11.2026 Messkette (Content Studio N60): dazu UTM-Links (utm-<quelle>-<kampagne>) und, wenn der Link
+   keine Kennung traegt, der erkannte Kanal (kanal-instagram, kanal-google, kanal-direkt ...).
+   Die Kennung geht bei der Registrierung als Konto-Metadatum mit (Trigger in "Benutzer" uebernimmt sie);
+   nach der ersten Anmeldung meldet riHerkunftMelden() Link-Kennungen zusaetzlich per ri_herkunft_setzen
+   (Server: nur neue Konten, nur wenn noch leer).
+   Einwilligung (TDDDG § 25): RI_HERKUNFT_MERKEN=false haelt die Kennung nur im Speicher dieses Besuchs,
+   es wird nichts auf dem Geraet abgelegt. true = 30 Tage im Browser (localStorage) - nur mit Einwilligung. */
 const RI_HERKUNFT_KEY="ri_herkunft";
-(function(){ try{ var v=(new URLSearchParams(location.search).get('von')||'').trim().toLowerCase();
-  if(/^[a-z0-9-]{1,40}$/.test(v)) localStorage.setItem(RI_HERKUNFT_KEY, JSON.stringify({v:v,t:Date.now()}));
+const RI_HERKUNFT_MERKEN=false;
+var RI_HERKUNFT_LINK=null, RI_HERKUNFT_KANAL=null;
+function _riKennung(x){ return String(x||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,20); }
+(function(){ try{
+  var p=new URLSearchParams(location.search), v=(p.get('von')||'').trim().toLowerCase();
+  if(!/^[a-z0-9-]{1,40}$/.test(v)) v='';
+  if(!v){ var us=_riKennung(p.get('utm_source')), uc=_riKennung(p.get('utm_campaign'));
+    if(us||uc) v=('utm-'+(us||'x')+(uc?'-'+uc:'')).slice(0,40).replace(/-+$/,''); }
+  if(v){ RI_HERKUNFT_LINK=v;
+    if(RI_HERKUNFT_MERKEN) localStorage.setItem(RI_HERKUNFT_KEY, JSON.stringify({v:v,t:Date.now()})); }
+  if(!RI_HERKUNFT_MERKEN) localStorage.removeItem(RI_HERKUNFT_KEY);   /* Altbestand vom 07.11. aufraeumen */
+  /* Kanal ohne Kennung: Referrer bzw. In-App-Browser der Apps (wie der Besucherzaehler) */
+  var r=(document.referrer||'').toLowerCase(), u=navigator.userAgent||'', h='';
+  try{ h=r?new URL(r).hostname:''; }catch(e){}
+  if(!/(^|\.)root-index\.(de|com)$/.test(h)){
+    RI_HERKUNFT_KANAL='kanal-'+(/instagram\./.test(h)||/Instagram/.test(u)?'instagram'
+      :/(^|\.)(facebook\.com|fb\.me|fb\.com)$/.test(h)||/FBAN|FBAV|FB_IAB/.test(u)?'facebook'
+      :/tiktok\./.test(h)||/musical_ly|BytedanceWebview|TikTok/.test(u)?'tiktok'
+      :/youtube\.com|youtu\.be/.test(h)?'youtube':/pinterest\./.test(h)?'pinterest':/threads\.(net|com)/.test(h)?'threads'
+      :/(^|\.)google\./.test(h)?'google':/bing\./.test(h)?'bing'
+      :/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?'suche':h?'andere':'direkt');
+  }
 }catch(_){} })();
-function riHerkunft(){ try{ var o=JSON.parse(localStorage.getItem(RI_HERKUNFT_KEY)||'null');
-  if(!o||!/^[a-z0-9-]{1,40}$/.test(o.v||'')) return null;
-  if(Date.now()-Number(o.t||0)>30*864e5){ localStorage.removeItem(RI_HERKUNFT_KEY); return null; }
-  return o.v; }catch(_){ return null; } }
-async function riHerkunftMelden(){ var v=riHerkunft(); if(!v) return;
+function riHerkunft(){
+  if(RI_HERKUNFT_LINK) return RI_HERKUNFT_LINK;
+  if(RI_HERKUNFT_MERKEN){ try{ var o=JSON.parse(localStorage.getItem(RI_HERKUNFT_KEY)||'null');
+    if(o&&/^[a-z0-9-]{1,40}$/.test(o.v||'')){
+      if(Date.now()-Number(o.t||0)<=30*864e5) return o.v;
+      localStorage.removeItem(RI_HERKUNFT_KEY); } }catch(_){} }
+  return RI_HERKUNFT_KANAL;
+}
+async function riHerkunftMelden(){ var v=riHerkunft();
+  /* Kanal-Werte nur bei der Registrierung: nach dem Klick in der Bestaetigungs-Mail waere der Kanal
+     sonst "direkt", obwohl die Anmeldung von Instagram kam. */
+  if(!v || /^kanal-/.test(v)) return;
   try{ var r=await client.rpc('ri_herkunft_setzen',{p_herkunft:v});
-    if(!r.error && /^(gesetzt|schon_gesetzt|kein_neues_konto|ungueltig)$/.test(String(r.data))) localStorage.removeItem(RI_HERKUNFT_KEY);
+    if(!r.error && /^(gesetzt|schon_gesetzt|kein_neues_konto|ungueltig)$/.test(String(r.data))){
+      RI_HERKUNFT_LINK=null; try{ localStorage.removeItem(RI_HERKUNFT_KEY); }catch(_){} }
   }catch(_){} }
 
 const SCORE_TEIL = [

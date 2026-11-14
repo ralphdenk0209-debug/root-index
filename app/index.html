@@ -47,8 +47,13 @@ var WEB_LINK = "https://root-index.de/";
    App-Analyse -> Kampagnen) eingetragen ist - dann zaehlt App Store Connect die Downloads je Werbung. */
 var APPSTORE_PT = "129545171"; // 08.11.2026 aus App Store Connect (Analyse › Kampagnen)
 var VON = "";
+/* 14.11.2026 Messkette: ohne Einwilligung nichts auf dem Geraet ablegen (TDDDG § 25) - die Kennung
+   reist im Link weiter (Web-Knopf ?von=..., App Store ct=...). MERKEN=true nur mit Einwilligung. */
+var MERKEN = false;
 try { VON = (new URLSearchParams(location.search).get("von") || "").trim().toLowerCase();
-  if (/^[a-z0-9-]{1,40}$/.test(VON)) localStorage.setItem("ri_herkunft", JSON.stringify({ v: VON, t: Date.now() })); else VON = "";
+  if (!/^[a-z0-9-]{1,40}$/.test(VON)) VON = "";
+  if (VON && MERKEN) localStorage.setItem("ri_herkunft", JSON.stringify({ v: VON, t: Date.now() }));
+  if (!MERKEN) localStorage.removeItem("ri_herkunft");
 } catch (e) { VON = ""; }
 if (VON && APPSTORE_PT) APPSTORE_LINK += "?pt=" + encodeURIComponent(APPSTORE_PT) + "&ct=" + encodeURIComponent(VON) + "&mt=8";
 if (VON) WEB_LINK += "?von=" + encodeURIComponent(VON);

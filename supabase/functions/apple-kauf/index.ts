@@ -63,6 +63,21 @@ async function meldungPruefen(payload: string) {
   return m;
 }
 
+
+// 14.11.2026 (Messkette N61): Angebotsart, Preis, Waehrung und Transaktion aus der von Apple
+// signierten Transaktion mitschicken - cb_apple_abo_setzen legt sie in eigene Spalten des Protokolls.
+// offerType 1 Einfuehrung, 2 Werbung, 3 Angebotscode, 4 Win-back; offerDiscountType FREE_TRIAL = kostenlose Probe.
+function angebotsfelder(tx: any) {
+  return {
+    transaktion: tx?.transactionId != null ? String(tx.transactionId) : null,
+    kauf_ms: tx?.purchaseDate != null ? String(tx.purchaseDate) : null,
+    angebot_typ: tx?.offerType != null ? String(tx.offerType) : null,
+    rabatt: tx?.offerDiscountType != null ? String(tx.offerDiscountType) : null,
+    preis: tx?.price != null ? String(tx.price) : null,
+    waehrung: tx?.currency != null ? String(tx.currency) : null,
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   let body: any = {};
@@ -84,7 +99,7 @@ Deno.serve(async (req) => {
         p_bis: istEnde ? new Date().toISOString() : (tx.expiresDate ? new Date(tx.expiresDate).toISOString() : null),
         p_art: istEnde ? String(m.notificationType) : art,
         p_umgebung: String(tx.environment ?? ""),
-        p_roh: { art, produkt: tx.productId, ablauf: tx.expiresDate },
+        p_roh: { art, produkt: tx.productId, ablauf: tx.expiresDate, ...angebotsfelder(tx) },
       });
       if (error) throw error;
       return json({ ok: true, ergebnis: data });
@@ -109,7 +124,7 @@ Deno.serve(async (req) => {
       p_bis: tx.revocationDate ? new Date().toISOString() : (tx.expiresDate ? new Date(tx.expiresDate).toISOString() : null),
       p_art: tx.revocationDate ? "REVOKE" : "KAUF",
       p_umgebung: String(tx.environment ?? ""),
-      p_roh: { produkt: tx.productId, ablauf: tx.expiresDate, typ: tx.type },
+      p_roh: { produkt: tx.productId, ablauf: tx.expiresDate, typ: tx.type, ...angebotsfelder(tx) },
     });
     if (error) throw error;
     return json({ ok: true, ergebnis: data });
