@@ -103,6 +103,12 @@ ol.schritte li{ counter-increment:s; display:grid; grid-template-columns:2.1em 1
 ol.schritte li::before{ content:counter(s); font-family:var(--mono); font-size:14px; color:var(--accent); border:1px solid var(--accent); border-radius:50%; width:1.9em; height:1.9em; display:inline-flex; align-items:center; justify-content:center }
 
 .klein{ font-size:14.5px; color:var(--muted) }
+.bilder{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:18px; margin-top:8px }
+.bilder figure{ margin:0 }
+.bilder img{ display:block; width:100%; height:auto; border:1px solid var(--line); border-radius:6px; background:#f3f4f6 }
+.bilder figcaption{ font-size:14.5px; line-height:1.5; color:var(--muted); margin-top:8px }
+.bilder figcaption strong{ color:var(--ink) }
+@media (max-width:640px){ .bilder{ grid-template-columns:minmax(0,1fr) } }
 .anfrage{ border:1px solid var(--line); border-radius:6px; padding:18px 18px 8px; margin-top:10px }
 .anfrage .felder{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px 16px }
 .anfrage label{ display:flex; flex-direction:column; gap:4px; font-family:var(--display); font-size:15px; font-weight:700 }
@@ -181,6 +187,27 @@ footer a{ color:var(--muted) }
       <p class="klein">Nährwerte 40, Zutaten 30, Zusatzstoffe 15, Verarbeitung des Endprodukts 15 Punkte.</p>
       <p>Der Index ist keine Verzehrempfehlung; wie viel und wie oft, bleibt Sache der Beratung. <a href="wie-root-index-bewertet.html">Wie Root Index bewertet</a></p>
     </section>
+  </div>
+
+  <h2>Einblick in die Musterpraxis</h2>
+  <p>Bildschirmfotos aus der Vorführung. Alle Personen sind erfunden, Produkte, Nährwerte und Scores sind echt.</p>
+  <div class="bilder">
+    <figure>
+      <a href="pro-bilder/musterpraxis-uebersicht.webp"><img src="pro-bilder/musterpraxis-uebersicht.webp" width="1018" height="757" loading="lazy" decoding="async" alt="Übersicht der Musterpraxis mit Kennzahlen zu Gemüse, Obst, Root-Index-Score und erfassten Tagen sowie Karten für vier erfundene Personen"></a>
+      <figcaption><strong>Übersicht.</strong> Gemüse, Obst und Score im Schnitt, alle Personen auf einen Blick, Auffälliges der letzten 7 Tage.</figcaption>
+    </figure>
+    <figure>
+      <a href="pro-bilder/musterpraxis-ist-soll.webp"><img src="pro-bilder/musterpraxis-ist-soll.webp" width="1018" height="617" loading="lazy" decoding="async" alt="Auswertung einer erfundenen Person: Balken für Energie, Eiweiß, Kohlenhydrate und Fett im Vergleich zum Soll"></a>
+      <figcaption><strong>Auswertung einer Person.</strong> Ist gegen Soll für Energie und Makros; das Soll kommt aus der Vorgabe der Praxis, dem Profil oder von der DGE.</figcaption>
+    </figure>
+    <figure>
+      <a href="pro-bilder/musterpraxis-teller.webp"><img src="pro-bilder/musterpraxis-teller.webp" width="962" height="440" loading="lazy" decoding="async" alt="Säulen für Gemüse und Obst je Woche mit der DGE-Linie bei 550 Gramm und ein Tortendiagramm Teller der Praxis"></a>
+      <figcaption><strong>Gemüse, Obst und Teller.</strong> Gemüse und Obst je Woche gegen den DGE-Wert von 550&nbsp;g, dazu die Verteilung auf dem Teller.</figcaption>
+    </figure>
+    <figure>
+      <a href="pro-bilder/musterpraxis-plan.webp"><img src="pro-bilder/musterpraxis-plan.webp" width="962" height="727" loading="lazy" decoding="async" alt="Wochenplan einer erfundenen Person mit geplanten Mahlzeiten, dem tatsächlich Gegessenen und Kalorien je Tag"></a>
+      <figcaption><strong>Plan.</strong> Geplante Mahlzeiten neben dem, was tatsächlich gegessen wurde, mit Kalorien je Tag.</figcaption>
+    </figure>
   </div>
 
   <h2>Preis</h2>
