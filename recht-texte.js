@@ -315,8 +315,10 @@
     + H('Responsabilité quant aux liens') + P('Notre offre peut contenir des liens vers des sites externes de tiers sur le contenu desquels nous n’avons aucune influence. Le fournisseur concerné est toujours responsable de ces contenus.')
     + H('Droit d’auteur') + P('Les contenus que nous créons sont soumis au droit d’auteur allemand.');
 
+  /* 14.11.2026: Zeile "var fr_ds = ..." war am 05.11. (Commit aa11c1a) versehentlich
+     ueberschrieben -> ReferenceError, franzoesische Rechtstexte fehlten. Wiederhergestellt. */
+  var fr_ds = H('Politique de confidentialité – Root Index')
     + P('<i>Mise à jour : novembre 2026</i>')
-    + P('<i>Mise à jour : septembre 2026</i>')
     + P('Ceci est la version française de notre politique de confidentialité. Les informations complémentaires pour les utilisateurs en France figurent à la section 21.')
     + H('1. Responsable du traitement')
     + P('Le responsable du traitement des données personnelles est :')

@@ -742,7 +742,11 @@ async function main() {
   for (const f of readdirSync(ZIEL)) if (f.endsWith(".html")) unlinkSync(join(ZIEL, f));
 
   // Die englischen Seiten sind von Hand gepflegt (en/), stehen aber in der Sitemap.
-  const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`, `${DOMAIN}/en/`, `${DOMAIN}/en/how-we-rate.html`];
+  const urls = [`${DOMAIN}/`, `${DOMAIN}/produkt/`, `${DOMAIN}/en/`, `${DOMAIN}/en/how-we-rate.html`,
+    /* 14.11.2026: Rechtsseiten (_werkzeuge/rechtsseiten-generieren.mjs), indexierbar */
+    ...["impressum.html", "datenschutz.html", "agb.html", "widerrufsbelehrung.html", "datenloeschung.html",
+        "en/legal-notice.html", "en/privacy.html", "en/terms.html", "en/withdrawal.html",
+        "en/consumer-health-data-privacy.html", "en/data-deletion.html"].map((p) => `${DOMAIN}/${p}`)];
   const proKat = new Map();
   const vergeben = new Set();
 

@@ -1518,7 +1518,7 @@ function premiumInfo(){
    +'<button onclick="document.getElementById(\'premOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer;font-size:14px">Abbrechen</button>'
    +'<button id="premGo" disabled onclick="var p=(document.querySelector(\'input[name=premPlan]:checked\')||{}).value||\'month\';var cb=document.getElementById(\'premConsent\');var va=document.getElementById(\'premVolljaehrig\');var consent={zugestimmt:!!(cb&&cb.checked&&va&&va.checked),zeitpunkt:new Date().toISOString(),text:(cb?cb.parentNode.innerText.trim():\'\')+\' | \'+(va?va.parentNode.innerText.trim():\'\'),tarif:p};document.getElementById(\'premOv\').remove();_startCheckout(p,consent)" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-16a34a);color:var(--k-ffffff);font-weight:700;cursor:pointer;font-size:14px;opacity:.5">Jetzt kostenpflichtig testen</button>'
    +'</div>'
-   +'<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.5">Mit Klick auf „Jetzt kostenpflichtig testen" akzeptierst du die <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a>, die <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a> und die <a onclick="legalOpen(\'widerruf\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</div>'
+   +'<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.5">Mit Klick auf „Jetzt kostenpflichtig testen" akzeptierst du die <a href="/agb.html" onclick="legalOpen(\'agb\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a>, die <a href="/datenschutz.html" onclick="legalOpen(\'datenschutz\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a> und die <a href="/widerrufsbelehrung.html" onclick="legalOpen(\'widerruf\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</div>'
    +'</div>';
   document.body.appendChild(ov);
 }
@@ -2431,7 +2431,7 @@ function quellenBlock(d){
   return '<div style="margin-top:10px;background:var(--greenlt,var(--k-eaf5ee));border:1px solid var(--line);border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--ink)">'
     +'<b>✓ Datenquelle:</b> '+esc(quelleKurz(q))+(am?' · geprüft am '+esc(am):'')
     +'<div style="color:var(--muted);margin-top:3px">Jeder Punkt oben ist aus diesen Daten berechnet – nichts geschätzt. '
-    +'<a onclick="legalOpen(\'impressum\')" style="color:var(--greendk);cursor:pointer;text-decoration:underline">Quellen &amp; Lizenzen</a></div>'
+    +'<a href="/impressum.html" onclick="legalOpen(\'impressum\');return false" style="color:var(--greendk);cursor:pointer;text-decoration:underline">Quellen &amp; Lizenzen</a></div>'
     +'</div>'+MED_HINWEIS;
 }
 /* Kuerzt die verbose Lizenz-Langform auf einen Nutzertext. Unbekanntes bleibt 1:1. */
@@ -8813,7 +8813,7 @@ function premiumBlockHtml(){
     +vorteil('🗓️','Ernährung &amp; Training planen','Wochenplan, Einkaufsliste aus dem Plan, Trainingsplan mit Fortschritt.')
     +vorteil('🍲','Eigene Rezepte','Rezepte anlegen, bewerten lassen und skalieren.')
     +'<div style="display:flex;gap:6px;margin:12px 0 6px">'+preis('Monatlich','4,99 €','pro Monat')+preis('3 Monate','12,99 €','4,33 €/Monat')+preis('Jährlich','44,99 €','3,75 €/Monat')+'</div>'
-    +'<div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:12px">Endpreise, gemäß § 19 UStG ohne Umsatzsteuer. 7 Tage kostenlos beim ersten Abo, danach der gewählte Tarif. Kündbar zum Ende der ersten Laufzeit, danach monatlich. <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a></div>'
+    +'<div style="font-size:11px;color:var(--muted);line-height:1.45;margin-bottom:12px">Endpreise, gemäß § 19 UStG ohne Umsatzsteuer. 7 Tage kostenlos beim ersten Abo, danach der gewählte Tarif. Kündbar zum Ende der ersten Laufzeit, danach monatlich. <a href="/agb.html" onclick="legalOpen(\'agb\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a></div>'
     +'<button onclick="premiumInfo()" style="width:100%;padding:12px;border:0;border-radius:10px;background:var(--green);color:var(--auf-gruen);font-weight:800;font-size:15px;cursor:pointer">Premium 7 Tage gratis testen</button>'
     +'</div>';
 }
@@ -10048,7 +10048,13 @@ function legalOpen(which){
   try{ const R=window.RI_RECHT||{}; const L=(RI_MARKT==='UK'||RI_MARKT==='US')?'en':(RI_MARKT==='FR'?'fr':''); 
     if(L&&R[L]&&R[L][which]) body=R[L][which]; else if(which==='gesundheit'&&R.en&&R.en.gesundheit) body=R.en.gesundheit; }catch(_){}
   ov.setAttribute('data-kein-i18n','1');
-  ov.innerHTML=`<div style="background:var(--card);max-width:640px;width:92%;margin:24px 0;border-radius:16px;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow)"><button onclick="document.getElementById('legalOv').remove()" style="float:right;border:0;background:var(--line);color:var(--ink);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>${body}</div>`;
+  /* 14.11.2026 (Ralph): Jeder Rechtstext hat jetzt eine eigene Seite (verlinkbar, ohne
+     JavaScript lesbar). Die Seiten erzeugt _werkzeuge/rechtsseiten-generieren.mjs aus
+     GENAU diesem Text (Marke RI-TEXT) - nach jeder Textaenderung dort laufen lassen. */
+  let seite='';
+  try{ const en=(RI_MARKT==='UK'||RI_MARKT==='US'); const U={impressum:['impressum.html','en/legal-notice.html'],datenschutz:['datenschutz.html','en/privacy.html'],agb:['agb.html','en/terms.html'],widerruf:['widerrufsbelehrung.html','en/withdrawal.html'],gesundheit:[null,'en/consumer-health-data-privacy.html']}[which];
+    const pf=U&&(en||!U[0]?U[1]:U[0]); if(pf) seite=`<p style="font-size:12px;color:var(--muted);margin:0 40px 8px 0">${en?'Own page':'Eigene Seite'}: <a href="/${pf}" target="_blank" rel="noopener" style="color:var(--greendk)">root-index.de/${pf}</a></p>`; }catch(_){}
+  ov.innerHTML=`<div style="background:var(--card);max-width:640px;width:92%;margin:24px 0;border-radius:16px;max-height:88vh;overflow:auto;padding:20px 22px;box-shadow:var(--shadow)"><button onclick="document.getElementById('legalOv').remove()" style="float:right;border:0;background:var(--line);color:var(--ink);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">×</button>${seite}<!--RI-TEXT-->${body}<!--/RI-TEXT--></div>`;
   document.body.appendChild(ov);
 }
 function wikiOpen(){
@@ -17251,7 +17257,7 @@ async function riEinwilligungPruefen(){
   ov.innerHTML='<div style="background:var(--card);color:var(--ink);border-radius:16px;max-width:440px;width:100%;padding:20px;box-shadow:0 10px 40px rgba(0,0,0,.4)">'
     +'<div style="font-size:17px;font-weight:700;margin-bottom:10px">Einwilligung Gesundheitsdaten</div>'
     +'<div style="font-size:13.5px;line-height:1.55;margin-bottom:12px">'+RI_EINW_TEXT+'</div>'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwHaken" onchange="riEinwKnopf()" style="margin-top:3px"> <span>Ich stimme zu. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwHaken" onchange="riEinwKnopf()" style="margin-top:3px"> <span>Ich stimme zu. Details in der <a href="/datenschutz.html" onclick="legalOpen(\'datenschutz\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
     +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:13.5px;margin-bottom:14px;cursor:pointer"><input type="checkbox" id="riEinwAlter" onchange="riEinwKnopf()" style="margin-top:3px"> <span>Ich bin mindestens <b>16 Jahre</b> alt.</span></label>'
     +'<div style="display:flex;gap:8px">'
     +'<button onclick="riEinwilligungAbmelden()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abmelden</button>'
@@ -17304,7 +17310,7 @@ function riNewsletterFormular(){
     +'<p style="font-size:13.5px;line-height:1.55;margin:0 0 10px">Jeden Sonntag ein kurzer Blick hinter die Zutatenliste: ein Produktvergleich, eine Zutat oder eine App-Funktion einfach erklärt – und ein Tipp oder Rezept für die Küche. Kostenlos und ohne Werbung von Herstellern.</p>'
     +'<label style="display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px">E-Mail *</label>'
     +'<input id="riNlMail" type="email" autocomplete="email" value="'+String(mail).replace(/"/g,'&quot;')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);font-size:15px">'
-    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten – mit Produktvergleichen, Tipps, Rezepten und Infos zu Root-Index-Angeboten wie Premium und unserem Buch. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a onclick="legalOpen(\'datenschutz\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
+    +'<label style="display:flex;gap:8px;align-items:flex-start;font-size:12.5px;line-height:1.5;margin:12px 0 0"><input id="riNlHaken" type="checkbox" style="margin-top:3px"><span>Ja, ich möchte den Root-Index-Newsletter (etwa einmal pro Woche) per E-Mail erhalten – mit Produktvergleichen, Tipps, Rezepten und Infos zu Root-Index-Angeboten wie Premium und unserem Buch. Abmeldung jederzeit über den Link in jeder Mail. Details in der <a href="/datenschutz.html" onclick="legalOpen(\'datenschutz\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a>.</span></label>'
     +'<div style="display:flex;gap:8px;margin-top:16px"><button onclick="document.getElementById(\'riNlOv\').remove()" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Abbrechen</button>'
     +'<button id="riNlGo" onclick="riNewsletterAnmelden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--greendk);color:#fff;font-weight:700;cursor:pointer">Anmelden</button></div>'
     +'<div id="riNlMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
@@ -17399,7 +17405,7 @@ function riWiderrufFormular(){
     +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'riWdrSchritt2\').style.display=\'none\';document.getElementById(\'riWdrSchritt1\').style.display=\'block\'" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Zurück</button>'
     +'<button id="riWdrGo" onclick="riWiderrufSenden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-dc2626);color:#fff;font-weight:700;cursor:pointer">Widerruf bestätigen</button></div></div>'
     +'<div id="riWdrMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
-    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a onclick="legalOpen(\'widerruf\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</p></div>';
+    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a href="/widerrufsbelehrung.html" onclick="legalOpen(\'widerruf\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</p></div>';
   document.body.appendChild(ov);
 }
 function riWiderrufPruefen(){
@@ -17451,7 +17457,7 @@ function riKuendigenFormular(){
     +'<div style="display:flex;gap:8px"><button onclick="document.getElementById(\'riKdgSchritt2\').style.display=\'none\';document.getElementById(\'riKdgSchritt1\').style.display=\'block\'" style="flex:1;padding:11px;border:1px solid var(--line);border-radius:10px;background:var(--card);color:var(--ink);cursor:pointer">Zurück</button>'
     +'<button id="riKdgGo" onclick="riKuendigenSenden()" style="flex:1;padding:11px;border:0;border-radius:10px;background:var(--k-dc2626);color:#fff;font-weight:700;cursor:pointer">jetzt kündigen</button></div></div>'
     +'<div id="riKdgMsg" style="font-size:13px;line-height:1.5;margin-top:10px"></div>'
-    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a onclick="legalOpen(\'agb\')" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB § 7</a>.</p></div>';
+    +'<p style="font-size:11.5px;color:var(--muted);margin:12px 0 0">Alternativ per E-Mail an kontakt@root-index.de. Details: <a href="/agb.html" onclick="legalOpen(\'agb\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB § 7</a>.</p></div>';
   document.body.appendChild(ov);
 }
 function riKuendigenPruefen(){
