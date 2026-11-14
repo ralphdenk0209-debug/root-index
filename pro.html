@@ -103,6 +103,25 @@ ol.schritte li{ counter-increment:s; display:grid; grid-template-columns:2.1em 1
 ol.schritte li::before{ content:counter(s); font-family:var(--mono); font-size:14px; color:var(--accent); border:1px solid var(--accent); border-radius:50%; width:1.9em; height:1.9em; display:inline-flex; align-items:center; justify-content:center }
 
 .klein{ font-size:14.5px; color:var(--muted) }
+.anfrage{ border:1px solid var(--line); border-radius:6px; padding:18px 18px 8px; margin-top:10px }
+.anfrage .felder{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px 16px }
+.anfrage label{ display:flex; flex-direction:column; gap:4px; font-family:var(--display); font-size:15px; font-weight:700 }
+.anfrage label.breit{ grid-column:1 / -1 }
+.anfrage .optional{ font-weight:500; color:var(--muted) }
+.anfrage input[type=text], .anfrage input[type=email], .anfrage textarea{ font:inherit; font-family:var(--body); font-weight:400; font-size:16px; color:var(--ink); background:var(--bg);
+  border:1px solid var(--line); border-radius:6px; padding:10px 12px; width:100%; box-sizing:border-box }
+.anfrage textarea{ resize:vertical; min-height:96px }
+.anfrage input:focus, .anfrage textarea:focus{ outline:2px solid var(--accent); outline-offset:1px; border-color:transparent }
+.anfrage .haken{ flex-direction:row; align-items:flex-start; gap:10px; font-family:var(--body); font-weight:400; font-size:15px; line-height:1.5; margin:16px 0 14px }
+.anfrage .haken input{ width:20px; height:20px; margin:2px 0 0; accent-color:var(--accent); flex:none }
+.anfrage button{ cursor:pointer; font-size:16.5px }
+.anfrage button:disabled{ opacity:.6; cursor:wait }
+.anfrage .meldung{ min-height:1.5em; margin:10px 0 6px; font-size:15px }
+.anfrage .meldung.fehler{ color:var(--warn) }
+.falle{ position:absolute; left:-10000px; width:1px; height:1px; overflow:hidden }
+.danke{ border:1.5px solid var(--accent); background:var(--accent-soft); border-radius:6px; padding:18px 20px 8px; margin-top:10px }
+.danke h3{ margin-bottom:6px }
+@media (max-width:640px){ .anfrage .felder{ grid-template-columns:minmax(0,1fr) } }
 footer{ max-width:860px; margin:18px auto 0; font-size:14px; color:var(--muted); display:flex; flex-wrap:wrap; gap:6px 18px; justify-content:space-between; padding-inline:4px }
 footer nav{ display:flex; flex-wrap:wrap; gap:6px 16px }
 footer a{ color:var(--muted) }
@@ -125,7 +144,7 @@ footer a{ color:var(--muted) }
     <a class="knopf voll" href="therapeut.html#konto-anlegen" data-pro-link>Konto anlegen</a>
     <a class="knopf rand" href="therapeut-demo.html" data-pro-link>Musterpraxis ansehen</a>
   </div>
-  <p class="knopf-hinweis">Nach dem Anlegen wird das Konto als Fachperson freigeschaltet. Dafür genügt eine kurze Nachricht mit Name und Praxis an <a href="mailto:kontakt@root-index.de?subject=Freischaltung%20Root%20Index%20Pro">kontakt@root-index.de</a>. Die Musterpraxis zeigt die echte Oberfläche mit erfundenen Personen und echten Produkten; der Zugang ist mit einem Passwort geschützt, das es auf Anfrage über dieselbe Adresse gibt.</p>
+  <p class="knopf-hinweis">Nach dem Anlegen wird das Konto als Fachperson freigeschaltet. Dafür genügt eine kurze Nachricht mit Name und Praxis an <a href="mailto:kontakt@root-index.de?subject=Freischaltung%20Root%20Index%20Pro">kontakt@root-index.de</a> oder über das <a href="#anfrage">Anfrageformular</a>. Die Musterpraxis zeigt die echte Oberfläche mit erfundenen Personen und echten Produkten; der Zugang ist mit einem Passwort geschützt, das es auf Anfrage über dieselbe Adresse gibt.</p>
 
   <h2>Was Root Index Pro kann</h2>
   <div class="raster">
@@ -190,7 +209,26 @@ footer a{ color:var(--muted) }
     <a class="knopf voll" href="therapeut.html#konto-anlegen" data-pro-link>Konto anlegen</a>
     <a class="knopf rand" href="therapeut-demo.html" data-pro-link>Musterpraxis ansehen</a>
   </div>
-  <p class="klein" style="margin-top:16px">Fragen vorab: <a href="mailto:kontakt@root-index.de?subject=Frage%20zu%20Root%20Index%20Pro">kontakt@root-index.de</a></p>
+
+  <h2 id="anfrage">Anfrage</h2>
+  <p>Fragen zu Ablauf, Preis oder Freischaltung? Die Antwort kommt per E-Mail.</p>
+  <form class="anfrage" id="anfrage-form" novalidate>
+    <div class="felder">
+      <label>Name<input name="name" type="text" autocomplete="name" required minlength="2" maxlength="120"></label>
+      <label>Praxis<input name="praxis" type="text" autocomplete="organization" required minlength="2" maxlength="160"></label>
+      <label class="breit">E-Mail<input name="email" type="email" autocomplete="email" inputmode="email" required maxlength="200"></label>
+      <label class="breit"><span>Nachricht <span class="optional">(optional)</span></span><textarea name="nachricht" rows="4" maxlength="3000"></textarea></label>
+    </div>
+    <!-- Spam-Falle: für Menschen unsichtbar; wer sie füllt, wird nicht gespeichert -->
+    <div class="falle" aria-hidden="true"><label>Webseite<input name="webseite" type="text" tabindex="-1" autocomplete="off"></label></div>
+    <label class="haken"><input name="einwilligung" type="checkbox" required><span>Die Angaben dürfen zur Bearbeitung der Anfrage gespeichert werden. Mehr dazu in der <a href="datenschutz.html" target="_blank" rel="noopener">Datenschutzerklärung</a> (Abschnitt 13).</span></label>
+    <button class="knopf voll" type="submit">Anfrage senden</button>
+    <p class="meldung" id="anfrage-meldung" role="status" aria-live="polite"></p>
+  </form>
+  <div class="danke" id="anfrage-danke" hidden tabindex="-1">
+    <h3>Danke, die Anfrage ist angekommen.</h3>
+    <p>Die Antwort kommt per E-Mail an <strong id="anfrage-mail"></strong>. Bei Eile: <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a></p>
+  </div>
 </main>
 
 <footer>
@@ -213,6 +251,7 @@ footer a{ color:var(--muted) }
   var h = k(p.get('herkunft') || p.get('von'));
   if(!h){ var us = k(p.get('utm_source'), 20), uc = k(p.get('utm_campaign'), 20);
     if(us || uc) h = k('utm-' + (us || 'x') + (uc ? '-' + uc : '')); }
+  window.RI_PRO_HERKUNFT = h || null;
   if(!h) return;
   document.querySelectorAll('a[data-pro-link]').forEach(function(a){
     var u = new URL(a.getAttribute('href'), location.href);
@@ -220,6 +259,44 @@ footer a{ color:var(--muted) }
     a.setAttribute('href', u.pathname.replace(/^.*\//, '') + u.search + u.hash);
   });
 }catch(e){} })();
+
+/* Anfrageformular: speichert über die Datenbank-Funktion pro_anfrage_senden (security definer, anon darf sie
+   aufrufen, keine Tabellenrechte). Die Funktion bremst (3 je E-Mail und Tag), prüft die Spam-Falle und schickt die
+   Anfrage über "Kontakt_Anfragen" per Mail an kontakt@root-index.de. SQL: supabase/fachleute/pro_anfrage.sql */
+(function(){
+  var URL_RPC = 'https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/pro_anfrage_senden';
+  var ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw';
+  var f = document.getElementById('anfrage-form'); if(!f) return;
+  var meld = document.getElementById('anfrage-meldung'), knopf = f.querySelector('button[type=submit]');
+  var TEXT = {
+    einwilligung: 'Bitte den Haken zur Datenschutzerklärung setzen.',
+    name: 'Bitte den Namen eintragen.', praxis: 'Bitte die Praxis eintragen.',
+    email: 'Bitte eine gültige E-Mail-Adresse eintragen.', nachricht_lang: 'Die Nachricht ist zu lang (höchstens 3000 Zeichen).',
+    zu_viele: 'Von dieser Adresse kamen heute schon mehrere Anfragen. Bitte direkt an kontakt@root-index.de schreiben.'
+  };
+  function zeige(t, fehler){ meld.textContent = t || ''; meld.className = 'meldung' + (fehler ? ' fehler' : ''); }
+  f.addEventListener('submit', function(e){
+    e.preventDefault();
+    var w = function(n){ var el = f.elements[n]; return el ? (el.type === 'checkbox' ? el.checked : el.value) : ''; };
+    var d = { p_name: w('name').trim(), p_praxis: w('praxis').trim(), p_email: w('email').trim(), p_nachricht: w('nachricht').trim() || null,
+              p_herkunft: window.RI_PRO_HERKUNFT || null, p_einwilligung: !!w('einwilligung'), p_falle: w('webseite') || null };
+    if(d.p_name.length < 2) return zeige(TEXT.name, true);
+    if(d.p_praxis.length < 2) return zeige(TEXT.praxis, true);
+    if(!/^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]{2,}$/.test(d.p_email)) return zeige(TEXT.email, true);
+    if(!d.p_einwilligung) return zeige(TEXT.einwilligung, true);
+    knopf.disabled = true; zeige('Wird gesendet …');
+    fetch(URL_RPC, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': ANON, 'Authorization': 'Bearer ' + ANON }, body: JSON.stringify(d) })
+      .then(function(r){ return r.ok ? r.json() : Promise.reject(r.status); })
+      .then(function(a){
+        if(a && a.ok){
+          document.getElementById('anfrage-mail').textContent = d.p_email;
+          f.hidden = true; var dk = document.getElementById('anfrage-danke'); dk.hidden = false; dk.focus();
+        } else { zeige(TEXT[a && a.grund] || 'Das hat nicht geklappt. Bitte direkt an kontakt@root-index.de schreiben.', true); }
+      })
+      .catch(function(){ zeige('Gerade nicht erreichbar. Bitte später noch einmal oder direkt an kontakt@root-index.de schreiben.', true); })
+      .then(function(){ knopf.disabled = false; });
+  });
+})();
 </script>
 </body>
 </html>
