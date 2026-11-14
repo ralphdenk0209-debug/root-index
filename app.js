@@ -1595,16 +1595,13 @@ function premiumInfo(){
     var r=document.referrer, q="direkt";
     if(r){ var h=""; try{ h=new URL(r).hostname; }catch(e){}
       q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/root-index\.de$/.test(h)?"intern":"andere"; }
-    /* ueber root-index.com gekommen: die Weiterleitung haengt ?von=com an. Der
-       Merker haelt den ganzen Besuch, damit auch die danach geoeffneten Seiten
-       als "com" zaehlen (27.09.2026). */
-    try{ if(/(^|[?&])von=com([&#]|$)/.test(location.search)) sessionStorage.setItem("ri_von","com");
-      if(sessionStorage.getItem("ri_von")==="com") q="com"; }catch(e){}
+    /* ueber root-index.com gekommen: die Weiterleitung haengt ?von=com an (27.09.2026). */
+    try{ if(/(^|[?&])von=com([&#]|$)/.test(location.search)) q="com"; }catch(e){}   /* 14.11.2026: ohne Sitzungsspeicher (TDDDG § 25) - zaehlt nur der Aufruf mit ?von=com */
 /* 21.10.2026 (Ralph: "facebook und youtube werden angeschaut"): Kanal erkennen - Referrer, In-App-Browser der Apps, ?von=ig|fb|yt|tt|pin|th|nl. Eigene Geraete (Admin geoeffnet) zaehlen als "eigen". */
 try{var _r=(document.referrer||"").toLowerCase(),_u=navigator.userAgent;
 if(/instagram\./.test(_r)||/Instagram/.test(_u))q="instagram";else if(/(^|\/\/|\.)(facebook\.com|fb\.me|fb\.com)/.test(_r)||/FBAN|FBAV|FB_IAB/.test(_u))q="facebook";else if(/youtube\.com|youtu\.be/.test(_r))q="youtube";else if(/tiktok\./.test(_r)||/musical_ly|BytedanceWebview|TikTok/.test(_u))q="tiktok";else if(/pinterest\.|pin\.it/.test(_r)||/Pinterest/.test(_u))q="pinterest";else if(/threads\.(net|com)/.test(_r)||/Barcelona/.test(_u))q="threads";
 var _v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1],_m={ig:"instagram",fb:"facebook",yt:"youtube",tt:"tiktok",pin:"pinterest",th:"threads",nl:"newsletter"};
-if(_v&&_m[_v])sessionStorage.setItem("ri_von2",_m[_v]);var _s=sessionStorage.getItem("ri_von2");if(_s&&q!=="com")q=_s;
+if(_v&&_m[_v]&&q!=="com")q=_m[_v];
 if(localStorage.getItem("ri_intern")==="1")q="eigen";}catch(e){}
     fetch(SUPABASE_URL+"/rest/v1/rpc/cb_seite_zaehlen",{method:"POST",keepalive:true,
       headers:{"apikey":SUPABASE_KEY,"Content-Type":"application/json"},
@@ -1616,12 +1613,13 @@ if(localStorage.getItem("ri_intern")==="1")q="eigen";}catch(e){}
    Einmal je Sitzung, nur angemeldet, nur die Angabe "play" (cb_plattform_melden). */
 (function(){
   try{
-    if(/^android-app:\/\/de\.rootindex\.app/.test(document.referrer||"")) sessionStorage.setItem("ri_twa","1");
-    if(sessionStorage.getItem("ri_twa")!=="1") return;
+    /* 14.11.2026: ohne Sitzungsspeicher (TDDDG § 25) - die App ist eine Seite, der Merker im Speicher reicht */
+    if(!/^android-app:\/\/de\.rootindex\.app/.test(document.referrer||"")) return;
+    var gemeldet=false;
     var n=0, t=setInterval(async function(){
-      n++; if(n>40 || sessionStorage.getItem("ri_twa_gemeldet")==="1"){ clearInterval(t); return; }
+      n++; if(n>40 || gemeldet){ clearInterval(t); return; }
       try{ var r=await client.auth.getSession(); if(r && r.data && r.data.session){
-        clearInterval(t); sessionStorage.setItem("ri_twa_gemeldet","1");
+        clearInterval(t); gemeldet=true;
         client.rpc("cb_plattform_melden",{p_plattform:"play"}).then(function(){},function(){}); } }catch(e){}
     }, 3000);
   }catch(e){}
