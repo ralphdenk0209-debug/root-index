@@ -65,7 +65,7 @@ create or replace function public._ri_apple_angebot(p_offer_type text, p_rabatt 
 returns text language sql immutable as $$
   select case
     when nullif(p_offer_type,'') is null and nullif(p_rabatt,'') is null then 'standard'
-    when upper(coalesce(p_rabatt,'')) = 'FREE_TRIAL' then 'probe'
+    when upper(coalesce(p_rabatt,'')) = 'FREE_TRIAL' and coalesce(nullif(p_offer_type,''),'1') = '1' then 'probe'
     when p_offer_type = '1' then 'einfuehrung'
     when p_offer_type = '2' then 'aktion'
     when p_offer_type = '3' then 'code'
@@ -126,7 +126,7 @@ end $function$;
 -- (z. B. _fp_eigenes_abo) sein Verhalten aendert.
 alter table public."Benutzer" add column if not exists premium_hand text;
 comment on column public."Benutzer".premium_hand is
-  'Premium ohne Zahlungsquelle: hand = von Hand freigeschaltet, intern = Admin/Beta-Tester. Nur fuer die Messung (14.11.2026).';
+  'Premium ohne Zahlungsquelle: hand = von Hand freigeschaltet, intern = Admin/Beta-Tester. Gratis-Codes setzen trial_bis, nicht is_premium (geprueft 14.11.2026). Nur fuer die Messung.';
 do $$ begin
   if not exists (select 1 from pg_constraint where conname = 'benutzer_premium_hand_check') then
     alter table public."Benutzer" add constraint benutzer_premium_hand_check check (premium_hand in ('hand','intern'));
@@ -173,7 +173,9 @@ with e as (
 )
 select quelle, umgebung, abo, (array_agg(auth_id) filter (where auth_id is not null))[1] auth_id,
        min(zeit) filter (where angebot = 'probe') probe_am,
+       min(zeit) filter (where angebot in ('einfuehrung','aktion','code','rueckgewinn') and coalesce(preis_milli,0) = 0) gratis_angebot_am,
        min(zeit) filter (where angebot in ('standard','einfuehrung','aktion','code','rueckgewinn') and coalesce(preis_milli,0) > 0) bezahlt_am,
+       min(zeit) filter (where angebot = 'standard' and coalesce(preis_milli,0) > 0) standardpreis_am,
        min(zeit) filter (where art = 'DID_CHANGE_RENEWAL_STATUS:AUTO_RENEW_DISABLED') kuendigung_am,
        min(zeit) filter (where art in ('EXPIRED','REFUND','REVOKE')) ende_am,
        bool_or(angebot is null) hat_alte_zeilen
@@ -186,7 +188,8 @@ returns table(tag date, besuche_app int, besuche_seiten int, besuche_instagram i
               besuche_tiktok int, besuche_suche int, besuche_direkt int,
               konten_neu int, konten_web int, konten_iphone int, konten_android int,
               konten_mit_herkunft int, konten_werbung int, konten_reel_bio int,
-              proben int, umwandlungen int, bezahlt_neu int, bezahlt_ohne_probe int, kuendigungen int)
+              proben int, gratis_angebote int, umwandlungen int, bezahlt_neu int, bezahlt_ohne_probe int,
+              zum_standardpreis int, kuendigungen int, gratis_codes_web int, fachleute_keys int)
 language sql stable security definer
 set search_path to 'public', 'auth'
 as $$
@@ -221,19 +224,33 @@ as $$
   ab as (
     select t.tag,
            (select count(*) from abo where (probe_am at time zone 'Europe/Berlin')::date = t.tag)::int proben,
-           (select count(*) from abo where probe_am is not null and bezahlt_am > probe_am
+           (select count(*) from abo where (gratis_angebot_am at time zone 'Europe/Berlin')::date = t.tag)::int gratis,
+           (select count(*) from abo where bezahlt_am > least(coalesce(probe_am,'infinity'), coalesce(gratis_angebot_am,'infinity'))
                                        and (bezahlt_am at time zone 'Europe/Berlin')::date = t.tag)::int umw,
            (select count(*) from abo where (bezahlt_am at time zone 'Europe/Berlin')::date = t.tag)::int bez,
-           (select count(*) from abo where probe_am is null and (bezahlt_am at time zone 'Europe/Berlin')::date = t.tag)::int bez_direkt,
+           (select count(*) from abo where probe_am is null and gratis_angebot_am is null
+                                       and (bezahlt_am at time zone 'Europe/Berlin')::date = t.tag)::int bez_direkt,
+           (select count(*) from abo where (standardpreis_am at time zone 'Europe/Berlin')::date = t.tag)::int standard,
            (select count(*) from abo where (kuendigung_am at time zone 'Europe/Berlin')::date = t.tag)::int kuend
       from tage t
+  ),
+  -- Gratis-Codes im Web (Testzeit ueber trial_bis) und Klienten-Keys der Fachleute, je Einloesetag
+  gc as (
+    select (e.am at time zone 'Europe/Berlin')::date tag,
+           count(*) filter (where g.fachperson_auth is null)::int web,
+           count(*) filter (where g.fachperson_auth is not null)::int fp
+      from public.gratis_code_einloesung e join public.gratis_code g on g.code = e.code
+      join public."Benutzer" b on b.auth_id = e.auth_id
+     where not coalesce(b.is_admin, false)
+     group by 1
   )
   select t.tag, coalesce(bes.app,0), coalesce(bes.seiten,0), coalesce(bes.ig,0), coalesce(bes.fb,0),
          coalesce(bes.tt,0), coalesce(bes.suche,0), coalesce(bes.direkt,0),
          coalesce(kon.neu,0), coalesce(kon.web,0), coalesce(kon.iphone,0), coalesce(kon.android,0),
          coalesce(kon.mit_h,0), coalesce(kon.werbung,0), coalesce(kon.reel,0),
-         ab.proben, ab.umw, ab.bez, ab.bez_direkt, ab.kuend
-    from tage t left join bes using (tag) left join kon using (tag) join ab using (tag)
+         ab.proben, ab.gratis, ab.umw, ab.bez, ab.bez_direkt, ab.standard, ab.kuend,
+         coalesce(gc.web,0), coalesce(gc.fp,0)
+    from tage t left join bes using (tag) left join kon using (tag) join ab using (tag) left join gc using (tag)
    order by t.tag desc
 $$;
 revoke all on function messung.kette(text) from public, anon, authenticated;
@@ -241,7 +258,8 @@ revoke all on function messung.kette(text) from public, anon, authenticated;
 create or replace view messung.kette_tag as select * from messung.kette('Production');
 comment on view messung.kette_tag is
   'Messkette je Tag (Europe/Berlin): Besuche (ohne eigene Geraete), neue Konten je Weg und Herkunft, Proben, '
-  'Umwandlungen Probe->bezahlt, neue bezahlte Abos, Kuendigungen. Nur Production. Abo-Zahlen erst ab 14.11.2026 vollstaendig '
+  'Apple-Gratisangebote (Code/Aktion ohne Preis), Umwandlungen Probe/Gratisangebot->erste Zahlung, neue bezahlte Abos, '
+  'davon zum Standardpreis, Kuendigungen, Web-Gratis-Codes (Testzeit), Fachleute-Keys. Nur Production. Abo-Zahlen erst ab 14.11.2026 vollstaendig '
   '(aeltere Apple-Meldungen ohne Angebotsart).';
 
 create or replace view messung.kette_woche as
@@ -252,8 +270,10 @@ select date_trunc('week', tag)::date woche_ab,
        sum(konten_neu)::int konten_neu, sum(konten_web)::int konten_web, sum(konten_iphone)::int konten_iphone,
        sum(konten_android)::int konten_android, sum(konten_mit_herkunft)::int konten_mit_herkunft,
        sum(konten_werbung)::int konten_werbung, sum(konten_reel_bio)::int konten_reel_bio,
-       sum(proben)::int proben, sum(umwandlungen)::int umwandlungen, sum(bezahlt_neu)::int bezahlt_neu,
-       sum(bezahlt_ohne_probe)::int bezahlt_ohne_probe, sum(kuendigungen)::int kuendigungen
+       sum(proben)::int proben, sum(gratis_angebote)::int gratis_angebote, sum(umwandlungen)::int umwandlungen,
+       sum(bezahlt_neu)::int bezahlt_neu, sum(bezahlt_ohne_probe)::int bezahlt_ohne_probe,
+       sum(zum_standardpreis)::int zum_standardpreis, sum(kuendigungen)::int kuendigungen,
+       sum(gratis_codes_web)::int gratis_codes_web, sum(fachleute_keys)::int fachleute_keys
   from messung.kette_tag group by 1 order by 1 desc;
 
 -- Trichter je Herkunft: neue Konten -> davon mit Probe -> davon bezahlt (Production, ohne Admins).
@@ -274,11 +294,17 @@ select date_trunc('week', k.tag)::date woche_ab, k.gruppe, k.herkunft, k.weg,
   from k left join a using (auth_id)
  group by 1,2,3,4 order by 1 desc, 5 desc;
 
--- Stand heute: wer ist Premium und warum (nur Summen).
+-- Stand heute: wer hat Premium-Zugang und warum (nur Summen). Ein Konto kann mehrere Wege haben,
+-- deshalb je Weg gezaehlt (wie cb_ist_premium): Abo, von Hand, Web-Gratis-Code (Testzeit), Fachleute-Key.
 create or replace view messung.premium_stand as
-select coalesce(abo_quelle, premium_hand, 'unbekannt') quelle, count(*)::int konten,
-       count(*) filter (where premium_bis is null or premium_bis > now())::int laufend
-  from public."Benutzer" where is_premium group by 1 order by 2 desc;
+select coalesce(abo_quelle, premium_hand, 'unbekannt') weg, count(*)::int konten
+  from public."Benutzer" where is_premium and (premium_bis is null or premium_bis > now()) group by 1
+union all
+select 'gratis-code-testzeit', count(*)::int from public."Benutzer" where trial_bis > now()
+union all
+select 'fachleute-key', count(distinct klient_auth)::int from public.gratis_code
+ where klient_auth is not null and fachperson_auth is not null and beendet_am is null and laeuft_bis > now()
+order by 2 desc;
 
 revoke all on all tables in schema messung from public, anon, authenticated;
 revoke all on all functions in schema messung from public, anon, authenticated;
