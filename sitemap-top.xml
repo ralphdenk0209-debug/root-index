@@ -24,6 +24,7 @@
 <url><loc>https://root-index.de/produkt/kategorie-fleisch-fisch.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-getraenk.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-getreide-beilagen.html</loc></url>
+<url><loc>https://root-index.de/produkt/kategorie-lebensmittel.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-milchprodukte-eier.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-nuesse-huelsenfruechte.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-obst-gemuese.html</loc></url>
@@ -637,7 +638,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-ratatouille-p42889.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-tex-mex-bratlinge-p42458.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-vegane-snackwurst-p42899.html</loc></url>
-<url><loc>https://root-index.de/produkt/dr-karg-s-super-saaten-p29711.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-tofu-natur-p50953.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-pilze-pfifferlinge-p51543.html</loc></url>
 <url><loc>https://root-index.de/produkt/ener-bio-rossmann-jackfruit-burger-p50254.html</loc></url>
@@ -1277,6 +1277,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-hummus-bio-p42714.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-kichererbseneintopf-mit-kokosmilch-p42854.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-veggie-hack-p42870.html</loc></url>
+<url><loc>https://root-index.de/produkt/dr-karg-s-super-saaten-p29711.html</loc></url>
 <url><loc>https://root-index.de/produkt/eat-happy-sommerrolle-lachs-avocado-p48287.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-frischkaese-kraeuter-p51186.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-bio-gemuesebruehe-p50159.html</loc></url>
@@ -3320,6 +3321,7 @@
 <url><loc>https://root-index.de/produkt/edeka-bio-haferdrink-schoko-p52313.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-lyoner-p52373.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-schinken-ofengebacken-p51239.html</loc></url>
+<url><loc>https://root-index.de/produkt/effect-black-acai-p28700.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-bananen-chips-p50226.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-feine-bitter-schokolade-p50181.html</loc></url>
 <url><loc>https://root-index.de/produkt/european-pizza-group-pizza-ziegenfrischkaese-p35404.html</loc></url>
@@ -3488,7 +3490,6 @@
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-haehnchenbrust-gepoekelt-gegart-und-ofengebacken-hau-p51240.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-italia-balsamico-creme-p51854.html</loc></url>
 <url><loc>https://root-index.de/produkt/edmund-merl-feinkost-topfencreme-auf-apfelgruetze-p36913.html</loc></url>
-<url><loc>https://root-index.de/produkt/effect-black-acai-p28700.html</loc></url>
 <url><loc>https://root-index.de/produkt/elinas-joghurt-nach-griechischer-art-heidelbeere-p69084.html</loc></url>
 <url><loc>https://root-index.de/produkt/elsdorfer-molkerei-und-feinkost-salatdressing-knoblauch-p41285.html</loc></url>
 <url><loc>https://root-index.de/produkt/fleischwerke-e-zimmermann-muenchner-weisswurst-p41383.html</loc></url>
@@ -6097,6 +6098,7 @@
 <url><loc>https://root-index.de/produkt/coop-prix-garantie-bohnen-p96291.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/gaminzojas-colla-spa-grana-padano-gerieben-10-monate-gereift-p73695.html</loc><lastmod>2026-09-05</lastmod></url>
 <url><loc>https://root-index.de/produkt/grafschafter-tortilla-wraps-vollkorn-p73847.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/iglo-green-cuisine-gemuesestaebchen-p96674.html</loc><lastmod>2026-11-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/k-classic-harzer-kaese-p56517.html</loc><lastmod>2026-10-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/kuehlmann-hummus-pikant-p73897.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/minusl-joghurt-1-5-p96358.html</loc><lastmod>2026-10-02</lastmod></url>
@@ -6298,6 +6300,7 @@
 <url><loc>https://root-index.de/produkt/chef-select-tortelloni-p73996.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/crownfield-cornflakes-p73919.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/deluxe-pesto-tonno-p73997.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/dmbio-vegane-snackwurst-landjaeger-art-p42844.html</loc><lastmod>2026-11-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-baguette-thunfisch-p1612.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-pinsa-champingnons-mit-ricotta-pecorino-creme-p1445.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-schokomuesli-klassisch-p1391.html</loc><lastmod>2026-07-28</lastmod></url>
@@ -6441,6 +6444,7 @@
 <url><loc>https://root-index.de/produkt/eurospar-erdnuss-riegel-schoko-kokos-crispies-p83591.html</loc><lastmod>2026-09-29</lastmod></url>
 <url><loc>https://root-index.de/produkt/funny-frisch-de-linsen-chips-paprika-style-p925.html</loc><lastmod>2026-07-11</lastmod></url>
 <url><loc>https://root-index.de/produkt/j-d-gross-edelbitter-mild-85-p73842.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/ja-bagels-mit-sesam-p57546.html</loc><lastmod>2026-11-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/k-classic-high-protein-drink-kakao-p96662.html</loc><lastmod>2026-11-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/le-gusto-tafelessig-p74035.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/milbona-high-protein-drink-p83570.html</loc><lastmod>2026-09-29</lastmod></url>
@@ -6884,6 +6888,7 @@
 <url><loc>https://root-index.de/produkt/tann-bauerngeselchtes-geraeuchert-p74265.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/danone-dany-sahne-karamell-p74229.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/danone-dany-sahne-weisse-schokolade-p74167.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/dmbio-agavensirup-pumpkin-spice-p96675.html</loc><lastmod>2026-11-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-bistro-baguette-a-la-provence-p1633.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-seelenwaermer-kalter-tassenpudding-kokos-p1377.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/glico-mikado-zartherbe-schokolade-p73947.html</loc><lastmod>2026-09-27</lastmod></url>
@@ -6897,6 +6902,7 @@
 <url><loc>https://root-index.de/produkt/coca-cola-coca-cola-original-31-p73859.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/coca-cola-original-taste-mehrweg-p74348.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/coca-cola-services-sa-nv-coca-cola-p73856.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/dmbio-agavendicksaft-p42518.html</loc><lastmod>2026-11-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-feel-good-tassenpudding-p1363.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-tiramisu-creme-p1463.html</loc><lastmod>2026-07-28</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-tortencreme-vanilla-p1460.html</loc><lastmod>2026-07-28</lastmod></url>
@@ -8602,6 +8608,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-mandeldrink-natur-p34064.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-protein-knabbermix-p34070.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-zitronensaft-bio-p34157.html</loc></url>
+<url><loc>https://root-index.de/produkt/e-sener-esener-dinkelbrot-p29638.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-gemuese-tomaten-in-stuecken-mit-kraeutern-p52448.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-gewalzte-bandnudeln-p51519.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-hoernchen-vollkorn-p51424.html</loc></url>
@@ -8963,7 +8970,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-veganer-kidneybohnenburger-p42851.html</loc></url>
 <url><loc>https://root-index.de/produkt/dobler-milchbauernhof-frische-vollmilch-p22286.html</loc></url>
 <url><loc>https://root-index.de/produkt/du-bist-hier-der-chef-die-verbrauchsmarke-frische-bio-weidemilch-p28873.html</loc></url>
-<url><loc>https://root-index.de/produkt/e-sener-esener-dinkelbrot-p29638.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-bio-natives-olivenoel-extra-p52157.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-frische-vollmilch-laenger-haltbar-p51407.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-milch-p51177.html</loc></url>
@@ -10034,9 +10040,4 @@
 <url><loc>https://root-index.de/produkt/ja-thunfisch-p58548.html</loc></url>
 <url><loc>https://root-index.de/produkt/jarmino-knochenbruehen-konzentrat-huhn-p73617.html</loc></url>
 <url><loc>https://root-index.de/produkt/jean-luc-camembert-mild-cremig-p46107.html</loc></url>
-<url><loc>https://root-index.de/produkt/jeden-tag-creme-fraiche-30-p50757.html</loc></url>
-<url><loc>https://root-index.de/produkt/jeden-tag-schmand-sauerrahm-24-p73138.html</loc></url>
-<url><loc>https://root-index.de/produkt/juit-cajun-chicken-luisianna-p42241.html</loc></url>
-<url><loc>https://root-index.de/produkt/juit-haehnchen-paella-verde-p42236.html</loc></url>
-<url><loc>https://root-index.de/produkt/just-spices-guacamole-gewuerzmix-p48589.html</loc></url>
 </urlset>
