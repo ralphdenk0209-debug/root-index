@@ -263,3 +263,18 @@ Deno.test("Ohne menge_g: TL, Prise, Stück werden in Gramm umgerechnet", async (
   assertEquals(d.vorschlaege[0].zutaten_ohne_naehrwerte, 1);
   assertEquals(d.vorschlaege[0].kcal_vollstaendig, true); // Pfeffer 0,5 g fällt nicht ins Gewicht
 });
+
+Deno.test("Stückzahl wird angepasst, Schreibweise bleibt („3 Stück“ → „4 Stück“)", async () => {
+  const v2 = structuredClone(VORSCHLAG);
+  (v2.vorschlaege[0] as any).zutaten = [
+    { name: "Eier", menge: "3 Stück", menge_g: 150, aus_vorrat: true },
+    { name: "Gemüsemischung", menge: "100 g", menge_g: 100, aus_vorrat: true },
+  ];
+  (v2.vorschlaege[0] as any).zubereitung = "1. Eier (3 Stück) verquirlen.\n2. Gemüsemischung (100 g) braten.\n3. Alles mischen.\n4. Servieren.";
+  zuruecksetzen(antwortMit(v2));
+  const d = await (await handler(anfrage({ kcal_tag: undefined, kcal_portion: 330 }))).json();
+  const ei = d.vorschlaege[0].zutaten.find((z: any) => z.name === "Eier");
+  assert(/^\d+ Stück$/.test(ei.menge), ei.menge);
+  assert(d.vorschlaege[0].zubereitung.includes("Eier (" + ei.menge + ")"), d.vorschlaege[0].zubereitung);
+  assert(Math.abs(d.vorschlaege[0].kcal_geschaetzt - 330) / 330 <= 0.15, String(d.vorschlaege[0].kcal_geschaetzt));
+});

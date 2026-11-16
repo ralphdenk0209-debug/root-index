@@ -274,11 +274,14 @@ function mengenArt(menge: string, name: string): { art: "gewicht" | "stueck" | "
   if (!m) return { art: "unklar", n: null, einheit: "" };
   let n = Number(m[1].replace(",", ".")); if (m[2]) n = n / Number(m[2]);
   const e = m[3].trim();
+  // Einheit in der Schreibweise des Originals behalten („Stück“, nicht „stück“).
+  const orig = String(menge ?? "").trim().replace(/½/g, "0.5");
+  const eOrig = orig.slice(Math.max(0, orig.length - m[3].length)).trim() || e;
   if (/^(g|gr|gramm|kg)\b/.test(e)) return { art: "gewicht", n, einheit: "g" };
   if (/^(ml|l|liter)\b/.test(e)) return { art: "gewicht", n, einheit: "ml" };
   if (/^(el|essl|tl|teel|prise|msp|messerspitze|zehe|bund|dose|packung|pck)/.test(e)) return { art: "loeffel", n, einheit: e };
   if (e === "" || /^(stk|stück|st\b)/.test(e) || name.toLowerCase().split(/\s+/).some((w) => w.length >= 4 && e.startsWith(w.slice(0, 4)))) {
-    return { art: "stueck", n, einheit: e };
+    return { art: "stueck", n, einheit: eOrig };
   }
   return { art: "unklar", n, einheit: e };
 }
