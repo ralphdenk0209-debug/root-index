@@ -36,11 +36,15 @@ TROCKEN=0; [ "${1:-}" = "--trocken" ] && TROCKEN=1
 mkdir -p "$BASIS" "$(dirname "$LOG")"
 log(){ echo "$(date '+%Y-%m-%d %H:%M:%S') $*" >> "$LOG"; [ -t 1 ] && echo "$*"; return 0; }
 melden(){ log "FEHLER: $*"; osascript -e "display notification \"$*\" with title \"Root Index Deploy\"" >/dev/null 2>&1 || true; }
+# 16.11.2026: harte Zeitgrenze fuer jeden lftp-Aufruf. lftp hing zweimal stundenlang
+# beim Lesen von .deploy-sha (13.11. ~9 h, 15./16.11. ~12 h), net:timeout griff nicht.
+# perl setzt einen Wecker und ersetzt sich durch das Programm; der Wecker bleibt und beendet es.
+frist(){ local s="$1"; shift; perl -e 'alarm shift; exec @ARGV or exit 127' "$s" "$@"; }
 
 # Nur ein Lauf gleichzeitig (auch nicht parallel zum Produktseiten-Lauf)
 if ! mkdir "$SPERRE" 2>/dev/null; then
-  # Sperre aelter als 3 Stunden = haengengebliebener Lauf
-  if [ -n "$(find "$SPERRE" -maxdepth 0 -mmin +180 2>/dev/null)" ]; then rmdir "$SPERRE" 2>/dev/null; mkdir "$SPERRE" || exit 0
+  # Sperre aelter als 5 Stunden = haengengebliebener Lauf (Upload hat bis 3 h 45 Frist)
+  if [ -n "$(find "$SPERRE" -maxdepth 0 -mmin +300 2>/dev/null)" ]; then rmdir "$SPERRE" 2>/dev/null; mkdir "$SPERRE" || exit 0
   else exit 0; fi
 fi
 trap 'rmdir "$SPERRE" 2>/dev/null' EXIT
@@ -56,12 +60,12 @@ LFTP_PASSWORD="$(kc passwort)"; export LFTP_PASSWORD
 ZIEL="$PROTO://$H"
 LF_SET="set sftp:auto-confirm yes; set net:max-retries 3; set net:timeout 30; set net:reconnect-interval-base 5; set cmd:fail-exit yes"
 [ "$PROTO" = "ftp" ] && LF_SET="$LF_SET; set ftp:ssl-force true; set ftp:ssl-protect-data true"
-lf(){ lftp --env-password -u "$U" -e "$LF_SET; $1; bye" "$ZIEL"; }
+lf(){ frist 600 lftp --env-password -u "$U" -e "$LF_SET; $1; bye" "$ZIEL"; }
 
 # --- Was ist neu? ---------------------------------------------------------------
 git -C "$REPO" fetch -q origin main 2>>"$LOG" || { melden "git fetch fehlgeschlagen (Netz?)"; exit 1; }
 NEU="$(git -C "$REPO" rev-parse origin/main)"
-ALT="$(lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)"
+ALT="$(frist 120 lftp --env-password -u "$U" -e "$LF_SET; cat $D/.deploy-sha; bye" "$ZIEL" 2>/dev/null | tr -dc '0-9a-f' || true)"
 # Nur zum Testen: RI_ALT gibt im Trockenlauf einen anderen Ausgangsstand vor
 [ "$TROCKEN" = 1 ] && [ -n "${RI_ALT:-}" ] && ALT="$(git -C "$REPO" rev-parse "$RI_ALT")"
 if [ -z "$ALT" ]; then melden "Konnte .deploy-sha nicht lesen (Webspace erreichbar?)"; exit 1; fi
@@ -105,23 +109,46 @@ if [ "$N_HOCH" -gt 0 ]; then
   # Ordner einmal anlegen (nur die, in denen sich etwas aendert)
   { echo "$LF_SET"; echo "open --env-password -u \"$U\" $ZIEL"; echo "set cmd:fail-exit no"
     sed -n 's#/[^/]*$##p' "$ARB/hoch.txt" | sort -u | sed "s#.*#mkdir -p -f \"$D/&\"#"; echo bye; } > "$ARB/ordner.lftp"
-  lftp -f "$ARB/ordner.lftp" >>"$LOG" 2>&1 || true
+  frist 900 lftp -f "$ARB/ordner.lftp" >>"$LOG" 2>&1 || true
   # Liste reihum auf $PARALLEL Verbindungen verteilen
   awk -v n="$PARALLEL" -v d="$ARB" -v D="$D" -v W="$WT" '{
       p=$0; o=p; if (sub(/\/[^\/]*$/, "", o) == 0) o=".";
       printf "put -O \"%s/%s\" \"%s/%s\"\n", D, o, W, p > (d "/teil." (NR % n)) }' "$ARB/hoch.txt"
+  # 16.11.2026: Eine einzelne fehlgeschlagene Datei bricht die Verbindung nicht mehr ab
+  # (cmd:fail-exit no). Vorher stoppte jede der 6 Verbindungen beim ersten Fehler, und der
+  # naechste Lauf lud wieder alles hoch (35.057 Dateien, kam nie durch). Fehlgeschlagene
+  # Dateien werden gesammelt und in einem zweiten Durchgang nachgeladen.
   for t in "$ARB"/teil.*; do
-    { echo "$LF_SET"; echo "open --env-password -u \"$U\" $ZIEL"; cat "$t"; echo bye; } > "$t.lftp"
-    ( lftp -f "$t.lftp" >>"$LOG" 2>&1 || echo "$t" >> "$ARB/fehler.txt" ) &
+    { echo "$LF_SET"; echo "set cmd:fail-exit no"; echo "open --env-password -u \"$U\" $ZIEL"; cat "$t"; echo bye; } > "$t.lftp"
+    ( frist 7200 lftp -f "$t.lftp" > "$t.log" 2>&1 || echo "$t" >> "$ARB/fehler.txt" ) &
   done
   wait
-  [ -s "$ARB/fehler.txt" ] && { FEHLER=1; melden "Hochladen teilweise fehlgeschlagen ($(wc -l < "$ARB/fehler.txt" | tr -d ' ') von $PARALLEL Verbindungen)"; }
+  cat "$ARB"/teil.*.log >> "$LOG" 2>/dev/null || true
+  nochmal(){ grep -h '^put: ' "$@" 2>/dev/null | sed -n "s#^put: $WT/\([^:]*\): .*#\1#p" | sort -u; }
+  nochmal "$ARB"/teil.*.log > "$ARB/nochmal.txt"
+  # Abgebrochene Verbindung (Zeitgrenze): ihren ganzen Teil nachladen
+  if [ -s "$ARB/fehler.txt" ]; then
+    while read -r t; do sed -n "s#^put -O \"[^\"]*\" \"$WT/\(.*\)\"\$#\1#p" "$t"; done < "$ARB/fehler.txt" >> "$ARB/nochmal.txt"
+    sort -u -o "$ARB/nochmal.txt" "$ARB/nochmal.txt"
+  fi
+  if [ -s "$ARB/nochmal.txt" ]; then
+    log "Zweiter Durchgang: $(wc -l < "$ARB/nochmal.txt" | tr -d ' ') Datei(en) erneut"
+    awk -v D="$D" -v W="$WT" '{ p=$0; o=p; if (sub(/\/[^\/]*$/, "", o) == 0) o=".";
+        printf "put -O \"%s/%s\" \"%s/%s\"\n", D, o, W, p }' "$ARB/nochmal.txt" > "$ARB/zwei.txt"
+    { echo "$LF_SET"; echo "set cmd:fail-exit no"; echo "open --env-password -u \"$U\" $ZIEL"; cat "$ARB/zwei.txt"; echo bye; } > "$ARB/zwei.lftp"
+    frist 3600 lftp -f "$ARB/zwei.lftp" > "$ARB/zwei.log" 2>&1; ZRC=$?
+    cat "$ARB/zwei.log" >> "$LOG"
+    REST=$(nochmal "$ARB/zwei.log" | wc -l | tr -d ' ')
+    if [ "$ZRC" -gt 1 ] || [ "$REST" -gt 0 ]; then
+      FEHLER=1; melden "Hochladen teilweise fehlgeschlagen ($REST Datei(en) auch im zweiten Durchgang, lftp $ZRC)"
+    fi
+  fi
 fi
 
 # --- Entfernen ------------------------------------------------------------------
 if [ "$FEHLER" = 0 ] && [ "$N_WEG" -gt 0 ]; then
   { echo "$LF_SET"; echo "open --env-password -u \"$U\" $ZIEL"; echo "set cmd:fail-exit no"; sed "s#.*#rm -f \"$D/&\"#" "$ARB/weg.txt"; echo bye; } > "$ARB/weg.lftp"
-  lftp -f "$ARB/weg.lftp" >>"$LOG" 2>&1 || log "Hinweis: einige Dateien zum Entfernen fehlten schon."
+  frist 1800 lftp -f "$ARB/weg.lftp" >>"$LOG" 2>&1 || log "Hinweis: einige Dateien zum Entfernen fehlten schon."
 fi
 
 # --- Edge-Funktionen ------------------------------------------------------------
