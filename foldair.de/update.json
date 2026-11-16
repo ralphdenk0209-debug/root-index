@@ -1,7 +1,7 @@
 {
-  "build": 202611121844,
-  "version": "1.0.10",
-  "notes": "Speicherplatz-Agent: jeder Fund mit Häkchen zum An- und Abwählen, Bau-Reste in Projekten werden nicht mehr vorausgewählt, KI-Modelle (LM Studio, Ollama, Hugging Face) werden erkannt.",
-  "url": "https://foldair.de/download/Foldair-1.0.10.update",
-  "sha256": "594f50e7dd8f785ae2b88b2b484024f24c61bc1cec69de8bdf2dbefd10056458"
+  "build": 202611161727,
+  "version": "1.0.11",
+  "notes": "Neu im Agenten: „Mails sortieren“ ordnet den Posteingang nach Herkunft – Wichtiges bleibt, Werbung und Newsletter kommen nach „Unwichtig“, alles rückgängig machbar. Belege lassen sich einzeln privat oder geschäftlich ablegen; das Mail-Konto entscheidet vor. Belege ohne Anhang werden direkt als PDF gespeichert (vorher konnte ein Druckauftrag entstehen). Lokale Schnittstelle für eigene Werkzeuge.",
+  "url": "https://foldair.de/download/Foldair-1.0.11.update",
+  "sha256": "ac695ca5db0b78fd2d69ee23d2c4f20921c2398f91ff93ae1c9ea1b72e7affbe"
 }
