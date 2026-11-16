@@ -16390,6 +16390,9 @@ function rezeptFormFuellen(d){
       if(z.produkt_id && z.treffer && z.treffer.name){
         name.value = z.treffer.name;          // der Katalog-Name, nicht Rikis Lesart
         pid.value  = z.produkt_id;
+        /* 16.11.2026: Nährwerte je 100 g vom Server merken – calcMakros braucht dann den
+           geladenen Katalog nicht (Grundlebensmittel fehlen dort teils). */
+        if(z.naehrwerte_100g) row.setAttribute("data-n100", JSON.stringify(Object.assign({pid:z.produkt_id}, z.naehrwerte_100g)));
         link.innerHTML = '<span style="color:var(--greendk,var(--k-166534))">✓ '+esc(z.treffer.name)
           + (z.treffer.marke?(' · '+esc(z.treffer.marke)):'')
           + (z.treffer.score!=null?(' · Index '+z.treffer.score):' · <b>noch nicht bewertet</b>')+'</span>';
@@ -16421,7 +16424,12 @@ async function rezVorschlagOpen(){
     if(typeof premiumInfo==="function"){ premiumInfo(); } else { alert("Diese Funktion ist noch nicht für dich freigeschaltet."); }
     return;
   }
-  var kcal=""; try{ var r=await client.rpc("cb_profil"); kcal=(r.data&&r.data[0]&&r.data[0].Kalorienziel_kcal)||""; }catch(e){}
+  /* 16.11.2026 (Ralph: „650 kcal meine ich pro Portion“): das Feld ist das Ziel PRO PORTION.
+     Aus dem Profil-Tagesziel kommt nur ein Vorschlag (Hauptmahlzeit ≈ ⅓, je Mahlzeit ein Anteil),
+     den der Nutzer sieht und ändern kann. */
+  var tagesziel=0; try{ var r=await client.rpc("cb_profil"); tagesziel=parseFloat(r.data&&r.data[0]&&r.data[0].Kalorienziel_kcal)||0; }catch(e){}
+  window._rezVorTagesziel=tagesziel; window._rezVorKcalVonHand=false;
+  var kcal=tagesziel?Math.round(tagesziel/3/10)*10:"";
   var ov=document.getElementById("rezVorOv");
   if(!ov){ ov=document.createElement("div"); ov.id="rezVorOv";
     ov.style.cssText="position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-start;justify-content:center;background:rgba(20,32,48,.45);overflow:auto;padding:24px 12px";
@@ -16429,7 +16437,7 @@ async function rezVorschlagOpen(){
   }
   ov.innerHTML='<div style="background:var(--card,#fff);color:var(--ink);border-radius:16px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(20,40,70,.32);padding:20px 20px 18px;margin:auto">'
     +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:4px"><div style="font-weight:800;font-size:18px">🍳 Was koche ich?</div><button onclick="rezVorschlagClose()" style="border:0;background:var(--bg,#eef2f5);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:16px">✕</button></div>'
-    +'<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Gib die Zutaten ein, die du zuhause hast – oder <b>fotografier deinen Kühlschrank</b>. Riki schlägt Gerichte vor, die dazu passen und deinen Kalorienbedarf treffen. Die kcal-Angabe ist eine <b>Schätzung</b>.</div>'
+    +'<div style="font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:12px">Gib die Zutaten ein, die du zuhause hast – oder <b>fotografier deinen Kühlschrank</b>. Riki schlägt Gerichte vor, die dazu passen und dein <b>kcal-Ziel pro Portion</b> treffen. Die kcal werden mit den Nährwerten aus dem Katalog gerechnet – ein Richtwert, keine Messung.</div>'
     +'<button onclick="rezVorFotoWahl()" style="width:100%;box-sizing:border-box;margin-bottom:10px;padding:11px;border:1px dashed var(--green);border-radius:11px;background:var(--greenlt,var(--k-eaf5ee));color:var(--greendk,var(--k-166534));font-weight:600;cursor:pointer;font-size:13.5px">📷 Kühlschrank / Vorrat fotografieren <span style="font-weight:400;color:var(--muted)">(1–6 Bilder)</span></button>'
     +'<input type="file" id="rezVorFotoInp" accept="image/*" multiple style="display:none" onchange="rezVorFotoSenden(this.files)">'
     +'<div id="rezVorFotoMsg" style="font-size:12px;line-height:1.5;margin:-2px 0 10px"></div>'
@@ -16439,10 +16447,10 @@ async function rezVorschlagOpen(){
     +'<div id="rezVorPick" style="max-height:158px;overflow:auto;border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;background:var(--card,#fff);font-size:13px"></div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">'
       +'<div style="flex:1;min-width:150px"><label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Mahlzeit</label><select id="rezVorMz" onchange="rezVorMzUpdate()" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"><option value="">egal</option><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option>Snack</option></select></div>'
-      +'<div style="flex:1;min-width:120px"><label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Tagesbedarf kcal</label><input id="rezVorKcal" type="number" value="'+esc(String(kcal||""))+'" oninput="rezVorMzUpdate()" placeholder="z. B. 2000" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"></div>'
+      +'<div style="flex:1;min-width:120px"><label for="rezVorKcal" style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">kcal pro Portion</label><input id="rezVorKcal" type="number" min="50" max="3000" step="10" value="'+esc(String(kcal||""))+'" oninput="window._rezVorKcalVonHand=true;rezVorMzUpdate()" placeholder="z. B. 600" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"></div>'
     +'</div>'
     +'<div id="rezVorMzKcal" style="font-size:12.5px;color:var(--greendk,var(--k-166534));font-weight:600;margin-top:6px;min-height:16px"></div>'
-    +(kcal?'':'<div style="font-size:11.5px;color:var(--muted);margin-top:3px">Kein Tagesziel im Profil – trag hier eins ein oder lass es leer (dann schätzt Riki eine normale Portion).</div>')
+    +(tagesziel?'':'<div style="font-size:11.5px;color:var(--muted);margin-top:3px">Trag ein, wie viele kcal eine Portion haben soll – oder lass es leer (dann schätzt Riki eine normale Portion).</div>')
     +'<button onclick="rezVorschlagRun()" id="rezVorBtn" style="width:100%;margin-top:14px;padding:11px;border:0;border-radius:11px;background:var(--green);color:var(--auf-gruen);font-weight:700;font-size:14px;cursor:pointer">Vorschläge holen</button>'
     +'<div id="rezVorMsg" style="font-size:12.5px;margin-top:9px;line-height:1.5"></div>'
     +'<div id="rezVorList" style="margin-top:6px"></div>'
@@ -16451,21 +16459,27 @@ async function rezVorschlagOpen(){
   setTimeout(function(){ try{ rezVorMzUpdate(); }catch(e){} try{ rezVorFilter(); }catch(e){} var t=document.getElementById("rezVorZut"); if(t) t.focus(); },50);
 }
 function rezVorschlagClose(){ var ov=document.getElementById("rezVorOv"); if(ov) ov.style.display="none"; }
-/* Kalorien für die gewählte Mahlzeit anzeigen (Anteil am Tagesbedarf). Nur Anzeige –
-   Riki bekommt weiterhin Tagesbedarf + Mahlzeit und rechnet den Anteil selbst. */
+/* Anteil einer Mahlzeit am Tagesziel – nur für den VORSCHLAG im Feld „kcal pro Portion“.
+   Riki bekommt das Ziel pro Portion (kcal_portion), nicht mehr den Tagesbedarf. */
 var REZ_MZ_ANTEIL={ "Frühstück":0.25, "Mittagessen":0.35, "Abendessen":0.30, "Snack":0.12 };
 function rezVorMzUpdate(){
   var el=document.getElementById("rezVorMzKcal"); if(!el) return;
-  var kcal=parseFloat((document.getElementById("rezVorKcal")||{}).value)||0;
+  var inp=document.getElementById("rezVorKcal");
   var mz=((document.getElementById("rezVorMz")||{}).value||"");
-  if(!kcal){ el.textContent=""; return; }
-  if(mz && REZ_MZ_ANTEIL[mz]){
-    var z=Math.round(kcal*REZ_MZ_ANTEIL[mz]/10)*10;
-    el.innerHTML='🎯 Ziel für '+esc(mz)+': ≈ <b>'+z+' kcal</b> <span style="color:var(--muted);font-weight:400">(von '+Math.round(kcal)+' kcal/Tag)</span>';
-  } else {
-    var h=Math.round(kcal/3/10)*10;
-    el.innerHTML='🎯 Hauptmahlzeit: ≈ <b>'+h+' kcal</b> <span style="color:var(--muted);font-weight:400">(≈ ⅓ von '+Math.round(kcal)+' kcal/Tag)</span>';
+  var tag=window._rezVorTagesziel||0;
+  /* Solange der Nutzer das Feld nicht selbst geändert hat, folgt der Vorschlag der Mahlzeit. */
+  if(tag && inp && !window._rezVorKcalVonHand){
+    var ant=(mz && REZ_MZ_ANTEIL[mz]) ? REZ_MZ_ANTEIL[mz] : 1/3;
+    inp.value=Math.round(tag*ant/10)*10;
   }
+  var kcal=parseFloat((inp||{}).value)||0;
+  if(!kcal){ el.textContent=""; return; }
+  var t='🎯 Ziel: ≈ <b>'+Math.round(kcal)+' kcal pro Portion</b>';
+  if(tag && !window._rezVorKcalVonHand){
+    var ant2=(mz && REZ_MZ_ANTEIL[mz]) ? REZ_MZ_ANTEIL[mz] : 1/3;
+    t+=' <span style="color:var(--muted);font-weight:400">(Vorschlag aus deinem Tagesziel '+Math.round(tag)+' kcal: '+(mz&&REZ_MZ_ANTEIL[mz]?esc(mz)+' ≈ '+Math.round(ant2*100)+' %':'Hauptmahlzeit ≈ ⅓')+' – du kannst ihn ändern)</span>';
+  }
+  el.innerHTML=t;
 }
 /* Zutaten-Quelle für die Anhak-Liste: der Zutaten-Stamm (generische Namen), sonst der
    Produktkatalog. Einmal aufgebaut, dedupliziert, alphabetisch. */
@@ -17727,9 +17741,12 @@ async function rezVorschlagRun(){
   if(msg){ msg.style.color="var(--muted)"; msg.textContent="🤖 Riki sucht passende Gerichte …"; }
   try{
     var s=await client.auth.getSession(); var tok=(s&&s.data&&s.data.session)?s.data.session.access_token:client.supabaseKey;
-    var r=await fetch(client.supabaseUrl+"/functions/v1/riki-rezept-vorschlag",{method:"POST",
+    /* Nur lokal (localhost) für Tests umstellbar, z. B. auf eine Testkopie der Funktion. */
+    var _rvFn="riki-rezept-vorschlag";
+    try{ if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && localStorage.getItem("rezVorFunktion")) _rvFn=localStorage.getItem("rezVorFunktion"); }catch(e){}
+    var r=await fetch(client.supabaseUrl+"/functions/v1/"+_rvFn,{method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok,"apikey":client.supabaseKey},
-      body:JSON.stringify({zutaten:zutaten, kcal_tag:kcal, mahlzeit:mz, anzahl:3})});
+      body:JSON.stringify({zutaten:zutaten, kcal_portion:kcal, mahlzeit:mz, anzahl:3})});
     var d=await r.json();
     if(!r.ok||d.error){ throw new Error(d.error||("Fehler "+r.status)); }
     window._rezVorschlaege=d.vorschlaege||[];
@@ -17744,7 +17761,12 @@ function rezVorschlagRender(d){
   list.innerHTML=vs.map(function(v,i){
     var ef=v.ernaehrungsform?('<span style="font-size:11px;color:var(--muted)"> · '+esc(v.ernaehrungsform)+'</span>'):'';
     var kc=(v.kcal_geschaetzt!=null)?('~'+Math.round(v.kcal_geschaetzt)+' kcal/Portion'):'kcal unklar';
-    var passt=(v.passt_zu_kcal===false)?'<span style="font-size:11px;color:var(--k-b45309)"> · passt nicht ganz zum Bedarf</span>':'';
+    var passt=(v.passt_zu_kcal===false)?'<span style="font-size:11px;color:var(--k-b45309)"> · weicht vom Ziel ab</span>':'';
+    /* 16.11.2026: wie viele Zutaten Nährwerte aus dem Katalog haben (Server rechnet nach). */
+    if(v.zutaten_mit_naehrwerten!=null){
+      var _gz=(v.zutaten_mit_naehrwerten||0)+(v.zutaten_ohne_naehrwerte||0);
+      passt+='<span style="font-size:11px;color:var(--muted)"> · '+v.zutaten_mit_naehrwerten+' von '+_gz+' Zutaten mit Nährwerten</span>';
+    }
     var zl=(Array.isArray(v.zutaten)?v.zutaten:[]).map(function(z){ return esc((z.menge?(z.menge+' '):'')+(z.name||''))+(z.aus_vorrat===false?' <span style="color:var(--k-b45309)">(dazu)</span>':''); }).join(' · ');
     /* N1 13.11.2026 (Sandra: „Vorschläge ohne Anleitung“): Schritte aufklappbar auf der Karte. */
     var st=rezVorschlagSchritte(v);
@@ -17772,10 +17794,15 @@ async function rezVorschlagUebernehmen(i){
   /* Jede Zutat SERVERSEITIG zuordnen (cb_zutat_zuordnen: Singular/Plural, Klammern, generisch
      bevorzugt) – dasselbe Gehirn wie der Foto-Weg. Erst dann füllen, damit die „X von Y erkannt"-
      Zeile stimmt und der richtige Katalog-Eintrag drinsteht (Ralph 23.07.: „Eier → Ei"). */
-  var zut=(Array.isArray(v.zutaten)?v.zutaten:[]).map(function(z){ return {name:z.name, menge:z.menge, menge_g:z.menge_g, produkt_id:null, treffer:null}; });
+  /* 16.11.2026: der Server liefert die Zuordnung schon mit (produkt_id, treffer, naehrwerte_100g,
+     menge_g). Nur bei älteren Antworten ohne Zuordnung wird hier nachgefragt. */
+  var zut=(Array.isArray(v.zutaten)?v.zutaten:[]).map(function(z){ return {name:z.name, menge:z.menge, menge_g:z.menge_g,
+    produkt_id:z.produkt_id||null, treffer:(z.produkt_id&&z.treffer)?z.treffer:null, naehrwerte_100g:z.naehrwerte_100g||null, _server:("produkt_id" in z)}; });
   var zug=0;
   await Promise.all(zut.map(async function(z){
+    if(z.produkt_id){ zug++; return; }
     if(!z.name) return;
+    if(z._server){ var oz=(v.zutaten||[]).find(function(x){ return x.name===z.name; }); z.treffer={grund:(oz&&oz.treffer&&oz.treffer.grund)||"nicht im Katalog"}; return; }
     try{
       var r=await client.rpc("cb_zutat_zuordnen",{p_name:z.name});
       var t=r&&r.data; if(Array.isArray(t)) t=t[0];
@@ -17784,12 +17811,15 @@ async function rezVorschlagUebernehmen(i){
     }catch(e){}
   }));
   var _st=rezVorschlagSchritte(v);
+  var np=v.naehrwerte_portion||{ kcal:v.kcal_geschaetzt };
+  var ohneNw=zut.filter(function(z){ return !z.produkt_id; }).map(function(z){ return z.name; });
   var d={ vorschlag:{ name:v.name, portionen:v.portionen, zeit_min:v.zeit_min, zubereitung:(_st.length?_st.map(function(x,k){ return (k+1)+'. '+x; }).join('\n'):v.zubereitung),
-    ernaehrungsform:v.ernaehrungsform, naehrwerte_portion:{ kcal:v.kcal_geschaetzt }, zutaten:zut },
-    warnungen:['Die kcal-Angabe ist eine Schätzung – danach den Knopf „Nährwerte aus Zutaten berechnen“ drücken für die echten Werte.'
-      +(zug<zut.length?' Nicht zugeordnete Zutaten bleiben freie Zutat (kannst du von Hand verknüpfen).':'')],
+    ernaehrungsform:v.ernaehrungsform, naehrwerte_portion:{ kcal:np.kcal, protein:np.protein, kh:np.kh, fett:np.fett }, zutaten:zut },
+    warnungen:(ohneNw.length?['Ohne Nährwerte (nicht im Katalog): '+ohneNw.join(', ')+' – du kannst sie von Hand verknüpfen.']:[]),
     zutaten_gesamt:zut.length, zugeordnet:zug };
   try{ rezeptFormFuellen(d); }catch(e){}
+  /* N8: Nährwerte gleich aus den Zutaten rechnen, nicht erst auf Knopfdruck. */
+  try{ calcMakros(); }catch(e){}
 }
 if(typeof window!=='undefined'){ window.rezVorschlagOpen=rezVorschlagOpen; window.rezVorschlagClose=rezVorschlagClose; window.rezVorschlagRun=rezVorschlagRun; window.rezVorschlagUebernehmen=rezVorschlagUebernehmen; }
 function calcMakros(){
@@ -17802,7 +17832,9 @@ function calcMakros(){
     const unit=(row.querySelector(".rzZu")||{}).value||"g";
     if(nm) total++;
     const g=rzToGrams(amt,unit,pid)||0;
-    if(pid&&g>0){ const pr=(ALL||[]).find(x=>x.id===pid);
+    if(pid&&g>0){ let pr=(ALL||[]).find(x=>x.id===pid);
+      /* 16.11.2026: nicht im geladenen Katalog → Nährwerte, die der Server mitgeliefert hat. */
+      if(!pr){ try{ const n=JSON.parse(row.getAttribute("data-n100")||"null"); if(n&&n.pid===pid&&n.kcal!=null) pr={m_kcal:n.kcal,m_protein:n.protein,m_kh:n.kh,m_fett:n.fett}; }catch(e){} }
       if(pr){ linked++; const fac=g/100;
         k+=(num(pr.m_kcal)||0)*fac; p+=(num(pr.m_protein)||0)*fac; kh+=(num(pr.m_kh)||0)*fac; f+=(num(pr.m_fett)||0)*fac; } }
   });
