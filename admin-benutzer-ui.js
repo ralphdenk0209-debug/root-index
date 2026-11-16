@@ -126,6 +126,10 @@ async function loadUsers(){
   /* 05.11.2026 (#889, Ralph): welche Funktionen nutzen die Nutzer - gezaehlt im Server (cb_admin_funktionsnutzung). */
   var fn=null; try{ const f=await client.rpc("cb_admin_funktionsnutzung"); fn=f.data||null;
     if(fn&&fn.nutzer) (data||[]).forEach(function(u){ u._fn=fn.nutzer[u.benutzer_id]||null; }); }catch(e){}
+  /* 16.11.2026 (Ralph: "stimmen die 112 nutzer ... ohne die bestimmten?"): interne Konten (Ralph, Sandra,
+     kontakt@, Apple-Pruefkonten) kommen aus cb_admin_nutzer_intern - dieselbe Liste wie die Funktions-Auswertung. */
+  try{ const it=await client.rpc("cb_admin_nutzer_intern"); var im={}; (it.data||[]).forEach(function(x){ im[x.benutzer_id]=x.grund||'intern'; });
+    (data||[]).forEach(function(u){ u._intern=im[u.benutzer_id]||null; }); window._uInternOk=!it.error; }catch(e){ window._uInternOk=false; }
   renderUsers(data||[], zahlen, fn);
 }
 var _UP_FARBE={'iPhone-App':['#0a84ff','📱'],'Play-App':['#1a9c4a','🤖'],'Android':['#5f7f6a','🤖'],'iPhone-Browser':['#6b7280','🌐'],'Web':['#6b7280','🌐']};
@@ -300,11 +304,101 @@ function _uPrem(u){
   else if(u.subscription_status==='canceled') unten='<div style="'+klein+';color:var(--k-b45309)">gekündigt</div>';
   return '<div style="display:flex;flex-direction:column;align-items:center">'+oben+unten+'</div>';
 }
+/* 16.11.2026 (Ralph: "anordnung in der tabelle oben sollen filtermoeglichkeiten sein, z.b. absteigend zuletzt genutzt").
+   Sortieren und Filtern geschieht nur in der Anzeige, an den Daten aendert sich nichts. Die Auswahl merkt sich der
+   Browser (localStorage, nur Bequemlichkeit). Standard: zuletzt aktiv, neueste zuerst; interne Konten ausgeblendet. */
+var _U={rows:[], st:null};
+var _U_SORT=[
+  ['zuletzt_ab','Zuletzt aktiv – neueste zuerst'],['zuletzt_auf','Zuletzt aktiv – älteste zuerst'],
+  ['seit_ab','Dabei seit – neueste zuerst'],['seit_auf','Dabei seit – älteste zuerst'],
+  ['tage_ab','Aktive Tage (Tagebuch) – meiste zuerst'],['erf_ab','Erfasste Produkte – meiste zuerst'],
+  ['fn_ab','Genutzte Funktionen – meiste zuerst'],['name_auf','Name A–Z']];
+function _uStStandard(){ return {sort:'zuletzt_ab', zugang:'', anm:'', fn:'', intern:'aus', q:''}; }
+function _uStLaden(){
+  var d=_uStStandard();
+  try{ var s=JSON.parse(localStorage.getItem('admUsrFilter')||'null'); if(s) for(var k in d){ if(typeof s[k]==='string') d[k]=s[k]; } }catch(e){}
+  if(!_U_SORT.some(function(x){ return x[0]===d.sort; })) d.sort='zuletzt_ab';
+  return d;
+}
+function _uStSpeichern(){ try{ localStorage.setItem('admUsrFilter', JSON.stringify(_U.st)); }catch(e){} }
+function _uZeit(s){ if(!s) return null; var t=Date.parse(s); return isNaN(t)?null:t; }
+function _uFnListe(u){ var f=u._fn; if(!f) return []; return f.liste||(f.namen||[]).map(function(n){ return {kurz:n,name:n}; }); }
+function _uWert(u,sort){
+  if(sort==='zuletzt_ab'||sort==='zuletzt_auf') return _uZeit(u.letzte_aktivitaet);
+  if(sort==='seit_ab'||sort==='seit_auf') return _uZeit(u.angelegt_am);
+  if(sort==='tage_ab') return u._tb&&u._tb.tage?Number(u._tb.tage):null;
+  if(sort==='erf_ab') return Number(u.produkte_erfasst||0)||null;
+  if(sort==='fn_ab') return _uFnListe(u).length||null;
+  return String(u.name||u.email||'').toLowerCase();
+}
+function _uSortieren(rows,sort){
+  var auf=/_auf$/.test(sort);
+  return rows.slice().sort(function(a,b){
+    var x=_uWert(a,sort), y=_uWert(b,sort);
+    if(x===null&&y===null) return 0; if(x===null) return 1; if(y===null) return -1;   /* ohne Wert immer ans Ende */
+    if(typeof x==='string') return x.localeCompare(y,'de');
+    return auf?(x-y):(y-x);
+  });
+}
+function _uPasst(u,st){
+  if(st.intern==='aus' && (u._intern||u.is_admin)) return false;
+  if(st.intern==='nur' && !(u._intern||u.is_admin)) return false;
+  var p=u._pl||null, ger=(p&&p.geraete)||[];
+  if(st.zugang==='__ohne'){ if(ger.length) return false; }
+  else if(st.zugang && ger.indexOf(st.zugang)<0) return false;
+  if(st.anm==='__ohne'){ if(p&&p.anmeldung) return false; }
+  else if(st.anm && !(p&&p.anmeldung===st.anm)) return false;
+  var l=_uFnListe(u);
+  if(st.fn==='__keine'){ if(l.length) return false; }
+  else if(st.fn==='__aktiv30'){ if(!l.some(function(x){ return x.aktiv_30t; })) return false; }
+  else if(st.fn && !l.some(function(x){ return (x.kurz||x.name)===st.fn; })) return false;
+  if(st.q){ var q=st.q.toLowerCase(); if(String(u.name||'').toLowerCase().indexOf(q)<0 && String(u.email||'').toLowerCase().indexOf(q)<0) return false; }
+  return true;
+}
+function _uSel(key,wert,opts){
+  return '<select onchange="_uSet(\''+key+'\',this.value)" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;max-width:260px">'
+    +opts.map(function(o){ return '<option value="'+esc(o[0])+'"'+(o[0]===wert?' selected':'')+'>'+esc(o[1])+'</option>'; }).join('')+'</select>';
+}
+function _uLeiste(rows){
+  var st=_U.st, ger={}, anm={}, fns={};
+  rows.forEach(function(u){
+    var p=u._pl; if(p){ (p.geraete||[]).forEach(function(g){ ger[g]=(ger[g]||0)+1; }); if(p.anmeldung) anm[p.anmeldung]=(anm[p.anmeldung]||0)+1; }
+    _uFnListe(u).forEach(function(x){ var k=x.kurz||x.name; if(!fns[k]) fns[k]={n:0,name:x.name||k}; fns[k].n++; });
+  });
+  function liste(obj){ return Object.keys(obj).sort(function(a,b){ return (obj[b].n||obj[b])-(obj[a].n||obj[a]); }); }
+  var oZug=[['','alle']].concat(liste(ger).map(function(g){ return [g,g+' ('+ger[g]+')']; }),[['__ohne','ohne Angabe']]);
+  var oAnm=[['','alle']].concat(liste(anm).map(function(a){ return [a,a+' ('+anm[a]+')']; }),[['__ohne','ohne Angabe']]);
+  var oFn=[['','alle'],['__aktiv30','irgendeine, letzte 30 Tage'],['__keine','noch keine genutzt']].concat(liste(fns).map(function(k){ return [k,k+' ('+fns[k].n+')']; }));
+  var oInt=[['aus','ausblenden'],['mit','mit anzeigen'],['nur','nur interne']];
+  var lab='display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);font-weight:700';
+  return '<div style="display:flex;flex-wrap:wrap;gap:10px 14px;align-items:flex-end;margin:0 0 10px;padding:10px 12px;background:var(--card);border:1px solid var(--line);border-radius:12px">'
+    +'<label style="'+lab+'">Sortieren'+_uSel('sort',st.sort,_U_SORT)+'</label>'
+    +'<label style="'+lab+'">Zugang'+_uSel('zugang',st.zugang,oZug)+'</label>'
+    +'<label style="'+lab+'">Anmeldung'+_uSel('anm',st.anm,oAnm)+'</label>'
+    +'<label style="'+lab+'">Funktion'+_uSel('fn',st.fn,oFn)+'</label>'
+    +'<label style="'+lab+'">Interne Konten'+_uSel('intern',st.intern,oInt)+'</label>'
+    +'<label style="'+lab+'">Suche<input type="search" value="'+esc(st.q)+'" oninput="_uSet(\'q\',this.value)" placeholder="Name oder E-Mail" style="padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;width:170px"></label>'
+    +'<button onclick="_uZurueck()" style="padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:12.5px;cursor:pointer">Zurücksetzen</button>'
+    +'<div id="usrZahl" style="margin-left:auto;font-size:12.5px;color:var(--muted);align-self:center"></div>'
+    +'</div>';
+}
+function _uSet(key,wert){ if(!_U.st) _U.st=_uStLaden(); _U.st[key]=wert; _uStSpeichern(); _uZeichnen(); }
+function _uZurueck(){ _U.st=_uStStandard(); _uStSpeichern(); var b=document.getElementById('usrBar'); if(b) b.innerHTML=_uLeiste(_U.rows); _uZeichnen(); }
+if(typeof window!=='undefined'){ window._uSet=_uSet; window._uZurueck=_uZurueck; }
 function renderUsers(rows, z, fn){
   ensureRpillCss();
-  const th='padding:9px 10px;font-size:11.5px;text-align:left;white-space:nowrap;color:var(--muted);font-weight:700';
+  _U.rows=rows||[]; if(!_U.st) _U.st=_uStLaden();
   let kopf;
-  if(z){
+  var intern=rows.filter(function(u){ return u._intern||u.is_admin; });
+  if(z && window._uInternOk){
+    /* 16.11.2026: echte Nutzer = alle Konten ohne interne Konten und ohne Admin (wie die Funktions-Auswertung). */
+    kopf='<b>'+(rows.length-intern.length)+' echte Nutzer</b> · dazu '+intern.length+' interne Konten ('
+      +intern.map(function(u){ return esc(u._intern||u.name||u.email||''); }).join(', ')+') = '+z.konten+' Konten · <b>'+z.premium+'</b> Nutzer mit Premium';
+    if(rows.length!==z.konten) kopf+=' <span style="color:var(--k-dc2626)">(Liste zeigt '+rows.length+' Zeilen)</span>';
+    var ok0=(z.ohne_konto||[]);
+    if(ok0.length) kopf+='<br>'+z.anmeldungen+' Registrierungen insgesamt – '+ok0.length+' davon ohne Konto (E-Mail nie bestätigt, deshalb nicht in der Liste): '
+      +ok0.map(function(x){ return esc(x.email)+' ('+_uDate(x.registriert)+')'; }).join(', ');
+  } else if(z){
     kopf='<b>'+z.nutzer+' Nutzer</b> + '+z.admins+' Admin = '+z.konten+' Konten · <b>'+z.premium+'</b> Nutzer mit Premium';
     var ok=(z.ohne_konto||[]);
     if(ok.length) kopf+='<br>'+z.anmeldungen+' Registrierungen insgesamt – '+ok.length+' davon ohne Konto (E-Mail nie bestätigt, deshalb nicht in der Liste): '
@@ -329,6 +423,17 @@ function renderUsers(rows, z, fn){
      vorhandene Breite passen. Dafuer engeres Innenmass und kleinere Schrift -
      die Tabelle bleibt in ihrer Spalte, zeigt aber alles. */
   h+=_uFnUebersicht(fn);
+  h+='<div id="usrBar">'+_uLeiste(_U.rows)+'</div><div id="usrTabWrap"></div><style>.usrTab tr:hover td{background:var(--bg)}</style><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
+  document.getElementById("usersTable").innerHTML=h;
+  _uZeichnen();
+}
+function _uZeichnen(){
+  var wrap=document.getElementById('usrTabWrap'); if(!wrap) return;
+  var st=_U.st||_uStLaden(), alle=_U.rows||[];
+  var rows=_uSortieren(alle.filter(function(u){ return _uPasst(u,st); }), st.sort);
+  var zahl=document.getElementById('usrZahl'); if(zahl) zahl.innerHTML='<b>'+rows.length+'</b> von '+alle.length+' Konten';
+  const th='padding:9px 10px;font-size:11.5px;text-align:left;white-space:nowrap;color:var(--muted);font-weight:700';
+  let h='';
   /* 05.11.2026, Ralph: "tabelle oben ist gut, die nutzer infos nicht - sauber ueber die gesamte breite".
      Vorher 12 Spalten, die rechts ueber den Rand liefen. Jetzt 8: Registriert steht unter dem Namen,
      Premium/Abo/seit/bis in einer Spalte, Funktionen als Plaketten. Gleiche Breite wie der Block oben. */
@@ -341,7 +446,8 @@ function renderUsers(rows, z, fn){
   rows.forEach(u=>{
     var nm=esc((u.name||u.email||u.benutzer_id)).replace(/\x27/g,"");
     h+='<tr>'
-      +'<td style="'+td+'"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(u.name||u.benutzer_id)+'</div>'
+      +'<td style="'+td+'"><div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(u.name||u.benutzer_id)
+        +((u._intern||u.is_admin)?' <span title="'+esc(u._intern||'Admin')+'" style="font-size:10.5px;font-weight:700;padding:1px 6px;border-radius:999px;background:var(--bg);color:var(--muted)">intern</span>':'')+'</div>'
         +'<div title="'+esc(u.email||"")+'" style="font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(u.email||"")+'</div>'
         +'<div style="font-size:11px;color:var(--k-c7c2b8);margin-top:2px">dabei seit '+_uDate(u.angelegt_am)+'</div></td>'
       +'<td style="'+td+'">'+_uUeber(u)+'</td>'
@@ -356,8 +462,9 @@ function renderUsers(rows, z, fn){
       +'</td>'
       +'</tr>';
   });
-  h+='</table><style>.usrTab tr:hover td{background:var(--bg)}</style><div id="usersMsg" style="font-size:13px;margin-top:8px;height:18px"></div>';
-  document.getElementById("usersTable").innerHTML=h;
+  if(!rows.length) h+='<tr><td colspan="8" style="'+td+';text-align:center;color:var(--muted);padding:18px">Keine Konten für diese Auswahl.</td></tr>';
+  h+='</table>';
+  wrap.innerHTML=h;
 }
 async function setUserPremium(bid,val){
   const msg=document.getElementById("usersMsg");
