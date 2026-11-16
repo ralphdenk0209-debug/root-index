@@ -278,3 +278,19 @@ Deno.test("Stückzahl wird angepasst, Schreibweise bleibt („3 Stück“ → �
   assert(d.vorschlaege[0].zubereitung.includes("Eier (" + ei.menge + ")"), d.vorschlaege[0].zubereitung);
   assert(Math.abs(d.vorschlaege[0].kcal_geschaetzt - 330) / 330 <= 0.15, String(d.vorschlaege[0].kcal_geschaetzt));
 });
+
+Deno.test("Ernährungsform vegan: klare Regel im Prompt, keine Butter im Vorrat, nicht passende fallen weg", async () => {
+  const v2 = structuredClone(VORSCHLAG);
+  const vegan = structuredClone(v2.vorschlaege[0]) as any;
+  vegan.name = "Gemüsepfanne"; vegan.ernaehrungsform = "vegan";
+  vegan.zutaten = [{ name: "Gemüsemischung", menge: "300 g", menge_g: 300, aus_vorrat: true }, { name: "Olivenöl", menge: "1 EL", menge_g: 10, aus_vorrat: false }];
+  (v2 as any).vorschlaege = [v2.vorschlaege[0], vegan]; // erster ist vegetarisch
+  zuruecksetzen(antwortMit(v2));
+  const d = await (await handler(anfrage({ kcal_tag: undefined, ernaehrungsform: "vegan" }))).json();
+  const frage = anthropicAufrufe[0].body.messages[0].content as string;
+  assert(frage.includes("NUR VEGANE Gerichte"), frage);
+  assert(!frage.includes("- Butter →"), "Butter darf bei vegan nicht im Vorrat stehen");
+  assertEquals(d.vorschlaege.length, 1);
+  assertEquals(d.vorschlaege[0].name, "Gemüsepfanne");
+  assertEquals(d.meta.ernaehrungsform, "vegan");
+});

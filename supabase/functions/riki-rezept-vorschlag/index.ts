@@ -432,12 +432,19 @@ Deno.serve(async (req) => {
       : "Kein Kalorienziel angegeben.";
 
     // Katalogwerte der genannten Zutaten + üblicher Vorrat vorab – Riki rechnet damit.
-    const vorab = await zuordnen(sb, [...zutaten, ...VORRAT]);
+    // 16.11.2026 (Ralph: Auswahl vegan/vegetarisch): passende Vorratsliste, klare Regel im Text.
+    const vorrat = ef === "vegan" ? VORRAT.filter((n) => n !== "Butter") : VORRAT;
+    const efTxt = ef === "vegan"
+      ? " Ernährungsform: NUR VEGANE Gerichte – keine tierischen Zutaten (kein Fleisch, Fisch, Ei, Milch, Käse, Quark, Joghurt, Butter, Honig). Genannte tierische Zutaten lässt du weg."
+      : ef === "vegetarisch"
+      ? " Ernährungsform: NUR VEGETARISCHE Gerichte – kein Fleisch, kein Fisch, keine Gelatine. Genannte Zutaten dieser Art lässt du weg."
+      : "";
+    const vorab = await zuordnen(sb, [...zutaten, ...vorrat]);
 
     const frage =
       `Zutaten, die ich zuhause habe: ${zutaten.join(", ")}.\n` +
-      `${zielTxt}${mahlzeit ? " Mahlzeit: " + mahlzeit + "." : ""}${ef ? " Nur " + ef + "." : ""}` +
-      ` Portionen: ${portionenWunsch}.\n\n` + spickzettel(zutaten, VORRAT, vorab) + `\n\n` +
+      `${zielTxt}${mahlzeit ? " Mahlzeit: " + mahlzeit + "." : ""}${efTxt}` +
+      ` Portionen: ${portionenWunsch}.\n\n` + spickzettel(zutaten, vorrat, vorab) + `\n\n` +
       `Schlage ${anzahl} verschiedene, machbare Gerichte vor, die überwiegend diese Zutaten nutzen und deren Portion das Ziel trifft. ` +
       `Gib für jede Zutat menge_g an. kcal pro Portion als ehrliche Rechnung mit den Katalogwerten. Nichts erfinden, was den Rahmen sprengt.`;
 
@@ -543,6 +550,15 @@ Deno.serve(async (req) => {
       v.schritte = String(v.zubereitung ?? "").split(/\n+/).map((x: string) => x.replace(/^\s*\d+[.)]\s*/, "").trim()).filter((x: string) => x.length > 0);
     }
 
+    // Gewünschte Ernährungsform: Riki kennzeichnet jeden Vorschlag; nicht passende fallen weg,
+    // solange mindestens einer passt (sonst bleiben sie, sichtbar markiert).
+    if (ef) {
+      const erlaubt = ef === "vegan" ? ["vegan"] : ef === "vegetarisch" ? ["vegan", "vegetarisch"] : ["vegan", "vegetarisch", "omnivor"];
+      for (const v of vorschlaege) v.passt_zu_ernaehrung = erlaubt.includes(String(v.ernaehrungsform));
+      const passend = vorschlaege.filter((v: any) => v.passt_zu_ernaehrung);
+      if (passend.length) vorschlaege.splice(0, vorschlaege.length, ...passend);
+    }
+
     if (!vorschlaege.length) {
       return new Response(JSON.stringify({ error: "Riki hat keine verwertbaren Vorschläge geliefert. Versuch es mit mehr oder anderen Zutaten." }),
         { status: 502, headers: { ...CORS, "Content-Type": "application/json" } });
@@ -557,7 +573,7 @@ Deno.serve(async (req) => {
       meta: {
         modell: bedientVon, kosten_usd: Number(kosten.toFixed(6)), dauer_ms: Date.now() - t0,
         kcal_tag: isFinite(kcalTag) && kcalTag > 0 ? Math.round(kcalTag) : null, mahlzeit,
-        kcal_portion: ziel, ziel_quelle: zielQuelle,
+        kcal_portion: ziel, ziel_quelle: zielQuelle, ernaehrungsform: ef,
         heute_genutzt: (limit?.heute_genutzt ?? 0) + 1, limit_tag: limit?.limit_tag,
       },
     }), { headers: { ...CORS, "Content-Type": "application/json" } });

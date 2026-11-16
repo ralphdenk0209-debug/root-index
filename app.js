@@ -16447,6 +16447,8 @@ async function rezVorschlagOpen(){
     +'<div id="rezVorPick" style="max-height:158px;overflow:auto;border:1px solid var(--line);border-top:0;border-radius:0 0 8px 8px;background:var(--card,#fff);font-size:13px"></div>'
     +'<div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:12px">'
       +'<div style="flex:1;min-width:150px"><label style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Mahlzeit</label><select id="rezVorMz" onchange="rezVorMzUpdate()" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"><option value="">egal</option><option>Frühstück</option><option>Mittagessen</option><option>Abendessen</option><option>Snack</option></select></div>'
+      /* 16.11.2026 (Ralph): Auswahl vegan / vegetarisch – Riki schlägt dann nur solche Gerichte vor. */
+      +'<div style="flex:1;min-width:120px"><label for="rezVorEf" style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">Ernährung</label><select id="rezVorEf" style="width:100%;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"><option value="">alles</option><option value="vegetarisch">vegetarisch</option><option value="vegan">vegan</option></select></div>'
       +'<div style="flex:1;min-width:120px"><label for="rezVorKcal" style="font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:3px">kcal pro Portion</label><input id="rezVorKcal" type="number" min="50" max="3000" step="10" value="'+esc(String(kcal||""))+'" oninput="window._rezVorKcalVonHand=true;rezVorMzUpdate()" placeholder="z. B. 600" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--line);border-radius:9px;font-size:13.5px;background:var(--bg);color:var(--ink)"></div>'
     +'</div>'
     +'<div id="rezVorMzKcal" style="font-size:12.5px;color:var(--greendk,var(--k-166534));font-weight:600;margin-top:6px;min-height:16px"></div>'
@@ -17734,9 +17736,11 @@ async function rezVorschlagRun(){
   var zutaten=zutRaw.split(/[\n,;]+/).map(function(s){return s.trim();}).filter(function(s){return s.length>0;});
   var msg=document.getElementById("rezVorMsg"), list=document.getElementById("rezVorList"), btn=document.getElementById("rezVorBtn");
   if(list) list.innerHTML="";
-  if(zutaten.length<2){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Bitte mindestens 2 Zutaten eingeben."; } return; }
+  /* N6 (16.11.2026): eine Zutat reicht – wie Server und iPhone. */
+  if(zutaten.length<1){ if(msg){ msg.style.color="var(--k-dc2626)"; msg.textContent="Bitte mindestens eine Zutat eingeben."; } return; }
   var kcal=parseFloat((document.getElementById("rezVorKcal")||{}).value)||null;
   var mz=((document.getElementById("rezVorMz")||{}).value||"")||null;
+  var ef=((document.getElementById("rezVorEf")||{}).value||"")||null;
   if(btn){ btn.disabled=true; btn.textContent="Riki denkt nach …"; }
   if(msg){ msg.style.color="var(--muted)"; msg.textContent="🤖 Riki sucht passende Gerichte …"; }
   try{
@@ -17746,7 +17750,7 @@ async function rezVorschlagRun(){
     try{ if(/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && localStorage.getItem("rezVorFunktion")) _rvFn=localStorage.getItem("rezVorFunktion"); }catch(e){}
     var r=await fetch(client.supabaseUrl+"/functions/v1/"+_rvFn,{method:"POST",
       headers:{"Content-Type":"application/json","Authorization":"Bearer "+tok,"apikey":client.supabaseKey},
-      body:JSON.stringify({zutaten:zutaten, kcal_portion:kcal, mahlzeit:mz, anzahl:3})});
+      body:JSON.stringify({zutaten:zutaten, kcal_portion:kcal, mahlzeit:mz, ernaehrungsform:ef, anzahl:3})});
     var d=await r.json();
     if(!r.ok||d.error){ throw new Error(d.error||("Fehler "+r.status)); }
     window._rezVorschlaege=d.vorschlaege||[];
