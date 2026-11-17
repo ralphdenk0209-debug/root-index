@@ -78,6 +78,14 @@ function angebotsfelder(tx: any) {
   };
 }
 
+// 17.11.2026 N100a: Tagessumme in kauf_ereignis_tag (messung.kauf_tag), ohne Nutzerkennung.
+// Darf den Kauf nie stoeren - Fehler beim Zaehlen werden geschluckt.
+async function zaehlen(admin: any, ereignis: string, grund?: string) {
+  try {
+    await admin.rpc("cb_kauf_ereignis", { p_ereignis: ereignis, p_plattform: "server-apple", p_grund: grund ? grund.slice(0, 60) : null });
+  } catch (_e) { /* egal */ }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   let body: any = {};
@@ -127,10 +135,13 @@ Deno.serve(async (req) => {
       p_roh: { produkt: tx.productId, ablauf: tx.expiresDate, typ: tx.type, ...angebotsfelder(tx) },
     });
     if (error) throw error;
+    await zaehlen(admin, "kauf_ok");
     return json({ ok: true, ergebnis: data });
   } catch (e) {
     const s: any = e;
     console.error("apple-kauf Fehler", s?.constructor?.name, s?.status ?? "", String(s?.message || s));
+    // 17.11.2026 N100a: jeder Fehler zaehlt und warnt (bis 05.11. scheiterte jeder Kauf unbemerkt, #898).
+    await zaehlen(admin, "kauf_fehler", (body.signedPayload ? "meldung: " : "kauf: ") + String(s?.message || s?.status || s));
     return json({ error: "Freischaltung fehlgeschlagen: " + String(s?.message || s?.status || s) }, 400);
   }
 });

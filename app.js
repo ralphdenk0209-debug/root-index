@@ -1509,9 +1509,16 @@ async function refreshMyFeatures(){
     MY_FEATURES=new Set((data||[]).map(x=>x.feature_key));
   }catch(e){ MY_FEATURES=null; }
 }
+/* 17.11.2026 N100a (Ralph „N100a Kauf messen“): Angebot gesehen, Kauf gestartet, abgebrochen,
+   Fehler, ok - nur Tagessummen je Plattform (cb_kauf_ereignis, messung.kauf_tag), keine Nutzerkennung.
+   Ein Kauf-Fehler warnt Ralph. Messen darf den Kauf nie stoeren: Fehler werden geschluckt. */
+function riKaufZaehlen(ereignis, grund){
+  try{ if(!ME || !client) return; client.rpc('cb_kauf_ereignis',{p_ereignis:ereignis, p_plattform:'web', p_grund: grund?String(grund).slice(0,60):null}).then(function(){},function(){}); }catch(_){}
+}
 async function _startCheckout(plan, consent){
   if(RI_PREMIUM_GESPERRT){ riLandGesperrt(); return; }
   if(typeof riNativeApp==="function" && riNativeApp()){ return riNativePurchase(plan, consent); }
+  riKaufZaehlen('kauf_gestartet');
   try{
     // Zustimmung (Zeitstempel + Text) best-effort persistieren; Fehler nicht blockierend
     if(consent){ try{ await client.rpc("cb_consent_speichern",{p_consent: consent}); }catch(_){} }
@@ -1521,6 +1528,7 @@ async function _startCheckout(plan, consent){
     if(error||!data||!data.url) throw new Error((data&&data.error)||'no url');
     window.location.href=data.url;
   }catch(e){
+    riKaufZaehlen('kauf_fehler', 'stripe-checkout: '+((e&&e.message)||e));
     alert("Premium wird gerade eingerichtet – bitte in Kürze erneut versuchen.");
   }
 }
@@ -1587,8 +1595,13 @@ function premiumInfo(){
    +'<div style="font-size:11px;color:var(--muted);margin-top:8px;text-align:center;line-height:1.5">Mit Klick auf „Jetzt kostenpflichtig testen" akzeptierst du die <a href="/agb.html" onclick="legalOpen(\'agb\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">AGB</a>, die <a href="/datenschutz.html" onclick="legalOpen(\'datenschutz\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Datenschutzerklärung</a> und die <a href="/widerrufsbelehrung.html" onclick="legalOpen(\'widerruf\');return false" style="color:var(--greendk);text-decoration:underline;cursor:pointer">Widerrufsbelehrung</a>.</div>'
    +'</div>';
   document.body.appendChild(ov);
+  riKaufZaehlen('angebot_gesehen');
 }
-(function(){ try{ const p=new URLSearchParams(location.search); if(p.get('checkout')==='success'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ alert('Willkommen bei Premium! 🌱'); },400); } }catch(_){} })();
+(function(){ try{ const p=new URLSearchParams(location.search); if(p.get('checkout')==='success'){ history.replaceState(null,'',location.pathname); setTimeout(function(){ alert('Willkommen bei Premium! 🌱'); },400); }
+  /* N100a: Rueckkehr von Stripe zaehlen. ME ist beim Laden evtl. noch leer - darum kurz warten. */
+  var kz=p.get('checkout')==='success'?'kauf_ok':(p.get('checkout')==='cancel'?'kauf_abgebrochen':null);
+  if(kz){ if(p.get('checkout')==='cancel') history.replaceState(null,'',location.pathname); var n=0, t=setInterval(function(){ n++; if(typeof ME!=='undefined' && ME){ clearInterval(t); riKaufZaehlen(kz); } else if(n>20) clearInterval(t); },500); }
+} catch(_){} })();
 /* Tiefer Link aus den statischen Produktseiten (Ralph 17.09.2026):
    /?p=P001 oeffnet genau dieses Produkt. Vorher landete der Knopf auf den
    38.000 Suchmaschinen-Seiten stumpf auf der Startseite - wer aus Google kam,
@@ -18615,7 +18628,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-17-01";
+const APP_BUILD="2026-11-17-02";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
