@@ -965,7 +965,7 @@ async function rikiIndexNeuPruefen(){
   if(window._rikiIndexNeuLaeuft) return; window._rikiIndexNeuLaeuft=true;
   try{
     var r=await client.rpc("cb_riki_scan_index_neu"); var l=(typeof r.data==="string")?JSON.parse(r.data):r.data;
-    if(!Array.isArray(l) || !l.length) return;
+    if(!Array.isArray(l) || !l.length){ await rikiErfassungHaengtPruefen(); return; }
     var n=l[0];
     rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml("fertig")
       +'<div style="min-width:0"><b>Der Index ist da'+(l.length>1?' ('+l.length+' Produkte)':'')+'</b><br>'
@@ -977,6 +977,40 @@ async function rikiIndexNeuPruefen(){
   finally{ window._rikiIndexNeuLaeuft=false; }
 }
 if(typeof window!=="undefined") window.rikiIndexNeuPruefen=rikiIndexNeuPruefen;
+/* 17.11.2026 N15 (Ralph „jaja“): Bleibt eine eigene Erfassung haengen (Entwurf, Foto unlesbar, Pruefung von Hand,
+   kein Lebensmittel), sagt der Server den Grund in einfachen Worten (cb_meine_erfassungen_haengen). Gezeigt wird
+   beim Oeffnen, wenn kein „Der Index ist da“ ansteht. Wegtippen merkt sich der Server (cb_meine_erfassungen_gesehen);
+   aendert sich der Grund, kommt die Karte wieder. Dasselbe zeigt die iPhone-App. */
+async function rikiErfassungHaengtPruefen(){
+  if(typeof client==="undefined" || !ME) return;
+  var l=null;
+  try{ var r=await client.rpc("cb_meine_erfassungen_haengen"); l=(typeof r.data==="string")?JSON.parse(r.data):r.data; }catch(e){ return; }
+  if(!Array.isArray(l) || !l.length) return;
+  var zeigen=l.slice(0,3), ids=zeigen.map(function(x){ return x.produkt_id; });
+  window._rikiHaengtIds=ids;
+  var h='<div style="font-weight:700;margin-bottom:6px">Deine erfassten Produkte</div>';
+  zeigen.forEach(function(x,i){
+    var ean=String(x.ean||"").replace(/[^0-9]/g,"");
+    h+='<div style="'+(i?'border-top:1px solid var(--line);padding-top:7px;margin-top:7px':'')+'">'
+      +'<b>'+esc(x.name||"Dein Produkt")+'</b> <span style="color:var(--muted);font-size:12px">· '+esc(x.titel||"")+'</span><br>'
+      +'<span>'+esc(x.text||"")+'</span>'
+      +(x.foto&&ean?'<div style="margin-top:6px"><button onclick="event.stopPropagation();rikiErfassungHaengtFoto(\''+ean+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green,#16a34a);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">📷 Neues Foto</button></div>':'')
+      +'</div>';
+  });
+  if(l.length>zeigen.length) h+='<div style="color:var(--muted);font-size:12px;margin-top:6px">… und '+(l.length-zeigen.length)+' weitere.</div>';
+  h+='<div style="color:var(--muted);font-size:12px;margin-top:8px">Tippen zum Schließen.</div>';
+  rikiScanHinweis(h, rikiErfassungHaengtGesehen);
+}
+function rikiErfassungHaengtGesehen(){
+  var ids=window._rikiHaengtIds||[]; window._rikiHaengtIds=null;
+  if(ids.length){ try{ client.rpc("cb_meine_erfassungen_gesehen",{p_produkt_ids:ids}).then(function(){},function(){}); }catch(e){} }
+}
+function rikiErfassungHaengtFoto(ean){
+  var h=document.getElementById("rikiWarteHinweis"); if(h) h.remove();
+  rikiErfassungHaengtGesehen();
+  if(typeof etikettOpen==="function") etikettOpen(ean);
+}
+if(typeof window!=="undefined"){ window.rikiErfassungHaengtPruefen=rikiErfassungHaengtPruefen; window.rikiErfassungHaengtFoto=rikiErfassungHaengtFoto; }
 function rikiWarteFluxZeigen(){
   try{ clearTimeout(window._rikiWarteUhr); }catch(e){}
   rikiScanHinweis(rikiWarteFluxHtml(), null);
@@ -996,7 +1030,7 @@ function rikiNichtFreiHinweis(st, ean, stempel){
   var grund = gText ? '<br><span style="color:var(--muted);font-size:12px">Grund: '+esc(gText)+'</span>' : '';
   var pidT=String(st.produkt_id||"").replace(/[^A-Za-z0-9]/g,"");
   rikiScanHinweis('<div style="display:flex;gap:12px;align-items:center">'+rikiStempelHtml(stempel)
-    +'<div style="min-width:0"><b>Noch kein Index.</b> Wir prüfen das Produkt im Hintergrund. Sobald der Index steht, bekommst du eine Mitteilung.'+grund
+    +'<div style="min-width:0"><b>Noch kein Index.</b> Wir prüfen das Produkt im Hintergrund. Sobald der Index steht, sagen wir dir hier in der App Bescheid.'+grund
     +'<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">'
     +(pidT?'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();prodInsTagebuch(\''+pidT+'\')" style="padding:7px 11px;border:0;border-radius:8px;background:var(--green,#16a34a);color:#fff;font-weight:700;font-size:12.5px;cursor:pointer">📒 Ins Tagebuch</button>':'')
     +'<button onclick="event.stopPropagation();var h=document.getElementById(\'rikiWarteHinweis\');if(h)h.remove();if(typeof etikettOpen===\'function\')etikettOpen(\''+String(ean||"").replace(/[^0-9]/g,"")+'\')" style="padding:7px 11px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);font-size:12.5px;cursor:pointer">📷 Neue Fotos</button>'
@@ -18581,7 +18615,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-16-01";
+const APP_BUILD="2026-11-17-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
