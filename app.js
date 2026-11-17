@@ -15411,7 +15411,7 @@ function betaBadge(){
   if(!b){
     b=document.createElement("div"); b.id="betaBadge";
     b.style.cssText="position:fixed;top:calc(6px + env(safe-area-inset-top));right:8px;z-index:9994;"
-      +"padding:3px 9px;border-radius:999px;background:var(--k-8a6d3b);color:var(--k-ffffff);font-size:10.5px;"
+      +"padding:3px 9px;border-radius:999px;background:#6b7280;color:#ffffff;font-size:10.5px;"  /* 17.11.2026 Ralph „Ja, grau“: neutral statt rötlich, war kein Fehlersignal */
       +"font-weight:700;letter-spacing:.4px;opacity:.85;pointer-events:none";
     document.body.appendChild(b);
   }
@@ -18628,7 +18628,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-17-02";
+const APP_BUILD="2026-11-17-03";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
