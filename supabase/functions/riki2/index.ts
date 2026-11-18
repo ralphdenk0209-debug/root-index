@@ -103,6 +103,11 @@
 // v7.1b (2026-11-06, Pruefung 21 Fotolaeufe): unlesbare Ziffern („81?") bleiben leer statt errechnet; was das Modell
 //   „unsicher" nennt, wird nicht verwendet; mehrsprachige Beschriftungen („Λιπαρά / Fett / Fat") werden zugeordnet;
 //   „Energie (kJ/kcal)" mit Wert „819/194" wird nach der Reihenfolge der Beschriftung zerlegt.
+// v7.2 (2026-11-18, Ralph „jaja, Riki 2 umbauen", Fall Davert Weisse Bohnen 4019339451106, Lauf 466):
+//   NAMENSSUCHE PRUEFT PACKUNG: Ein OFF-Namenstreffer wird verworfen, wenn seine Packungsgroesse anders ist als die
+//   der Barcode-Quelle (OFF quantity, > 15 % Unterschied) UND seine kcal um mehr als 30 % von den kcal einer Quelle
+//   mit Barcode-Beweis abweichen (auch wenn diese Werte selbst gesperrt wurden). Davert: Scan 500 g trocken (283 kcal),
+//   Namenstreffer 240-g-Dose (93 kcal) – Riki 2 hatte die Dose uebernommen. Befund „off_name_anderes_produkt".
 //
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
@@ -110,7 +115,7 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v7.1b";
+const VERSION = "riki2 v7.2";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -136,8 +141,18 @@ type Befund = { art: string; quelle?: string; text: string; sperrt?: boolean };
 type Quelle = {
   quelle: string; url?: string | null; http?: number | null; ergebnis: string; ean_beweis?: string | null;
   name?: string | null; marke?: string | null; zutaten_text?: string | null; naehrwerte?: NW | null;
+  menge?: string | null; // v7.2: Packungsgroesse laut Quelle (OFF quantity)
   befunde: Befund[]; dauer_ms: number;
 };
+
+// v7.2: Packungsgroesse in g bzw. ml („500 g", „0,5 kg", „250ml", „1 l"); null, wenn nicht lesbar
+function mengeInG(x: unknown): number | null {
+  const m = String(x ?? "").replace(",", ".").match(/(\d+(?:\.\d+)?)\s*(kg|g|l|ml|cl)\b/i);
+  if (!m) return null;
+  const v = parseFloat(m[1]);
+  const f = ({ kg: 1000, g: 1, l: 1000, ml: 1, cl: 10 } as Record<string, number>)[m[2].toLowerCase()];
+  return v > 0 && f ? v * f : null;
+}
 
 function findeKey(): string | null {
   const env = Deno.env.toObject();
@@ -482,7 +497,7 @@ async function quelleOff(ean: string): Promise<Quelle> {
   const t0 = Date.now();
   const q: Quelle = { quelle: "openfoodfacts", url: `https://world.openfoodfacts.org/product/${ean}`, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
   try {
-    const s = await holen(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=code,lang,product_name,product_name_de,brands,ingredients_text,ingredients_text_de,nutriments,nutrition_data_per`);
+    const s = await holen(`https://world.openfoodfacts.org/api/v2/product/${ean}.json?fields=code,lang,product_name,product_name_de,brands,quantity,ingredients_text,ingredients_text_de,nutriments,nutrition_data_per`);
     q.http = s.status;
     if (s.status === 404) { q.ergebnis = "nicht_gefunden"; return q; }
     if (s.status === 403 || s.status === 429) { q.ergebnis = "gesperrt"; return q; }
@@ -492,6 +507,7 @@ async function quelleOff(ean: string): Promise<Quelle> {
     if (!gtinGleich(d?.code, ean)) { q.ergebnis = "ean_falsch"; return q; }
     q.ean_beweis = "code = EAN";
     const p = d.product ?? {};
+    q.menge = String(p.quantity ?? "").trim() || null;
     q.name = (p.product_name_de || p.product_name || "").trim() || null;
     q.marke = String(p.brands ?? "").split(",")[0].trim() || null;
     q.zutaten_text = String(p.ingredients_text_de ?? "").replace(/_/g, "").trim() || null;
@@ -533,7 +549,7 @@ async function quelleOff(ean: string): Promise<Quelle> {
 // Findet OFF den Barcode nicht, sucht Riki 2 dort nach Marke + Name. Uebernommen wird nur ein EINDEUTIGER
 // Kandidat: gleiche Marke, alle Sortenwoerter des Scan-Namens im Namen, und alle passenden Eintraege mit derselben
 // Zutatenliste. Ohne Barcode-Beweis -> landet als „web:"-Quelle ohne EAN, also immer „vorläufig".
-async function quelleOffName(marke: string, name: string, ean: string): Promise<Quelle> {
+async function quelleOffName(marke: string, name: string, ean: string, ref: { menge?: string | null; kcal?: number | null } = {}): Promise<Quelle> {
   const t0 = Date.now();
   const such = `${marke} ${name}`.replace(/\s+/g, " ").trim();
   const q: Quelle = { quelle: "web:off-namenssuche", url: `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(such)}`, ergebnis: "fehler", befunde: [], dauer_ms: 0 };
@@ -553,6 +569,22 @@ async function quelleOffName(marke: string, name: string, ean: string): Promise<
       return woerter.length > 0 && woerter.every((w) => pn.includes(w.slice(0, Math.max(4, w.length - 2))));
     });
     if (!passt.length) { q.ergebnis = "nicht_gefunden"; return q; }
+    // v7.2: andere Packung UND deutlich andere kcal als die Barcode-Quelle = anderes Produkt (Davert 500 g trocken vs. 240-g-Dose)
+    const refG = mengeInG(ref.menge), refK = typeof ref.kcal === "number" && ref.kcal > 0 ? ref.kcal : null;
+    const anders = (p: any) => {
+      const g = mengeInG(p.quantity), k = Number(p.nutriments?.["energy-kcal_100g"]);
+      if (refG === null || g === null || refK === null || !(k > 0)) return false;
+      return Math.max(g, refG) / Math.min(g, refG) > 1.15 && Math.abs(k - refK) / refK > 0.3;
+    };
+    const verworfen = passt.filter(anders);
+    for (const p of verworfen) {
+      q.befunde.push({ art: "off_name_anderes_produkt", quelle: q.quelle, text: `OFF-Eintrag ${p.code} „${(p.product_name_de || p.product_name || "").trim()}" (${p.quantity ?? "?"}, ${p.nutriments?.["energy-kcal_100g"] ?? "?"} kcal) verworfen: Barcode-Quelle ${ref.menge}, ${refK} kcal – andere Packung, andere Werte` });
+    }
+    if (verworfen.length) {
+      const rest = passt.filter((p) => !anders(p));
+      passt.length = 0; passt.push(...rest);
+      if (!passt.length) { q.ergebnis = "nicht_gefunden"; return q; }
+    }
     const zt = (p: any) => {
       const de = String(p.ingredients_text_de ?? "").replace(/_/g, "").trim();
       const allg = String(p.ingredients_text ?? "").replace(/_/g, "").trim();
@@ -1335,7 +1367,11 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
   // v6.9: erst kostenlos bei OFF nach Marke + Name suchen (0,5 s), dann erst die bezahlte Websuche
   const lueckeDa = () => ergebnis.fehlt.some((x) => x === "zutaten" || x === "zutaten_unvollstaendig" || x === "naehrwerte" || x === "naehrwerte_teilweise");
   if (lueckeDa() && ergebnis.marke && ergebnis.name && ean.length >= 8) {
-    quellen.push(await quelleOffName(ergebnis.marke, ergebnis.name, ean));
+    // v7.2: Packung und kcal der Barcode-Quellen als Vergleich mitgeben (kcal auch, wenn die Werte gesperrt wurden)
+    const mitBeweis = quellen.filter((q) => q.ean_beweis);
+    const refKcal = mitBeweis.map((q) => q.naehrwerte?.kcal).find((k) => typeof k === "number" && k > 0) ?? null;
+    const refMenge = mitBeweis.map((q) => q.menge).find((m) => mengeInG(m) !== null) ?? null;
+    quellen.push(await quelleOffName(ergebnis.marke, ergebnis.name, ean, { menge: refMenge, kcal: refKcal }));
     ergebnis = zusammenfuehren(ean, quellen, fotoFuerMerge);
   }
   // v6: Herstellerweg nur bei Luecke, nur mit Marke + Name, nur im Deckel
@@ -1358,7 +1394,7 @@ async function einLauf(sb: any, client: Anthropic | null, modell: string, budget
       budgetRest.usd += 0.06 - kostenWeb;
     }
   }
-  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt", "sorte_unbekannt", "off_name_kandidat", "off_name_mehrdeutig"].includes(b.art)));
+  for (const q of quellen) ergebnis.befunde.push(...q.befunde.filter((b) => ["leere_huelle", "anderes_produkt", "sorte_unbekannt", "off_name_kandidat", "off_name_mehrdeutig", "off_name_anderes_produkt"].includes(b.art)));
   if (f) ergebnis.befunde.push(...f.befunde);
   const alle = f ? [f, ...quellen] : quellen;
   const kostenFinal: number = Math.round((kosten + kostenWeb) * 1e6) / 1e6;
