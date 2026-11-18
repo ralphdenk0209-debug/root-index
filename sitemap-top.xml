@@ -24,7 +24,6 @@
 <url><loc>https://root-index.de/produkt/kategorie-fleisch-fisch.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-getraenk.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-getreide-beilagen.html</loc></url>
-<url><loc>https://root-index.de/produkt/kategorie-lebensmittel.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-milchprodukte-eier.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-nuesse-huelsenfruechte.html</loc></url>
 <url><loc>https://root-index.de/produkt/kategorie-obst-gemuese.html</loc></url>
@@ -418,6 +417,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-bio-karotte-direktsaft-p42656.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-mandel-drink-natur-p34187.html</loc></url>
 <url><loc>https://root-index.de/produkt/dreimaster-netto-thunfisch-filets-in-sonnenblumenoel-p45297.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-italia-tomatenmark-p51462.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-bratoel-olive-mit-sonnenblumenoel-p50222.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-chips-de-legumes-p50031.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-durchstarter-muesli-mit-superfood-p50135.html</loc></url>
@@ -459,6 +459,7 @@
 <url><loc>https://root-index.de/produkt/gut-bio-volles-korn-bio-roggenvollkornbrot-p36098.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-putenschnitzel-p52769.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-sardinen-in-zitrone-p52074.html</loc></url>
+<url><loc>https://root-index.de/produkt/huhn-haehnchen-nuggets-p52761.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-natives-rapsoel-p60209.html</loc></url>
 <url><loc>https://root-index.de/produkt/k-classic-spargel-weiss-1-p41885.html</loc></url>
 <url><loc>https://root-index.de/produkt/kaufland-classic-guacamole-p41794.html</loc></url>
@@ -523,7 +524,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-erbsen-jung-extra-fein-p71528.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-smoothie-apfel-mango-passionsfrucht-p52706.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-sonnenblumenoel-p53105.html</loc></url>
-<url><loc>https://root-index.de/produkt/huhn-haehnchen-nuggets-p52761.html</loc></url>
 <url><loc>https://root-index.de/produkt/immer-bio-bio-ingwershot-beeren-p39968.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-bratkartoffeln-mit-zwiebeln-p57447.html</loc></url>
 <url><loc>https://root-index.de/produkt/k-classic-junge-grosse-bohnen-p41783.html</loc></url>
@@ -696,7 +696,6 @@
 <url><loc>https://root-index.de/produkt/buerger-knaeckebrot-mit-milch-p25355.html</loc></url>
 <url><loc>https://root-index.de/produkt/cucina-nobile-aromatisiertes-wuerzoel-aus-nativem-olivenoel-extra-pest-p40826.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-tofu-classic-p52028.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-italia-tomatenmark-p51462.html</loc></url>
 <url><loc>https://root-index.de/produkt/elite-kraeuterquark-p13101.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-gemuesebruehe-p50160.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-nussriegel-erdnuss-mandel-p50241.html</loc></url>
@@ -716,6 +715,7 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-edeka-gut-guenstig-feta-p51319.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-muesli-cereal-time-out-p52671.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-sahnegeschnetzeltes-schweizer-art-p71476.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-sonnenblumenoel-p52927.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-und-guenstig-buttergemuese-p52590.html</loc></url>
 <url><loc>https://root-index.de/produkt/i-schroeder-mediterrane-beilagen-auberginen-in-sauce-p31525.html</loc></url>
 <url><loc>https://root-index.de/produkt/j-w-stollenwerk-bio-apfel-rotkohl-p41476.html</loc></url>
@@ -763,8 +763,8 @@
 <url><loc>https://root-index.de/produkt/gut-bio-kokosnussmilch-p40656.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-mandeldrink-ungesuesst-p35421.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-asia-style-gemuesepfanne-p52754.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-crunchy-erdnuss-creme-p52428.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-la-creme-zum-kochen-p51327.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-sonnenblumenoel-p52927.html</loc></url>
 <url><loc>https://root-index.de/produkt/hipp-gemueseallerlei-mit-bio-rind-p41605.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-frische-salatschale-vegano-p57826.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-haehnchen-mini-schnitzel-p58037.html</loc></url>
@@ -855,8 +855,8 @@
 <url><loc>https://root-index.de/produkt/gut-bio-mais-p31587.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-pistazien-p40003.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-raeucherlachs-p15651.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-crunchy-erdnuss-creme-p52428.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-edeka-gut-guenstig-hirtenkaese-leicht-p52954.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-heringsfilets-in-senfcreme-mit-dillspitzen-p53093.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-maasdamer-p52312.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-nuss-frucht-mischung-p71527.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-ziegenkaese-in-scheiben-p52550.html</loc></url>
@@ -934,7 +934,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-streichcreme-rote-beete-meerrettich-p42674.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-streichcreme-tomate-rucola-p42891.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-my-veggie-hafer-natur-p52513.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-vollkorn-broetchen-p51102.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-chili-bohnen-p71438.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-dinkel-milch-p50126.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-gemuese-tortellini-p50057.html</loc></url>
@@ -956,7 +955,6 @@
 <url><loc>https://root-index.de/produkt/gartenkrone-maiskoelbchen-p35413.html</loc></url>
 <url><loc>https://root-index.de/produkt/geramont-p16070.html</loc></url>
 <url><loc>https://root-index.de/produkt/glockenbrot-baeckerei-vollkorntoast-p12994.html</loc></url>
-<url><loc>https://root-index.de/produkt/goldaehren-dinkelschnitte-p35881.html</loc></url>
 <url><loc>https://root-index.de/produkt/gourmet-finest-cuisine-pfifferlinge-p40176.html</loc></url>
 <url><loc>https://root-index.de/produkt/green-organics-green-bio-studentenfutter-mit-sultaninen-40-250-g-41-p46216.html</loc></url>
 <url><loc>https://root-index.de/produkt/gruen-gold-seitan-smoked-rolle-p48395.html</loc></url>
@@ -1040,6 +1038,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-dm-bio-apfel-johannisbeer-schorle-p42653.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-vegane-bratwuerstchen-p42905.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-veganes-schnitzel-p42662.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-vollkorn-broetchen-p51102.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-deli-smoothie-apfel-mango-kiwi-traube-limette-p51990.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-genussmomente-lachsrueckenfiletportion-p51140.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-dinkel-schnitte-p52412.html</loc></url>
@@ -1051,9 +1050,11 @@
 <url><loc>https://root-index.de/produkt/enerbio-knusper-muesli-p50145.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-vegane-streichwurst-p50288.html</loc></url>
 <url><loc>https://root-index.de/produkt/food-for-future-soja-natur-joghurt-p13937.html</loc></url>
+<url><loc>https://root-index.de/produkt/fruchtzwerge-danone-fruchtzwerge-quetschi-bio-apfel-himbeere-joghurt-d-p69348.html</loc></url>
 <url><loc>https://root-index.de/produkt/garden-gourmet-sensational-schnitzel-p65396.html</loc></url>
 <url><loc>https://root-index.de/produkt/genusswelt-humus-naturell-p45295.html</loc></url>
 <url><loc>https://root-index.de/produkt/giapizza-bio-pizza-bruschetta-p47611.html</loc></url>
+<url><loc>https://root-index.de/produkt/goldaehren-dinkelschnitte-p35881.html</loc></url>
 <url><loc>https://root-index.de/produkt/gourmeat-netto-rinder-cevapcici-p71640.html</loc></url>
 <url><loc>https://root-index.de/produkt/greenyard-prepared-junge-erbsen-mit-moehren-sehr-fein-p13010.html</loc></url>
 <url><loc>https://root-index.de/produkt/gruen-gold-seitan-aufschnitt-spicy-beans-p48390.html</loc></url>
@@ -1066,7 +1067,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-guacamole-pikant-p52902.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-gut-guenstig-vollkorn-toast-weizenvollkorntoast-p52940.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-halloumi-grillkaese-p52120.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-heringsfilets-in-senfcreme-mit-dillspitzen-p53093.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-norwegischer-stremel-lachs-heiss-geraeuchert-p52406.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-sandwich-vollkorn-toast-p51820.html</loc></url>
 <url><loc>https://root-index.de/produkt/herzstuecke-vollkorn-sandwich-p51360.html</loc></url>
@@ -1131,7 +1131,6 @@
 <url><loc>https://root-index.de/produkt/sportyfeel-protein-tortilla-chips-sweet-paprika-geschmack-p33461.html</loc></url>
 <url><loc>https://root-index.de/produkt/take-away-kartoffelsalat-mit-mini-gefluegelfrikadellen-p55035.html</loc></url>
 <url><loc>https://root-index.de/produkt/tegut-bio-fruechte-muesli-p50582.html</loc></url>
-<url><loc>https://root-index.de/produkt/tello-fix-tellofix-frei-von-p24255.html</loc></url>
 <url><loc>https://root-index.de/produkt/trentin-s-p-a-grana-padano-dop-italienischer-hartkaese-parmesan-p64448.html</loc></url>
 <url><loc>https://root-index.de/produkt/vehappy-vegane-schnitzel-p55368.html</loc></url>
 <url><loc>https://root-index.de/produkt/vemondo-veganes-hack-p33747.html</loc></url>
@@ -1253,6 +1252,7 @@
 <url><loc>https://root-index.de/produkt/snack-fun-peanuts-roasted-unsalted-p43591.html</loc></url>
 <url><loc>https://root-index.de/produkt/speisezeit-linseneintopf-p40513.html</loc></url>
 <url><loc>https://root-index.de/produkt/sunred-mittelscharfer-delikatess-senf-p11270.html</loc></url>
+<url><loc>https://root-index.de/produkt/tello-fix-tellofix-frei-von-p24255.html</loc></url>
 <url><loc>https://root-index.de/produkt/trader-joe-s-pistachio-mix-p31693.html</loc></url>
 <url><loc>https://root-index.de/produkt/unsere-heimat-traditioneller-kartoffelsalat-p53435.html</loc></url>
 <url><loc>https://root-index.de/produkt/v-love-plant-based-rice-drink-hazelnut-p63836.html</loc></url>
@@ -1288,7 +1288,6 @@
 <url><loc>https://root-index.de/produkt/fitness-nestle-fitness-darkchoc-banana-cerealien-p65401.html</loc></url>
 <url><loc>https://root-index.de/produkt/food-for-future-hummus-mit-pinienkerne-p14600.html</loc></url>
 <url><loc>https://root-index.de/produkt/frucht-stern-smoothie-ananas-kokos-banane-p55375.html</loc></url>
-<url><loc>https://root-index.de/produkt/fruchtzwerge-danone-fruchtzwerge-quetschi-bio-apfel-himbeere-joghurt-d-p69348.html</loc></url>
 <url><loc>https://root-index.de/produkt/garden-gourmet-vegetarische-filet-streifen-p62915.html</loc></url>
 <url><loc>https://root-index.de/produkt/geka-haehnchenbrust-filetstuecke-klassik-p34677.html</loc></url>
 <url><loc>https://root-index.de/produkt/genuss-plus-datteln-p50043.html</loc></url>
@@ -1525,13 +1524,13 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-back-kakao-p53001.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-cereal-time-out-fruechte-muesli-p52666.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-cheddar-p51819.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-delikatess-gewuerzgurken-p53182.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-deutsche-markenbutter-p52219.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-erdbeer-rhabarber-konfituere-extra-p51739.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-haselnuss-riegel-p51928.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-huehner-nudeltopf-p51780.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-irischer-cheddar-p52681.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-kartoffel-salat-mit-sahne-eingelegten-gekochten-eiern-und-p50931.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-skyr-vanille-p71404.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-snack-salat-thunfisch-paprika-rote-zwiebel-p53040.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-und-guenstig-land-kaffee-zupfkuchen-p52609.html</loc></url>
 <url><loc>https://root-index.de/produkt/gutes-land-frischkaese-pur-p45753.html</loc></url>
@@ -1734,6 +1733,7 @@
 <url><loc>https://root-index.de/produkt/zickzack-kollektiv-kolle-mate-p49817.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-multifrucht-0-p69384.html</loc></url>
 <url><loc>https://root-index.de/produkt/aj-johanning-snack-netzkracher-bbq-style-p40652.html</loc></url>
+<url><loc>https://root-index.de/produkt/all-in-fruits-ingwer-smoothie-p53059.html</loc></url>
 <url><loc>https://root-index.de/produkt/almare-aldi-almare-fisch-heringssalat-mit-roter-bete-gurken-und-aepfel-p31557.html</loc></url>
 <url><loc>https://root-index.de/produkt/alpenschmaus-mini-schuettelbrot-p35044.html</loc></url>
 <url><loc>https://root-index.de/produkt/asia-green-garden-curry-masala-p31492.html</loc></url>
@@ -1756,7 +1756,6 @@
 <url><loc>https://root-index.de/produkt/de-vau-ge-muesliriegel-ohne-zuckerzusatz-haselnuss-p35709.html</loc></url>
 <url><loc>https://root-index.de/produkt/deutsche-see-garnelen-in-kraeuter-knoblauch-wuerzmarinade-p49853.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-aufstrich-mediterranes-gemuese-kaese-p42893.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-bio-rote-bete-in-scheiben-geschnitten-p51666.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-mini-mozzarella-p52974.html</loc></url>
 <url><loc>https://root-index.de/produkt/emils-bio-manufaktur-honig-senf-dressing-p47820.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-haferdrink-p50005.html</loc></url>
@@ -1909,7 +1908,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-mozzarella-p52401.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-muesli-riegel-haselnuss-p52507.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-muesliriegel-haselnuss-p52884.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-skyr-vanille-p71404.html</loc></url>
 <url><loc>https://root-index.de/produkt/herzhafte-alpenkueche-serviettenknoedel-p34479.html</loc></url>
 <url><loc>https://root-index.de/produkt/i-schmidt-kirschen-sauerkirschen-entsteint-p34543.html</loc></url>
 <url><loc>https://root-index.de/produkt/i-schroeder-suesskirschen-p31287.html</loc></url>
@@ -1971,6 +1969,7 @@
 <url><loc>https://root-index.de/produkt/vemondo-vegane-creme-tofu-getrocknete-tomaten-p32832.html</loc></url>
 <url><loc>https://root-index.de/produkt/vitakrone-weisskrautsalat-klassisch-mit-paprika-p10763.html</loc></url>
 <url><loc>https://root-index.de/produkt/wilhelm-brandenburg-gruene-sosse-p22188.html</loc></url>
+<url><loc>https://root-index.de/produkt/yopro-erdbeere-p24211.html</loc></url>
 <url><loc>https://root-index.de/produkt/acao-acao-quitte-zitrone-mit-guarana-p48160.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldi-almare-fisch-seafood-aldi-almare-fisch-raeucherlachs-xxl-in-hauch-p36004.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldi-bio-bio-fruchtquark-pfirsich-mango-maracuja-p70298.html</loc></url>
@@ -1998,8 +1997,10 @@
 <url><loc>https://root-index.de/produkt/cucina-nobile-tortelloni-spinat-ricotta-p35496.html</loc></url>
 <url><loc>https://root-index.de/produkt/culinea-penne-mit-garnelen-p33106.html</loc></url>
 <url><loc>https://root-index.de/produkt/danone-fruchtzwerge-erdbeere-banane-pfirsich-birne-p69353.html</loc></url>
+<url><loc>https://root-index.de/produkt/danone-fruchtzwerge-fruchtzwerge-erdbeere-erdbeere-vanille-heidelbeer-p24189.html</loc></url>
 <url><loc>https://root-index.de/produkt/darbo-himbeere-mit-80-fruchtanteil-p67273.html</loc></url>
 <url><loc>https://root-index.de/produkt/dennree-cranberrries-p28157.html</loc></url>
+<url><loc>https://root-index.de/produkt/deutsche-see-garnelen-mango-kokos-p23859.html</loc></url>
 <url><loc>https://root-index.de/produkt/dulano-rostbratwurst-p55850.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-o-saft-p51412.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-klassik-baguette-p52735.html</loc></url>
@@ -2109,6 +2110,7 @@
 <url><loc>https://root-index.de/produkt/vemondo-veganer-mozzarelli-p70038.html</loc></url>
 <url><loc>https://root-index.de/produkt/villa-gusto-pizza-grandezza-thunfisch-p11806.html</loc></url>
 <url><loc>https://root-index.de/produkt/vitamalz-vita-malz-sport-p18735.html</loc></url>
+<url><loc>https://root-index.de/produkt/yopro-zitrone-p24212.html</loc></url>
 <url><loc>https://root-index.de/produkt/activia-danone-activia-winter-edition-hafer-apfel-zimt-p69411.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldi-bio-bio-fruchtjoghurt-pfirsich-p70363.html</loc></url>
 <url><loc>https://root-index.de/produkt/antipasticreme-mit-frischkaese-und-feta-p10453.html</loc></url>
@@ -2121,8 +2123,8 @@
 <url><loc>https://root-index.de/produkt/coop-qualite-prix-williams-birnenhaelften-p63333.html</loc></url>
 <url><loc>https://root-index.de/produkt/copack-tiefkuehlkost-gemuese-staebchen-p36775.html</loc></url>
 <url><loc>https://root-index.de/produkt/copack-tiefkuehlkost-spinat-staebchen-p36776.html</loc></url>
-<url><loc>https://root-index.de/produkt/danone-fruchtzwerge-fruchtzwerge-erdbeere-erdbeere-vanille-heidelbeer-p24189.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-dinkel-crunchy-p42776.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-bio-rote-bete-in-scheiben-geschnitten-p51666.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-dicke-fritte-p51824.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-roter-multi-p52711.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-raw-chocolate-kakaonibs-meersalz-p50151.html</loc></url>
@@ -2144,6 +2146,7 @@
 <url><loc>https://root-index.de/produkt/gut-bio-vegane-tomatensauce-bolognese-p36148.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-backofen-kroketten-p71473.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-broetchen-knusper-kaiser-p52281.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-delikatess-gewuerzgurken-p53182.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-fischstaebchen-p52355.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-jogurt-drink-erdbeere-p71410.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-stapelchips-p51960.html</loc></url>
@@ -2430,7 +2433,6 @@
 <url><loc>https://root-index.de/produkt/de-vau-ge-bio-obstriegel-erdbeer-banane-p36938.html</loc></url>
 <url><loc>https://root-index.de/produkt/delikato-essig-essenz-p34816.html</loc></url>
 <url><loc>https://root-index.de/produkt/dennree-al-forno-pizza-margherita-bio-p28029.html</loc></url>
-<url><loc>https://root-index.de/produkt/deutsche-see-garnelen-mango-kokos-p23859.html</loc></url>
 <url><loc>https://root-index.de/produkt/dijo-baking-mini-tortillas-knoblauch-p35665.html</loc></url>
 <url><loc>https://root-index.de/produkt/dijo-baking-weizen-wraps-xxl-p36677.html</loc></url>
 <url><loc>https://root-index.de/produkt/dr-schroedter-feinkost-veganer-no-fleischsalat-p14746.html</loc></url>
@@ -2548,11 +2550,9 @@
 <url><loc>https://root-index.de/produkt/vemondo-vegane-linsencreme-mango-curry-p33353.html</loc></url>
 <url><loc>https://root-index.de/produkt/volvic-tee-pfirsich-1-5-l-ew-p15916.html</loc></url>
 <url><loc>https://root-index.de/produkt/wiesgart-trauben-schorle-p45378.html</loc></url>
-<url><loc>https://root-index.de/produkt/yopro-erdbeere-p24211.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-classic-0-1-p24229.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-heidelbeer-honig-p24204.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldi-bio-vital-gebaeck-sesame-sonnenblumenkernen-p43186.html</loc></url>
-<url><loc>https://root-index.de/produkt/all-in-fruits-ingwer-smoothie-p53059.html</loc></url>
 <url><loc>https://root-index.de/produkt/allstars-skyr-protein-bar-p70859.html</loc></url>
 <url><loc>https://root-index.de/produkt/almare-graved-lachs-p35020.html</loc></url>
 <url><loc>https://root-index.de/produkt/alpenfest-kaiserschmarrn-mit-pflaumenkompott-p32909.html</loc></url>
@@ -2612,6 +2612,7 @@
 <url><loc>https://root-index.de/produkt/gut-bio-bio-apfelschorle-trueb-p45634.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-frischkaesezubereitung-p36535.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-big-margherita-p51253.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-bratwurst-p53083.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-huhn-shanghai-p53290.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-leo-crisp-p51350.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-pell-kartoffelsalat-p51564.html</loc></url>
@@ -2704,7 +2705,6 @@
 <url><loc>https://root-index.de/produkt/enerbio-dinkel-sticks-p50038.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-shiitake-champignon-p50008.html</loc></url>
 <url><loc>https://root-index.de/produkt/fair-multivitamin-nektar-p35050.html</loc></url>
-<url><loc>https://root-index.de/produkt/farmer-s-snack-cranberry-p24531.html</loc></url>
 <url><loc>https://root-index.de/produkt/frankenland-fit-erdbeer-p70662.html</loc></url>
 <url><loc>https://root-index.de/produkt/fuerstenkrone-kalamata-oliven-p54604.html</loc></url>
 <url><loc>https://root-index.de/produkt/glockengold-mango-saft-p25668.html</loc></url>
@@ -2718,7 +2718,7 @@
 <url><loc>https://root-index.de/produkt/gut-drei-eichen-bayerischer-leberkaes-xxl-fein-p40639.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-back-camembert-p52982.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-delikatess-eiersalat-p52069.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-edeka-hot-dog-p52368.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-g-g-erdnuesse-pikant-gewuerzt-p53291.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-krustenschinken-p51554.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-mini-zimtos-p51348.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-pop-corn-suess-p52013.html</loc></url>
@@ -2776,14 +2776,12 @@
 <url><loc>https://root-index.de/produkt/vinzenzmurr-saure-lunge-hausgemacht-p21465.html</loc></url>
 <url><loc>https://root-index.de/produkt/vitamoment-daily-protein-riegel-p71215.html</loc></url>
 <url><loc>https://root-index.de/produkt/wernsing-feinkost-kartoffelgratin-in-kaese-sahnesauce-p73302.html</loc></url>
-<url><loc>https://root-index.de/produkt/yopro-zitrone-p24212.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-botanicals-blutorange-mandarine-holunderbluete-p69406.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-cassis-acai-acai-genial-p24220.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-classic-p69413.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-kokosnuss-p24205.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-maca-maechtig-heidelbeere-maca-p24188.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-orange-p24230.html</loc></url>
-<url><loc>https://root-index.de/produkt/actimel-johannisbeere-cranberry-p24221.html</loc></url>
 <url><loc>https://root-index.de/produkt/activia-danone-activia-feige-hafer-3-5-p69403.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldente-pita-taschen-oval-p40332.html</loc></url>
 <url><loc>https://root-index.de/produkt/aldi-bio-fruchtaufstrich-sauerkirsche-p40100.html</loc></url>
@@ -2862,6 +2860,7 @@
 <url><loc>https://root-index.de/produkt/net-level-meat-vegan-burger-cheese-style-p32545.html</loc></url>
 <url><loc>https://root-index.de/produkt/nur-nur-natur-bio-rote-bete-salat-p40717.html</loc></url>
 <url><loc>https://root-index.de/produkt/ocean-sea-heringsfilets-dill-p11314.html</loc></url>
+<url><loc>https://root-index.de/produkt/original-wagner-herzhafter-flammkuchen-griechische-art-p23827.html</loc></url>
 <url><loc>https://root-index.de/produkt/penny-ready-why-cook-berry-flavour-p13764.html</loc></url>
 <url><loc>https://root-index.de/produkt/philadelphia-original-p64210.html</loc></url>
 <url><loc>https://root-index.de/produkt/pizz-ah-streetfood-pizzaschiffchen-ricotta-spinat-p41194.html</loc></url>
@@ -2897,6 +2896,7 @@
 <url><loc>https://root-index.de/produkt/actimel-danone-actimel-winter-edition-orange-zimt-p69381.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-granatapfel-p69358.html</loc></url>
 <url><loc>https://root-index.de/produkt/actimel-granatapfel-p69421.html</loc></url>
+<url><loc>https://root-index.de/produkt/actimel-johannisbeere-cranberry-p24221.html</loc></url>
 <url><loc>https://root-index.de/produkt/activia-ballaststoffliebling-haselnuss-buchweizen-p69380.html</loc></url>
 <url><loc>https://root-index.de/produkt/activia-danone-activia-dinkel-walnuss-3-5-p69364.html</loc></url>
 <url><loc>https://root-index.de/produkt/activia-danone-activia-goji-hafer-p69402.html</loc></url>
@@ -2955,7 +2955,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-curry-mild-fruchtig-p51847.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-emmentaler-gerieben-p51915.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-erdbeer-konfituere-extra-p52862.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-g-g-erdnuesse-pikant-gewuerzt-p53291.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-griesspudding-p52722.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-heidelbeer-konfituere-p52860.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-himbeere-konfituere-extra-p71413.html</loc></url>
@@ -2995,7 +2994,6 @@
 <url><loc>https://root-index.de/produkt/naturaplan-mint-bio-green-tea-p64270.html</loc></url>
 <url><loc>https://root-index.de/produkt/nescafe-cappuccino-weniger-suess-p63450.html</loc></url>
 <url><loc>https://root-index.de/produkt/oelz-super-soft-sandwich-p67622.html</loc></url>
-<url><loc>https://root-index.de/produkt/original-wagner-herzhafter-flammkuchen-griechische-art-p23827.html</loc></url>
 <url><loc>https://root-index.de/produkt/pe-we-premium-sandwich-farmers-schinken-p40317.html</loc></url>
 <url><loc>https://root-index.de/produkt/peter-mertes-free-secco-white-p39983.html</loc></url>
 <url><loc>https://root-index.de/produkt/pizz-ah-holzofenpizza-milanese-p35400.html</loc></url>
@@ -3081,7 +3079,6 @@
 <url><loc>https://root-index.de/produkt/gut-drei-eichen-mini-frikadellen-fettreduziert-p34640.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-apfelschorle-p53145.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-bratwurst-p51631.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-bratwurst-p53083.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-g-g-aprikosen-konfituere-p52099.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-himbeer-konfituere-extra-p51740.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-klare-gemuesebruehe-p52742.html</loc></url>
@@ -3089,7 +3086,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-walnuss-p51294.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-wuerzcashews-p51690.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-zwiebelringe-p51529.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-und-guenstig-back-camembert-p53250.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-und-guenstig-eiscreme-vanille-p52978.html</loc></url>
 <url><loc>https://root-index.de/produkt/jaus-brot-hot-dog-4-p33850.html</loc></url>
 <url><loc>https://root-index.de/produkt/k-asia-krabbenchips-klassik-p42130.html</loc></url>
@@ -3139,7 +3135,6 @@
 <url><loc>https://root-index.de/produkt/san-fabio-mortadella-p12444.html</loc></url>
 <url><loc>https://root-index.de/produkt/san-fabio-tortellini-prosciutto-p12914.html</loc></url>
 <url><loc>https://root-index.de/produkt/schaetze-des-orients-konfituere-feige-nach-orientalischer-art-p14035.html</loc></url>
-<url><loc>https://root-index.de/produkt/schloss-kueche-herings-happen-p23671.html</loc></url>
 <url><loc>https://root-index.de/produkt/schoeller-10-for-two-p73381.html</loc></url>
 <url><loc>https://root-index.de/produkt/schrottberger-erdbeer-joghurt-p69592.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwip-schwap-sirup-schwip-schwap-zero-p66615.html</loc></url>
@@ -3183,6 +3178,7 @@
 <url><loc>https://root-index.de/produkt/edeka-bio-bio-schweizer-zartbitter-p52620.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-haehnchen-lyoner-p52323.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-genussmomente-creme-brulee-p52696.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-herzstuecke-veganer-aufschnitt-salami-p51377.html</loc></url>
 <url><loc>https://root-index.de/produkt/elsdorfer-molkerei-und-feinkost-salatdressing-sylter-art-p41281.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-sesam-krokant-kokos-riegel-p50029.html</loc></url>
 <url><loc>https://root-index.de/produkt/erlebnis-sennerei-zillertal-marille-joghurt-p72441.html</loc></url>
@@ -3207,6 +3203,7 @@
 <url><loc>https://root-index.de/produkt/gut-drei-eichen-rostbratwurst-p34726.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-drei-eichen-schweinskopfsuelze-p31395.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-drei-eichen-teewurst-fein-p34704.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-edeka-hot-dog-p52368.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-hamburger-buns-p53300.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-hamburger-xxl-buns-p53302.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-quarkiger-genuss-erdbeere-p71492.html</loc></url>
@@ -3317,6 +3314,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-wie-leberwurst-p42713.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmk-eis-doppelfrucht-sticks-ananas-kiwi-p35094.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmk-eis-doppelfrucht-sticks-orange-cassis-p35097.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-eiscreme-bourbon-vanille-p52461.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-fleischwurst-p52602.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-haferdrink-schoko-p52313.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-lyoner-p52373.html</loc></url>
@@ -3326,6 +3324,7 @@
 <url><loc>https://root-index.de/produkt/enerbio-feine-bitter-schokolade-p50181.html</loc></url>
 <url><loc>https://root-index.de/produkt/european-pizza-group-pizza-ziegenfrischkaese-p35404.html</loc></url>
 <url><loc>https://root-index.de/produkt/farmer-erdnuesse-trockengeroestet-pikant-p35480.html</loc></url>
+<url><loc>https://root-index.de/produkt/farmer-s-snack-cranberry-p24531.html</loc></url>
 <url><loc>https://root-index.de/produkt/food-for-future-vegane-petits-pains-p14445.html</loc></url>
 <url><loc>https://root-index.de/produkt/freiberger-lebensmittel-4-x-baguettes-diavolo-p36356.html</loc></url>
 <url><loc>https://root-index.de/produkt/frija-feine-quark-creme-bourbon-vanille-p62284.html</loc></url>
@@ -3360,6 +3359,7 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-rotes-johannisbeergelee-extra-p52858.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-speisestaerke-p71461.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-vier-kaese-p51363.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-und-guenstig-back-camembert-p53250.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-und-guenstig-linsen-eintopf-mit-fleisch-p53109.html</loc></url>
 <url><loc>https://root-index.de/produkt/herta-saftschinken-p18165.html</loc></url>
 <url><loc>https://root-index.de/produkt/hofmaier-gefluegel-bierschinken-p55104.html</loc></url>
@@ -3428,6 +3428,7 @@
 <url><loc>https://root-index.de/produkt/san-fabio-pizza-diavolo-p13884.html</loc></url>
 <url><loc>https://root-index.de/produkt/san-pellegrino-naturali-limonata-p64729.html</loc></url>
 <url><loc>https://root-index.de/produkt/santa-claus-in-town-edel-marzipan-pralinen-walnuss-p55048.html</loc></url>
+<url><loc>https://root-index.de/produkt/schloss-kueche-herings-happen-p23671.html</loc></url>
 <url><loc>https://root-index.de/produkt/schoeller-pirulo-erdbeere-p65485.html</loc></url>
 <url><loc>https://root-index.de/produkt/schokoliebe-edel-bitter-schokolade-74-p55446.html</loc></url>
 <url><loc>https://root-index.de/produkt/sol-mar-aceitunas-verdes-con-especias-p11163.html</loc></url>
@@ -3629,6 +3630,7 @@
 <url><loc>https://root-index.de/produkt/coverna-gebaeckstangen-meersalz-p35505.html</loc></url>
 <url><loc>https://root-index.de/produkt/danone-activia-heidelbeere-3-5-p69361.html</loc></url>
 <url><loc>https://root-index.de/produkt/danone-dany-mousse-feinste-schokolade-p24201.html</loc></url>
+<url><loc>https://root-index.de/produkt/dany-danone-dany-mousse-4x60g-kokosnuss-p24208.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-danone-dany-mousse-nougat-geschmack-winter-sorte-2x-p24222.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-mousse-au-chocolat-p24217.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-p24199.html</loc></url>
@@ -3636,7 +3638,6 @@
 <url><loc>https://root-index.de/produkt/dulano-schinken-bockwurst-p40924.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-erdbeere-konfituere-extra-p52639.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-himbeere-konfituere-extra-p52640.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-herzstuecke-jamon-serrano-p51845.html</loc></url>
 <url><loc>https://root-index.de/produkt/elite-haltbare-sahne-12-fett-p14456.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-erdnuss-sate-sauce-p50120.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-salted-caramel-taler-p50334.html</loc></url>
@@ -3864,7 +3865,6 @@
 <url><loc>https://root-index.de/produkt/wintertraum-edelmarzipan-brot-p35836.html</loc></url>
 <url><loc>https://root-index.de/produkt/zickzack-kollektiv-zotrine-0-5l-kasten-p49816.html</loc></url>
 <url><loc>https://root-index.de/produkt/zott-sahne-joghurt-mild-erdbeere-p69499.html</loc></url>
-<url><loc>https://root-index.de/produkt/actimel-danone-actimel-100-pflanzlich-classic-p24198.html</loc></url>
 <url><loc>https://root-index.de/produkt/allstars-all-stars-100-whey-protein-p70853.html</loc></url>
 <url><loc>https://root-index.de/produkt/alpenhain-back-gouda-herzen-mit-wilpreiselbeer-dip-p40293.html</loc></url>
 <url><loc>https://root-index.de/produkt/american-pizza-pockets-3-kaese-p41111.html</loc></url>
@@ -4000,6 +4000,7 @@
 <url><loc>https://root-index.de/produkt/7-up-7up-p34421.html</loc></url>
 <url><loc>https://root-index.de/produkt/abraham-jamon-serrano-schinken-p34748.html</loc></url>
 <url><loc>https://root-index.de/produkt/abraham-tapitas-jamon-serrano-p34749.html</loc></url>
+<url><loc>https://root-index.de/produkt/actimel-danone-actimel-100-pflanzlich-classic-p24198.html</loc></url>
 <url><loc>https://root-index.de/produkt/af-deutschland-schokodrink-fettarm-p36212.html</loc></url>
 <url><loc>https://root-index.de/produkt/american-cheese-sauce-p39982.html</loc></url>
 <url><loc>https://root-index.de/produkt/asia-green-garden-naan-brot-knoblauch-koriander-p34469.html</loc></url>
@@ -4026,6 +4027,7 @@
 <url><loc>https://root-index.de/produkt/edeka-bio-geraeucherte-mettenden-p52564.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-eis-nuss-nougat-p51301.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-haselnuss-creme-p51223.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-herzstuecke-jamon-serrano-p51845.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-nuss-nougat-creme-p51314.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-mandel-creme-p50036.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-mandel-creme-p50198.html</loc></url>
@@ -4141,9 +4143,7 @@
 <url><loc>https://root-index.de/produkt/crownfield-choco-waffle-cereals-p55759.html</loc></url>
 <url><loc>https://root-index.de/produkt/cucina-nobile-napoli-piccante-macinatura-grossa-p36600.html</loc></url>
 <url><loc>https://root-index.de/produkt/cucina-nobile-prosciutto-crudo-dolce-p35683.html</loc></url>
-<url><loc>https://root-index.de/produkt/dany-danone-dany-mousse-4x60g-kokosnuss-p24208.html</loc></url>
 <url><loc>https://root-index.de/produkt/dulano-chorizo-salami-p11252.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-eiscreme-bourbon-vanille-p52461.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-genussmomente-trueffel-salami-p52958.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-coconut-heaven-p51331.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-exotic-beach-p51144.html</loc></url>
@@ -4500,7 +4500,6 @@
 <url><loc>https://root-index.de/produkt/adler-schwarzwald-schwarzwaelder-schinken-ueber-tannenholz-geraeuchert-p13361.html</loc></url>
 <url><loc>https://root-index.de/produkt/alpenfeststyle-schaumzuckerwaffeln-p32774.html</loc></url>
 <url><loc>https://root-index.de/produkt/altmuehltaler-getraenke-iso-light-apfel-kraeuter-p36911.html</loc></url>
-<url><loc>https://root-index.de/produkt/back-family-kuvertuere-vollmilch-p34625.html</loc></url>
 <url><loc>https://root-index.de/produkt/betty-bossi-buttergipfeli-p64265.html</loc></url>
 <url><loc>https://root-index.de/produkt/biscotto-sandwich-getreidekekse-joghurt-beeren-p41251.html</loc></url>
 <url><loc>https://root-index.de/produkt/brinkers-food-milchmaeuse-duo-creme-erdbeere-p70397.html</loc></url>
@@ -4522,7 +4521,6 @@
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-mozart-kugeln-p51189.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-tiramisu-eis-p51303.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-triple-crispies-p51218.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-herzstuecke-veganer-aufschnitt-salami-p51377.html</loc></url>
 <url><loc>https://root-index.de/produkt/eisbaer-eis-eis-zimtsterne-p35840.html</loc></url>
 <url><loc>https://root-index.de/produkt/eisbaer-eis-spezialitaetenbecher-spaghetti-eis-p35104.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-hafer-cookies-p50332.html</loc></url>
@@ -4559,6 +4557,7 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-makkaroni-auflauf-p52436.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-mini-salami-p53178.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-minichoc-mandel-p52626.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-peanut-butter-crunchies-p52301.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-vanille-erdbeer-hoernchen-p51125.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-vanilleeis-p51293.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-voll-haselnuss-p52145.html</loc></url>
@@ -4769,6 +4768,7 @@
 <url><loc>https://root-index.de/produkt/af-deutschland-kondensmilch-7-5-fett-p35124.html</loc></url>
 <url><loc>https://root-index.de/produkt/alpenfeststyle-linzerstangerl-p12372.html</loc></url>
 <url><loc>https://root-index.de/produkt/american-soft-ice-becher-schokosauce-p36138.html</loc></url>
+<url><loc>https://root-index.de/produkt/back-family-kuvertuere-vollmilch-p34625.html</loc></url>
 <url><loc>https://root-index.de/produkt/backfee-chocolate-chunks-p54817.html</loc></url>
 <url><loc>https://root-index.de/produkt/best-moments-crunchies-himbeere-joghurt-p14626.html</loc></url>
 <url><loc>https://root-index.de/produkt/bio-4-you-caramello-p32077.html</loc></url>
@@ -4814,7 +4814,6 @@
 <url><loc>https://root-index.de/produkt/gut-guenstig-kaesekuchen-p52516.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-kondensmilch-p52543.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-muesliriegel-schoko-p52725.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-peanut-butter-crunchies-p52301.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-schoko-waffeln-mit-vollmilchschokolade-p51338.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-und-guenstig-kondensmilch-7-5-p52342.html</loc></url>
 <url><loc>https://root-index.de/produkt/hanina-streuselkuchen-apfel-p36679.html</loc></url>
@@ -5050,7 +5049,6 @@
 <url><loc>https://root-index.de/produkt/choviva-mignon-waffeln-mit-haselnuss-fuellung-p14730.html</loc></url>
 <url><loc>https://root-index.de/produkt/covo-mignon-waffeln-p14604.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-danone-dany-sahne-dunkle-schokolade-p24234.html</loc></url>
-<url><loc>https://root-index.de/produkt/dany-danone-dany-sahne-xxl-vanille-p24233.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-danone-dany-schoko-vanille-sahne-p24186.html</loc></url>
 <url><loc>https://root-index.de/produkt/de-vau-ge-muesliriegel-dunkle-schoko-p36037.html</loc></url>
 <url><loc>https://root-index.de/produkt/delicia-butter-waffelgebaeck-p11846.html</loc></url>
@@ -5199,6 +5197,7 @@
 <url><loc>https://root-index.de/produkt/corny-milch-dark-white-p24802.html</loc></url>
 <url><loc>https://root-index.de/produkt/covo-mini-doppelkekse-spekulatiusgeschmack-p14707.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-danone-dany-sahne-vanille-p24184.html</loc></url>
+<url><loc>https://root-index.de/produkt/dany-danone-dany-sahne-xxl-vanille-p24233.html</loc></url>
 <url><loc>https://root-index.de/produkt/dany-danone-dany-schoko-sahne-p24183.html</loc></url>
 <url><loc>https://root-index.de/produkt/de-beukelaer-prinzen-rolle-cremys-choc-milk-p18653.html</loc></url>
 <url><loc>https://root-index.de/produkt/de-beukelaer-prinzen-rolle-minis-schoko-p18670.html</loc></url>
@@ -5412,6 +5411,7 @@
 <url><loc>https://root-index.de/produkt/biscotto-premium-cookies-soft-baked-cookies-milk-chocolate-coconut-p40186.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-american-style-cookies-p52972.html</loc></url>
 <url><loc>https://root-index.de/produkt/pascal-ernest-pascal-ernest-gebaeck-box-p47416.html</loc></url>
+<url><loc>https://root-index.de/produkt/schwip-schwap-schwip-schwap-p34403.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwip-schwap-zero-cola-orange-p41505.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwip-schwap-zero-lemon-taste-p41507.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwip-schwap-zero-p34401.html</loc></url>
@@ -5443,7 +5443,6 @@
 <url><loc>https://root-index.de/produkt/friessinger-muehle-brauner-rohrzucker-grob-unraffiniert-p40647.html</loc></url>
 <url><loc>https://root-index.de/produkt/puda-puderzucker-p14330.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-beste-wahl-brauner-rohrzucker-p57961.html</loc></url>
-<url><loc>https://root-index.de/produkt/schwip-schwap-schwip-schwap-p34403.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwip-schwap-zero-ohne-koffein-p34412.html</loc></url>
 <url><loc>https://root-index.de/produkt/sondey-biscino-black-white-p12268.html</loc></url>
 <url><loc>https://root-index.de/produkt/sondey-soft-baked-cookies-weisse-schokolade-zitrone-p11738.html</loc></url>
@@ -5511,6 +5510,7 @@
 <url><loc>https://root-index.de/produkt/wurzener-kuk-kurzkochlinsen-p96164.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/frosta-gemuese-mix-asiatische-kueche-p889.html</loc><lastmod>2026-07-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/axel-redzich-musmehl-ungeroestet-p95656.html</loc><lastmod>2026-09-30</lastmod></url>
+<url><loc>https://root-index.de/produkt/messmer-brennessel-mischung-teebeutel-25-p95288.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/naduria-chia-p95315.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/tempehmanufaktur-soja-tempeh-natur-p095.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/agros-trading-gmbh-weizenreis-p95843.html</loc><lastmod>2026-09-30</lastmod></url>
@@ -5520,7 +5520,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-pasta-fusilli-rote-linsen-nudeln-p95590.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/govinda-goodel-rote-linsen-spirelli-p96330.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/joya-soja-soya-organic-p74011.html</loc><lastmod>2026-09-27</lastmod></url>
-<url><loc>https://root-index.de/produkt/messmer-brennessel-mischung-teebeutel-25-p95288.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/rapunzel-spirelli-100-rote-linsen-p96341.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/aho-buchweizensprossen-pasta-p157.html</loc><lastmod>2026-10-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/dmbio-dm-bio-6-korn-mischung-p74260.html</loc><lastmod>2026-09-27</lastmod></url>
@@ -5585,6 +5584,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-sesam-ungeschaelt-angef-p95343.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-linsenwaffeln-high-protein-p154.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-wildheidelbeeren-tiefgefroren-p096.html</loc><lastmod>2026-07-12</lastmod></url>
+<url><loc>https://root-index.de/produkt/edeka-herzstuecke-haselnusskerne-leicht-geroestet-fein-gehackt-p96407.html</loc><lastmod>2026-10-16</lastmod></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-beerenmischung-p96581.html</loc><lastmod>2026-11-07</lastmod></url>
 <url><loc>https://root-index.de/produkt/k-classic-haltbare-entrahmte-milch-p96264.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/pedon-rote-linsen-pasta-p96169.html</loc><lastmod>2026-10-01</lastmod></url>
@@ -5712,7 +5712,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-langkornreis-parboiled-p95561.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/dmbio-reiswaffeln-natur-sesam-p020.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/dmbio-walnusskerne-p021.html</loc><lastmod>2026-07-13</lastmod></url>
-<url><loc>https://root-index.de/produkt/edeka-herzstuecke-haselnusskerne-leicht-geroestet-fein-gehackt-p96407.html</loc><lastmod>2026-10-16</lastmod></url>
 <url><loc>https://root-index.de/produkt/enerbio-risotto-reis-p96033.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/foco-thai-jasmine-scented-rice-p96199.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/gloria-weizenmehl-type-405-p95508.html</loc><lastmod>2026-09-30</lastmod></url>
@@ -5814,6 +5813,7 @@
 <url><loc>https://root-index.de/produkt/biokontor-flohsamenschalen-gemahlen-bio-p166.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/columbus-frischei-6-bio-eier-aus-oekologischer-erzeugung-p95739.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/columbus-frischei-gmbh-6-frische-bio-eier-aus-oekogischer-haltung-p95538.html</loc><lastmod>2026-09-30</lastmod></url>
+<url><loc>https://root-index.de/produkt/doppelherz-flohsamenschalen-p96680.html</loc><lastmod>2026-11-16</lastmod></url>
 <url><loc>https://root-index.de/produkt/eifrich-vermarktung-gmbh-co-kg-6-frische-eier-aus-freilandhaltung-guet-p95494.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/eifrisch-eier-p96530.html</loc><lastmod>2026-11-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/ein-herz-fuer-kueken-frische-bio-eier-p95406.html</loc><lastmod>2026-09-30</lastmod></url>
@@ -5842,7 +5842,6 @@
 <url><loc>https://root-index.de/produkt/noem-pro-80-p74164.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/noname-bananen-p96522.html</loc><lastmod>2026-11-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/rewe-bio-h-vollmilch-p95616.html</loc><lastmod>2026-09-30</lastmod></url>
-<url><loc>https://root-index.de/produkt/seeberger-erdnuesse-jumbo-p95412.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/spielberger-buchweizenflocken-vollkorn-p1058.html</loc><lastmod>2026-07-13</lastmod></url>
 <url><loc>https://root-index.de/produkt/zespri-sungold-kiwi-p95278.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/zurueck-zum-ursprung-rote-rueben-p95356.html</loc><lastmod>2026-09-30</lastmod></url>
@@ -5894,6 +5893,7 @@
 <url><loc>https://root-index.de/produkt/knusperone-natural-bars-date-pecan-almond-p95299.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/muehle-erks-roggen-vollkornmehl-p95822.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/natur-pur-bio-petersilie-p95353.html</loc><lastmod>2026-09-30</lastmod></url>
+<url><loc>https://root-index.de/produkt/seeberger-erdnuesse-jumbo-p95412.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/aldi-crunchy-granola-bites-heidelbeere-p74138.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/anam-ponni-boiled-rice-p95596.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/combino-tomatensauce-p73839.html</loc><lastmod>2026-09-27</lastmod></url>
@@ -6035,7 +6035,6 @@
 <url><loc>https://root-index.de/produkt/k-favourites-gewalzte-bandnudeln-p96300.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/knorr-suppen-snack-tomate-p74210.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/knusperli-knusper-muesli-schoko-p73970.html</loc><lastmod>2026-09-27</lastmod></url>
-<url><loc>https://root-index.de/produkt/lac-sauerrahm-p95790.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/landfreude-aldi-bandnudeln-p96184.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/lebenskraftpur-whey-isolat-kakao-p060.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/loewenanteil-butter-chicken-p1112.html</loc><lastmod>2026-07-13</lastmod></url>
@@ -6097,6 +6096,7 @@
 <url><loc>https://root-index.de/produkt/ahead-low-sugar-nut-bar-p96500.html</loc><lastmod>2026-10-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/birkel-nudeln-muscheln-p96286.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/coop-prix-garantie-bohnen-p96291.html</loc><lastmod>2026-10-01</lastmod></url>
+<url><loc>https://root-index.de/produkt/dorfmuehle-frischeier-schwaebische-spaetzle-p95772.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/gaminzojas-colla-spa-grana-padano-gerieben-10-monate-gereift-p73695.html</loc><lastmod>2026-09-05</lastmod></url>
 <url><loc>https://root-index.de/produkt/grafschafter-tortilla-wraps-vollkorn-p73847.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/iglo-green-cuisine-gemuesestaebchen-p96674.html</loc><lastmod>2026-11-14</lastmod></url>
@@ -6140,7 +6140,6 @@
 <url><loc>https://root-index.de/produkt/dennree-lasagne-p96329.html</loc><lastmod>2026-10-01</lastmod></url>
 <url><loc>https://root-index.de/produkt/despar-lasagneblaetter-p95302.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/dmbio-dattelsuesse-p139.html</loc><lastmod>2026-07-12</lastmod></url>
-<url><loc>https://root-index.de/produkt/dorfmuehle-frischeier-schwaebische-spaetzle-p95772.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/dr-oetker-vitalis-porridge-schokolade-p74205.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-halloumi-p871.html</loc><lastmod>2026-07-12</lastmod></url>
 <url><loc>https://root-index.de/produkt/edeka-lasagne-n-61-p96089.html</loc><lastmod>2026-10-01</lastmod></url>
@@ -6199,6 +6198,7 @@
 <url><loc>https://root-index.de/produkt/ja-natuerlich-bio-bergkaese-p74349.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/ja-schupfnudeln-p57283.html</loc><lastmod>2026-10-31</lastmod></url>
 <url><loc>https://root-index.de/produkt/ja-waldhonig-p96529.html</loc><lastmod>2026-11-01</lastmod></url>
+<url><loc>https://root-index.de/produkt/lac-sauerrahm-p95790.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/milbona-frischkaesezubereitung-p73926.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/no-sugar-sugar-erythrit-stevia-puder-p058.html</loc><lastmod>2026-07-14</lastmod></url>
 <url><loc>https://root-index.de/produkt/philadelphia-so-leicht-p134.html</loc><lastmod>2026-07-12</lastmod></url>
@@ -6228,6 +6228,7 @@
 <url><loc>https://root-index.de/produkt/goldpuder-instant-mehl-p95832.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/green-cuisine-6x-suesskartoffel-laibchen-p74311.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/gusteria-erdaepfelkas-p74108.html</loc><lastmod>2026-09-27</lastmod></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-trockenpflaumen-entsteint-und-essfertig-p96480.html</loc><lastmod>2026-10-29</lastmod></url>
 <url><loc>https://root-index.de/produkt/illy-classico-e-s-e-pads-p95291.html</loc><lastmod>2026-09-30</lastmod></url>
 <url><loc>https://root-index.de/produkt/ja-natuerlich-bio-emmentaler-p74087.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/k-classik-panier-mehl-p96032.html</loc><lastmod>2026-10-01</lastmod></url>
@@ -6351,7 +6352,6 @@
 <url><loc>https://root-index.de/produkt/familotel-meine-lieblinge-meine-lieblinge-lachs-p21937.html</loc><lastmod>2026-09-05</lastmod></url>
 <url><loc>https://root-index.de/produkt/good-choice-faschierte-laibchen-mit-kartoffelpueree-p74297.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/granny-s-secret-ajvar-classique-p74327.html</loc><lastmod>2026-09-27</lastmod></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-trockenpflaumen-entsteint-und-essfertig-p96480.html</loc><lastmod>2026-10-29</lastmod></url>
 <url><loc>https://root-index.de/produkt/gutfried-haehnchenbrust-kirschpaprika-p96538.html</loc><lastmod>2026-11-02</lastmod></url>
 <url><loc>https://root-index.de/produkt/hana-japanese-buck-wheat-noodles-p74166.html</loc><lastmod>2026-09-27</lastmod></url>
 <url><loc>https://root-index.de/produkt/ja-muesli-riegel-schoko-ohne-zuckerzusatz-p73280.html</loc><lastmod>2026-10-30</lastmod></url>
@@ -8019,7 +8019,9 @@
 <url><loc>https://root-index.de/produkt/dmbio-bio-sojabohnen-edamame-p70613.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-mildes-sauerkraut-p24468.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-sauerkraut-p70601.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-muesli-basis-mischung-p51892.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-china-gemuese-p51464.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-herzstuecke-bircher-muesli-nuss-p73660.html</loc></url>
 <url><loc>https://root-index.de/produkt/eden-frischkost-sauerkraut-p21088.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-porridge-basis-p42933.html</loc></url>
 <url><loc>https://root-index.de/produkt/explore-cuisine-spaghetti-a-base-de-soja-vert-p64368.html</loc></url>
@@ -8077,7 +8079,6 @@
 <url><loc>https://root-index.de/produkt/dmbio-passata-natur-p24330.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-weizenvollkornmehl-farine-de-ble-complete-p33989.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-lachsfilet-p96384.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-tomaten-in-stuecke-bio-p51553.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-zuckerschoten-p51048.html</loc></url>
 <url><loc>https://root-index.de/produkt/feneberg-vonhier-dinkel-vollkornbandnudeln-p49999.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-tomaten-ganz-p53076.html</loc></url>
@@ -8156,10 +8157,10 @@
 <url><loc>https://root-index.de/produkt/dmbio-wuerzige-mandeln-p34168.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-nudeln-pasta-aus-100-kichererbsen-p52362.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-weidemilch-1-5-p51273.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-herzstuecke-bircher-muesli-nuss-p73660.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-das-pure-saaten-haferbrot-p42965.html</loc></url>
 <url><loc>https://root-index.de/produkt/enerbio-kokosdrink-natur-p50130.html</loc></url>
 <url><loc>https://root-index.de/produkt/freshona-lidl-mango-p32768.html</loc></url>
+<url><loc>https://root-index.de/produkt/grana-feiner-landkaffee-aus-vollem-korn-geroestet-kaffee-p23691.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-rote-linsen-strickli-p70377.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-ponholz-hackfleisch-gemischt-p26317.html</loc></url>
 <url><loc>https://root-index.de/produkt/k-bio-brechbohnen-p56533.html</loc></url>
@@ -8258,7 +8259,6 @@
 <url><loc>https://root-index.de/produkt/e-h-hackfleich-gemischt-vom-schwein-und-rind-p13818.html</loc></url>
 <url><loc>https://root-index.de/produkt/eberswalder-rinderhackfleisch-zum-braten-p30659.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-black-tiger-garnelen-natur-p52434.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-muesli-basis-mischung-p51892.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-weizenvollkornmehl-p51433.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-hackfleisch-rind-zum-braten-p53466.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-haferhimmel-haferhimmel-porridge-beeren-p52518.html</loc></url>
@@ -8277,10 +8277,10 @@
 <url><loc>https://root-index.de/produkt/frisches-schweinefilet-p14814.html</loc></url>
 <url><loc>https://root-index.de/produkt/gazi-tofu-natur-p19770.html</loc></url>
 <url><loc>https://root-index.de/produkt/goldschmaus-natur-schweine-minuten-steaks-p31956.html</loc></url>
-<url><loc>https://root-index.de/produkt/grana-feiner-landkaffee-aus-vollem-korn-geroestet-kaffee-p23691.html</loc></url>
 <url><loc>https://root-index.de/produkt/gustopur-hackfleisch-gemischt-p27623.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-bio-haferflocken-vollkorn-zart-p96369.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-rinder-hackfleisch-p53464.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-sonnenmais-zart-p51629.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-ponholz-hackfleisch-gemischt-p27626.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-ponholz-hackfleisch-p30655.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-ponholz-minutensteak-p27263.html</loc></url>
@@ -8610,6 +8610,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-zitronensaft-bio-p34157.html</loc></url>
 <url><loc>https://root-index.de/produkt/e-sener-esener-dinkelbrot-p29638.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-gemuese-tomaten-in-stuecken-mit-kraeutern-p52448.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-tomaten-in-stuecken-mit-knoblauch-p52449.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-gewalzte-bandnudeln-p51519.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-hoernchen-vollkorn-p51424.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-kichererbsen-naturell-p52038.html</loc></url>
@@ -8625,6 +8626,7 @@
 <url><loc>https://root-index.de/produkt/graefschaftter-pure-kornkraft-haferbrot-p32553.html</loc></url>
 <url><loc>https://root-index.de/produkt/greenland-penny-kidneybohnen-p14654.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-guenstig-kichererbsen-mit-bohnen-p52785.html</loc></url>
+<url><loc>https://root-index.de/produkt/gut-guenstig-kidney-bohnen-p53244.html</loc></url>
 <url><loc>https://root-index.de/produkt/gutes-land-speisequark-magerstufe-laktosefrei-p46099.html</loc></url>
 <url><loc>https://root-index.de/produkt/hak-junge-grosse-bohnen-p66783.html</loc></url>
 <url><loc>https://root-index.de/produkt/hak-weisse-bohnen-p66784.html</loc></url>
@@ -8654,6 +8656,7 @@
 <url><loc>https://root-index.de/produkt/naturata-vollkorn-knaeckebrot-mit-dinkel-p28587.html</loc></url>
 <url><loc>https://root-index.de/produkt/nico-frisch-salad-to-go-thuna-del-mar-p18310.html</loc></url>
 <url><loc>https://root-index.de/produkt/nur-nur-natur-bio-vollkornbrot-roggen-p36808.html</loc></url>
+<url><loc>https://root-index.de/produkt/oelmuehle-oberschwaben-leinoel-nativ-p34386.html</loc></url>
 <url><loc>https://root-index.de/produkt/rapunzel-erbsen-p69126.html</loc></url>
 <url><loc>https://root-index.de/produkt/rapunzel-soft-tomaten-p21537.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-bio-weizenvollkornnehl-p60586.html</loc></url>
@@ -8725,6 +8728,7 @@
 <url><loc>https://root-index.de/produkt/dmbio-basen-balance-fruehstuecksbrei-p24467.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-dinkelspaghetti-mit-linsenbolognese-p42592.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-eistee-weisser-tee-pfirsich-himbeere-p24410.html</loc></url>
+<url><loc>https://root-index.de/produkt/dmbio-gemuese-couscous-mit-huhn-p24439.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-gemuesesaft-p33918.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-mais-waffeln-gesalzen-p42580.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-reiswaffeln-gesalzen-p24379.html</loc></url>
@@ -8734,7 +8738,6 @@
 <url><loc>https://root-index.de/produkt/dreimaster-fischfeinkost-thunfischsalat-mexican-style-p54652.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-kidneybohnen-p52661.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-maiswaffeln-gesalzen-p51558.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-reiswaffeln-mit-meersalz-reiswaffeln-p51559.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-roggen-vollkornbrot-p51415.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-soja-natur-p52503.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-kidney-bohnen-3-dosen-p51473.html</loc></url>
@@ -8827,7 +8830,6 @@
 <url><loc>https://root-index.de/produkt/teekanne-bibo-beere-bio-fruechtetee-p62640.html</loc></url>
 <url><loc>https://root-index.de/produkt/teekanne-gute-verdauung-p23987.html</loc></url>
 <url><loc>https://root-index.de/produkt/teekanne-oriental-chai-p23997.html</loc></url>
-<url><loc>https://root-index.de/produkt/teekanne-orientalischer-gewuerztee-p23978.html</loc></url>
 <url><loc>https://root-index.de/produkt/uncle-ben-s-natur-reis-p73608.html</loc></url>
 <url><loc>https://root-index.de/produkt/verival-bio-reiswaffeln-mit-meersalz-p67579.html</loc></url>
 <url><loc>https://root-index.de/produkt/viana-tofu-baerlauch-p27773.html</loc></url>
@@ -9136,6 +9138,7 @@
 <url><loc>https://root-index.de/produkt/noem-vollmilch-laenger-frisch-3-5-fett-p68045.html</loc></url>
 <url><loc>https://root-index.de/produkt/noem-vollmilch-laenger-frisch-p68039.html</loc></url>
 <url><loc>https://root-index.de/produkt/nord-frische-bio-natur-joghurt-fettarm-p71268.html</loc></url>
+<url><loc>https://root-index.de/produkt/oelmuehle-oberschwaben-sesamoel-nativ-p34385.html</loc></url>
 <url><loc>https://root-index.de/produkt/original-pommes-p65631.html</loc></url>
 <url><loc>https://root-index.de/produkt/our-essentials-by-amazon-passierte-tomaten-p61873.html</loc></url>
 <url><loc>https://root-index.de/produkt/pema-bio-roggen-vollkornbrot-p16767.html</loc></url>
@@ -9160,6 +9163,7 @@
 <url><loc>https://root-index.de/produkt/real-bio-p55630.html</loc></url>
 <url><loc>https://root-index.de/produkt/rebelicious-gepufftes-zeug-p49102.html</loc></url>
 <url><loc>https://root-index.de/produkt/redoro-olio-extra-vergine-di-oliva-p64625.html</loc></url>
+<url><loc>https://root-index.de/produkt/reis-fit-risbellis-high-protein-linsen-cracker-p21736.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-bergbauern-vollmilch-p60223.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-beste-wahl-bergbauern-vollmilch-p58544.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-beste-wahl-frische-vollmilch-p60095.html</loc></url>
@@ -9199,9 +9203,9 @@
 <url><loc>https://root-index.de/produkt/sauerkraut-p13673.html</loc></url>
 <url><loc>https://root-index.de/produkt/schaerdinger-formil-haltbarmilch-p68186.html</loc></url>
 <url><loc>https://root-index.de/produkt/schaerdinger-vollmilch-laenger-frisch-p68176.html</loc></url>
+<url><loc>https://root-index.de/produkt/schwaelbchen-h-fettarme-milch-p23418.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwaelbchen-milch-p23416.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwaelbchen-speisequark-p69323.html</loc></url>
-<url><loc>https://root-index.de/produkt/schwarzwaldmilch-bio-frische-fettarme-milch-p31205.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-frische-fettarme-bio-milch-p31207.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-frische-vollmilch-3-5-fett-p31193.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-haltbare-fettarme-bio-milch-p31209.html</loc></url>
@@ -9220,6 +9224,7 @@
 <url><loc>https://root-index.de/produkt/sternenfair-h-vollmilch-3-8-p47802.html</loc></url>
 <url><loc>https://root-index.de/produkt/sternenfair-haltbare-weidenmilch-p47807.html</loc></url>
 <url><loc>https://root-index.de/produkt/suedmilch-frische-vollmilch-p30449.html</loc></url>
+<url><loc>https://root-index.de/produkt/teekanne-earl-grey-p24000.html</loc></url>
 <url><loc>https://root-index.de/produkt/teekanne-p24013.html</loc></url>
 <url><loc>https://root-index.de/produkt/tegut-falafel-p50605.html</loc></url>
 <url><loc>https://root-index.de/produkt/tempehmanufaktur-soja-tempeh-curry-p48417.html</loc></url>
@@ -9247,7 +9252,6 @@
 <url><loc>https://root-index.de/produkt/zurueck-zum-ursprung-bergbauern-naturjoghurt-p70672.html</loc></url>
 <url><loc>https://root-index.de/produkt/zurueck-zum-ursprung-murauer-bergbauern-heumilch-p43628.html</loc></url>
 <url><loc>https://root-index.de/produkt/29-03-2026-kichererbsen-p41823.html</loc></url>
-<url><loc>https://root-index.de/produkt/aerzener-das-pure-haferbrot-mit-oelsaaten-p43911.html</loc></url>
 <url><loc>https://root-index.de/produkt/allos-hafer-alge-p26721.html</loc></url>
 <url><loc>https://root-index.de/produkt/allos-hafer-natur-p26697.html</loc></url>
 <url><loc>https://root-index.de/produkt/allos-hafermilch-p26726.html</loc></url>
@@ -9354,7 +9358,6 @@
 <url><loc>https://root-index.de/produkt/greenland-kichererbsen-p14656.html</loc></url>
 <url><loc>https://root-index.de/produkt/grillmeister-thunfisch-medaillons-chimichurri-p32491.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-bio-fruechtetee-apfel-mandarine-p40704.html</loc></url>
-<url><loc>https://root-index.de/produkt/gut-guenstig-kidney-bohnen-p53244.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-krauscha-bio-rindfleisch-mit-bruehe-p29536.html</loc></url>
 <url><loc>https://root-index.de/produkt/gut-ponholz-gemischtes-hackfleisch-p69106.html</loc></url>
 <url><loc>https://root-index.de/produkt/hak-kichererbsen-p66788.html</loc></url>
@@ -9527,7 +9530,6 @@
 <url><loc>https://root-index.de/produkt/despar-polpa-di-pomodoro-p68214.html</loc></url>
 <url><loc>https://root-index.de/produkt/dm-bio-glutenfrei-mais-amaranth-waffeln-p34080.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-apfelmark-kaltgerieben-p42351.html</loc></url>
-<url><loc>https://root-index.de/produkt/dmbio-gemuese-couscous-mit-huhn-p24439.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-gemuese-pfanne-mit-bulgur-quinoa-p42408.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-gemuese-pfanne-p33982.html</loc></url>
 <url><loc>https://root-index.de/produkt/dmbio-karottenbrot-backmischung-glutenfrei-p70590.html</loc></url>
@@ -9539,9 +9541,9 @@
 <url><loc>https://root-index.de/produkt/edeka-bio-frische-vollmilch-p51050.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-h-vollmilch-p52741.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-my-veggie-falafel-orientalisch-p51382.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-bio-reiswaffeln-mit-meersalz-reiswaffeln-p51559.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-soja-schnetzel-bio-p52991.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-soja-schnetzel-p52303.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-bio-tomaten-in-stuecken-mit-knoblauch-p52449.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-chili-mix-p51594.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-erdnuesse-gesalzen-p52793.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-my-veggie-sojaschnetzel-p52901.html</loc></url>
@@ -9590,6 +9592,7 @@
 <url><loc>https://root-index.de/produkt/landliebe-frische-weidemilch-p31199.html</loc></url>
 <url><loc>https://root-index.de/produkt/leichter-genuss-entrahmte-h-milch-p54054.html</loc></url>
 <url><loc>https://root-index.de/produkt/lidl-weisse-riesenbohnen-in-tomatensosse-p71686.html</loc></url>
+<url><loc>https://root-index.de/produkt/lieken-b-brot-kraft-kerni-p23893.html</loc></url>
 <url><loc>https://root-index.de/produkt/lima-rice-3-grains-p62069.html</loc></url>
 <url><loc>https://root-index.de/produkt/linea-natura-bio-mais-waffeln-p23771.html</loc></url>
 <url><loc>https://root-index.de/produkt/loewenanteil-linsen-dal-p73751.html</loc></url>
@@ -9725,6 +9728,7 @@
 <url><loc>https://root-index.de/produkt/dr-metz-suesslupinen-dinkel-bratlinge-p69177.html</loc></url>
 <url><loc>https://root-index.de/produkt/ecoland-herbs-spices-gmbh-bio-landsenf-p47396.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-soja-reis-drink-p51693.html</loc></url>
+<url><loc>https://root-index.de/produkt/edeka-eiweiss-brot-p52920.html</loc></url>
 <url><loc>https://root-index.de/produkt/ehrmann-frische-quark-creme-20-fett-i-tr-p69009.html</loc></url>
 <url><loc>https://root-index.de/produkt/ehrmann-high-protein-skyr-natural-creamy-p96584.html</loc></url>
 <url><loc>https://root-index.de/produkt/eisbluemerl-erdnussmus-grob-mit-steinsalz-p29474.html</loc></url>
@@ -9764,6 +9768,7 @@
 <url><loc>https://root-index.de/produkt/hemme-milch-gmbh-frische-fettarme-milch-p47166.html</loc></url>
 <url><loc>https://root-index.de/produkt/hemme-milch-tagesfrische-teilentrahmte-milch-p47243.html</loc></url>
 <url><loc>https://root-index.de/produkt/hermann-hack-ohne-fleisch-p67848.html</loc></url>
+<url><loc>https://root-index.de/produkt/hitchcock-bio-ingwersaft-p24177.html</loc></url>
 <url><loc>https://root-index.de/produkt/hochwald-frische-fettarme-milch-p20401.html</loc></url>
 <url><loc>https://root-index.de/produkt/hofmolkerei-kneissl-fettarme-milch-p48404.html</loc></url>
 <url><loc>https://root-index.de/produkt/house-of-asia-wok-gemuese-chinesische-art-p62660.html</loc></url>
@@ -9808,6 +9813,7 @@
 <url><loc>https://root-index.de/produkt/laselva-fusilli-vollkorn-p65027.html</loc></url>
 <url><loc>https://root-index.de/produkt/lattesso-zero-p64359.html</loc></url>
 <url><loc>https://root-index.de/produkt/le-gusto-weisser-pfeffer-gemahlen-p34805.html</loc></url>
+<url><loc>https://root-index.de/produkt/lieken-urkorn-kleines-kerni-p23888.html</loc></url>
 <url><loc>https://root-index.de/produkt/lien-ying-kokosmilch-p25630.html</loc></url>
 <url><loc>https://root-index.de/produkt/little-lunch-fond-gefluegel-knochen-fond-p49079.html</loc></url>
 <url><loc>https://root-index.de/produkt/loewenanteil-african-bowl-p10226.html</loc></url>
@@ -9859,6 +9865,7 @@
 <url><loc>https://root-index.de/produkt/rewe-bio-weidemilch-1-5-fett-p58447.html</loc></url>
 <url><loc>https://root-index.de/produkt/rewe-frische-fettarme-milch-p60158.html</loc></url>
 <url><loc>https://root-index.de/produkt/san-vicario-tomatensugo-della-mamma-p47032.html</loc></url>
+<url><loc>https://root-index.de/produkt/schwarzwaldmilch-bio-frische-fettarme-milch-p31205.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-fettarme-haltbare-weidemilch-h-milch-1-5-p31188.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-frische-fettarme-weidemilch-1-5-fett-p31202.html</loc></url>
 <url><loc>https://root-index.de/produkt/schwarzwaldmilch-sahnequark-p69910.html</loc></url>
@@ -9978,7 +9985,6 @@
 <url><loc>https://root-index.de/produkt/dreistern-fleisch-rindfleisch-p21766.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-bergkaese-50-fett-i-tr-mit-heumilch-aus-dem-allgaeu-p52216.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-bio-mandeldrink-ungesuesst-p52680.html</loc></url>
-<url><loc>https://root-index.de/produkt/edeka-eiweiss-brot-p52920.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-finger-moehrchen-p51627.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-granatapfelkerne-p73578.html</loc></url>
 <url><loc>https://root-index.de/produkt/edeka-herzstuecke-thunfisch-filets-in-olivenoel-p51313.html</loc></url>
@@ -10033,11 +10039,4 @@
 <url><loc>https://root-index.de/produkt/ja-creme-fraiche-classic-p57128.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-joghurt-mild-aus-magermilch-stichfest-p71876.html</loc></url>
 <url><loc>https://root-index.de/produkt/ja-jogurt-mild-0-1-fett-p71899.html</loc></url>
-<url><loc>https://root-index.de/produkt/ja-knaecke-brot-sesam-p58899.html</loc></url>
-<url><loc>https://root-index.de/produkt/ja-koerniger-frischkaese-leicht-p59275.html</loc></url>
-<url><loc>https://root-index.de/produkt/ja-thunfisch-p58548.html</loc></url>
-<url><loc>https://root-index.de/produkt/jarmino-knochenbruehen-konzentrat-huhn-p73617.html</loc></url>
-<url><loc>https://root-index.de/produkt/jean-luc-camembert-mild-cremig-p46107.html</loc></url>
-<url><loc>https://root-index.de/produkt/jeden-tag-creme-fraiche-30-p50757.html</loc></url>
-<url><loc>https://root-index.de/produkt/jeden-tag-schmand-sauerrahm-24-p73138.html</loc></url>
 </urlset>
