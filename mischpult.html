@@ -217,15 +217,7 @@ function bauen(){
           +'<b style="text-align:right">'+(kd.follower!=null?zahl(kd.follower):'–')+'</b>'; }).join('')+'</div>',
     notiz:zahl((so.instagram||{}).aufrufe_7)+' IG-Aufrufe · '+zahl(s7.interaktionen)+' Interaktionen (7 T)<br>Reels gepostet: YT '+zahl(po.youtube)+' · TT '+zahl(po.tiktok)+(sozRueck?' · '+sozRueck+' im Rückstand':''),
     knopf:{t:'Follower eintragen',onclick:'followerWahl()'}, knopf2:{t:'Meta Business Suite',href:'https://business.facebook.com/latest/content_calendar'}});
-  /* Content-Plan */
-  const rs=co.rueckstand||{}, rsTxt=Object.keys(rs).filter(k=>rs[k]>0).map(k=>({youtube:'YouTube',tiktok:'TikTok',pinterest:'Pinterest',substack:'Substack'}[k]||k)+' '+rs[k]);
-  /* 27.10.2026, Ralph: "gelb macht erst sinn, wenn die folgewoche nichts geplant ist". Rot: gar nichts mehr geplant. */
-  const coFw=Number(d.folgewoche||0);
-  const coSt = !co.naechstes ? 'alarm' : coFw===0 ? 'warn' : 'ok';
-  Z.push({grp:'Social',nm:'Content-Plan',st:coSt,v:zahl(co.woche),u:'Reels diese Woche',
-    viz:'<div class="bars" style="flex-direction:column;align-items:stretch;justify-content:center;gap:3px;font-size:12px;text-align:center"><span style="color:var(--muted)">nächstes Reel</span><b>'+zeit(co.naechstes)+'</b><span style="color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(co.naechstes_titel||'')+'</span></div>',
-    notiz:'Folgewoche: '+(coFw?zahl(coFw)+' Reels geplant':'<b style="color:var(--warn)">noch nichts geplant</b>')+'<br>'+(rsTxt.length?'Rückstand: '+rsTxt.join(' · '):'alle Kanäle gleichauf'),
-    knopf:{t:'Content-Plan',href:cb('vergleiche.html')}});
+  /* Content-Plan: 19.11.2026 entfernt (Ralph: „content plan kann auch aus dem mischpult entfernt werden“) */
   /* Newsletter */
   const nx=nl.naechste;
   const nlSt = nx && nx.status==='entwurf' && new Date(nx.geplant_fuer)-Date.now() < 3*86400000 ? 'warn' : 'ok';
@@ -271,7 +263,7 @@ function bauen(){
 
   /* 19.10.2026, Ralph: "social media sollten nebeneinander sein" - feste Reihenfolge: erst Betrieb, dann Social & Post & Geld. */
   const REIHE=['Kette & Takte','Wächter','Produkte','Datenbank','Seite & Google','Nutzer','App Store','Funktionen',
-               'Social','Content-Plan','Newsletter','Claude-Kosten','Riki-Scans','Kosten & Einnahmen'];
+               'Social','Newsletter','Claude-Kosten','Riki-Scans','Kosten & Einnahmen'];
   Z.sort(function(a,b){ return REIHE.indexOf(a.nm)-REIHE.indexOf(b.nm); });
   $('pult').innerHTML=Z.map(zug).join('');
   /* Master-Lampe */
@@ -289,7 +281,7 @@ function bauen(){
 const SCHNELL=[
   ['Erfassen','admin.html?go=produkterfassung','_top'],['Zutatenstamm','admin.html?go=stamm','_top'],['Bundles','admin.html?go=bundles','_top'],
   ['Rezepte','admin.html?go=rezepte','_top'],['Stufen','admin.html?go=stufen','_top'],['Nutzer','admin.html?go=nutzer','_top'],
-  ['Content-Plan','vergleiche.html','_blank'],['Content Studio','http://localhost:3030','_blank'],['Reel-Editor','reel-editor.html','_blank'],['Newsletter','newsletter.html','_blank'],
+  ['Content Studio','http://localhost:3030','_blank'],['Reel-Editor','reel-editor.html','_blank'],['Newsletter','newsletter.html','_blank'],
   ['App Store','appstore.html','_blank'],['Monatsbericht','monatsbericht.html','_blank'],['Riki-Kosten','riki-kosten.html','_blank'],
   ['Produkttabelle','produkte-tabelle.html','_blank'],['Video-Skript','video-skript-01.html','_blank'],['Steuerung','steuerung.html','_blank'],
   ['Altes Cockpit','cockpit.html','_blank'],['Weltall','cockpit-weltall.html','_blank']];
