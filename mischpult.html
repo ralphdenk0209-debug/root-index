@@ -311,7 +311,8 @@ async function anfordern(){
   if(error||!data||!data.ok) return;
   ANGEFORDERT=new Date(data.angefordert_am).getTime();
   $('stand').textContent+=' · wird neu berechnet …';
-  if(!NACHFRAGE) NACHFRAGE=setInterval(()=>{ if(!document.hidden) laden(); }, 15000);
+  /* 19.11.2026 (Ralph: „dauer fast 2 minuten“): Takt jetzt alle 5 s, Rechnung ~5 s - darum alle 3 s nachfragen */
+  if(!NACHFRAGE) NACHFRAGE=setInterval(()=>{ if(!document.hidden) laden(); }, 3000);
 }
 async function laden(){
   /* 18.10. abends: liest den vorgerechneten Stand - die Live-Rechnung dauert > 8 s. */
