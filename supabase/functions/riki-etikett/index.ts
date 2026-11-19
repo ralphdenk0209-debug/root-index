@@ -1,5 +1,11 @@
 // RIKI-ETIKETT — der Ausweg aus der Sackgasse.
 //
+// v26 (2026-11-19, Scan in 5 s, Ralph „jaja, 1+2+3 bauen“): Der Scan-Worker startet das Lesen jetzt VOR seinem
+//   Schnell-Check (parallel). Statt body.gegenprobe schickt er schnellcheck_job_id bzw. schnellcheck_vorlesung_id;
+//   nach dem Lesen wird das Check-Ergebnis dort abgeholt (cb_riki_scan_schnellcheck_holen, bis 3 s warten).
+//   Regel unveraendert: nur ein JA ersetzt die Gegenprobe, sonst fragt die Gegenprobe wie bisher. Preise fuer
+//   claude-sonnet-5-5 und claude-haiku-5-5 ergaenzt (gleiche Werte wie riki-scan-worker CHECK_PREIS, riki2).
+//
 // 07.10.2026 (Ralph jaja, Maschine startet nach dem Zutatenfoto): body.ohne_zutaten=true -> Riki liest nur
 //   Name/Marke/Naehrwerte/Barcode, zutaten=[]. Der Scan-Worker hat die Zutaten dann schon aus der Vorlesung.
 //
@@ -41,6 +47,8 @@ const CORS = {
 const PREISE: Record<string, { in: number; out: number }> = {
   "claude-haiku-4-5-20251001": { in: 1.0, out: 5.0 },
   "claude-sonnet-4-6": { in: 3.0, out: 15.0 },
+  "claude-sonnet-5-5": { in: 2.0, out: 10.0 },
+  "claude-haiku-5-5": { in: 0.10, out: 0.50 },
 };
 
 const CONTRACT_VERSION = "riki_source_extraction_item_v1";
@@ -543,7 +551,23 @@ Deno.serve(async (req) => {
          kommt vom kleinen Haiku-Schnell-Check und darf Sonnets Lesung nicht allein verwerfen - bei P155 (Job 226)
          sagte Haiku NEIN, obwohl die Zutatenliste scharf und vollständig auf beiden Fotos stand. Dann fragt die
          Gegenprobe wie am 04.09. (KV-488) mit dem Lesemodell selbst nach; erst deren NEIN verwirft. */
-      const vorab = body?.gegenprobe;
+      let vorab = body?.gegenprobe;
+      /* v26: Schnell-Check lief parallel im Scan-Worker - Ergebnis am Auftrag/der Vorlesung abholen. */
+      if (!vorab && istAutopilot && (body?.schnellcheck_job_id || body?.schnellcheck_vorlesung_id)) {
+        const tw = Date.now();
+        while (Date.now() - tw < 3000) {
+          let sc: any = null;
+          try {
+            const { data } = await sb.rpc("cb_riki_scan_schnellcheck_holen", { p_job_id: body.schnellcheck_job_id ?? null, p_vorlesung_id: body.schnellcheck_vorlesung_id ?? null });
+            sc = data;
+          } catch (_) { sc = null; }
+          if (sc && (sc.antwort === "ja" || sc.antwort === "nein" || sc.antwort === "unklar")) {
+            if (sc.antwort === "ja" || sc.antwort === "nein") vorab = { antwort: sc.antwort, marke: null };
+            break;
+          }
+          await new Promise((r) => setTimeout(r, 250));
+        }
+      }
       vorabAntwort = (vorab && (vorab.antwort === "ja" || vorab.antwort === "nein")) ? vorab.antwort : null;
       const beleg = vorabAntwort === "ja"
         ? { antwort: "ja" as const, marke: (typeof vorab.marke === "string" && vorab.marke.trim()) ? vorab.marke.trim() : null, inTok: 0, outTok: 0 }

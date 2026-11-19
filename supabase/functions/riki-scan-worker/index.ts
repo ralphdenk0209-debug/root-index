@@ -1,5 +1,17 @@
 // RIKI-SCAN-WORKER
 //
+// v23 (2026-11-19, Scan in 5 s, Ralph „jaja, 1+2+3 bauen“):
+//   1) HINTERGRUND-ANTWORT. Aufrufe ueber pg_net (Vorlesung, Trigger trg_sofortstart mit hintergrund=true)
+//      bekommen sofort eine Antwort, die Arbeit laeuft per EdgeRuntime.waitUntil weiter. Gemessen 19.11.: pg_net
+//      schickt einen neuen Aufruf erst, wenn der laufende zurueck ist - der Auftrag wartete 6-23 s auf das Vorlesen
+//      (Test: leerer Anstoss 0,04 s Arbeit, Antwort erst 0,03 s nach Ende des Vorlesens). Der Minuten-Takt bleibt synchron.
+//   2) SCHNELL-CHECK PARALLEL. Das grosse Lesen startet sofort, der Schnell-Check (Haiku, ~1,1 s) laeuft daneben.
+//      riki-etikett holt das Check-Ergebnis nach dem Lesen am Auftrag/der Vorlesung ab (schnellcheck_job_id /
+//      schnellcheck_vorlesung_id) - gleiche Regel wie bisher: nur ein JA ersetzt die Gegenprobe. Kein Lebensmittel
+//      oder (Vorlesung) keine Zutatenliste -> Lesen wird abgebrochen, Ablauf wie bisher.
+//   3) PROBE MIT MODELLEN. optionen.modelle (Liste) im Probe-Auftrag liest dieselben Fotos mit mehreren Modellen.
+//   Ruecksprung: v22 aus Git (a0e415b).
+//
 // v22 (2026-11-05, #865 Non-Food-Blocker, Ralph „jaja, bauen“): FRAGE 4 MIT FESTER ANTWORTFORM. Mit Produktart
 //   antwortet der Schnell-Check ueber ein erzwungenes Werkzeug (tool_choice) statt als Textzeile – in der Messung
 //   vom 04.11. kam bei 29 % der echten Scans Fliesstext. NONFOOD_STOPP schaltet den Stopp ein: Kosmetik, Haushalt,
@@ -92,7 +104,7 @@ function response(body: unknown, status = 200) {
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
 const LESE_MODELL = "claude-sonnet-4-6";
-const WORKER = "riki-scan-worker v22";
+const WORKER = "riki-scan-worker v23";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
    Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
@@ -228,10 +240,10 @@ async function sha256Hex(x: string): Promise<string> {
   return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-async function rikiLesen(url: string, serviceKey: string, body: Record<string, unknown>): Promise<{ http: number; d: any }> {
+async function rikiLesen(url: string, serviceKey: string, body: Record<string, unknown>, signal?: AbortSignal): Promise<{ http: number; d: any }> {
   try {
     const r = await fetch(`${url}/functions/v1/riki-etikett`, {
-      method: "POST",
+      method: "POST", signal,
       headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
@@ -344,17 +356,27 @@ function cleanImages(job: any): string[] {
   return out.slice(0, 6);
 }
 
+// v23: Hintergrund-Antwort fuer pg_net-Aufrufe (Vorlesung, Trigger). pg_net schickt den naechsten Aufruf erst,
+// wenn der laufende geantwortet hat - lange Antworten haben Auftraege anderer Nutzer aufgehalten.
+declare const EdgeRuntime: { waitUntil(p: Promise<unknown>): void } | undefined;
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return response({ ok: false, fehler: "POST erforderlich" }, 405);
+  const body = await req.json().catch(() => ({}));
+  if ((body?.vorlesung_id || body?.hintergrund === true) && typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+    EdgeRuntime.waitUntil(arbeiten(req, body).catch(() => null));
+    return response({ ok: true, hintergrund: true, vorlesung: body?.vorlesung_id ?? null });
+  }
+  return await arbeiten(req, body);
+});
 
+async function arbeiten(req: Request, body: any): Promise<Response> {
   const url = Deno.env.get("SUPABASE_URL")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
   const sb = createClient(url, serviceKey, { auth: { persistSession: false } });
   const started = Date.now();
 
   try {
-    const body = await req.json().catch(() => ({}));
     /* v19 (04.11.2026, #859, Ralph „Test machen“): MESSUNG SCHNELL-CHECK. Nur Admin (cb_ist_admin mit dem
        Zugang des Aufrufers). Liest die Fotos der genannten Scans und fragt jedes Modell mit genau dem
        Schnell-Check von oben. Schreibt nichts ausser der Kostenbuchung - kein Job, kein Produkt. */
@@ -409,24 +431,25 @@ Deno.serve(async (req: Request) => {
       const aufgaben: Promise<any>[] = [];
       for (const pj of (auftrag.jobs ?? [])) {
         const bilder = cleanImages(pj);
-        for (const schlank of varianten) {
+        const modelle: string[] = Array.isArray(opt.modelle) && opt.modelle.length ? opt.modelle.map(String) : [LESE_MODELL];
+        for (const schlank of varianten) for (const modell of modelle) {
           aufgaben.push((async () => {
             const t0 = Date.now();
             try {
               const r = await fetch(`${url}/functions/v1/riki-etikett`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: schlank === true, nur_zeilen: schlank === "zeilen", gegenprobe: { antwort: "ja", marke: null } }),
+                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell, schlank: schlank === true, nur_zeilen: schlank === "zeilen", gegenprobe: { antwort: "ja", marke: null } }),
               });
               const d = await r.json().catch(() => null);
               const v = d?.vorschlag ?? {};
-              return { job_id: pj.job_id, schlank, http: r.status, ms: Date.now() - t0, bild_kb: Math.round(bilder.join("").length / 1024),
+              return { job_id: pj.job_id, schlank, modell, http: r.status, ms: Date.now() - t0, bild_kb: Math.round(bilder.join("").length / 1024),
                 out_token: d?.meta?.out_token ?? null, in_token: d?.meta?.in_token ?? null, kosten_usd: d?.meta?.kosten_usd ?? null,
                 name: v.name ?? null, marke: v.marke ?? null, naehrwerte_100g: v.naehrwerte_100g ?? null,
                 zutaten: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.original_text ?? z?.name) : null,
                 namen: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.name) : null,
                 e_nummern: v.zusatzstoffe?.e_nummern ?? null, warnungen: d?.warnungen ?? null, fehler: d?.error ?? null };
-            } catch (e) { return { job_id: pj.job_id, schlank, ms: Date.now() - t0, fehler: String(e) }; }
+            } catch (e) { return { job_id: pj.job_id, schlank, modell, ms: Date.now() - t0, fehler: String(e) }; }
           })());
         }
       }
@@ -439,18 +462,23 @@ Deno.serve(async (req: Request) => {
       const { data: vl } = await sb.rpc("cb_riki_scan_vorlesung_claim", { p_id: Number(body.vorlesung_id) });
       if (!vl) return response({ ok: true, vorlesung: "nicht offen" });
       const bilder = [String(vl.foto)];
+      // v23: Lesen startet sofort, der Schnell-Check laeuft daneben. riki-etikett holt das Check-Ergebnis
+      // nach dem Lesen an der Vorlesung ab (nur ein JA ersetzt die Gegenprobe, wie bisher).
+      const leseAbbruch = new AbortController();
+      const leseP = rikiLesen(url, serviceKey, { bilder, ean: vl.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN,
+        schnellcheck_vorlesung_id: vl.id }, leseAbbruch.signal);
       const sc = await schnellCheck(bilder, CHECK_MODELL, NONFOOD_STOPP);
       try { await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: sc, p_lesung: null, p_riki_http: null, p_fehler: null }); } catch (_) { /* nur Anzeige */ }
       try {
         if (sc?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: sc.in ?? 0, p_out: sc.out ?? 0, p_kosten: sc.kosten_usd, p_produkt_id: null, p_erfolg: true, p_fehler: null });
       } catch (_) { /* Buchung ist nicht lebenswichtig */ }
       if (sc?.antwort === "nein" || (NONFOOD_STOPP && sc?.nonfood)) {
-        // Keine Zutatenliste auf dem Foto (v22: oder kein Lebensmittel): nicht teuer lesen. Der Auftrag liest spaeter alles normal.
+        // Keine Zutatenliste auf dem Foto (v22: oder kein Lebensmittel): Lesen abbrechen. Der Auftrag liest spaeter alles normal.
+        leseAbbruch.abort();
         await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: null, p_lesung: { vorschlag: { zutaten: [] }, leer: true }, p_riki_http: null, p_fehler: null });
         return response({ ok: true, vorlesung: vl.id, ergebnis: "keine_zutatenliste", ms: Date.now() - started });
       }
-      const r = await rikiLesen(url, serviceKey, { bilder, ean: vl.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN,
-        gegenprobe: (sc && (sc.antwort === "ja" || sc.antwort === "nein")) ? { antwort: sc.antwort, marke: null } : undefined });
+      const r = await leseP;
       const gut = r.http === 200 && !!r.d?.vorschlag;
       await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: gut, p_schnellcheck: null, p_lesung: gut ? r.d : null, p_riki_http: r.http,
         p_fehler: gut ? null : String(r.d?.error ?? r.d?.fehler ?? `riki-etikett HTTP ${r.http}`) });
@@ -510,7 +538,18 @@ Deno.serve(async (req: Request) => {
         } catch (_) { vorlesung = null; }
       }
       // v10: Schnell-Check (nur bei neuer Lesung). Ergebnis sofort am Auftrag ablegen.
+      // v23: das grosse Lesen startet VOR dem Schnell-Check und laeuft parallel. riki-etikett holt das
+      // Check-Ergebnis nach dem Lesen am Auftrag ab (schnellcheck_job_id); nur ein JA ersetzt die Gegenprobe.
+      const leseAbbruch = new AbortController();
+      let leseP: Promise<Response> | null = null;
       if (!lesungWiederverwendet && !vorlesung) {
+        leseP = fetch(`${url}/functions/v1/riki-etikett`, {
+          method: "POST", signal: leseAbbruch.signal,
+          headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+          // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet (LESE_MODELL).
+          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, schnellcheck_job_id: job.job_id }),
+        });
+        leseP.catch(() => null); // Abbruch bei Kein-Lebensmittel ist gewollt
         schnell = await schnellCheck(images, CHECK_MODELL, NONFOOD_STOPP);
         try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
         try {
@@ -518,6 +557,7 @@ Deno.serve(async (req: Request) => {
         } catch (_) { /* Buchung ist nicht lebenswichtig */ }
         // v22 (#865): Kosmetik, Haushalt, Tier -> anhalten, bevor Sonnet liest. Supplement/Arznei/unklar nie.
         if (NONFOOD_STOPP && schnell?.nonfood) {
+          leseAbbruch.abort();
           await sb.rpc("cb_riki_scan_job_abschliessen", {
             p_job_id: job.job_id,
             p_ok: false,
@@ -528,17 +568,8 @@ Deno.serve(async (req: Request) => {
           continue;
         }
       }
-      if (!lesungWiederverwendet && !vorlesung) try {
-        const r = await fetch(`${url}/functions/v1/riki-etikett`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${serviceKey}`,
-            "Content-Type": "application/json",
-          },
-          // v7: Ralph-Entscheid A vom 09.09.2026 - im Hintergrund liest Sonnet, weil Haiku nicht
-          // reproduzierbar liest. riki-etikett nimmt body.modell, sonst Haiku.
-          body: JSON.stringify({ bilder: images, ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN, gegenprobe: (schnell && (schnell.antwort === "ja" || schnell.antwort === "nein")) ? { antwort: schnell.antwort, marke: null } : undefined }),
-        });
+      if (!lesungWiederverwendet && !vorlesung && leseP) try {
+        const r = await leseP;
         readStatus = r.status;
         read = await r.json().catch(() => null);
         if (!r.ok || !read?.vorschlag) {
@@ -769,4 +800,4 @@ Deno.serve(async (req: Request) => {
   } catch (e) {
     return response({ ok: false, fehler: String(e), dauer_ms: Date.now() - started }, 500);
   }
-});
+}
