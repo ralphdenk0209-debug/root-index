@@ -109,13 +109,17 @@
 //   mit Barcode-Beweis abweichen (auch wenn diese Werte selbst gesperrt wurden). Davert: Scan 500 g trocken (283 kcal),
 //   Namenstreffer 240-g-Dose (93 kcal) – Riki 2 hatte die Dose uebernommen. Befund „off_name_anderes_produkt".
 //
+// v7.3 (2026-11-19, Scan in 5 s, Ralph „und 5“): NUR-QUELLEN-MODUS fuer den Scan-Worker. body.nur_quellen = EAN fragt
+//   EDEKA, dm, OFF und Codecheck gleichzeitig ab (gemessen parallel Median 0,23 s) und gibt die Quellen samt Pruefbefunden
+//   zurueck. Kein Modell, kein Claim, nichts gespeichert. Der Schattenlauf ist unveraendert.
+//
 //   Fotolesung: claude-sonnet-5-5 (Wert aus shadow_v1.riki2_config.modell), eigener Deckel 1 $/Tag.
 //   Server-seitiger Fallback bei Ablehnung ist an (fallbacks: "default").
 
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import Anthropic from "npm:@anthropic-ai/sdk@0.135.0";
 
-const VERSION = "riki2 v7.2";
+const VERSION = "riki2 v7.3";
 const UA = "RootIndex/1.0 (root-index.de)";
 const QUELLE_TIMEOUT_MS = 8000;
 const RESERVE_ECHTE_SCANS = 0.5;
@@ -1423,6 +1427,21 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false } });
   try {
     const body = await req.json().catch(() => ({}));
+    // v7.3: nur Quellen fuer den Scan-Worker (Naehrwert-Luecke sofort fuellen)
+    if (body?.nur_quellen) {
+      // nur der Scan-Worker (Service-Zugang) - sonst koennte jeder die Haendler ueber uns abfragen
+      if ((req.headers.get("Authorization") ?? "") !== `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`) return antwort({ ok: false, fehler: "nur Service" }, 403);
+      const ean = String(body.nur_quellen).replace(/\D/g, "");
+      if (!gtinGueltig(ean)) return antwort({ ok: false, version: VERSION, fehler: "ean" }, 400);
+      const t0 = Date.now();
+      const leer = (q: string) => (e: unknown): Quelle => ({ quelle: q, ergebnis: "fehler", befunde: [{ art: "fehler", quelle: q, text: String(e).slice(0, 200) }], dauer_ms: Date.now() - t0 });
+      const quellen = await Promise.all([
+        quelleEdeka(ean).catch(leer("edeka-lmiv")), quelleDm(ean).catch(leer("dm")),
+        quelleOff(ean).catch(leer("openfoodfacts")), quelleCodecheck(ean).catch(leer("codecheck")),
+      ]);
+      for (const q of quellen) if (q.naehrwerte) q.befunde.push(...pruefeNaehrwerte(q.naehrwerte, String(q.name ?? ""), q.quelle));
+      return antwort({ ok: true, version: VERSION, ean, quellen, ms: Date.now() - t0 });
+    }
     const max = Math.max(1, Math.min(6, Number(body?.max ?? 3)));
     const { data, error } = await sb.rpc("cb_riki2_claim", { p_max: max });
     if (error) throw new Error("claim: " + error.message);

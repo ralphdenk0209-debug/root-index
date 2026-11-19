@@ -9,6 +9,9 @@
 //      riki-etikett holt das Check-Ergebnis nach dem Lesen am Auftrag/der Vorlesung ab (schnellcheck_job_id /
 //      schnellcheck_vorlesung_id) - gleiche Regel wie bisher: nur ein JA ersetzt die Gegenprobe. Kein Lebensmittel
 //      oder (Vorlesung) keine Zutatenliste -> Lesen wird abgebrochen, Ablauf wie bisher.
+//   4) LESEMODELL Sonnet 5.5 ohne Nachdenken (Probe 20 Scans: 5,6 statt 14,2 s), siehe LESE_MODELL.
+//   5) NAEHRWERT-LUECKE (Ralph „und 5“): Haendlerquellen per Barcode parallel (riki2 nur_quellen); fehlen nach dem Foto
+//      kcal/Eiweiss/KH/Fett, traegt cb_riki_scan_naehrwerte_luecke vor dem Abschluss die erste belegte Quelle ein.
 //   3) PROBE MIT MODELLEN. optionen.modelle (Liste) im Probe-Auftrag liest dieselben Fotos mit mehreren Modellen.
 //   Ruecksprung: v22 aus Git (a0e415b).
 //
@@ -103,7 +106,11 @@ function response(body: unknown, status = 200) {
 
 // #530: supabase-js wirft bei .insert() ein einfaches Objekt, keinen Error.
 // String() daraus ergibt "[object Object]" - der Grund war elfmal nicht lesbar.
-const LESE_MODELL = "claude-sonnet-4-6";
+/* v23 (19.11.2026, Ralph „jaja, 1+2+3 bauen“, Hebel 3 nach Probe): Sonnet 5.5 ohne Nachdenken (riki-etikett DENKEN).
+   Probe 20 echte Scans (riki_probe_auftrag 7/8): Lesen Median 5,6 s statt 14,2 s; Naehrwerte 17/20 gleich, Zutaten gleich
+   oder besser (4.6 doppelte Zeilen bei Job 248/251); 1x liess 5.5 Naehrwerte leer (Job 252, sperrt, nie falscher Wert).
+   Haiku 5.5 vertauschte Werte (Job 252/248) -> nicht genommen. Zurueck: "claude-sonnet-4-6". */
+const LESE_MODELL = "claude-sonnet-5-5";
 const WORKER = "riki-scan-worker v23";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
@@ -426,7 +433,7 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
       const { data: auftrag } = await sb.rpc("cb_riki_probe_holen");
       if (!auftrag) return response({ ok: true, probe: "kein offener Auftrag" });
       const opt = auftrag.optionen ?? {};
-      /* Variante: true = schlank, false = voll, "zeilen" = nur Zutatenzeilen (Tempo C) */
+      /* Variante: true = schlank, false = voll, "zeilen" = nur Zutatenzeilen (Tempo C), "prod" = wie der echte Weg (schlank + zeilen, v23) */
       const varianten: any[] = Array.isArray(opt.varianten) ? opt.varianten : [true];
       const aufgaben: Promise<any>[] = [];
       for (const pj of (auftrag.jobs ?? [])) {
@@ -439,7 +446,7 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
               const r = await fetch(`${url}/functions/v1/riki-etikett`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
-                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell, schlank: schlank === true, nur_zeilen: schlank === "zeilen", gegenprobe: { antwort: "ja", marke: null } }),
+                body: JSON.stringify({ bilder, ean: pj.ean || undefined, ean_pruefen: true, modell, schlank: schlank === true || schlank === "prod", nur_zeilen: schlank === "zeilen" || schlank === "prod", gegenprobe: { antwort: "ja", marke: null } }),
               });
               const d = await r.json().catch(() => null);
               const v = d?.vorschlag ?? {};
@@ -496,6 +503,17 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
 
       const jobStarted = Date.now();
       const images = cleanImages(job);
+      // v23 Hebel 5 (Ralph „und 5“): Haendlerquellen per Barcode sofort und parallel holen (riki2 nur_quellen,
+      // EDEKA/dm/OFF/Codecheck ~0,6 s). Gebraucht nur, wenn das Foto Naehrwerte nicht hergibt (unten).
+      const eanJob = String(job.ean ?? "").replace(/\D/g, "");
+      const quellenAbbruch = new AbortController();
+      const quellenUhr = setTimeout(() => quellenAbbruch.abort(), 8000);
+      const quellenP: Promise<any> | null = gtinGueltig(eanJob)
+        ? fetch(`${url}/functions/v1/riki2`, { method: "POST", signal: quellenAbbruch.signal,
+            headers: { Authorization: `Bearer ${serviceKey}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ nur_quellen: eanJob }) })
+            .then((r) => r.json()).catch(() => null).finally(() => clearTimeout(quellenUhr))
+        : null;
       if (!images.length) {
         await sb.rpc("cb_riki_scan_job_abschliessen", {
           p_job_id: job.job_id,
@@ -694,6 +712,22 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
         continue;
       }
 
+      // v23 Hebel 5: fehlen nach dem Foto Kalorien, Eiweiss, Kohlenhydrate oder Fett, sofort aus einer Haendlerquelle
+      // mit Barcode-Beweis nachtragen (cb_riki_scan_naehrwerte_luecke prueft und traegt mit Quellenangabe ein) -
+      // VOR dem Abschluss, damit Score und Freigabe noch im selben Lauf entstehen.
+      let nwLuecke: any = null;
+      try {
+        const nwF = read?.vorschlag?.naehrwerte_100g ?? null;
+        const fehlt = read?.vorschlag?.nur_portionswerte === true || !nwF || ["kcal", "protein", "kh", "fett"].some((k) => typeof nwF[k] !== "number");
+        if (fehlt && quellenP) {
+          const qd = await quellenP;
+          if (qd?.ok && Array.isArray(qd.quellen)) {
+            const { data, error } = await sb.rpc("cb_riki_scan_naehrwerte_luecke", { p_job_id: job.job_id, p_quellen: qd.quellen });
+            nwLuecke = error ? { fehler: fehlerText(error) } : { ...data, quellen_ms: qd.ms ?? null };
+          } else nwLuecke = { ergebnis: "quellen_nicht_erreichbar" };
+        }
+      } catch (e) { nwLuecke = { fehler: fehlerText(e) }; }
+
       // v3 (KV-491 Punkt 5, 04.09.): STATION QUELLE schreiben. product_source_state
       // hatte fuer jeden Etikettweg 0 Zeilen - die Kette war ab hier nicht belegbar.
       // Eine Zeile je Produkt und Quellenart, Referenz ist der Job. Ein Fehler hier
@@ -784,6 +818,7 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
         zutaten_rohtext: ing?.zutaten_rohtext ?? null,
         station_quelle: quelleStand,
         zusatzdaten: zusatzStand,
+        naehrwert_luecke: nwLuecke,
         dauer_ms: Date.now() - jobStarted,
       };
       const { data: finished, error: finishErr } = await sb.rpc("cb_riki_scan_job_abschliessen", {

@@ -51,6 +51,10 @@ const PREISE: Record<string, { in: number; out: number }> = {
   "claude-haiku-5-5": { in: 0.10, out: 0.50 },
 };
 
+/* v26: Neuere Modelle denken von sich aus und schreiben dabei 2-3x so viel (Probe 19.11.: Sonnet 5.5 ~1.900 statt
+   ~800 Ausgabe-Token, dadurch kaum schneller). Gleiche Einstellung wie riki-scan-worker CHECK_DENKEN. */
+const DENKEN: Record<string, unknown> = { "claude-haiku-5-5": { type: "disabled" }, "claude-sonnet-5-5": { type: "between_tools" } };
+
 const CONTRACT_VERSION = "riki_source_extraction_item_v1";
 const PAREN_ROLES = new Set(["processing", "composition", "explanation", "subingredients", "unresolved"]);
 
@@ -415,6 +419,7 @@ async function etikettGegenprobe(
       body: JSON.stringify({
         model: modell,
         max_tokens: 30,
+        ...(DENKEN[modell] ? { thinking: DENKEN[modell] } : {}),
         messages: [{ role: "user", content: frage }],
       }),
     });
@@ -530,7 +535,7 @@ Deno.serve(async (req) => {
     const inhalt:unknown[]=[];for(const b64 of bilder){const m=String(b64).match(/^data:(image\/[a-z]+);base64,(.+)$/);if(!m)continue;inhalt.push({type:"image",source:{type:"base64",media_type:m[1],data:m[2]}});}if(!inhalt.length)return new Response(JSON.stringify({error:"Bilder konnten nicht gelesen werden."}),{status:400,headers:{...CORS,"Content-Type":"application/json"}});
     inhalt.push({type:"text",text:"Lies aus diesen Etikettfotos die Nährwerttabelle (Spalte 'je 100 g'!), die Zutatenliste UND — falls vorhanden — die Wirkstoff-/Vitamin-Tabelle mit Mengen aus."+(body.ean?(body.ean_pruefen===true?" Das Produkt hat einen Barcode; lies seine Nummer selbst vom Foto ab (Feld ean_auf_foto).":` Der Barcode lautet ${body.ean}.`):" Dieses Produkt hat keinen Barcode.")+" Zutaten nur einmal aus der deutschen Fassung. Strukturiere jede Zutatenzeile nach Work #78 in original_text, base_ingredient, processing_modifiers, attributes, parenthetical_role, parenthetical_items und extraction_status. Klammerinhalt erst nach seiner Rolle beurteilen; composition/explanation erzeugt keine weiteren Produktzutaten. Unklar => unresolved. Einheiten nie umdeuten."+(body.schlank===true?" SCHLANK-MODUS (Vorrang vor dem Regelwerk): Lass bei jeder Zutat die Felder rating, kritisch und begruendung KOMPLETT weg - die Bewertung macht Root Index selbst. Gib trotzdem JEDE echte Zutat aus, auch wenn du sie nicht bewerten kannst. warnungen: hoechstens 2 kurze Saetze, sonst []. Keine Erklaerungen, nur das JSON.":"")+(body.nur_zeilen===true?" NUR-ZEILEN-MODUS (Vorrang vor Regelwerk und Work #78): Jede Zutat NUR als {\"name\": deutscher Kurzname, \"original_text\": Wortlaut wie auf dem Etikett inkl. Klammer und Prozent}. KEINE weiteren Felder je Zutat (kein base_ingredient, processing_modifiers, attributes, parenthetical_*, extraction_status, anteil_prozent, rating, kritisch, begruendung). Root Index zerlegt die Zeilen selbst. wirkstoffe und mikronaehrstoffe_100g nur, wenn wirklich eine Tabelle dafuer da ist, sonst [].":"")+(body.ohne_zutaten===true?" OHNE-ZUTATEN-MODUS (07.10.2026, Vorrang vor allem anderen): Die Zutatenliste wurde schon separat gelesen. Gib \"zutaten\": [] aus und bei zusatzstoffe text \"\" und e_nummern []. Lies nur Name, Marke, Kategorie, Bezug, Barcode, Naehrwerte und ggf. Wirkstoffe.":"")});
     const modell:string=body.modell??"claude-haiku-4-5-20251001";const t0=Date.now();
-    const ai=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json"},body:JSON.stringify({model:modell,max_tokens:8000,system:[{type:"text",text:REGELWERK,cache_control:{type:"ephemeral"}}],messages:[{role:"user",content:inhalt}]})});
+    const ai=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"x-api-key":key,"anthropic-version":"2023-06-01","content-type":"application/json"},body:JSON.stringify({model:modell,max_tokens:8000,...(DENKEN[modell]&&body.denken!==true?{thinking:DENKEN[modell]}:{}),system:[{type:"text",text:REGELWERK,cache_control:{type:"ephemeral"}}],messages:[{role:"user",content:inhalt}]})});
     const j=await ai.json();if(!ai.ok){await sb.rpc("cb_riki_buchen",{p_modus:modusName,p_modell:modell,p_in:0,p_out:0,p_kosten:0,p_produkt_id:null,p_erfolg:false,p_fehler:JSON.stringify(j).slice(0,400)});return new Response(JSON.stringify({error:"Riki konnte das Etikett nicht lesen."}),{status:502,headers:{...CORS,"Content-Type":"application/json"}});}
     const text=(j.content??[]).filter((c:any)=>c.type==="text").map((c:any)=>c.text).join("");let vorschlag:any=null;try{const m=text.match(/\{[\s\S]*\}/);vorschlag=JSON.parse(m?m[0]:text);}catch{vorschlag=null;}
     const usage:any=j.usage??{};const inTok=(usage.input_tokens??0)+(usage.cache_creation_input_tokens??0)+(usage.cache_read_input_tokens??0);const outTok=usage.output_tokens??0;const preis=PREISE[modell]??PREISE["claude-haiku-4-5-20251001"];const kosten=(inTok/1e6)*preis.in+(outTok/1e6)*preis.out;
