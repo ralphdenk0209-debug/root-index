@@ -37,3 +37,8 @@ end $function$;
 -- Fassung b (gleich danach eingespielt als mischpult_sofort_20261119b): auch eine schon offene, aber hängende
 -- Anforderung wird beim Klick sofort angestoßen (neu=false, aber http_post trotzdem). Gemessen 17:03 UTC:
 -- Klick 17:03:28,40 → Rechnung fertig nach 3,95 s (HTTP 200), Seite fragt alle 3 s nach.
+
+-- 19.11.2026 17:08 UTC: Takt mischpult-cache zurück auf jede Minute (nur noch Rückfall; der Klick stößt selbst an).
+-- Grund: um 17:04 UTC scheiterten 6 Takte gleichzeitig mit „job startup timeout“ (Last durch den Wächter-Nachlauf);
+-- ein 5-s-Takt startet 12 Hilfsprozesse je Minute und erhöht den Druck unnötig.
+select cron.alter_job(152, schedule := '* * * * *');
