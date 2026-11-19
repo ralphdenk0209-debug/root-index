@@ -12,6 +12,7 @@
 //   4) LESEMODELL Sonnet 5.5 ohne Nachdenken (Probe 20 Scans: 5,6 statt 14,2 s), siehe LESE_MODELL.
 //   5) NAEHRWERT-LUECKE (Ralph „und 5“): Haendlerquellen per Barcode parallel (riki2 nur_quellen); fehlen nach dem Foto
 //      kcal/Eiweiss/KH/Fett, traegt cb_riki_scan_naehrwerte_luecke vor dem Abschluss die erste belegte Quelle ein.
+//   v24 (Hebel 4, Ralph „und 4“): VORLESUNG JE FOTO - siehe vorlesungUebernehmen. Vorlesung ohne Zutatenliste liest weiter.
 //   3) PROBE MIT MODELLEN. optionen.modelle (Liste) im Probe-Auftrag liest dieselben Fotos mit mehreren Modellen.
 //   Ruecksprung: v22 aus Git (a0e415b).
 //
@@ -111,7 +112,7 @@ function response(body: unknown, status = 200) {
    oder besser (4.6 doppelte Zeilen bei Job 248/251); 1x liess 5.5 Naehrwerte leer (Job 252, sperrt, nie falscher Wert).
    Haiku 5.5 vertauschte Werte (Job 252/248) -> nicht genommen. Zurueck: "claude-sonnet-4-6". */
 const LESE_MODELL = "claude-sonnet-5-5";
-const WORKER = "riki-scan-worker v23";
+const WORKER = "riki-scan-worker v24";
 /* v18 (04.11.2026, #861, Ralph „Ja … dann das Bio Thema“): Siegel aus Open Food Facts sind keine Marke.
    Bei P155 (Job 227) stand in Scan_Cache.Marke nur "Bio" - das ueberschrieb die richtige Marke Pasta Nuova.
    Gleiche Liste und gleiche Regel wie SIEGEL/markeIstSiegel in riki-etikett (dort fuer Rikis gelesene Marke);
@@ -261,7 +262,7 @@ async function rikiLesen(url: string, serviceKey: string, body: Record<string, u
 }
 
 /* v15: Vorlesung zum Auftrag uebernehmen. null = nicht passend -> normaler Weg. */
-async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, job: any, images: string[]): Promise<any> {
+async function vorlesungUebernehmenV16(sb: any, url: string, serviceKey: string, job: any, images: string[]): Promise<any> {
   const { data: v0 } = await sb.rpc("cb_riki_scan_vorlesung_fuer_job", { p_job_id: job.job_id, p_ean: String(job.ean ?? "") });
   if (!v0 || !v0.foto_sha) return null;
   if (v0.schnellcheck?.antwort === "nein") return null;
@@ -312,6 +313,116 @@ async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, jo
   }
   return { read: vor, http: 200, schnell: v.schnellcheck ?? null,
     info: { vorlesung_id: v.id, foto_nr: idx + 1, weitere_fotos: rest.length, warte_ms: Date.now() - t0 } };
+}
+
+/* Schalter Hebel 4: true = Vorlesung je Foto zusammenfuehren (vorlesungUebernehmen), false = bisheriger Weg v16. */
+/* 19.11.2026 an nach Probe (riki_probe_auftrag 9/10, 16 Mehrfoto-Scans): 11 uebernommen, Naehrwerte 11/11 und Zutaten 10/11
+   gleich wie gemeinsames Lesen (1x ein Wort anders), 5 fielen absichtlich auf gemeinsames Lesen zurueck. */
+const JE_FOTO = true;
+
+/* v24 (19.11.2026, Hebel 4, Ralph „und 4“): VORLESUNG JE FOTO. Web und iPhone schicken jedes Foto direkt nach der
+   Aufnahme. Hier werden die Einzel-Lesungen zum Auftrag zusammengefuehrt:
+   - 1 Foto: seine Lesung ist dieselbe wie im normalen Weg (gleiches Bild, gleiches Modell) -> uebernehmen.
+   - mehrere Fotos: Fotos ohne Vorlesung (alte App, Fehler) werden jetzt einzeln gelesen. Zutaten kommen aus GENAU
+     einem Foto, Naehrwerte (100 g, vollstaendig) aus genau einem Foto oder aus gleichen Werten. Steht die Zutatenliste
+     auf mehreren Fotos, auf keinem, oder widersprechen sich die Naehrwerte -> null = alle Fotos gemeinsam lesen (v16).
+   null = nicht passend -> normaler Weg. Die Vorlesung ist nur eine Abkuerzung, nie eine zweite Wahrheit. */
+const META_FELDER = ["name", "marke", "kategorie_vorschlag", "ean_auf_foto", "name_etikett", "bio", "wirkstoffe_bezug", "verzehrempfehlung"];
+function nwVoll(l: any): boolean {
+  const n = l?.vorschlag?.naehrwerte_100g;
+  return l?.vorschlag?.nur_portionswerte !== true && !!n && ["kcal", "protein", "kh", "fett"].every((k) => typeof n[k] === "number");
+}
+function nwGleich(a: any, b: any): boolean {
+  const x = a?.vorschlag?.naehrwerte_100g, y = b?.vorschlag?.naehrwerte_100g;
+  return ["kcal", "protein", "kh", "fett"].every((k) => Math.abs(Number(x?.[k]) - Number(y?.[k])) <= (k === "kcal" ? 1 : 0.15));
+}
+async function vorlesungUebernehmen(sb: any, url: string, serviceKey: string, job: any, images: string[], probe = false): Promise<any> {
+  const holenListe = async () => {
+    const { data } = await sb.rpc("cb_riki_scan_vorlesungen_fuer_job", { p_job_id: job.job_id, p_ean: String(job.ean ?? "") });
+    return Array.isArray(data) ? data : [];
+  };
+  const liste = await holenListe();
+  if (!liste.length && !probe) return null;
+  const shas = await Promise.all(images.map(sha256Hex));
+  const zu: any[] = shas.map((sh) => liste.find((v: any) => v.foto_sha === sh) ?? null);
+  if (!zu.some(Boolean) && !probe) return null;
+  if (NONFOOD_STOPP && zu.some((v) => v?.schnellcheck?.nonfood)) return null; // normaler Weg haelt den Auftrag an
+  const t0 = Date.now();
+  // Fotos ohne Vorlesung sofort einzeln lesen - parallel zum Warten auf die laufenden Vorlesungen.
+  const nachP: Promise<any>[] = images.map((b, i) => zu[i] ? Promise.resolve(null)
+    : rikiLesen(url, serviceKey, { bilder: [b], ean: job.ean || undefined, ean_pruefen: true, modell: LESE_MODELL, schlank: SCHLANK, nur_zeilen: NUR_ZEILEN }));
+  const laeuft = () => zu.some((v) => v && (v.status === "offen" || v.status === "laeuft"));
+  while (laeuft() && Date.now() - t0 < 30000) {
+    await new Promise((r) => setTimeout(r, 500));
+    const l2 = await holenListe();
+    for (let i = 0; i < zu.length; i++) if (zu[i]) zu[i] = l2.find((v: any) => v.id === zu[i].id) ?? zu[i];
+  }
+  const nach = await Promise.all(nachP);
+  const lesungen: any[] = images.map((_, i) => {
+    if (zu[i]) return (zu[i].status === "fertig" && zu[i].lesung?.vorschlag && !zu[i].lesung?.leer) ? zu[i].lesung : null;
+    return (nach[i]?.http === 200 && nach[i]?.d?.vorschlag) ? nach[i].d : null;
+  });
+  if (lesungen.some((l) => !l)) return null;
+  const ids = zu.filter(Boolean).map((v) => v.id);
+  const info = { vorlesung_ids: ids, vorlesung_id: ids[0] ?? null, fotos: images.length, nachgelesen: nach.filter(Boolean).length, warte_ms: Date.now() - t0, modus: "je_foto" };
+  const schnellVon = (i: number) => zu[i]?.schnellcheck ?? null;
+  if (images.length === 1) return { read: lesungen[0], http: 200, schnell: schnellVon(0), info };
+
+  const mitZut = lesungen.map((l, i) => i).filter((i) => Array.isArray(lesungen[i].vorschlag.zutaten) && lesungen[i].vorschlag.zutaten.length > 0);
+  if (mitZut.length !== 1) return null;            // Liste ueber mehrere Fotos oder keine -> gemeinsam lesen
+  const mitNw = lesungen.map((l, i) => i).filter((i) => nwVoll(lesungen[i]));
+  if (mitNw.length > 1 && !mitNw.every((i) => nwGleich(lesungen[i], lesungen[mitNw[0]]))) return null;
+  const iZ = mitZut[0], iN = mitNw.length ? mitNw[0] : -1;
+  const vor = JSON.parse(JSON.stringify(lesungen[iZ]));
+  const m = vor.vorschlag;
+  const reihe = [iZ, ...(iN >= 0 && iN !== iZ ? [iN] : []), ...lesungen.map((_, i) => i).filter((i) => i !== iZ && i !== iN)];
+  // Name/Marke zuerst von der Vorderseite (Fotos ohne Zutaten/Naehrwerte), dann Zutaten-, dann Naehrwertfoto.
+  for (const k of ["name", "marke"]) {
+    for (const i of reihe.filter((i) => i !== iZ && i !== iN)) { const x = lesungen[i].vorschlag[k]; if (x) { m[k] = x; break; } }
+  }
+  for (const k of META_FELDER) {
+    if (m[k] !== null && m[k] !== undefined && m[k] !== "") continue;
+    for (const i of reihe) { const x = lesungen[i].vorschlag[k]; if (x !== null && x !== undefined && x !== "") { m[k] = x; break; } }
+  }
+  if (iN >= 0 && iN !== iZ) {
+    const n = lesungen[iN].vorschlag;
+    m.naehrwerte_100g = n.naehrwerte_100g; m.bezug = n.bezug ?? m.bezug; m.nur_portionswerte = false;
+    if (n.portion_g != null) m.portion_g = n.portion_g;
+  }
+  // Fehlende Nebenwerte (Salz, Zucker, ges. Fett, Ballaststoffe) aus anderen Fotos derselben Packung ergaenzen (Probe Job 240).
+  if (iN >= 0 && m.naehrwerte_100g) {
+    m.naehrwerte_100g = { ...m.naehrwerte_100g };
+    for (const k of ["salz", "zucker", "ges_fett", "ballaststoffe"]) {
+      if (typeof m.naehrwerte_100g[k] === "number") continue;
+      for (const i of reihe) {
+        const x = lesungen[i].vorschlag; const v = x?.naehrwerte_100g?.[k];
+        if (i !== iN && x?.nur_portionswerte !== true && typeof v === "number") { m.naehrwerte_100g[k] = v; break; }
+      }
+    }
+  }
+  if (iN < 0) {
+    m.nur_portionswerte = lesungen.some((l) => l.vorschlag.nur_portionswerte === true);
+  }
+  for (const k of ["wirkstoffe", "mikronaehrstoffe_100g"]) {
+    if (Array.isArray(m[k]) && m[k].length) continue;
+    for (const i of reihe) { const x = lesungen[i].vorschlag[k]; if (Array.isArray(x) && x.length) { m[k] = x; break; } }
+  }
+  // Jede Lesung spricht nur fuer ihren Teil (wie v15): Zutatenfoto fuer Zutaten, Naehrwertfoto fuer Naehrwerte.
+  const nwWort = /n(ä|ae)hrwert|kalorien|eiwei|kohlenhydrat|portion|fett|salz|zucker/i, zutWort = /zutat/i;
+  const w: unknown[] = [];
+  lesungen.forEach((l, i) => {
+    for (const x of (l.warnungen ?? [])) {
+      const t = String(x);
+      if (i === iZ && iN >= 0 && iN !== iZ && nwWort.test(t)) continue;
+      if (i !== iZ && zutWort.test(t)) continue;
+      if (i !== iZ && i !== iN && nwWort.test(t)) continue;
+      if (!w.includes(t)) w.push(t);
+    }
+  });
+  vor.warnungen = w.slice(0, 6);
+  vor.score_erlaubt = iN >= 0 ? lesungen[iN].score_erlaubt !== false : false; // Naehrwert-Pruefung des Naehrwertfotos
+  vor.meta = { ...(vor.meta ?? {}), je_foto: { zutaten_foto: iZ + 1, naehrwert_foto: iN >= 0 ? iN + 1 : null, fotos: images.length } };
+  return { read: vor, http: 200, schnell: schnellVon(iZ), info };
 }
 
 // v9: GTIN-Pruefziffer (EAN-8/UPC-12/EAN-13/GTIN-14).
@@ -436,9 +547,27 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
       /* Variante: true = schlank, false = voll, "zeilen" = nur Zutatenzeilen (Tempo C), "prod" = wie der echte Weg (schlank + zeilen, v23) */
       const varianten: any[] = Array.isArray(opt.varianten) ? opt.varianten : [true];
       const aufgaben: Promise<any>[] = [];
+      // v24: Probe „je Foto“ - jedes Foto einzeln lesen und zusammenfuehren wie bei Vorlesungen (ohne Vorlesung, ohne Speichern)
+      if (opt.je_foto === true) {
+        const leer = { rpc: async (n: string, a: unknown) => n === "cb_riki_scan_vorlesungen_fuer_job" ? { data: [] } : sb.rpc(n, a) };
+        for (const pj of (auftrag.jobs ?? [])) {
+          const bilder = cleanImages(pj);
+          aufgaben.push((async () => {
+            const t0 = Date.now();
+            try {
+              const vr = await vorlesungUebernehmen(leer, url, serviceKey, { job_id: pj.job_id, ean: pj.ean }, bilder, true);
+              const v = vr?.read?.vorschlag ?? {};
+              return { job_id: pj.job_id, schlank: "je_foto", modell: LESE_MODELL, ms: Date.now() - t0, fotos: bilder.length, uebernommen: !!vr,
+                name: v.name ?? null, marke: v.marke ?? null, naehrwerte_100g: v.naehrwerte_100g ?? null,
+                zutaten: Array.isArray(v.zutaten) ? v.zutaten.map((z: any) => z?.original_text ?? z?.name) : null,
+                warnungen: vr?.read?.warnungen ?? null, score_erlaubt: vr?.read?.score_erlaubt ?? null, je_foto: vr?.read?.meta?.je_foto ?? null };
+            } catch (e) { return { job_id: pj.job_id, schlank: "je_foto", ms: Date.now() - t0, fehler: String(e) }; }
+          })());
+        }
+      }
       for (const pj of (auftrag.jobs ?? [])) {
         const bilder = cleanImages(pj);
-        const modelle: string[] = Array.isArray(opt.modelle) && opt.modelle.length ? opt.modelle.map(String) : [LESE_MODELL];
+      const modelle: string[] = Array.isArray(opt.modelle) && opt.modelle.length ? opt.modelle.map(String) : [LESE_MODELL];
         for (const schlank of varianten) for (const modell of modelle) {
           aufgaben.push((async () => {
             const t0 = Date.now();
@@ -479,8 +608,10 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
       try {
         if (sc?.kosten_usd) await sb.rpc("cb_riki_buchen", { p_modus: "etikett-schnellcheck", p_modell: CHECK_MODELL, p_in: sc.in ?? 0, p_out: sc.out ?? 0, p_kosten: sc.kosten_usd, p_produkt_id: null, p_erfolg: true, p_fehler: null });
       } catch (_) { /* Buchung ist nicht lebenswichtig */ }
-      if (sc?.antwort === "nein" || (NONFOOD_STOPP && sc?.nonfood)) {
-        // Keine Zutatenliste auf dem Foto (v22: oder kein Lebensmittel): Lesen abbrechen. Der Auftrag liest spaeter alles normal.
+      // v24 (Hebel 4): ohne Zutatenliste (z. B. Naehrwertfoto, Vorderseite) wird weitergelesen - Naehrwerte und Name
+      // kommen jetzt aus genau diesen Fotos. Abgebrochen wird nur bei Kein-Lebensmittel.
+      if (NONFOOD_STOPP && sc?.nonfood) {
+        // v22: kein Lebensmittel: Lesen abbrechen. Der Auftrag haelt spaeter im normalen Weg an.
         leseAbbruch.abort();
         await sb.rpc("cb_riki_scan_vorlesung_ablegen", { p_id: vl.id, p_ok: true, p_schnellcheck: null, p_lesung: { vorschlag: { zutaten: [] }, leer: true }, p_riki_http: null, p_fehler: null });
         return response({ ok: true, vorlesung: vl.id, ergebnis: "keine_zutatenliste", ms: Date.now() - started });
@@ -543,7 +674,7 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
       let vorlesung: any = null;
       if (!lesungWiederverwendet) {
         try {
-          const vr = await vorlesungUebernehmen(sb, url, serviceKey, job, images);
+          const vr = JE_FOTO ? await vorlesungUebernehmen(sb, url, serviceKey, job, images) : await vorlesungUebernehmenV16(sb, url, serviceKey, job, images);
           if (vr) {
             read = vr.read; readStatus = vr.http; schnell = vr.schnell; vorlesung = vr.info;
             try { await sb.rpc("cb_riki_scan_job_zwischenstand", { p_job_id: job.job_id, p_schnellcheck: schnell }); } catch (_) { /* nur Anzeige */ }
@@ -551,7 +682,9 @@ async function arbeiten(req: Request, body: any): Promise<Response> {
               const ab = await sb.rpc("cb_riki_scan_lesung_ablegen", { p_job_id: job.job_id, p_lesung: read, p_modell: LESE_MODELL, p_riki_http: 200 });
               lesungAbgelegt = ab.error ? { fehler: fehlerText(ab.error) } : ab.data;
             } catch (e) { lesungAbgelegt = { fehler: fehlerText(e) }; }
-            try { await sb.rpc("cb_riki_scan_vorlesung_verbraucht", { p_id: vr.info.vorlesung_id, p_job_id: job.job_id }); } catch (_) { /* nur Buchfuehrung */ }
+            for (const vid of (vr.info.vorlesung_ids ?? [vr.info.vorlesung_id])) {
+              try { await sb.rpc("cb_riki_scan_vorlesung_verbraucht", { p_id: vid, p_job_id: job.job_id }); } catch (_) { /* nur Buchfuehrung */ }
+            }
           }
         } catch (_) { vorlesung = null; }
       }

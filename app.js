@@ -14750,20 +14750,26 @@ function renderEtiShots(){
    Das Zutatenfoto geht sofort zu Riki (cb_riki_scan_vorlesen). Waehrend Naehrwerte und
    Vorderseite fotografiert werden, liest Riki schon die Zutaten. Der Auftrag beim Absenden
    erkennt dasselbe Foto und uebernimmt sie - die Wartezeit danach wird deutlich kuerzer.
-   Hier wird nur der Schnell-Check abgeholt und als Satz gezeigt. */
+   Hier wird nur der Schnell-Check abgeholt und als Satz gezeigt.
+   19.11.2026 (Scan in 5 s, Hebel 4, Ralph „und 4“): JEDES Foto geht sofort zu Riki, nicht nur das Zutatenfoto.
+   Gemessen: zwischen erstem Foto und „Senden“ vergehen bei 2+ Fotos im Mittel 24 s - beim Senden ist dann alles
+   gelesen. Der Satz zum Schnell-Check kommt weiter nur fuer das Zutatenfoto. */
 function etiVorlesenPruefen(){
-  var f=ETI_SHOTS.zutaten||null;
-  if(f===window._etiVorFoto) return;
-  window._etiVorFoto=f;
-  if(!f) return;
   var ean=String(ETI_EAN||"").replace(/[^0-9]/g,"");
   if(ean.length<8 || typeof client==="undefined" || typeof session==="undefined" || !session) return;
-  etiVorlesen(f, ean);
+  var gesendet=window._etiVorGesendet=window._etiVorGesendet||[];
+  ETI_SLOTS.forEach(function(s){
+    var f=ETI_SHOTS[s[0]];
+    if(!f || gesendet.indexOf(f)>=0) return;
+    gesendet.push(f); if(gesendet.length>12) gesendet.shift();
+    etiVorlesen(f, ean, s[0]);
+  });
 }
-async function etiVorlesen(foto, ean){
+async function etiVorlesen(foto, ean, slot){
   var r=null;
   try{ var a=await client.rpc("cb_riki_scan_vorlesen",{p_ean:ean,p_foto:foto}); r=(typeof a.data==="string")?JSON.parse(a.data):a.data; }catch(e){ return; }
   if(!r || !r.ok || !r.vorlesung_id) return;
+  if((slot||"zutaten")!=="zutaten") return;   /* 19.11.2026: andere Fotos nur anstossen, kein Satz */
   for(var i=0;i<20;i++){
     await new Promise(function(ok){ setTimeout(ok,1000); });
     if(ETI_SHOTS.zutaten!==foto) return;
@@ -18628,7 +18634,7 @@ window.addEventListener('scroll',function(){ if(typeof updateFloatBtns==='functi
    Also: Die App prüft selbst, ob sie veraltet ist, und sagt es.
    ============================================================ */
 
-const APP_BUILD="2026-11-17-03";
+const APP_BUILD="2026-11-19-01";
 let _updateGezeigt = false;
 
 /* Produkteditor im Consumer nur bei echtem Admin-Bedarf nachladen. Im
