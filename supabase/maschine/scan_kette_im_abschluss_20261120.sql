@@ -1,0 +1,78 @@
+-- Scan in 5 s, Hebel 6 a + b (Ralph „jaja, a und b“, 20.11.2026)
+--
+-- Befund (20.11., Steuerungs-Chat + Unterchat Scan-Tempo): 49 von 56 Luecken der scan-kette ueber 10 s (12 h, bis 101 s)
+-- fallen in lange Laeufe von off-abgleich (38x, Ø 34 s, bis 104 s), rezeptur-abgleich (10x) und naehrwert-abgleich (9x).
+-- pg_cron startet die Sekundentakte dann nicht (cron.use_background_workers = off, max_running_jobs 32 nicht erreicht).
+--
+-- a) cb_riki_scan_job_abschliessen: Ist ein Foto-Auftrag nach dem Sofort-Durchlauf nicht sauber (Score unvollstaendig
+--    oder Freigabe-Sperre), laeuft shadow_v1.cb_scan_kette(pid) sofort im Abschluss mit (Zusatzstoff-Achse, Luecke aus
+--    Gratisquellen, Sofort-Durchlauf) statt auf den 2-s-Takt zu warten. Danach wird neu geprueft; ist es jetzt sauber,
+--    endet der Auftrag als 'fertig' mit Freigabe - die App zeigt den Index noch waehrend sie nachfragt.
+--    ergebnis_meta.kette wird gesetzt, der Takt scan-kette ueberspringt den Auftrag dann (bleibt Rueckfall fuer Fehler).
+-- b) Die drei langen Takte laufen in kleinen Losen, gleiche Menge je Stunde:
+--    off-abgleich      3-59/10, 10 Stueck (60/h)  ->  jede Minute, 1 Stueck (60/h)
+--    naehrwert-abgleich 8-59/15, 10 Stueck (40/h) ->  1-59/3, 2 Stueck (40/h)
+--    rezeptur-abgleich 6-59/10, 30 Stueck (180/h) -> 0-58/2, 6 Stueck (180/h)
+--
+-- Ruecksprung a): Funktion aus Sicherung shadow_v1._sich_fn_abschliessen_20261120 (Spalte def) neu anlegen.
+-- Ruecksprung b): cron.alter_job mit den alten Werten oben (Befehle unten in Kommentaren).
+
+create table if not exists shadow_v1._sich_fn_abschliessen_20261120 as
+select now() am, pg_get_functiondef('public.cb_riki_scan_job_abschliessen'::regproc) def;
+
+do $do$
+declare d text; n text;
+begin
+  d := pg_get_functiondef('public.cb_riki_scan_job_abschliessen'::regproc);
+  n := d;
+  n := replace(n, '  v_frei jsonb := null;', '  v_frei jsonb := null;
+  v_kette jsonb := null;');
+  n := replace(n, '  begin
+    perform public.cb_referenz_freigabe_guard(v.produkt_id);
+  exception when others then
+    v_ref_ok := false;
+  end;
+', '  begin
+    perform public.cb_referenz_freigabe_guard(v.produkt_id);
+  exception when others then
+    v_ref_ok := false;
+  end;
+
+  /* 20.11.2026 (Scan in 5 s, Hebel 6 a, Ralph „jaja, a und b“): nicht sauber -> Scan-Kette sofort hier statt im
+     2-s-Takt (der setzte unter Last bis 101 s aus). Danach neu pruefen. Fehler halten den Abschluss nicht auf. */
+  if not v_score_ok or not v_ref_ok then
+    begin
+      v_kette := shadow_v1.cb_scan_kette(v.produkt_id);
+    exception when others then
+      v_kette := jsonb_build_object(''fehler'', left(sqlerrm, 200));
+    end;
+    select coalesce(s."Score_vollstaendig",false) into v_score_ok from public."Scores" s where s."Produkt_ID"=v.produkt_id;
+    v_ref_ok := true;
+    begin
+      perform public.cb_referenz_freigabe_guard(v.produkt_id);
+    exception when others then
+      v_ref_ok := false;
+    end;
+  end if;
+');
+  n := replace(n, 'ergebnis_meta=coalesce(p_ergebnis_meta,''{}''::jsonb)||jsonb_build_object(''sofort'',v_sofort)',
+                  'ergebnis_meta=coalesce(p_ergebnis_meta,''{}''::jsonb)||jsonb_build_object(''sofort'',v_sofort)
+          ||case when v_kette is null then ''{}''::jsonb else jsonb_build_object(''kette'', v_kette||jsonb_build_object(''am'',now(),''im_abschluss'',true),
+               ''luecke_sofort'', coalesce(v_kette->''luecke'', jsonb_build_object(''ergebnis'',''nicht_noetig''))||jsonb_build_object(''am'',now())) end');
+  if n = d or position('v_kette jsonb := null' in n) = 0 or position('Hebel 6 a' in n) = 0
+     or (length(n) - length(replace(n, 'im_abschluss', ''))) / length('im_abschluss') <> 2 then
+    raise exception 'cb_riki_scan_job_abschliessen: Ersetzung nicht vollstaendig';
+  end if;
+  execute n;
+end $do$;
+
+-- b) Takte in kleine Lose. Alte Befehle (Ruecksprung):
+--  155 off-abgleich       '3-59/10 * * * *'  set statement_timeout='280s'; select public.cb_off_abgleich_takt(10) where public.cb_bestand_frei();
+--  156 naehrwert-abgleich '8-59/15 * * * *'  set statement_timeout='280s'; select public.cb_naehrwert_abgleich_takt(10) where public.cb_bestand_frei();
+--  194 rezeptur-abgleich  '6-59/10 * * * *'  set statement_timeout='280s'; select public.cb_rezeptur_abgleich_takt() where public.cb_bestand_frei(); /* 11.11.2026 Ralph „A, jaja“: Rezeptur-Abgleich kostenlos */
+select cron.alter_job(155, schedule := '* * * * *',
+  command := 'set statement_timeout=''280s''; select public.cb_off_abgleich_takt(1) where public.cb_bestand_frei(); /* 20.11.2026 Ralph jaja: kleine Lose (Scan-Kette hat Vorrang), 60/h wie vorher */');
+select cron.alter_job(156, schedule := '1-59/3 * * * *',
+  command := 'set statement_timeout=''280s''; select public.cb_naehrwert_abgleich_takt(2) where public.cb_bestand_frei(); /* 20.11.2026 Ralph jaja: kleine Lose (Scan-Kette hat Vorrang), 40/h wie vorher */');
+select cron.alter_job(194, schedule := '0-58/2 * * * *',
+  command := 'set statement_timeout=''280s''; select public.cb_rezeptur_abgleich_takt(6) where public.cb_bestand_frei(); /* 11.11.2026 Ralph „A, jaja“: Rezeptur-Abgleich kostenlos. 20.11.2026 Ralph jaja: kleine Lose (Scan-Kette hat Vorrang), 180/h wie vorher */');
