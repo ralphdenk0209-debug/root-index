@@ -153,3 +153,11 @@ begin
   if n = d then raise exception 'Lastpruefung nicht gefunden'; end if;
   execute n;
 end $do$;
+
+-- Nachtrag 3 (20.11.2026, Ralph „jaja, umstellen“): Ursache der Scan-Ketten-Luecken. Ein Befehl „set statement_timeout='280s'; select …“
+-- (zwei Anweisungen) laesst den pg_cron-Planer nach dem SET-Ergebnis blockierend auf das zweite warten - fuer die ganze Laufzeit der
+-- Abfrage startet und beendet er nichts (belegt 07:46 und 07:57 in postgres_logs). Die drei Abgleich-Takte jetzt als EIN Befehl;
+-- die Zeitgrenze 280s steht bereits in den Funktionen (proconfig). Ruecksprung: set-Vorsatz wieder voranstellen.
+select cron.alter_job(155, command := 'select public.cb_off_abgleich_takt(1) where public.cb_bestand_frei(); /* 20.11.2026 Ralph „jaja, umstellen“: EIN Befehl - ein vorangestelltes set legt den pg_cron-Planer fuer die ganze Laufzeit lahm; Zeitgrenze 280s steht in der Funktion; 60/h */');
+select cron.alter_job(156, command := 'select public.cb_naehrwert_abgleich_takt(1) where public.cb_bestand_frei(); /* 20.11.2026 Ralph „jaja, umstellen“: EIN Befehl - ein vorangestelltes set legt den pg_cron-Planer fuer die ganze Laufzeit lahm; Zeitgrenze 280s steht in der Funktion; 40/h */');
+select cron.alter_job(194, command := 'select public.cb_rezeptur_abgleich_takt(3) where public.cb_bestand_frei(); /* 11.11.2026 Ralph „A, jaja“: Rezeptur-Abgleich kostenlos. 20.11.2026 Ralph „jaja, umstellen“: EIN Befehl - ein vorangestelltes set legt den pg_cron-Planer fuer die ganze Laufzeit lahm; Zeitgrenze 280s steht in der Funktion; 180/h */');
