@@ -140,3 +140,16 @@ select pid, prio, naechste_am from (
    order by 1 desc limit v_n)
 ) x order by prio, naechste_am nulls first, pid desc limit v_n
 $f$;
+
+-- Nachtrag 2 (20.11.2026, Ralph „jaja, laufen lassen“): Der Rezeptur-Takt setzte bei Ampel „gelb (Wiederanlauf)“ aus. Die zeigt nur,
+-- dass die Notbremse Hilfstakte (tmp-%) nach einer Scan-Ketten-Luecke pausiert hat - keine echte Last. Folge: wb_rezeptur 31 -> 75.
+-- Jetzt pausiert er nur bei echter Ueberlast (rot/gelb). Ruecksprung: Bedingung wieder auf <> 'gruen'.
+do $do$
+declare d text; n text;
+begin
+  d := pg_get_functiondef('public.cb_rezeptur_abgleich_takt'::regproc);
+  n := replace(d, $a$if coalesce(public.cb_last_stand(10)->>'ampel','gruen') <> 'gruen' then$a$,
+                  $b$if coalesce(public.cb_last_stand(10)->>'ampel','gruen') not in ('gruen','gelb (Wiederanlauf)') then /* 20.11.2026 Ralph „jaja, laufen lassen“: Wiederanlauf der Notbremse ist keine Last - sonst entstehen Ueberfaellige */$b$);
+  if n = d then raise exception 'Lastpruefung nicht gefunden'; end if;
+  execute n;
+end $do$;
