@@ -1,7 +1,7 @@
 {
-  "build": 202611210751,
-  "version": "1.0.13",
-  "notes": "Neu: GitHub in der Seitenleiste – eigene Repositories durchblättern, Dateien öffnen und herunterladen, ein Repository mit einem Klick auf den Mac holen. In Projektordnern zeigt die Statusleiste den Git-Stand.",
-  "url": "https://foldair.de/download/Foldair-1.0.13.update",
-  "sha256": "2633780622f1f1e1e7ea131e13d8a4754fe31d88f24ada8503cf8555b0eea1fd"
+  "build": 202611212025,
+  "version": "1.0.14",
+  "notes": "Suchen & Baum: gut sichtbarer Knopf und ⌘F, Popup mit Schnellzugriff und Ordnerbaum des Macs. Zwei Ordner: rechte Seite mit eigener, zuklappbarer Seitenleiste.",
+  "url": "https://foldair.de/download/Foldair-1.0.14.update",
+  "sha256": "0b4d60d5e4d7e85de58ce819e696ecd21065b6340e692ca1f50ae0385dff4ca6"
 }
