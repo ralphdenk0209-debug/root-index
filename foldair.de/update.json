@@ -1,7 +1,7 @@
 {
-  "build": 202611202317,
-  "version": "1.0.12",
-  "notes": "Neu: Chat mit der Apple-KI im Agenten – Mails prüfen und wegräumen, Dateien und Ordner finden, öffnen und verschieben, Regeln anlegen, Verbesserungen vorschlagen (läuft nur auf deinem Mac, ausgeführt wird erst nach deinem Klick). Mails sortieren lernt von deinen Klicks und räumt auf Wunsch täglich automatisch auf. Schnelle Suche über Spotlight mit Baum-Ansicht. Zwei Ordner starten 50:50. Größe und freier Platz bei iCloud und eingebundenen Servern. Neue Symbolleiste mit wählbarer Farbe. Löschen auf Netzlaufwerken ohne Papierkorb fragt jetzt „Endgültig löschen?“.",
-  "url": "https://foldair.de/download/Foldair-1.0.12.update",
-  "sha256": "aa79839eeff7d59258ba7d19355bfd47646e55d47678fe1ee250550fcbb8e8c4"
+  "build": 202611210751,
+  "version": "1.0.13",
+  "notes": "Neu: GitHub in der Seitenleiste – eigene Repositories durchblättern, Dateien öffnen und herunterladen, ein Repository mit einem Klick auf den Mac holen. In Projektordnern zeigt die Statusleiste den Git-Stand.",
+  "url": "https://foldair.de/download/Foldair-1.0.13.update",
+  "sha256": "2633780622f1f1e1e7ea131e13d8a4754fe31d88f24ada8503cf8555b0eea1fd"
 }
