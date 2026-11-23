@@ -1,7 +1,7 @@
 {
-  "build": 202611230758,
-  "version": "1.0.15",
-  "notes": "Vorschau öffnet sich beim Anklicken einer Datei. Rechte Seitenleiste in „Zwei Ordner“ nicht mehr grau. Neu: Foldair bewerten – im Menü Foldair.",
-  "url": "https://foldair.de/download/Foldair-1.0.15.update",
-  "sha256": "08973a49b1b07a8d9a107e0b20e7e04d5f7ebe0af0dc920a90c161fec754cc55"
+  "build": 202611231029,
+  "version": "1.0.16",
+  "notes": "GitHub mit „Zwei Ordner“: links GitHub, rechts ein Ordner auf dem Mac – „Nach rechts“ lädt markierte Dateien direkt dorthin.",
+  "url": "https://foldair.de/download/Foldair-1.0.16.update",
+  "sha256": "d1d0510851e511a472aeb5e0f18f69e9cc28d2d690ac675830bc3849e3e43586"
 }
