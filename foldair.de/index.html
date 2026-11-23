@@ -80,6 +80,12 @@
   #gross { position: fixed; inset: 0; background: rgba(8, 14, 28, 0.85); display: none; align-items: center; justify-content: center; padding: 3vw; z-index: 10; cursor: zoom-out; }
   #gross img { max-width: 100%; max-height: 100%; border-radius: 12px; }
   @media (max-width: 820px) { .shots { grid-template-columns: 1fr; } }
+  .trust { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px; margin-top: 22px; padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 14px; }
+  .trust div { font-size: 14px; color: var(--muted); line-height: 1.4; }
+  .trust b { display: block; color: var(--text); font-size: 15px; }
+  .trust b::before { content: "✓"; color: #16a34a; margin-right: 7px; font-weight: 800; }
+  .handy { display: none; margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: var(--sky1); color: var(--text); font-size: 14px; }
+  @media (max-width: 520px) { .trust { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -98,7 +104,14 @@
         <a class="btn primary" href="download/Foldair.dmg">14 Tage kostenlos testen</a>
         <a class="btn gold" href="#preise">Kaufen – ab 19,99 €</a>
       </div>
-      <p class="small">Für macOS 14 oder neuer · Apple-Chip und Intel · von Apple geprüft · kein Abo</p>
+      <p class="small">Für macOS 14 oder neuer · Apple-Chip und Intel · kein Abo</p>
+      <p class="handy" id="handy">📱 Du bist gerade am Handy. Foldair läuft auf dem Mac – schick dir den Link per AirDrop, Mail oder Notiz und lade es dort.</p>
+      <div class="trust">
+        <div><b>Von Apple geprüft</b>Foldair ist von Apple auf Schadsoftware geprüft und signiert.</div>
+        <div><b>Bleibt auf deinem Mac</b>Keine Cloud, kein Konto, keine Datensammlung.</div>
+        <div><b>Testen ohne Zahlungsdaten</b>14 Tage alles frei, keine Anmeldung.</div>
+        <div><b>Ein echter Entwickler</b>Ralph Denk aus Postau, Niederbayern – <a href="impressum.html">Impressum</a>.</div>
+      </div>
     </div>
     <img class="icon" src="foldair.png" alt="Foldair-Symbol: violetter Ordner">
   </div>
@@ -161,6 +174,20 @@
   </div>
 </section>
 
+<section id="installieren">
+  <div class="wrap">
+    <div class="band">
+      <h2>So installierst du Foldair</h2>
+      <p>Dauert eine Minute – ohne Konto und ohne Anmeldung.</p>
+      <div class="steps">
+        <div class="step"><b>1. Herunterladen</b>Klick auf „14 Tage kostenlos testen“. Die Datei Foldair.dmg landet in deinen Downloads.</div>
+        <div class="step"><b>2. In Programme ziehen</b>Öffne Foldair.dmg und zieh das Foldair-Symbol in den Ordner „Programme“.</div>
+        <div class="step"><b>3. Öffnen</b>macOS fragt einmal, ob du die App aus dem Internet öffnen willst, und sagt dazu: Apple hat sie auf Schadsoftware überprüft. Klick auf „Öffnen“ – fertig.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <section id="preise">
   <div class="wrap">
     <h2>Preise</h2>
@@ -192,6 +219,7 @@
 <section id="fragen">
   <div class="wrap">
     <h2>Häufige Fragen</h2>
+    <details><summary>Ist Foldair sicher, obwohl es nicht aus dem App Store kommt?</summary><p>Ja. Foldair ist mit einem Entwickler-Zertifikat von Apple signiert und von Apple auf Schadsoftware geprüft (notarisiert). Darum öffnet es sich ohne Warnung. Viele bekannte Mac-Apps werden genauso direkt verkauft. Hinter Foldair steht ein echter Mensch mit Adresse im <a href="impressum.html">Impressum</a>.</p></details>
     <details><summary>Ersetzt Foldair den Finder?</summary><p>Foldair läuft neben dem Finder. Du kannst den Finder weiter benutzen und Foldair für alles nehmen, was dort fehlt.</p></details>
     <details><summary>Brauche ich Apple Intelligence?</summary><p>Nein. Regeln, doppelte Dateien, Fotos und Belege funktionieren auf jedem Mac mit macOS 14. Mit Apple Intelligence erkennt Foldair Dateinamen und Rezepte noch besser.</p></details>
     <details><summary>Schickt Foldair meine Dateien oder Mails irgendwohin?</summary><p>Nein. Alles passiert auf deinem Mac. Foldair fragt nur gelegentlich auf dieser Webseite nach, ob es ein Update gibt.</p></details>
@@ -243,10 +271,28 @@
     z("seite");
     document.addEventListener("click",function(ev){
       var a=ev.target.closest&&ev.target.closest("a"); if(!a) return;
-      if(/Foldair\.dmg/.test(a.getAttribute("href")||"")) z("download");
+      if(/Foldair\.dmg/.test(a.getAttribute("href")||"")) z(/iPhone|iPod|Android|Mobile/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)?"handy-link":"download");
       else if(a.hasAttribute("data-kauf")) z("kaufen");
     },true);
   }catch(e){}
+})();
+</script>
+<script>
+/* Handy-Besucher (23.11.2026): Foldair läuft nur auf dem Mac – statt DMG-Download Link teilen. */
+(function(){
+  var ua=navigator.userAgent, handy=/iPhone|iPod|Android|Mobile/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  if(!handy) return;
+  document.getElementById("handy").style.display="block";
+  var link="https://foldair.de/";
+  document.querySelectorAll('a[href="download/Foldair.dmg"]').forEach(function(a){
+    if(a.classList.contains("btn")) a.textContent="Link an meinen Mac schicken";
+    a.addEventListener("click",function(e){
+      e.preventDefault();
+      if(navigator.share){ navigator.share({title:"Foldair für den Mac",text:"Foldair am Mac laden:",url:link}).catch(function(){}); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(link).then(function(){ alert("Link kopiert. Öffne foldair.de am Mac, um Foldair zu laden."); }); }
+      else alert("Öffne foldair.de am Mac, um Foldair zu laden.");
+    });
+  });
 })();
 </script>
 </body>
