@@ -92,6 +92,12 @@
   .ich h2 { margin-bottom: 12px; }
   .ich p { color: var(--muted); font-size: 17px; margin: 0 0 12px; max-width: 560px; }
   @media (max-width: 820px) { .ich { grid-template-columns: 1fr; gap: 0; } .ich img { max-width: 230px; margin: 0 auto; } .ich .txt { padding-bottom: 0; } }
+  #stimmen { display: none; }
+  .stimmen { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+  .stimme .st { color: var(--gold); font-size: 18px; letter-spacing: 2px; }
+  .stimme p { color: var(--text); margin: 8px 0 10px; }
+  .stimme .wer { color: var(--muted); font-size: 14px; }
+  @media (max-width: 820px) { .stimmen { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -191,6 +197,14 @@
         <div class="step"><b>3. Öffnen</b>macOS fragt einmal, ob du die App aus dem Internet öffnen willst, und sagt dazu: Apple hat sie auf Schadsoftware überprüft. Klick auf „Öffnen“ – fertig.</div>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="stimmen">
+  <div class="wrap">
+    <h2>Das sagen Nutzer</h2>
+    <p class="sub" id="stimmen-schnitt"></p>
+    <div class="stimmen" id="stimmen-liste"></div>
   </div>
 </section>
 
@@ -312,6 +326,27 @@
       else alert("Öffne foldair.de am Mac, um Foldair zu laden.");
     });
   });
+})();
+</script>
+<script>
+/* Bewertungen (23.11.2026): nur echte, freigegebene Bewertungen aus Foldair; sichtbar ab 3 Stück. */
+(function(){
+  try{
+    var U="https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/fd_bewertungen_zeigen", K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+    fetch(U,{method:"POST",headers:{"apikey":K,"Content-Type":"application/json"},body:"{}"}).then(function(r){return r.json();}).then(function(d){
+      if(!Array.isArray(d)||d.length<3) return;
+      var l=document.getElementById("stimmen-liste");
+      d.slice(0,6).forEach(function(b){
+        var c=document.createElement("div"); c.className="card stimme";
+        var st=document.createElement("div"); st.className="st"; st.textContent="★★★★★".slice(0,b.sterne)+"☆☆☆☆☆".slice(0,5-b.sterne);
+        var p=document.createElement("p"); p.textContent="„"+b.text+"“";
+        var w=document.createElement("div"); w.className="wer"; w.textContent=b.name+" · "+new Date(b.erstellt).toLocaleDateString("de-DE",{month:"long",year:"numeric"});
+        c.appendChild(st); c.appendChild(p); c.appendChild(w); l.appendChild(c);
+      });
+      document.getElementById("stimmen-schnitt").textContent=String(d[0].schnitt_alle).replace(".",",")+" von 5 Sternen aus "+d[0].anzahl_alle+" Bewertungen aus Foldair – der Schnitt zählt alle, auch die schlechten.";
+      document.getElementById("stimmen").style.display="block";
+    }).catch(function(){});
+  }catch(e){}
 })();
 </script>
 </body>

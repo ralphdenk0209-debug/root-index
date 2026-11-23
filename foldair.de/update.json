@@ -1,7 +1,7 @@
 {
-  "build": 202611212025,
-  "version": "1.0.14",
-  "notes": "Suchen & Baum: gut sichtbarer Knopf und ⌘F, Popup mit Schnellzugriff und Ordnerbaum des Macs. Zwei Ordner: rechte Seite mit eigener, zuklappbarer Seitenleiste.",
-  "url": "https://foldair.de/download/Foldair-1.0.14.update",
-  "sha256": "0b4d60d5e4d7e85de58ce819e696ecd21065b6340e692ca1f50ae0385dff4ca6"
+  "build": 202611230758,
+  "version": "1.0.15",
+  "notes": "Vorschau öffnet sich beim Anklicken einer Datei. Rechte Seitenleiste in „Zwei Ordner“ nicht mehr grau. Neu: Foldair bewerten – im Menü Foldair.",
+  "url": "https://foldair.de/download/Foldair-1.0.15.update",
+  "sha256": "08973a49b1b07a8d9a107e0b20e7e04d5f7ebe0af0dc920a90c161fec754cc55"
 }
