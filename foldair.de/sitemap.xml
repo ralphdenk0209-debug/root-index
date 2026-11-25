@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://foldair.de/</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/datenschutz.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/datenschutz.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/datenschutz.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/privacy.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/datenschutz.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/privacy.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/datenschutz.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/impressum.html</loc>
+    <lastmod>2026-10-31</lastmod>
+  </url>
+  <url>
+    <loc>https://foldair.de/agb.html</loc>
+    <lastmod>2026-10-31</lastmod>
+  </url>
+  <url>
+    <loc>https://foldair.de/portfolio/</loc>
+  </url>
+  <url>
+    <loc>https://foldair.de/portfolio/impressum.html</loc>
+  </url>
+  <url>
+    <loc>https://foldair.de/portfolio/datenschutz.html</loc>
+  </url>
+</urlset>

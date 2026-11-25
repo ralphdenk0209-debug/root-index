@@ -26,16 +26,16 @@
 <body>
 <div class="wrap">
   <a class="brand" href="index.html"><img src="foldair.png" alt="">Foldair</a>
-  <h1>Danke für deinen Kauf!</h1>
+  <h1 id="t-h1">Danke für deinen Kauf!</h1>
   <p class="muted" id="hallo">Dein Lizenzschlüssel wird geladen …</p>
 
   <div class="card" id="box" hidden>
-    <p style="margin-top:0"><b>Dein Lizenzschlüssel</b> <span class="muted" id="art"></span></p>
+    <p style="margin-top:0"><b id="t-key">Dein Lizenzschlüssel</b> <span class="muted" id="art"></span></p>
     <div id="key"></div>
     <p style="margin:14px 0 0"><button class="btn primary" id="kopieren">Schlüssel kopieren</button> <span class="muted" id="ok"></span></p>
   </div>
 
-  <div class="card">
+  <div class="card" id="t-anleitung">
     <b>So schaltest du Foldair frei</b>
     <ol>
       <li>Foldair öffnen – noch nicht installiert? <a href="download/Foldair.dmg">Hier herunterladen</a>, öffnen und in „Programme“ ziehen.</li>
@@ -47,28 +47,52 @@
   </div>
 </div>
 <script>
+  /* Englisch (25.11.2026): Stripe leitet alle Käufe hierher. Ist der Browser nicht deutsch eingestellt, erscheint die Seite englisch. */
+  const EN = !/^de/i.test((navigator.languages && navigator.languages[0]) || navigator.language || "de");
+  const T = EN ? {
+    laden: "Loading your license key …", ohneLink: "This page needs the link from your purchase confirmation.", zahlung: "Confirming your payment …",
+    hallo: n => "Hi " + n + " – here's your key. Enjoy Foldair!", fehler: " Please write to kontakt@root-index.de – you'll get your key right away.", kopiert: "Copied ✓"
+  } : {
+    laden: "Dein Lizenzschlüssel wird geladen …", ohneLink: "Diese Seite braucht den Link aus deiner Kaufbestätigung.", zahlung: "Zahlung wird bestätigt …",
+    hallo: n => "Hallo " + n + " – hier ist dein Schlüssel. Viel Freude mit Foldair!", fehler: " Bitte schreib an kontakt@root-index.de – du bekommst deinen Schlüssel umgehend.", kopiert: "Kopiert ✓"
+  };
+  if (EN) {
+    document.documentElement.lang = "en";
+    document.title = "Thank you for your purchase – Foldair";
+    document.querySelector(".brand").href = "en/";
+    document.getElementById("t-h1").textContent = "Thank you for your purchase!";
+    document.getElementById("hallo").textContent = T.laden;
+    document.getElementById("t-key").textContent = "Your license key";
+    document.getElementById("kopieren").textContent = "Copy key";
+    document.getElementById("t-anleitung").innerHTML = '<b>How to unlock Foldair</b><ol>'
+      + '<li>Open Foldair – not installed yet? <a href="download/Foldair.dmg">Download it here</a>, open it and drag it into “Applications”.</li>'
+      + '<li>In the menu bar, choose <b>Foldair › License…</b></li>'
+      + '<li>Paste your key and click <b>Activate</b> – done, even without an internet connection.</li></ol>'
+      + '<p class="muted">Please keep your key somewhere safe, e.g. in the Passwords app or in a note. It\'s a good idea to bookmark this page too. '
+      + 'Questions, or lost your key? Write to <a href="mailto:kontakt@root-index.de">kontakt@root-index.de</a>.</p>';
+  }
   const FUNKTION = "https://haurbpfkfaaehorirzee.supabase.co/functions/v1/foldair-lizenz";
-  const arten = { persoenlich: "Persönliche Lizenz", familie: "Familienlizenz", firma: "Firmenlizenz" };
+  const arten = EN ? { persoenlich: "Personal license", familie: "Family license", firma: "Business license" } : { persoenlich: "Persönliche Lizenz", familie: "Familienlizenz", firma: "Firmenlizenz" };
   const id = new URLSearchParams(location.search).get("session_id");
   const hallo = document.getElementById("hallo");
   async function laden(versuch = 1) {
-    if (!id) { hallo.innerHTML = '<span class="err">Diese Seite braucht den Link aus deiner Kaufbestätigung.</span>'; return; }
+    if (!id) { hallo.innerHTML = '<span class="err">' + T.ohneLink + '</span>'; return; }
     try {
       const r = await fetch(FUNKTION + "?session_id=" + encodeURIComponent(id));
       const d = await r.json();
-      if (r.status === 402 && versuch < 6) { hallo.textContent = "Zahlung wird bestätigt …"; setTimeout(() => laden(versuch + 1), 2500); return; }
+      if (r.status === 402 && versuch < 6) { hallo.textContent = T.zahlung; setTimeout(() => laden(versuch + 1), 2500); return; }
       if (!r.ok) throw new Error(d.fehler || "Fehler");
-      hallo.textContent = "Hallo " + d.name + " – hier ist dein Schlüssel. Viel Freude mit Foldair!";
+      hallo.textContent = T.hallo(d.name);
       document.getElementById("art").textContent = "· " + (arten[d.art] || d.art);
       document.getElementById("key").textContent = d.schluessel;
       document.getElementById("box").hidden = false;
     } catch (e) {
-      hallo.innerHTML = '<span class="err">' + e.message + '</span> Bitte schreib an kontakt@root-index.de – du bekommst deinen Schlüssel umgehend.';
+      hallo.innerHTML = '<span class="err">' + e.message + '</span>' + T.fehler;
     }
   }
   document.getElementById("kopieren").onclick = async () => {
     await navigator.clipboard.writeText(document.getElementById("key").textContent);
-    document.getElementById("ok").textContent = "Kopiert ✓";
+    document.getElementById("ok").textContent = T.kopiert;
   };
   laden();
 </script>

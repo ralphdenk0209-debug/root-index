@@ -1,0 +1,5 @@
+User-agent: *
+Disallow: /danke.html
+Disallow: /download/
+
+Sitemap: https://foldair.de/sitemap.xml
