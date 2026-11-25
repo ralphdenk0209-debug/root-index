@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Windows Explorer für den Mac – was der Finder anders macht</title>
+<meta name="description" content="Den Windows Explorer gibt es für den Mac nicht. Was im Finder anders ist (Ausschneiden, Ordnerbaum, Adressleiste) und wie Foldair sich wie der Explorer bedienen lässt.">
+<link rel="canonical" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html">
+<link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html">
+<link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/windows-explorer-for-mac.html">
+<link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html">
+<link rel="icon" href="../favicon.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Windows Explorer für den Mac – was der Finder anders macht">
+<meta property="og:description" content="Den Windows Explorer gibt es für den Mac nicht. Was im Finder anders ist (Ausschneiden, Ordnerbaum, Adressleiste) und wie Foldair sich wie der Explorer bedienen lässt.">
+<meta property="og:url" content="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html">
+<meta property="og:image" content="https://foldair.de/medien/01-fotos-raster.jpg">
+<meta property="og:locale" content="de_DE">
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "FAQPage",
+ "inLanguage": "de",
+ "mainEntity": [
+  {
+   "@type": "Question",
+   "name": "Gibt es den Windows Explorer für macOS?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Nein, Microsoft bietet ihn nicht für den Mac an. Es gibt aber Dateimanager für den Mac, die ähnlich funktionieren, zum Beispiel Foldair."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Ersetzt Foldair den Finder?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Nein. Foldair läuft neben dem Finder. Der Finder bleibt unverändert, du nimmst Foldair für das, was du vom Explorer gewohnt bist."
+   }
+  },
+  {
+   "@type": "Question",
+   "name": "Auf welchen Macs läuft Foldair?",
+   "acceptedAnswer": {
+    "@type": "Answer",
+    "text": "Auf Macs mit macOS 14 oder neuer, mit Apple-Chip und mit Intel-Prozessor."
+   }
+  }
+ ]
+}
+</script>
+<style>
+  :root { --bg:#f6f9fd; --card:#fff; --text:#16202e; --muted:#5b6778; --line:#e3e9f2; --sky1:#d6eeff; --sky2:#78baff; --accent:#2563eb; --gold:#f6b02e; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#0f1420; --card:#171e2d; --text:#e8edf5; --muted:#9aa6b8; --line:#263045; --sky1:#1b2a44; --sky2:#24477a; --accent:#6ea8ff; } }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+  a { color:var(--accent); }
+  .wrap { max-width:1060px; margin:0 auto; padding:0 20px; }
+  .text { max-width:760px; }
+  header.top { display:flex; align-items:center; justify-content:space-between; padding:18px 0; gap:12px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:700; font-size:20px; text-decoration:none; color:var(--text); }
+  .brand img { width:36px; height:36px; }
+  .right { display:flex; align-items:center; }
+  nav a { margin-left:18px; text-decoration:none; color:var(--muted); font-size:15px; }
+  .lang { margin-left:18px; font-size:14px; color:var(--muted); border:1px solid var(--line); border-radius:99px; padding:4px 11px; white-space:nowrap; }
+  .lang a { color:var(--muted); text-decoration:none; }
+  .lang b { color:var(--text); }
+  .crumb { font-size:14px; color:var(--muted); margin:10px 0 0; }
+  .crumb a { color:var(--muted); }
+  h1 { font-size:clamp(30px, 4.6vw, 46px); line-height:1.12; margin:14px 0 16px; letter-spacing:-0.02em; }
+  p.lead { font-size:19px; color:var(--muted); margin:0 0 10px; }
+  h2 { font-size:clamp(23px, 3vw, 29px); margin:44px 0 10px; letter-spacing:-0.01em; }
+  .text p, .text li { font-size:17px; }
+  .text li { margin-bottom:8px; }
+  kbd { font-family:inherit; font-size:0.9em; background:var(--card); border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; padding:1px 6px; white-space:nowrap; }
+  code { font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:0.88em; background:var(--card); border:1px solid var(--line); border-radius:5px; padding:1px 5px; word-break:break-all; }
+  .shot { margin:26px 0 0; }
+  .shot img { width:100%; height:auto; border-radius:14px; border:1px solid var(--line); display:block; cursor:zoom-in; }
+  .shot figcaption { color:var(--muted); font-size:14px; margin-top:8px; }
+  .cta { background:linear-gradient(160deg, var(--sky1), var(--sky2)); border-radius:22px; padding:30px; margin:44px 0 10px; }
+  .cta h2 { margin:0 0 8px; color:#0d1b33; }
+  .cta p { margin:0 0 18px; color:#0d1b33; font-size:17px; }
+  @media (prefers-color-scheme: dark) { .cta h2, .cta p { color:#eef4ff; } }
+  .buttons { display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+  .btn { display:inline-block; padding:14px 22px; border-radius:12px; font-weight:600; font-size:16px; text-decoration:none; }
+  .btn.primary { background:var(--accent); color:#fff; }
+  .btn.ghost { background:rgba(255,255,255,0.7); color:#0d1b33; }
+  @media (prefers-color-scheme: dark) { .btn.ghost { background:rgba(10,16,30,0.55); color:#eef4ff; } }
+  .small { font-size:13px; color:var(--muted); }
+  .cta .small { color:#23344f; margin:12px 0 0; }
+  @media (prefers-color-scheme: dark) { .cta .small { color:#c9d6ea; } }
+  .handy { display:none; margin:0 0 14px; padding:12px 14px; border-radius:12px; background:rgba(255,255,255,0.75); color:#0d1b33; font-size:14px; }
+  details { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 20px; margin-bottom:10px; }
+  summary { cursor:pointer; font-weight:600; }
+  details p { color:var(--muted); margin:10px 0 0; }
+  .grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:18px; margin-top:26px; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:22px; text-decoration:none; color:var(--text); display:block; }
+  .card h3 { margin:0 0 6px; font-size:19px; color:var(--accent); }
+  .card p { margin:0; color:var(--muted); font-size:15px; }
+  .more { margin-top:40px; }
+  .more ul { padding-left:18px; }
+  footer { border-top:1px solid var(--line); padding:28px 0 40px; color:var(--muted); font-size:14px; margin-top:56px; }
+  footer a { color:var(--muted); margin-right:16px; display:inline-block; margin-bottom:4px; }
+  #gross { position:fixed; inset:0; background:rgba(8,14,28,0.85); display:none; align-items:center; justify-content:center; padding:3vw; z-index:10; cursor:zoom-out; }
+  #gross img { max-width:100%; max-height:100%; border-radius:12px; }
+  .facts { width:100%; border-collapse:collapse; font-size:16px; }
+  .facts th, .facts td { text-align:left; vertical-align:top; padding:10px 12px; border-bottom:1px solid var(--line); }
+  .facts th { width:34%; color:var(--muted); font-weight:600; }
+  .box { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-top:14px; }
+  .box p { margin:0 0 10px; }
+  .box .count { color:var(--muted); font-size:13px; margin:0; }
+  .shots { display:grid; grid-template-columns:repeat(2, 1fr); gap:22px; margin-top:20px; }
+  .shots figure { margin:0; }
+  .shots img { width:100%; height:auto; border-radius:12px; border:1px solid var(--line); display:block; }
+  .shots figcaption { color:var(--muted); font-size:14px; margin-top:6px; }
+  .person { display:grid; grid-template-columns:200px 1fr; gap:26px; align-items:center; margin-top:18px; }
+  .person img { width:100%; height:auto; display:block; border-radius:14px; }
+  .logo { display:flex; gap:20px; align-items:center; margin-top:18px; }
+  .logo img { width:120px; height:120px; }
+  @media (max-width: 820px) {
+    nav { display:none; }
+    .grid, .shots { grid-template-columns:1fr; }
+    .person { grid-template-columns:1fr; } .person img { max-width:200px; }
+    .cta { padding:24px 20px; }
+    .facts th { width:40%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="../"><img src="../foldair.png" alt="">Foldair</a>
+    <div class="right">
+      <nav><a href="../">Startseite</a><a href="../ratgeber/">Ratgeber</a><a href="../#preise">Preise</a></nav>
+      <div class="lang"><b>DE</b> · <a href="../en/guide/windows-explorer-for-mac.html" hreflang="en" lang="en" title="English">EN</a></div>
+    </div>
+  </header>
+  <p class="crumb"><a href="./">Ratgeber</a> › Windows Explorer für den Mac</p>
+  <main class="text">
+  <h1>Windows Explorer für den Mac</h1>
+  <p class="lead">Nach dem Umstieg von Windows fehlt vielen am Mac der vertraute Explorer – der Finder funktioniert in vielen Kleinigkeiten anders.</p>
+  <h2>So geht es im Finder</h2>
+<p>Microsoft bietet den Explorer nicht für macOS an. Vieles geht im Finder aber, nur an anderer Stelle:</p>
+<ul>
+<li><b>Ausschneiden:</b> <kbd>⌘C</kbd> und dann <kbd>⌥⌘V</kbd> verschiebt die Datei.</li>
+<li><b>Ordnerbaum:</b> In der Listenansicht (<kbd>⌘2</kbd>) klappst du Unterordner mit dem kleinen Pfeil auf. Einen festen Baum links wie im Explorer gibt es nicht.</li>
+<li><b>Pfad sehen:</b> „Darstellung › Pfadleiste einblenden“ (<kbd>⌥⌘P</kbd>) zeigt den Pfad unten im Fenster. Einen Pfad eintippen kannst du mit <kbd>⇧⌘G</kbd> („Gehe zum Ordner“).</li>
+<li><b>Umbenennen:</b> Datei auswählen und die Eingabetaste drücken.</li>
+<li><b>Eine Ebene nach oben:</b> <kbd>⌘↑</kbd>.</li>
+</ul>
+  <h2>So geht es mit Foldair</h2>
+<p>Foldair ist ein Datei-Explorer für den Mac, der sich bewusst wie der Windows Explorer bedienen lässt:</p>
+<ul>
+<li><b>Ordnerbaum</b> in der Seitenleiste und <b>Adressleiste</b> oben, in die du einen Pfad tippen kannst.</li>
+<li><b>Ausschneiden mit <kbd>⌘X</kbd></b> und Einfügen mit <kbd>⌘V</kbd>, <b><kbd>F2</kbd></b> zum Umbenennen.</li>
+<li><b>Tabs</b> (<kbd>⌘T</kbd>) und <b>zwei Ordner nebeneinander</b>.</li>
+<li><b>Kopieren mit Fortschritt</b>, Restzeit und Nachfrage, bevor etwas überschrieben wird.</li>
+<li><b>Ordnergrößen</b> direkt in der Liste, Verbindungen zu <b>NAS und Servern</b>.</li>
+</ul>
+<p>Foldair läuft neben dem Finder. Du musst nichts umstellen und kannst beide benutzen.</p>
+<figure class="shot"><img src="../medien/01-fotos-raster.jpg" alt="Foldair mit Ordnerbaum, Adressleiste und großen Vorschaubildern" width="1600" height="1000" loading="lazy"><figcaption>Foldair mit Ordnerbaum, Adressleiste und großen Vorschaubildern</figcaption></figure>
+<div class="cta">
+  <h2>Foldair ausprobieren</h2>
+  <p>14 Tage alles frei, ohne Anmeldung und ohne Zahlungsdaten. Danach bleibt der Explorer kostenlos.</p>
+  <p class="handy" id="handy">📱 Du bist gerade am Handy. Foldair läuft auf dem Mac – schick dir den Link per AirDrop, Mail oder Notiz.</p>
+  <div class="buttons">
+    <a class="btn primary" data-dmg href="../download/Foldair.dmg?von=rg">14 Tage kostenlos testen</a>
+    <a class="btn ghost" href="../?von=rg#preise">Preise ansehen</a>
+  </div>
+  <p class="small">Für macOS 14 oder neuer · Apple-Chip und Intel · kein Abo</p>
+</div>
+  <h2>Häufige Fragen</h2>
+  <details><summary>Gibt es den Windows Explorer für macOS?</summary><p>Nein, Microsoft bietet ihn nicht für den Mac an. Es gibt aber Dateimanager für den Mac, die ähnlich funktionieren, zum Beispiel Foldair.</p></details>
+  <details><summary>Ersetzt Foldair den Finder?</summary><p>Nein. Foldair läuft neben dem Finder. Der Finder bleibt unverändert, du nimmst Foldair für das, was du vom Explorer gewohnt bist.</p></details>
+  <details><summary>Auf welchen Macs läuft Foldair?</summary><p>Auf Macs mit macOS 14 oder neuer, mit Apple-Chip und mit Intel-Prozessor.</p></details>
+  <div class="more"><h2>Weitere Ratgeber</h2><ul>
+    <li><a href="mac-ausschneiden-einfuegen.html">Dateien am Mac ausschneiden und einfügen</a></li>
+    <li><a href="finder-zwei-fenster-nebeneinander.html">Zwei Ordner nebeneinander am Mac</a></li>
+    <li><a href="mac-ordnergroesse-anzeigen.html">Ordnergröße am Mac anzeigen</a></li>
+    <li><a href="mac-nas-sftp-verbinden.html">NAS und SFTP-Server am Mac verbinden</a></li>
+    <li><a href="mac-pfad-kopieren.html">Pfad einer Datei am Mac kopieren</a></li>
+    <li><a href="mac-speicherplatz-freigeben.html">Speicherplatz am Mac freigeben</a></li>
+    <li><a href="finder-alternative.html">Finder-Alternative für den Mac</a></li>
+  </ul></div>
+  </main>
+</div>
+<footer>
+  <div class="wrap">
+    <a href="../">Startseite</a><a href="../ratgeber/">Ratgeber</a><a href="../presse.html">Presse</a><a href="../impressum.html">Impressum</a><a href="../datenschutz.html">Datenschutz</a><a href="../agb.html">AGB und Widerruf</a><a href="mailto:kontakt@root-index.de">Kontakt</a><a href="../en/guide/windows-explorer-for-mac.html" hreflang="en" lang="en">English</a>
+    <div style="margin-top:10px">© 2026 Ralph Denk – Root Index · Foldair ist nicht mit Microsoft oder Apple verbunden. Windows ist eine Marke von Microsoft, Mac, macOS und Finder sind Marken von Apple.</div>
+  </div>
+</footer>
+<div id="gross" onclick="this.style.display='none'"><img alt=""></div>
+<script>
+/* Zähler (wie Startseite): Tagessummen ohne Cookie und ohne Kennung. Auf diesen Seiten gilt als Herkunft der Zählercode rg, sonst ?von=… */
+(function(){
+  try{
+    if(/bot|crawl|spider|slurp|headless|lighthouse|preview/i.test(navigator.userAgent)) return;
+    var U="https://haurbpfkfaaehorirzee.supabase.co/rest/v1/rpc/fd_zaehlen", K="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhhdXJicGZrZmFhZWhvcmlyemVlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI0MDY2OTYsImV4cCI6MjA5Nzk4MjY5Nn0.6U0bD0m2kYM2iL0KJ9fbCFvcQMXAglr8GvwmPwyHqyw";
+    var ua=navigator.userAgent, q="ratgeber";
+    var m={wb:"werbung",wi:"werbung-instagram",wf:"werbung-facebook",ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter",rg:"ratgeber"};
+    var v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1];
+    try{ if(v&&m[v]) q=m[v]; sessionStorage.setItem("fd_von",q);
+         if(/[?&]intern=1/.test(location.search)) localStorage.setItem("fd_intern","1");
+         if(localStorage.getItem("fd_intern")==="1") q="eigen"; }catch(e){}
+    function z(e){ fetch(U,{method:"POST",keepalive:true,headers:{"apikey":K,"Content-Type":"application/json"},body:JSON.stringify({p_ereignis:e,p_quelle:q})}).catch(function(){}); }
+    z("seite");
+    document.addEventListener("click",function(ev){
+      var a=ev.target.closest&&ev.target.closest("a"); if(!a) return;
+      if(/Foldair\.dmg/.test(a.getAttribute("href")||"")) z(/iPhone|iPod|Android|Mobile/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1)?"handy-link":"download");
+    },true);
+  }catch(e){}
+})();
+</script>
+<script>
+/* Handy-Besucher: Foldair läuft nur auf dem Mac – statt DMG-Download Link teilen. Bilder groß zeigen. */
+(function(){
+  document.querySelectorAll(".shot img").forEach(function(img){ img.addEventListener("click",function(){ var g=document.getElementById("gross"); if(!g) return; g.querySelector("img").src=img.src; g.style.display="flex"; }); });
+  var ua=navigator.userAgent, handy=/iPhone|iPod|Android|Mobile/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  if(!handy) return;
+  var h=document.getElementById("handy"); if(h) h.style.display="block";
+  var link="https://foldair.de/?von=rg";
+  document.querySelectorAll('a[data-dmg]').forEach(function(a){
+    a.textContent="Link an meinen Mac schicken";
+    a.addEventListener("click",function(e){
+      e.preventDefault();
+      if(navigator.share){ navigator.share({title:"Foldair",url:link}).catch(function(){}); }
+      else if(navigator.clipboard){ navigator.clipboard.writeText(link).then(function(){ alert("Link kopiert. Öffne ihn am Mac, um Foldair zu laden."); }); }
+      else alert("Öffne foldair.de am Mac, um Foldair zu laden.");
+    });
+  });
+})();
+</script>
+</body>
+</html>

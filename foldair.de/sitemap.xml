@@ -29,6 +29,146 @@
     <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/datenschutz.html"/>
   </url>
   <url>
+    <loc>https://foldair.de/ratgeber/</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/presse.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/press.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/presse.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/press.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/presse.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/press.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/presse.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/mac-ausschneiden-einfuegen.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-ausschneiden-einfuegen.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/cut-and-paste-files-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-ausschneiden-einfuegen.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/cut-and-paste-files-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-ausschneiden-einfuegen.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/cut-and-paste-files-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-ausschneiden-einfuegen.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/finder-zwei-fenster-nebeneinander.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/finder-zwei-fenster-nebeneinander.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/dual-pane-file-manager-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/finder-zwei-fenster-nebeneinander.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/dual-pane-file-manager-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/finder-zwei-fenster-nebeneinander.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/dual-pane-file-manager-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/finder-zwei-fenster-nebeneinander.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/windows-explorer-fuer-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/windows-explorer-for-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/windows-explorer-for-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/windows-explorer-for-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/windows-explorer-fuer-mac.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/mac-ordnergroesse-anzeigen.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-ordnergroesse-anzeigen.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/show-folder-size-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-ordnergroesse-anzeigen.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/show-folder-size-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-ordnergroesse-anzeigen.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/show-folder-size-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-ordnergroesse-anzeigen.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/mac-nas-sftp-verbinden.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-nas-sftp-verbinden.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/connect-nas-sftp-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-nas-sftp-verbinden.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/connect-nas-sftp-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-nas-sftp-verbinden.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/connect-nas-sftp-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-nas-sftp-verbinden.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/mac-pfad-kopieren.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-pfad-kopieren.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/copy-file-path-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-pfad-kopieren.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/copy-file-path-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-pfad-kopieren.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/copy-file-path-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-pfad-kopieren.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/mac-speicherplatz-freigeben.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-speicherplatz-freigeben.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/free-up-storage-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-speicherplatz-freigeben.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/free-up-storage-mac.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/mac-speicherplatz-freigeben.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/free-up-storage-mac.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/mac-speicherplatz-freigeben.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/ratgeber/finder-alternative.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/finder-alternative.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/finder-alternative.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/finder-alternative.html"/>
+  </url>
+  <url>
+    <loc>https://foldair.de/en/guide/finder-alternative.html</loc>
+    <lastmod>2026-11-25</lastmod>
+    <xhtml:link rel="alternate" hreflang="de" href="https://foldair.de/ratgeber/finder-alternative.html"/>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foldair.de/en/guide/finder-alternative.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://foldair.de/ratgeber/finder-alternative.html"/>
+  </url>
+  <url>
     <loc>https://foldair.de/impressum.html</loc>
     <lastmod>2026-10-31</lastmod>
   </url>

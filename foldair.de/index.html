@@ -256,7 +256,7 @@
       <div class="price">
         <h3>Firma</h3><div class="small">3 Arbeitsplätze</div>
         <div class="amount">69 €</div>
-        <ul><li>Alle Funktionen</li><li>Rechnung mit ausgewiesener MwSt.</li><li>Belege-Agent für die Buchhaltung</li></ul>
+        <ul><li>Alle Funktionen</li><li>Rechnung für die Buchhaltung</li><li>Belege-Agent für die Buchhaltung</li></ul>
         <a class="btn gold" href="#" data-kauf="firma">Kaufen</a>
       </div>
     </div>
@@ -279,7 +279,7 @@
 
 <footer>
   <div class="wrap">
-    <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB und Widerruf</a><a href="mailto:kontakt@root-index.de">Kontakt</a><a href="en/" hreflang="en" lang="en">English</a>
+    <a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a><a href="agb.html">AGB und Widerruf</a><a href="ratgeber/">Ratgeber</a><a href="presse.html">Presse</a><a href="mailto:kontakt@root-index.de">Kontakt</a><a href="en/" hreflang="en" lang="en">English</a>
     <div style="margin-top:10px">© 2026 Ralph Denk – Root Index · Foldair ist nicht mit Microsoft oder Apple verbunden. Windows ist eine Marke von Microsoft, Mac und macOS sind Marken von Apple.</div>
   </div>
 </footer>
@@ -310,7 +310,7 @@
     try{ h=new URL(r).hostname; }catch(e){}
     if(r){ q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/foldair\.de$/.test(h)?"intern":/reddit\./.test(h)?"reddit":/producthunt/.test(h)?"producthunt":/youtube|youtu\.be/.test(h)?"youtube":"andere"; }
     if(/instagram\./.test(r)||/Instagram/.test(ua)) q="instagram"; else if(/facebook\.com|fb\.com|fb\.me/.test(r)||/FBAN|FBAV|FB_IAB/.test(ua)) q="facebook";
-    var m={wb:"werbung",wi:"werbung-instagram",wf:"werbung-facebook",ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter"};
+    var m={wb:"werbung",wi:"werbung-instagram",wf:"werbung-facebook",ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter",rg:"ratgeber"};
     var v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1];
     try{ if(v&&m[v]) sessionStorage.setItem("fd_von",m[v]); var s=sessionStorage.getItem("fd_von"); if(s) q=s;
          if(/[?&]intern=1/.test(location.search)) localStorage.setItem("fd_intern","1");

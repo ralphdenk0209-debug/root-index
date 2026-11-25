@@ -253,7 +253,7 @@
       <div class="price">
         <h3>Business</h3><div class="small">3 workstations</div>
         <div class="amount">€69</div>
-        <ul><li>All features</li><li>Invoice with VAT shown</li><li>Receipts agent for your bookkeeping</li></ul>
+        <ul><li>All features</li><li>Invoice for your bookkeeping</li><li>Receipts agent for your bookkeeping</li></ul>
         <a class="btn gold" href="#" data-kauf="firma">Buy</a>
       </div>
     </div>
@@ -276,7 +276,7 @@
 
 <footer>
   <div class="wrap">
-    <a href="../impressum.html" hreflang="de">Legal notice (Impressum)</a><a href="privacy.html">Privacy</a><a href="../agb.html" hreflang="de">Terms and right of withdrawal (AGB)</a><a href="mailto:kontakt@root-index.de">Contact</a><a href="../" hreflang="de" lang="de">Deutsch</a>
+    <a href="../impressum.html" hreflang="de">Legal notice (Impressum)</a><a href="privacy.html">Privacy</a><a href="../agb.html" hreflang="de">Terms and right of withdrawal (AGB)</a><a href="guide/">Guides</a><a href="press.html">Press</a><a href="mailto:kontakt@root-index.de">Contact</a><a href="../" hreflang="de" lang="de">Deutsch</a>
     <div style="margin-top:10px">The legal notice and the terms are only available in German. The German version is legally binding.</div>
     <div style="margin-top:10px">© 2026 Ralph Denk – Root Index · Foldair is not affiliated with Microsoft or Apple. Windows is a trademark of Microsoft; Mac and macOS are trademarks of Apple.</div>
   </div>
@@ -308,7 +308,7 @@
     try{ h=new URL(r).hostname; }catch(e){}
     if(r){ q=/(^|\.)google\./.test(h)?"google":/bing\./.test(h)?"bing":/duckduckgo|ecosia|yahoo|qwant|startpage|brave/.test(h)?"andere-suche":/foldair\.de$/.test(h)?"intern":/reddit\./.test(h)?"reddit":/producthunt/.test(h)?"producthunt":/youtube|youtu\.be/.test(h)?"youtube":"andere"; }
     if(/instagram\./.test(r)||/Instagram/.test(ua)) q="instagram"; else if(/facebook\.com|fb\.com|fb\.me/.test(r)||/FBAN|FBAV|FB_IAB/.test(ua)) q="facebook";
-    var m={wb:"werbung",wi:"werbung-instagram",wf:"werbung-facebook",ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter"};
+    var m={wb:"werbung",wi:"werbung-instagram",wf:"werbung-facebook",ig:"instagram",fb:"facebook",yt:"youtube",rd:"reddit",fo:"forum",pr:"presse",ph:"producthunt",nl:"newsletter",rg:"ratgeber"};
     var v=(location.search.match(/[?&]von=([a-z]+)/)||[])[1];
     try{ if(v&&m[v]) sessionStorage.setItem("fd_von",m[v]); var s=sessionStorage.getItem("fd_von"); if(s) q=s;
          if(/[?&]intern=1/.test(location.search)) localStorage.setItem("fd_intern","1");
