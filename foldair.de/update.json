@@ -1,7 +1,7 @@
 {
-  "build": 202611242205,
-  "version": "1.0.17",
-  "notes": "Schneller: Ordner und Seitenleiste laden im Hintergrund – keine Sanduhr mehr bei externen SSDs. Time Machine: klarer Hinweis mit Knopf zu „Festplattenvollzugriff“.",
-  "url": "https://foldair.de/download/Foldair-1.0.17.update",
-  "sha256": "f547d1ef72a38a04ffa5eb311c8f8fbf914321470ff6e13cca490142d411abb3"
+  "build": 202611261933,
+  "version": "1.0.18",
+  "notes": "Neu › Textdatei im Rechtsklick · Tasten wie unter Windows (Enter öffnet, Backspace geht hoch) · Foldair merkt sich Sortierung und aufgeklappten Ordnerbaum je Ordner · Ablagefach zum Sammeln von Dateien · externe Laufwerke ohne Hänger · ganz auf Englisch · schneller bei großen Ordnern und langsamen Netzlaufwerken",
+  "url": "https://foldair.de/download/Foldair-1.0.18.update",
+  "sha256": "152f353952c6cd2575c544ba14c99d4b175f2c9e64f0e4cf3e6675a84f3f28ca"
 }
