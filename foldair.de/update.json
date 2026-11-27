@@ -1,7 +1,7 @@
 {
-  "build": 202611270953,
-  "version": "1.0.20",
-  "notes": "Darstellung › Als Liste (⌘1) und Als Symbole (⌘2) · Größere/Kleinere Symbole wirken jetzt auch in der Symbolansicht / View › as List (⌘1) and as Icons (⌘2) · Bigger/smaller icons now also work in icon view",
-  "url": "https://foldair.de/download/Foldair-1.0.20.update",
-  "sha256": "49b61f24c824e77e1521523c54c80d7e2f0c75e4dcc1c9c2e97401865484d22e"
+  "build": 202611272019,
+  "version": "1.0.21",
+  "notes": "Schnellzugriff in der Seitenleiste wird nicht mehr von der Titelleiste verdeckt. Leere Time-Machine-Laufwerke erklären sich und öffnen auf Wunsch Time Machine.",
+  "url": "https://foldair.de/download/Foldair-1.0.21.update",
+  "sha256": "e5e53158c08891e405c0d3f868e3c751851135963c6173c4381b0244294af061"
 }
