@@ -1,7 +1,7 @@
 {
-  "build": 202611272019,
-  "version": "1.0.21",
-  "notes": "Schnellzugriff in der Seitenleiste wird nicht mehr von der Titelleiste verdeckt. Leere Time-Machine-Laufwerke erklären sich und öffnen auf Wunsch Time Machine.",
-  "url": "https://foldair.de/download/Foldair-1.0.21.update",
-  "sha256": "e5e53158c08891e405c0d3f868e3c751851135963c6173c4381b0244294af061"
+  "build": 202611272039,
+  "version": "1.0.22",
+  "notes": "Neu: eigener Startordner für neue Fenster (Einstellungen › Neue Fenster).",
+  "url": "https://foldair.de/download/Foldair-1.0.22.update",
+  "sha256": "539686a89c6d128d5f5fd281333d81140e004769f0d6bff4df5ada998c1c4fa3"
 }
