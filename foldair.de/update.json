@@ -1,7 +1,7 @@
 {
-  "build": 202611261933,
-  "version": "1.0.18",
-  "notes": "Neu › Textdatei im Rechtsklick · Tasten wie unter Windows (Enter öffnet, Backspace geht hoch) · Foldair merkt sich Sortierung und aufgeklappten Ordnerbaum je Ordner · Ablagefach zum Sammeln von Dateien · externe Laufwerke ohne Hänger · ganz auf Englisch · schneller bei großen Ordnern und langsamen Netzlaufwerken",
-  "url": "https://foldair.de/download/Foldair-1.0.18.update",
-  "sha256": "152f353952c6cd2575c544ba14c99d4b175f2c9e64f0e4cf3e6675a84f3f28ca"
+  "build": 202611270722,
+  "version": "1.0.19",
+  "notes": "Leertaste öffnet die Schnellansicht jetzt immer, auch bei PDFs und in der rechten Hälfte · Vorschau rechts lässt sich oben abschalten und bleibt dann aus · Schnellansicht im Menü Darstellung / Space now always opens Quick Look, also for PDFs and in the right pane · The preview on the right can be switched off and stays off",
+  "url": "https://foldair.de/download/Foldair-1.0.19.update",
+  "sha256": "3578d24e52c283a2105234473d0f42b7412d3a88711d454935ad4edd8516c57d"
 }
