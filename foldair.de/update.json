@@ -1,7 +1,7 @@
 {
-  "build": 202611270722,
-  "version": "1.0.19",
-  "notes": "Leertaste öffnet die Schnellansicht jetzt immer, auch bei PDFs und in der rechten Hälfte · Vorschau rechts lässt sich oben abschalten und bleibt dann aus · Schnellansicht im Menü Darstellung / Space now always opens Quick Look, also for PDFs and in the right pane · The preview on the right can be switched off and stays off",
-  "url": "https://foldair.de/download/Foldair-1.0.19.update",
-  "sha256": "3578d24e52c283a2105234473d0f42b7412d3a88711d454935ad4edd8516c57d"
+  "build": 202611270953,
+  "version": "1.0.20",
+  "notes": "Darstellung › Als Liste (⌘1) und Als Symbole (⌘2) · Größere/Kleinere Symbole wirken jetzt auch in der Symbolansicht / View › as List (⌘1) and as Icons (⌘2) · Bigger/smaller icons now also work in icon view",
+  "url": "https://foldair.de/download/Foldair-1.0.20.update",
+  "sha256": "49b61f24c824e77e1521523c54c80d7e2f0c75e4dcc1c9c2e97401865484d22e"
 }
