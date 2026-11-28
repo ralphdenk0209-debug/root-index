@@ -1,7 +1,7 @@
 {
-  "build": 202611272039,
-  "version": "1.0.22",
-  "notes": "Neu: eigener Startordner für neue Fenster (Einstellungen › Neue Fenster).",
-  "url": "https://foldair.de/download/Foldair-1.0.22.update",
-  "sha256": "539686a89c6d128d5f5fd281333d81140e004769f0d6bff4df5ada998c1c4fa3"
+  "build": 202611281628,
+  "version": "1.0.23",
+  "notes": "Schnellzugriff steht auch mit eingeblendeter Tableiste ganz oben. Die Trennlinie darunter lässt sich ziehen, Doppelklick stellt die Höhe automatisch ein.",
+  "url": "https://foldair.de/download/Foldair-1.0.23.update",
+  "sha256": "63eb4e25b944f7d2bacab6d17890efaa970ed55d56fc0b68524b0aab65b453df"
 }
